@@ -1,21 +1,163 @@
-﻿**项目描述**
+﻿Here's a comprehensive README for the CleanMast project:
 
-CleanMast 项目是一个用于处理风力发电数据的 Julia 项目。其目标是解析 meteodyn mast 数据的 CSV 文件，并基于提供的规则进行数据清洗。项目会使用 `config.yaml` 文件进行配置，允许用户灵活设置数据的路径、列名格式以及时间戳格式等信息。最终，项目将输出清洗后的 CSV 文件和日志文件，以确保数据的准确性和高质量。
+```markdown
+# CleanMast
 
-**当前项目阶段**
+CleanMast is a Julia project for processing wind mast data, specifically designed to parse, clean, and analyze data from meteodyn mast CSV files. The project uses configuration-driven approach for flexible data processing and validation.
 
-项目目前处于初步开发阶段，我们已经完成了项目的初始化以及基本结构的设立。具体的项目文件结构已确定，包括代码主文件、测试目录、数据目录以及示例配置文件等。目前的工作重点是开发命令行工具来接受目录路径并检查配置文件的存在，并且撰写适当的代码来解析列名和执行数据清洗。
+## Project Structure
 
-**编码标准**
+```
+CleanMast/
+├── src/
+│   ├── CleanMast.jl         # Main entry point, command line interface
+│   ├── CleanMastConfig.jl   # Configuration handling
+│   └── MastTimeSeries.jl    # Data processing and parsing
+├── test/
+│   ├── runtests.jl          # Test entry point
+│   └── test_parsing.jl      # Tests for parsing functionality
+└── config.yaml              # Example configuration file
+```
 
-7. **避免硬编码**：尽量避免硬编码，特别是字符串常量。可以考虑将常量放在配置文件或常量模块中，以便更容易维护和修改。
-8. **类型提示**：尽可能为变量和函数添加类型提示，以提高代码的可读性和错误检查的能力。
+## Usage
 
-1. **命名规范**：使用驼峰式命名（camelCase）用于局部变量和函数名称，类或模块使用大写字母开头（PascalCase），确保代码具有良好的可读性。
-2. **代码注释**：对于复杂的逻辑和关键步骤，必须添加清晰的注释。函数需要使用 docstrings 描述输入、输出和功能。
-3. **模块化设计**：每个功能应尽可能被封装在单独的函数或模块中，确保代码具有较高的可维护性和可扩展性。
-4. **一致的缩进和排版**：所有代码应保持 4 个空格的缩进，不允许使用 Tab 符，以确保代码在不同编辑器中具有一致的排版效果。
-5. **错误处理**：对于可能出错的地方应加入适当的错误处理机制，特别是文件 I/O 操作，如读取 `config.yaml` 文件时，加入文件存在性的检查和合理的错误提示。
-6. **代码风格**：遵循 Julia 社区的代码风格指南，保持代码简洁、易读，尽量避免冗余代码。每个函数的长度尽量控制在 50 行以内，确保每个函数都只完成一个具体的功能。
+### Command Line Interface
 
+The project provides a command-line interface with the following commands:
 
+```bash
+# Check configuration file
+julia ./src/CleanMast.jl check:config --dir=<project_dir>
+
+# Parse mast data and generate sensors metadata
+julia ./src/CleanMast.jl check:sensors --dir=<project_dir>
+```
+
+### Configuration
+
+Create a `config.yaml` in your project directory:
+
+```yaml
+Mast:
+  data_path: data.csv  # Path to data file (relative to config.yaml)
+  skip_to: 0          # Number of rows to skip in CSV
+  sensor:
+    column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+    timestamp_column: Timestamp
+    timestamp_format: "yyyy-MM-dd HH:mm"
+    mappings:
+      sensor_types:
+        Anem: WindSpeed
+        Vane: WindDirection
+        Analog: Temperature
+      stat_types:
+        Avg: avg
+        Max: max
+        Min: min
+        SD: sd
+      units:
+        m/s: speed
+        Deg: degrees
+        C: celsius
+```
+
+## Development Status
+
+Current implementation includes:
+- ✅ Configuration parsing (CleanMastConfig)
+- ✅ Column name parsing with flexible format
+- ✅ Basic data reading with type handling
+- ✅ Sensor metadata generation
+- ✅ Command line interface
+- ✅ Unit tests for parsing
+
+Next steps:
+- [ ] Data cleaning rules implementation
+- [ ] Data validation
+- [ ] Time series analysis functions
+- [ ] Output formatting options
+- [ ] Additional data processing features
+
+## Code Standards
+
+### Naming Conventions
+- Use PascalCase for types and modules (e.g., `SensorConfig`, `MastTimeSeries`)
+- Use lowercase with underscores for filenames (e.g., `clean_mast.jl`)
+- Use camelCase for variable and function names (e.g., `parseConfig`, `sensorType`)
+
+### Type and Function Specifications
+- Always specify types for struct fields
+- Use type annotations for function arguments and return values
+- Use docstrings for functions and types
+
+Example:
+```julia
+"""
+Parse a single column name based on format pattern.
+Returns nothing if parsing fails.
+"""
+function parse_column_name(
+    column_name::String, 
+    format::String, 
+    mappings::SensorMappings
+)::Union{SensorColumn, Nothing}
+```
+
+### Error Handling
+- Use try-catch blocks for file operations and parsing
+- Provide informative error messages
+- Use @warn for non-critical issues
+- Handle missing or invalid data gracefully
+
+### Code Organization
+- Modular design with clear separation of concerns
+- Configuration handling in `CleanMastConfig`
+- Data processing in `MastTimeSeries`
+- CLI in main `CleanMast.jl`
+
+### Testing
+- Unit tests for core functionality
+- Test both valid and invalid cases
+- Test default values and edge cases
+- Organized test sets for different components
+
+## Dependencies
+
+- YAML: For configuration file parsing
+- DataFrames: For data manipulation
+- CSV: For reading CSV files
+- ArgParse: For command line argument parsing
+
+## Contributing
+
+When contributing to this project:
+1. Follow the established code standards
+2. Add tests for new functionality
+3. Update documentation as needed
+4. Use clear commit messages
+5. Create feature branches for new development
+
+## Future Development
+
+Priority areas for development:
+1. Implementation of data cleaning rules
+2. Enhanced validation and error reporting
+3. Time series analysis features
+4. Performance optimization for large datasets
+5. Additional output formats
+
+## Project Goals
+
+The ultimate goal is to provide a robust, flexible, and user-friendly tool for:
+- Parsing various wind mast data formats
+- Cleaning and validating data
+- Generating standardized outputs
+- Supporting data analysis workflows
+
+```
+
+Would you like me to:
+1. Add more details to any section?
+2. Add example usage scenarios?
+3. Add more technical specifications?
+4. Include troubleshooting guidelines?
