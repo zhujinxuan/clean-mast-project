@@ -55,31 +55,34 @@ check_diff_criteria(diff::Float64, criteria::RangeCriteria)::Bool =
     (!isnothing(criteria.min) && diff < criteria.min) ||
     (!isnothing(criteria.max) && diff > criteria.max)
 
-function apply(rule::Rule, data::TimeSeriesData)::RuleViolation
+function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa LayerDifferenceCriteria
-    
-    violations = filter(col -> !isempty(col), map(filter_applicable_columns(rule, data.sensors)) do col
-        target_sensor = first(filter(s -> s.columnName == col, data.sensors))
-        layer_comparisons = find_lower_layer_columns(target_sensor, data.sensors, rule.criteria.lower_layer_height)
-        
-        map(layer_comparisons) do comparison
-            filter(zip(data.df.timestamp,
-                      data.df[!, col], 
-                      data.df[!, comparison.lower_col],
-                      data.df[!, comparison.wind_speed_col])) do (ts, upper, lower, speed)
-                !any(ismissing, (upper, lower, speed)) &&
-                check_speed_criteria(speed, rule.criteria.lower_wind_speed) &&
-                check_diff_criteria(
-                    calc_difference(upper, lower, target_sensor.sensorType),
-                    rule.criteria.abs_diff
-                )
-            end |> x -> map(first, x)  # extract timestamps from filtered tuples
-        end |> Iterators.flatten |> unique |> sort
-    end) |> Iterators.flatten |> unique |> sort
+    violations = RuleViolation[]
+    for col in filter_applicable_columns(rule, data.sensors)
+      target_sensor = first(filter(s -> s.columnName == col, data.sensors))
+      layer_comparisons = find_lower_layer_columns(target_sensor, data.sensors, rule.criteria.lower_layer_height)
+      
+      timestamps = map(layer_comparisons) do comparison
+          filter(zip(data.df.timestamp,
+                    data.df[!, col], 
+                    data.df[!, comparison.lower_col],
+                    data.df[!, comparison.wind_speed_col])) do (ts, upper, lower, speed)
+              !any(ismissing, (upper, lower, speed)) &&
+              check_speed_criteria(speed, rule.criteria.lower_wind_speed) &&
+              check_diff_criteria(
+                  calc_difference(upper, lower, target_sensor.sensorType),
+                  rule.criteria.abs_diff
+              )
+          end |> x -> map(first, x)  # extract timestamps from filtered tuples
+      end |> Iterators.flatten |> unique |> sort
 
-    RuleViolation(rule, violations, filter_applicable_columns(rule, data.sensors))
+      batch_violations = map(RuleViolation(rule, _, col), timestamps)
+      apply_missing!(batch_violations, data)
+      append!(violations, batch_violations)
+    end
+    return violations
 end
 
-export apply
+export apply!
 
 end # module

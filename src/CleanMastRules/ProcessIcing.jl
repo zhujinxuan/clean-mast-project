@@ -15,14 +15,14 @@ using ..Rules
 using ..ProcessTypes
 using ...MastTimeSeries
 
-function apply(rule::Rule, data::TimeSeriesData)::RuleViolation
+function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa IcingCriteria
     columns = filter_applicable_columns(rule, data.sensors)
     criteria = rule.criteria
-    
-    violation_timestamps = DateTime[]
-    
+
+    violations = RuleViolation[];
     for col in columns
+        violation_timestamps = DateTime[]
         values = data.df[!, col]
         timestamps = data.df.timestamp
         
@@ -52,12 +52,12 @@ function apply(rule::Rule, data::TimeSeriesData)::RuleViolation
             # Move to next potential window
             i = window_start + 1
         end
+      append!(violations, map(RuleViolation(rule, _, col), violation_timestamps))
     end
-    
-    return RuleViolation(rule, sort(unique(violation_timestamps)), columns)
+    return violations
 end
 
-export apply
+export apply!
 
 end # module
 

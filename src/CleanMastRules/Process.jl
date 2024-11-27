@@ -7,13 +7,13 @@ using ..ProcessTypes
 using ..ProcessRange
 using ...MastTimeSeries
 
-function apply_rule(rule::Rule, data::TimeSeriesData)::RuleViolation
+function apply_rule!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     if rule.criteria isa RangeCriteria
-        return ProcessRange.apply(rule, data)
+        return ProcessRange.apply!(rule, data)
     elseif rule.criteria isa LayerDifferenceCriteria
-        return ProcessLayerDiff.apply(rule, data)
+        return ProcessLayerDiff.apply!(rule, data)
     else # IcingCriteria
-        return ProcessIcing.apply(rule, data)
+        return ProcessIcing.apply!(rule, data)
     end
 end
 

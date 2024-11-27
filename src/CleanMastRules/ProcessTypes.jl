@@ -8,15 +8,33 @@ using ...MastTimeSeries
 
 struct RuleViolation
     rule::Rule
-    timestamps::Vector{DateTime}
-    columns::Vector{String}
+    timestamp::DateTime
+    column::String
 end
 
 function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{String}
     return [s.columnName for s in sensors if 
         s.sensorType == rule.sensorType &&
+        s.statType == "avg" &&
         (isnothing(rule.height.min) || s.height >= rule.height.min) &&
         (isnothing(rule.height.max) || s.height <= rule.height.max)]
+end
+
+function apply_missing!(violations::Vector{RuleViolation}, ts :: TimeSeriesData) :: Nothing
+  df = ts.df
+    for violation in violations
+        # 找到所有符合timestamp的行
+        rows_to_modify = findall(row -> row.timestamp == violation.timestamp, df)
+        
+        for row in rows_to_modify
+            if haskey(df, violation.column)
+                df[row, Symbol(violation.column)] = missing
+            else
+                @warn "Warning: Column $(violation.column) not found in DataFrame."
+            end
+        end
+    end
+    return nothing
 end
 
 export RuleViolation, filter_applicable_columns
