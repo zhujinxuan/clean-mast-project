@@ -52,7 +52,7 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
             # Move to next potential window
             i = window_start + 1
         end
-      append!(violations, map(RuleViolation(rule, _, col), violation_timestamps))
+      append!(violations, x ->map(RuleViolation(rule, x, col), violation_timestamps))
     end
     return violations
 end

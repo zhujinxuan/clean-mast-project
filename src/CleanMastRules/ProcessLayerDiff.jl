@@ -63,7 +63,7 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
       layer_comparisons = find_lower_layer_columns(target_sensor, data.sensors, rule.criteria.lower_layer_height)
       
       timestamps = map(layer_comparisons) do comparison
-          filter(zip(data.df.timestamp,
+        filter(zip(data.df[!, data.timestamp_column],
                     data.df[!, col], 
                     data.df[!, comparison.lower_col],
                     data.df[!, comparison.wind_speed_col])) do (ts, upper, lower, speed)
@@ -73,10 +73,10 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
                   calc_difference(upper, lower, target_sensor.sensorType),
                   rule.criteria.abs_diff
               )
-          end |> x -> map(first, x)  # extract timestamps from filtered tuples
+        end |> x -> map(first, x)  # extract timestamps from filtered tuples
       end |> Iterators.flatten |> unique |> sort
 
-      batch_violations = map(RuleViolation(rule, _, col), timestamps)
+      batch_violations = map(x-> RuleViolation(rule, x, col), timestamps)
       apply_missing!(batch_violations, data)
       append!(violations, batch_violations)
     end

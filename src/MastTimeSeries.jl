@@ -19,6 +19,7 @@ end
 struct TimeSeriesData
     df::DataFrame
     sensors::Vector{SensorColumn}
+    timestamp_column:: String
 end
 
 """
@@ -235,7 +236,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
         valid_sensors = filter(s -> s.columnName ∈ names(df), existing_sensors)
-        return TimeSeriesData(df, valid_sensors)
+        return TimeSeriesData(df, valid_sensors, config.mast.sensor.timestamp_column)
     else
         # Parse column metadata and export to sensors.yaml
         sensors = parse_column_metadata(df, config.mast.sensor)
@@ -243,7 +244,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
         # Export sensors only if we had to parse them
         export_sensors(sensors, project_dir)
         
-        return TimeSeriesData(df, sensors)
+        return TimeSeriesData(df, sensors, config.mast.sensor.timestamp_column)
     end
 end
 

@@ -31,7 +31,7 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
             append!(violation_indices, findall(x -> !ismissing(x) && x > criteria.max, data.df[!, col]))
         end
         unique_timestamps = sort(unique(data.df[unique(violation_indices), :timestamp]))
-        append!(unique_timestamps, map(RuleViolation(rule,_, col), unique_timestamps))
+        append!(unique_timestamps, x -> map(RuleViolation(rule, x, col), unique_timestamps))
     end
 
     apply_missing!(violations, data)
