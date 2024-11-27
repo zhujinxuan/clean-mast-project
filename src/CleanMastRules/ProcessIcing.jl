@@ -15,7 +15,7 @@ using ..Rules
 using ..ProcessTypes
 using ...MastTimeSeries
 
-function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
+function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa IcingCriteria
     columns = filter_applicable_columns(rule, data.sensors)
     criteria = rule.criteria
@@ -57,7 +57,7 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     return violations
 end
 
-export apply!
+export apply
 
 end # module
 

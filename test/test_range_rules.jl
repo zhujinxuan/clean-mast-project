@@ -20,7 +20,8 @@ import CleanMastProject.CleanMastRules.ProcessRange
             SensorColumn("speed_80m", "WindSpeed", "", 80.0, "avg"),
             SensorColumn("temp_80m", "Temperature", "", 80.0, "avg"),
             SensorColumn("dir_100m", "WindDirection", "", 100.0, "avg")
-        ]
+        ],
+        "timestamp"
     )
 
     @testset "Wind Speed Range" begin
@@ -28,8 +29,8 @@ import CleanMastProject.CleanMastRules.ProcessRange
                    HeightFilter(nothing, nothing),
                    RangeCriteria(0.0, 50.0))
         result = ProcessRange.apply(rule, test_data)
-        @test length(result.timestamps) == 3  # -1.0, 55.0, 51.0
-        @test all(result.timestamps .∈ Ref([base_time + Hour(3), base_time + Hour(4)]))
+        @test length(result) == 3  # -1.0, 55.0, 51.0
+        @test all(map(x -> x.timestamp, result) .∈ Ref([base_time + Hour(3), base_time + Hour(4)]))
     end
 
     @testset "Temperature Range" begin
@@ -37,8 +38,8 @@ import CleanMastProject.CleanMastRules.ProcessRange
                    HeightFilter(nothing, nothing),
                    RangeCriteria(-30.0, 50.0))
         result = ProcessRange.apply(rule, test_data)
-        @test length(result.timestamps) == 1  # 65.0
-        @test result.timestamps[1] == base_time + Hour(4)
+        @test length(result) == 1  # 65.0
+        @test result[1].timestamp == base_time + Hour(4)
     end
 
     @testset "Wind Direction Range" begin
@@ -46,6 +47,6 @@ import CleanMastProject.CleanMastRules.ProcessRange
                    HeightFilter(nothing, nothing),
                    RangeCriteria(0.0, 360.0))
         result = ProcessRange.apply(rule, test_data)
-        @test length(result.timestamps) == 2  # -10.0, 370.0
+        @test length(result) == 2  # -10.0, 370.0
     end
 end

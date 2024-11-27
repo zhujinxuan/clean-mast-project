@@ -16,7 +16,7 @@ using ..Rules
 using ..ProcessTypes
 using ...MastTimeSeries
 
-function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
+function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa RangeCriteria
     columns = filter_applicable_columns(rule, data.sensors)
     criteria = rule.criteria
@@ -31,12 +31,11 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
             append!(violation_indices, findall(x -> !ismissing(x) && x > criteria.max, data.df[!, col]))
         end
         unique_timestamps = sort(unique(data.df[unique(violation_indices), :timestamp]))
-        append!(unique_timestamps, x -> map(RuleViolation(rule, x, col), unique_timestamps))
+        append!(violations,  map(x -> RuleViolation(rule, x, col), unique_timestamps))
     end
 
-    apply_missing!(violations, data)
     return violations
 end
 
-export apply!
+export apply
 end

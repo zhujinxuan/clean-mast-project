@@ -55,7 +55,7 @@ check_diff_criteria(diff::Float64, criteria::RangeCriteria)::Bool =
     (!isnothing(criteria.min) && diff < criteria.min) ||
     (!isnothing(criteria.max) && diff > criteria.max)
 
-function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
+function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa LayerDifferenceCriteria
     violations = RuleViolation[]
     for col in filter_applicable_columns(rule, data.sensors)
@@ -83,6 +83,6 @@ function apply!(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     return violations
 end
 
-export apply!
+export apply
 
 end # module
