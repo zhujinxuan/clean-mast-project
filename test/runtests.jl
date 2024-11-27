@@ -4,6 +4,6 @@ using Test
 
 include("../src/CleanMastProject.jl")
 # Include all test files
-include("test_parsing.jl")
+include("test_MastTimeSeries_parsing.jl")
 
 # Add other test files here as needed
