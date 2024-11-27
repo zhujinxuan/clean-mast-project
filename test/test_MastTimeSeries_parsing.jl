@@ -2,8 +2,8 @@
 
 using Test
 using YAML
-using .MastTimeSeries
-using .CleanMastConfig
+using CleanMastProject.MastTimeSeries
+using CleanMastProject.CleanMastConfig
 
 @testset "Column Format Parsing Tests" begin
     @testset "Extract Format Placeholders" begin

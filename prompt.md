@@ -1,42 +1,34 @@
-﻿Here's a comprehensive README for the CleanMast project:
+﻿# CleanMast
 
-```markdown
-# CleanMast
-
-CleanMast is a Julia project for processing wind mast data, specifically designed to parse, clean, and analyze data from meteodyn mast CSV files. The project uses configuration-driven approach for flexible data processing and validation.
+CleanMast is a Julia project for processing wind mast data, specifically designed to parse, clean, and analyze data from meteodyn mast CSV files.
 
 ## Project Structure
 
 ```
 CleanMast/
 ├── src/
-│   ├── CleanMast.jl         # Main entry point, command line interface
-│   ├── CleanMastConfig.jl   # Configuration handling
-│   └── MastTimeSeries.jl    # Data processing and parsing
+│   ├── CleanMast.jl           # Main entry point
+│   ├── CleanMastConfig.jl     # Configuration handling
+│   ├── MastTimeSeries.jl      # Data processing and parsing
+│   └── CleanMastRules/        # Data cleaning rules
+│       ├── Rules.jl           # Rule definitions
+│       ├── ProcessTypes.jl    # Common types for processing
+│       ├── ProcessRange.jl    # Range validation
+│       ├── ProcessIcing.jl    # Icing detection
+│       ├── ProcessLayerDiff.jl # Layer difference checks
+│       └── Process.jl         # Main processing entry
 ├── test/
-│   ├── runtests.jl          # Test entry point
-│   └── test_parsing.jl      # Tests for parsing functionality
-└── config.yaml              # Example configuration file
+│   ├── runtests.jl
+│   ├── test_parsing.jl
+│   └── test_rules.jl
+└── config/
+    ├── config.yaml           # Project configuration
+    └── rules.yaml           # Rule definitions
 ```
 
-## Usage
+## Configuration
 
-### Command Line Interface
-
-The project provides a command-line interface with the following commands:
-
-```bash
-# Check configuration file
-julia ./src/CleanMast.jl check:config --dir=<project_dir>
-
-# Parse mast data and generate sensors metadata
-julia ./src/CleanMast.jl check:sensors --dir=<project_dir>
-```
-
-### Configuration
-
-Create a `config.yaml` in your project directory:
-
+### Project Configuration (config.yaml)
 ```yaml
 Mast:
   data_path: data.csv  # Path to data file (relative to config.yaml)
@@ -61,103 +53,78 @@ Mast:
         C: celsius
 ```
 
-## Development Status
+### Rule Configuration (rules.yaml)
+```yaml
+rules:
+  - name: "High Wind Speed Layer Difference"
+    sensorType: "WindSpeed"
+    height:
+      min: 70.0
+      max: null
+    layer_difference:
+      lower_layer_height: 20.0
+      abs_diff:
+        min: null
+        max: 2.0
+      lower_wind_speed:
+        min: null
+        max: null
 
-Current implementation includes:
-- ✅ Configuration parsing (CleanMastConfig)
+  - name: "Wind Speed Range"
+    sensorType: "WindSpeed"
+    height:
+      min: null
+      max: null
+    out_of_range:
+      min: 0.0
+      max: 50.0
+
+  - name: "Icing Detection"
+    sensorType: "WindSpeed"
+    height:
+      min: null
+      max: null
+    icing:
+      time_range: 7200
+      max_change: 0.02
+```
+
+## Rule Types
+
+Each rule must have exactly one of:
+1. `out_of_range`: Value range validation
+2. `layer_difference`: Compare measurements between layers
+3. `icing`: Detect constant values over time
+
+### Layer Difference Rules
+- Supports both wind speed and direction comparisons
+- Uses closest available wind speed measurement within 10m height difference
+- For wind direction, handles circular difference calculation
+
+### Icing Detection
+- Checks for minimal variation over specified time period
+- Duration specified in seconds
+- Supports different thresholds per height
+
+### Range Validation
+- Simple min/max bounds checking
+- Can be height-specific
+- Handles missing values
+
+## Development Status
+- ✅ Configuration parsing 
 - ✅ Column name parsing with flexible format
 - ✅ Basic data reading with type handling
 - ✅ Sensor metadata generation
 - ✅ Command line interface
-- ✅ Unit tests for parsing
-
-Next steps:
-- [ ] Data cleaning rules implementation
-- [ ] Data validation
-- [ ] Time series analysis functions
+- ✅ Rule definition and loading
+- ✅ Rule processing implementation
+- ✅ Test coverage for rules
+- [ ] Performance optimization
 - [ ] Output formatting options
-- [ ] Additional data processing features
 
 ## Code Standards
-
-### Naming Conventions
-- Use PascalCase for types and modules (e.g., `SensorConfig`, `MastTimeSeries`)
-- Use lowercase with underscores for filenames (e.g., `clean_mast.jl`)
-- Use camelCase for variable and function names (e.g., `parseConfig`, `sensorType`)
-
-### Type and Function Specifications
-- Always specify types for struct fields
-- Use type annotations for function arguments and return values
+- Functional programming style preferred
+- Type specifications required
+- Unit tests for each rule type
 - Use docstrings for functions and types
-
-Example:
-```julia
-"""
-Parse a single column name based on format pattern.
-Returns nothing if parsing fails.
-"""
-function parse_column_name(
-    column_name::String, 
-    format::String, 
-    mappings::SensorMappings
-)::Union{SensorColumn, Nothing}
-```
-
-### Error Handling
-- Use try-catch blocks for file operations and parsing
-- Provide informative error messages
-- Use @warn for non-critical issues
-- Handle missing or invalid data gracefully
-
-### Code Organization
-- Modular design with clear separation of concerns
-- Configuration handling in `CleanMastConfig`
-- Data processing in `MastTimeSeries`
-- CLI in main `CleanMast.jl`
-
-### Testing
-- Unit tests for core functionality
-- Test both valid and invalid cases
-- Test default values and edge cases
-- Organized test sets for different components
-
-## Dependencies
-
-- YAML: For configuration file parsing
-- DataFrames: For data manipulation
-- CSV: For reading CSV files
-- ArgParse: For command line argument parsing
-
-## Contributing
-
-When contributing to this project:
-1. Follow the established code standards
-2. Add tests for new functionality
-3. Update documentation as needed
-4. Use clear commit messages
-5. Create feature branches for new development
-
-## Future Development
-
-Priority areas for development:
-1. Implementation of data cleaning rules
-2. Enhanced validation and error reporting
-3. Time series analysis features
-4. Performance optimization for large datasets
-5. Additional output formats
-
-## Project Goals
-
-The ultimate goal is to provide a robust, flexible, and user-friendly tool for:
-- Parsing various wind mast data formats
-- Cleaning and validating data
-- Generating standardized outputs
-- Supporting data analysis workflows
-
-```
-
-Would you like me to:
-1. Add more details to any section?
-2. Add example usage scenarios?
-3. Add more technical specifications?
-4. Include troubleshooting guidelines?
