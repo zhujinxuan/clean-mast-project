@@ -2,6 +2,7 @@
 
 using Test
 
+include("../src/CleanMastProject.jl")
 # Include all test files
 include("test_parsing.jl")
 

@@ -3,6 +3,7 @@
 module CleanMastConfig
 
 using YAML
+using DataFrames
 
 # Type for storing mappings 
 struct SensorMappings

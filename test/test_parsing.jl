@@ -3,6 +3,7 @@
 using Test
 using YAML
 using .MastTimeSeries
+using .CleanMastConfig
 
 @testset "Column Format Parsing Tests" begin
     @testset "Extract Format Placeholders" begin
