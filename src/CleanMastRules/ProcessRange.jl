@@ -1,4 +1,14 @@
 ﻿# src/CleanMastRules/ProcessRange.jl
+"""
+Range Rule Processing:
+Validates if values fall within specified ranges. Each rule specifies:
+- Sensor type (WindSpeed, WindDirection, Temperature)
+- Optional height filter
+- Min/max range values
+Values outside the range are marked as violations.
+Missing values are ignored.
+"""
+
 module ProcessRange
 
 using DataFrames

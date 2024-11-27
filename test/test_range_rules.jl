@@ -2,8 +2,8 @@
 using Test
 using DataFrames
 using Dates
-using .CleanMastRules.Rules
-import .CleanMastRules.ProcessRange
+using CleanMastProject.CleanMastRules.Rules
+import CleanMastProject.CleanMastRules.ProcessRange
 
 @testset "Range Rule Tests" begin
     base_time = DateTime(2024,1,1)

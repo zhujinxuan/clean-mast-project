@@ -1,4 +1,12 @@
 ﻿# src/CleanMastRules/ProcessIcing.jl
+"""
+Icing Rule Processing:
+Detects potential icing conditions by identifying periods of minimal variation:
+- Monitors value changes over specified time window (e.g. 7200 seconds)
+- If changes remain below threshold (e.g. 0.02) for entire window, marks as icing
+- Supports height-specific thresholds
+- Handles gaps in data by restarting window check
+"""
 module ProcessIcing
 
 using DataFrames

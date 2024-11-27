@@ -1,4 +1,13 @@
 ﻿# src/CleanMastRules/ProcessLayerDiff.jl
+"""
+Layer Difference Rule Processing:
+Compares measurements between different heights:
+- For wind speed: flags if difference between layers exceeds threshold
+- For wind direction: handles circular difference (e.g. 350° vs 10°)
+- Uses closest available wind speed measurement within 10m for validation
+- Supports configurable height differences and thresholds
+- Can require specific wind speed ranges at lower height
+"""
 module ProcessLayerDiff
 
 using DataFrames
