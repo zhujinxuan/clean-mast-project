@@ -2,9 +2,9 @@
 module ProcessLayerDiff
 
 using DataFrames
-using .Rules
-using .ProcessTypes
-using ..MastTimeSeries
+using ..Rules
+using ..ProcessTypes
+using ...MastTimeSeries
 
 struct LayerComparison
     lower_col::String

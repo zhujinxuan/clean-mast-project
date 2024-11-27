@@ -7,11 +7,11 @@ module CleanMastProject
 
   module CleanMastRules
     include("./CleanMastRules/Rules.jl")
-    include("./CleanMastRules/Process.jl")
-    include("./CleanMastRules/ProcessRange.jl")
-    include("./CleanMastRules/ProcessIcing.jl.jl")
-    include("./CleanMastRules/ProcessLayerDiff.jl")
     include("./CleanMastRules/ProcessTypes.jl")
+    include("./CleanMastRules/ProcessRange.jl")
+    include("./CleanMastRules/ProcessIcing.jl")
+    include("./CleanMastRules/ProcessLayerDiff.jl")
+    include("./CleanMastRules/Process.jl")
     export Rules,Process,ProcessTypes, ProcessIcing, ProcessRange, ProcessLayerDiff
   end
   export CleanMastRules

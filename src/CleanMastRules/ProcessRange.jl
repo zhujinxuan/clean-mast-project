@@ -2,9 +2,9 @@
 module ProcessRange
 
 using DataFrames
-using .Rules
-using .ProcessTypes
-using ..MastTimeSeries
+using ..Rules
+using ..ProcessTypes
+using ...MastTimeSeries
 
 function apply(rule::Rule, data::TimeSeriesData)::RuleViolation
     @assert rule.criteria isa RangeCriteria

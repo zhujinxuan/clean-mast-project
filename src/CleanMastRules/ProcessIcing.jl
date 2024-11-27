@@ -3,9 +3,9 @@ module ProcessIcing
 
 using DataFrames
 using Dates
-using .Rules
-using .ProcessTypes
-using ..MastTimeSeries
+using ..Rules
+using ..ProcessTypes
+using ...MastTimeSeries
 
 function apply(rule::Rule, data::TimeSeriesData)::RuleViolation
     @assert rule.criteria isa IcingCriteria
