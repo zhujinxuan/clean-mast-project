@@ -16,12 +16,12 @@ using Dates
             speed_60m = [7.0, 7.0, 7.0, 7.0, 7.0, 7.0]
         ),
         [
-            SensorColumn("dir_100m", "WindDirection", "", 100.0, "avg"),
-            SensorColumn("dir_80m", "WindDirection", "", 80.0, "avg"),
-            SensorColumn("dir_60m", "WindDirection", "", 60.0, "avg"),
-            SensorColumn("speed_100m", "WindSpeed", "", 100.0, "avg"),
-            SensorColumn("speed_80m", "WindSpeed", "", 80.0, "avg"),
-            SensorColumn("speed_60m", "WindSpeed", "", 60.0, "avg")
+            SensorColumn(:dir_100m, "WindDirection", "", 100.0, "avg"),
+            SensorColumn(:dir_80m, "WindDirection", "", 80.0, "avg"),
+            SensorColumn(:dir_60m, "WindDirection", "", 60.0, "avg"),
+            SensorColumn(:speed_100m, "WindSpeed", "", 100.0, "avg"),
+            SensorColumn(:speed_80m, "WindSpeed", "", 80.0, "avg"),
+            SensorColumn(:speed_60m, "WindSpeed", "", 60.0, "avg")
         ]
     )
 
@@ -33,8 +33,11 @@ using Dates
                        RangeCriteria(nothing, 2.0),
                        RangeCriteria(nothing, nothing)
                    ))
-        result = ProcessLayerDiff.apply(rule, test_data)
-        @test !isempty(result.timestamps)
+        violations = ProcessLayerDiff.apply(rule, test_data)
+        @test !isempty(violations)
+        
+        # Violations should only be for upper layer columns
+        @test all(v -> v.column ∈ [:speed_100m, :speed_80m], violations)
     end
 
     @testset "Wind Direction Layer Difference" begin
@@ -45,9 +48,14 @@ using Dates
                        RangeCriteria(nothing, 22.5),
                        RangeCriteria(3.0, 25.0)
                    ))
-        result = ProcessLayerDiff.apply(rule, test_data)
-        @test !isempty(result.timestamps)
-        # Check wrap-around cases (350° vs 10°)
-        @test base_time ∈ result.timestamps || (base_time + Hour(1)) ∈ result.timestamps
+        violations = ProcessLayerDiff.apply(rule, test_data)
+        
+        @test !isempty(violations)
+        # Should have violations for wrap-around cases
+        wrap_violations = filter(v -> v.timestamp ∈ [base_time, base_time + Hour(1)], violations)
+        @test !isempty(wrap_violations)
+        
+        # All violations should be for upper layer columns
+        @test all(v -> v.column ∈ [:dir_100m, :dir_80m], violations)
     end
 end
