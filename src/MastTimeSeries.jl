@@ -9,7 +9,7 @@ using Dates
 import ..CleanMastConfig: ProjectConfig, SensorConfig, SensorMappings
 
 struct SensorColumn
-    columnName::String
+    columnName::Symbol
     sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
     sensorDirection::String # Could be converted to Float64 later if needed
     height::Float64
@@ -19,7 +19,6 @@ end
 struct TimeSeriesData
     df::DataFrame
     sensors::Vector{SensorColumn}
-    timestamp_column:: String
 end
 
 """
@@ -98,7 +97,7 @@ function parse_column_name(
         end
         
         return SensorColumn(
-            column_name,
+            Symbol(column_name),
             sensor_type,
             direction,
             height,
@@ -188,7 +187,7 @@ function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn},
         
         for sensor in yaml_data["sensors"]
             push!(sensors, SensorColumn(
-                sensor["columnName"],
+                Symbol(sensor["columnName"]),
                 sensor["sensorType"],
                 sensor["sensorDirection"],
                 sensor["height"],
@@ -201,6 +200,47 @@ function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn},
         @warn "Failed to load existing sensors.yaml" exception=e
         return nothing
     end
+end
+
+"""
+    normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
+
+Normalize a DataFrame by:
+1. Renaming the specified timestamp column to :timestamp
+2. Moving the timestamp column to the first position
+
+Parameters:
+- df: Input DataFrame
+- timestamp_column_name: Name of the column to be normalized as timestamp
+
+Returns:
+- Modified DataFrame (same object, modified in-place)
+
+Throws:
+- ArgumentError if the specified column name doesn't exist in the DataFrame
+"""
+function normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
+    # Check if the column exists
+    if !Symbol(timestamp_column_name) in names(df)
+        throw(ArgumentError("Column '$timestamp_column_name' not found in DataFrame"))
+    end
+    
+    # Rename the timestamp column
+    rename!(df, Symbol(timestamp_column_name) => :timestamp)
+    
+    # If timestamp is not the first column, reorder columns
+    if names(df)[1] != :timestamp
+        # Get all column names
+        cols = names(df)
+        # Remove timestamp from current position
+        filter!(x -> x != :timestamp, cols)
+        # Create new column order with timestamp first
+        new_order = [:timestamp; cols]
+        # Reorder columns
+        select!(df, new_order)
+    end
+    
+    return df
 end
 
 """
@@ -232,11 +272,12 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
+    normalize_timestamp!(df, config.mast.sensor.timestamp_column)
     
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
         valid_sensors = filter(s -> s.columnName ∈ names(df), existing_sensors)
-        return TimeSeriesData(df, valid_sensors, config.mast.sensor.timestamp_column)
+        return TimeSeriesData(df, valid_sensors)
     else
         # Parse column metadata and export to sensors.yaml
         sensors = parse_column_metadata(df, config.mast.sensor)
@@ -244,7 +285,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
         # Export sensors only if we had to parse them
         export_sensors(sensors, project_dir)
         
-        return TimeSeriesData(df, sensors, config.mast.sensor.timestamp_column)
+        return TimeSeriesData(df, sensors)
     end
 end
 
@@ -256,7 +297,7 @@ function export_sensors(sensors::Vector{SensorColumn}, project_dir::String)
     
     for sensor in sensors
         push!(sensor_data, Dict(
-            "columnName" => sensor.columnName,
+            "columnName" => String(sensor.columnName),
             "sensorType" => sensor.sensorType,
             "sensorDirection" => sensor.sensorDirection,
             "height" => sensor.height,

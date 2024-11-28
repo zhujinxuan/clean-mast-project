@@ -9,7 +9,7 @@ using ...MastTimeSeries
 struct RuleViolation
     rule::Rule
     timestamp::DateTime
-    column::String
+    column::Symbol
 end
 
 function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{String}
@@ -20,22 +20,27 @@ function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::V
         (isnothing(rule.height.max) || s.height <= rule.height.max)]
 end
 
-function apply_missing!(violations::Vector{RuleViolation}, data :: TimeSeriesData) :: Nothing
-  df = data.df
-  for violation in violations
-    # 找到所有符合timestamp的行
-    rows_to_modify = findall(row -> row[data.timestamp_column] == violation.timestamp, df)
-
-    for row in rows_to_modify
-      if Symbol(violation.column) in names(df)
-        df[row, Symbol(violation.column)] = missing
-      else
-        @warn "Warning: Column $(violation.column) not found in DataFrame."
-      end
+function apply_missing!(violations::Vector{RuleViolation}, data::TimeSeriesData)::Nothing
+    df = data.df
+    
+    # Group violations by timestamp to reduce number of operations
+    for violation in violations
+        # Use logical indexing to find matching rows
+        matching_rows = df.timestamp .== violation.timestamp
+        
+        # Convert column name to symbol and check if it exists
+        col_sym = violation.column
+        if col_sym in names(df)
+            # Set matching cells to missing
+            df[matching_rows, col_sym] .= missing
+        else
+            @warn "Warning: Column $(violation.column) not found in DataFrame."
+        end
     end
-  end
-  return nothing
+    
+    return nothing
 end
+
 
 export RuleViolation, filter_applicable_columns, apply_missing!
 

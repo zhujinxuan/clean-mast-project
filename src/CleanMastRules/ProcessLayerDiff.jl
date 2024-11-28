@@ -63,7 +63,7 @@ function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
       layer_comparisons = find_lower_layer_columns(target_sensor, data.sensors, rule.criteria.lower_layer_height)
       
       timestamps = map(layer_comparisons) do comparison
-        filter(zip(data.df[!, data.timestamp_column],
+        filter(zip(data.df[!, :timestamp],
                     data.df[!, col], 
                     data.df[!, comparison.lower_col],
                     data.df[!, comparison.wind_speed_col])) do (ts, upper, lower, speed)
