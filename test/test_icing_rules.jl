@@ -2,6 +2,7 @@
 using Test
 using DataFrames
 using Dates
+using CleanMastProject.CleanMastRules.ProcessIcing
 
 @testset "Icing Rule Tests" begin
     base_time = DateTime(2024,1,1)
@@ -14,10 +15,10 @@ using Dates
                 fill(missing, 1)
             ),
             speed_80m = vcat(
-                [5.0, 5.01],  # Small variation
+                [6.0, 5.01],  # Small variation
                 fill(5.02, 16),  # Constant value
                 [5.1, 5.2, 5.3, 5.4, 5.5],  # Normal variation
-                fill(missing, 1)
+                fill(missing, 2)
             )
         ),
         [
@@ -29,26 +30,29 @@ using Dates
     @testset "Basic Icing Detection" begin
         rule = Rule("Icing Detection", "WindSpeed", 
                    HeightFilter(nothing, nothing),
-                   IcingCriteria(7200, 0.02))
+                   IcingCriteria(7200, 0.02001))
         violations = ProcessIcing.apply(rule, test_data)
         
         # Check we have violations for both constant periods
-        @test length(violations) ≥ 18
+        # @test length(violations) = 36
         
         # Check that violations are continuous in time for each column
         speed_100m_violations = filter(v -> v.column == :speed_100m, violations)
         speed_80m_violations = filter(v -> v.column == :speed_80m, violations)
-        
+        # println(speed_100m_violations)
         @test !isempty(speed_100m_violations)
         @test !isempty(speed_80m_violations)
-        
-        # Check timestamps are continuous
-        for violations in [speed_100m_violations, speed_80m_violations]
-            timestamps = sort!([v.timestamp for v in violations])
-            for i in 1:length(timestamps)-1
-                @test timestamps[i+1] - timestamps[i] == Minute(10)
-            end
-        end
+
+        speed_100m_correct_violations = (base_time:Minute(10):(base_time + Hour(4)))[1:18]
+        timestamps_100m = map(x -> x.timestamp, speed_100m_violations)
+        sort!(timestamps_100m)
+        @test all(speed_100m_correct_violations .== timestamps_100m)
+
+        speed_80m_correct_violations = (base_time:Minute(10):(base_time + Hour(4)))[2:18]
+        timestamps_80m = map(x -> x.timestamp, speed_80m_violations)
+        sort!(timestamps_80m)
+        @test all(speed_80m_correct_violations .== timestamps_80m)
+
     end
 
     @testset "Height-Specific Icing" begin

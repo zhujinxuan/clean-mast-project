@@ -2,6 +2,7 @@
 using Test
 using DataFrames
 using Dates
+using CleanMastProject.CleanMastRules.ProcessLayerDiff
 
 @testset "Layer Difference Rule Tests" begin
     base_time = DateTime(2024,1,1)

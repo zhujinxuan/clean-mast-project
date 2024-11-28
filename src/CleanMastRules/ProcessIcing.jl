@@ -24,35 +24,37 @@ function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     for col in columns
         violation_timestamps = DateTime[]
         values = data.df[!, col]
-        timestamps = data.df.timestamp
+        timestamps = data.df[!, :timestamp]
         
-        i = 1
-        while i <= length(timestamps)
+        window_start = 1
+        while window_start <= length(timestamps)
             # Find a window where changes are less than max_change
-            window_start = i
-            while i <= length(timestamps) && 
-                  timestamps[i] - timestamps[window_start] <= Second(criteria.time_range)
-                
-                if i > window_start
-                    # Check if change is less than max_change
-                    if !ismissing(values[i]) && !ismissing(values[i-1]) &&
-                       abs(values[i] - values[i-1]) > criteria.max_change
-                        break
-                    end
+            value_start = values[window_start]
+            if (ismissing(value_start))
+              window_start = window_start + 1
+              continue 
+            end
+
+            window_end = window_start + 1
+            while window_end <= length(timestamps)
+                # Check if change is less than max_change
+                value_end = values[window_end]
+                if !ismissing(value_end) && abs(value_end - value_start) > criteria.max_change
+                   break
                 end
-                i += 1
+                window_end += 1
             end
             
             # If window is long enough, mark all timestamps in window as violations
-            window_duration = timestamps[i-1] - timestamps[window_start]
+            window_duration = timestamps[window_end-1] - timestamps[window_start]
             if window_duration >= Second(criteria.time_range)
-                append!(violation_timestamps, timestamps[window_start:i-1])
+                append!(violation_timestamps, timestamps[window_start:window_end-1])
             end
             
             # Move to next potential window
-            i = window_start + 1
+            window_start = window_end
         end
-      append!(violations, x ->map(RuleViolation(rule, x, col), violation_timestamps))
+      append!(violations, map(x -> RuleViolation(rule, x, col), violation_timestamps))
     end
     return violations
 end

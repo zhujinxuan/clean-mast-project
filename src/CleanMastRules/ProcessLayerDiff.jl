@@ -16,12 +16,12 @@ using ..ProcessTypes
 using ...MastTimeSeries
 
 struct LayerComparison
-    lower_col::String
-    wind_speed_col::String
+    lower_col::Symbol
+    wind_speed_col::Symbol
 end
 
 find_wind_speed_column(height::Float64, sensors::Vector{SensorColumn}, 
-                      max_height_diff::Float64=10.0)::Union{String, Nothing} = 
+                      max_height_diff::Float64=10.0)::Union{Symbol, Nothing} = 
     let speed_sensors = filter(s -> s.sensorType == "WindSpeed", sensors)
         isempty(speed_sensors) && return nothing
         height_diffs = map(s -> abs(s.height - height), speed_sensors)
@@ -63,10 +63,10 @@ function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
       layer_comparisons = find_lower_layer_columns(target_sensor, data.sensors, rule.criteria.lower_layer_height)
       
       timestamps = map(layer_comparisons) do comparison
-        filter(zip(data.df[!, :timestamp],
+        filter(collect(zip(data.df[!, :timestamp],
                     data.df[!, col], 
                     data.df[!, comparison.lower_col],
-                    data.df[!, comparison.wind_speed_col])) do (ts, upper, lower, speed)
+                    data.df[!, comparison.wind_speed_col]))) do (ts, upper, lower, speed)
               !any(ismissing, (upper, lower, speed)) &&
               check_speed_criteria(speed, rule.criteria.lower_wind_speed) &&
               check_diff_criteria(
