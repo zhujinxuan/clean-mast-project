@@ -47,7 +47,7 @@ using CleanMastProject.CleanMastConfig
             result = parse_column_name("Ch1_Anem_120.00m_ESE_Avg_m/s", format, mappings)
             
             @test result !== nothing
-            @test result.columnName == "Ch1_Anem_120.00m_ESE_Avg_m/s"
+            @test result.columnName == Symbol("Ch1_Anem_120.00m_ESE_Avg_m/s")
             @test result.sensorType == "WindSpeed"
             @test result.height == 120.00
             @test result.sensorDirection == "ESE"

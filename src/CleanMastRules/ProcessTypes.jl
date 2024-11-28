@@ -12,7 +12,7 @@ struct RuleViolation
     column::Symbol
 end
 
-function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{String}
+function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{Symbol}
     return [s.columnName for s in sensors if 
         s.sensorType == rule.sensorType &&
         s.statType == "avg" &&
