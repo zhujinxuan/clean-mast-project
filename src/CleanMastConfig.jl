@@ -4,15 +4,14 @@ module CleanMastConfig
 
 using YAML
 using DataFrames
+using ..CleanMastRules.Rules
 
-# Type for storing mappings 
 struct SensorMappings
     sensor_types::Dict{String, String}
     stat_types::Dict{String, String}
     units::Dict{String, String}
 end
 
-# Update SensorConfig to include mappings
 struct SensorConfig
     column_format::String
     timestamp_column::String
@@ -24,19 +23,19 @@ struct MastConfig
     data_path::String
     skip_to::Int
     sensor::SensorConfig
+    rules::Vector{Rule}  # Using Rules.Rule
 end
 
 struct ProjectConfig
     mast::MastConfig
 end
 
-# Metadata structure for parsed sensor information
 struct SensorMetadata
     columnName::String
-    sensorType::String  # Using string literal instead of enum
+    sensorType::String
     sensorDirection::String
     height::Float64
-    statType::String    # Using string literal instead of enum
+    statType::String
     unit::String
 end
 
@@ -45,18 +44,13 @@ struct MastTimeSeries
     sensors::Vector{SensorMetadata}
 end
 
-# 解析配置文件的函数
 function parse_config(dir::String)::ProjectConfig
     config_path = joinpath(dir, "config.yaml")
-    if !isfile(config_path)
-        error("配置文件不存在: $config_path")
-    end
+    !isfile(config_path) && error("配置文件不存在: $config_path")
 
-    # 读取并解析 YAML 配置文件
     config = YAML.load_file(config_path)
 
     try
-        # Parse mappings
         sensor_mappings = SensorMappings(
             Dict{String, String}(config["Mast"]["sensor"]["mappings"]["sensor_types"]),
             Dict{String, String}(config["Mast"]["sensor"]["mappings"]["stat_types"]),
@@ -70,10 +64,16 @@ function parse_config(dir::String)::ProjectConfig
             sensor_mappings
         )
 
+        rules = Vector{Rule}()
+        if haskey(config["Mast"], "rules")
+            rules = [parse_rule(rule) for rule in config["Mast"]["rules"]]
+        end
+
         mast_config = MastConfig(
             config["Mast"]["data_path"],
             config["Mast"]["skip_to"],
-            sensor_config
+            sensor_config,
+            rules
         )
         
         return ProjectConfig(mast_config)
@@ -82,8 +82,7 @@ function parse_config(dir::String)::ProjectConfig
     end
 end
 
-# Export needed types and functions
 export parse_config, ProjectConfig, MastConfig, SensorConfig, SensorMappings, 
        SensorMetadata, MastTimeSeries
 
-end # module CleanMastConfig
+end
