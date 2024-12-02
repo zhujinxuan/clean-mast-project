@@ -1,0 +1,71 @@
+﻿Mast:
+  data_path: data.csv  # Path to data file (relative to config.yaml)
+  skip_to: 0          # Number of rows to skip in CSV
+  sensor:
+    column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+    timestamp_column: Timestamp
+    timestamp_format: "yyyy-MM-dd HH:mm"
+    mappings:
+      sensor_types:
+        Anem: WindSpeed
+        Vane: WindDirection
+      stat_types:
+        Avg: avg
+        Max: max
+        Min: min
+        SD: sd
+      units:
+        m/s: speed
+        Deg: degrees
+  rules:
+    - name: "High Wind Speed Layer Difference"
+      sensorType: "WindSpeed"
+      height:
+        min: 70.0
+        max: null
+      layer_difference:
+        lower_layer_height: 20.0
+        abs_diff:
+          min: null
+          max: 2.0
+        lower_wind_speed:
+          min: null
+          max: null
+    - name: "High Wind Speed Layer Difference"
+      sensorType: "WindDirection"
+      height:
+        min: 70.0
+        max: null
+      layer_difference:
+        lower_layer_height: 20.0
+        abs_diff:
+          min: null
+          max: 22.5
+        lower_wind_speed:
+          min: 3
+          max: 25
+    - name: "Wind Speed Range"
+      sensorType: "WindSpeed"
+      height:
+        min: null
+        max: null
+      out_of_range:
+        min: 0.0
+        max: 30.0
+    - name: "Wind Direction Range"
+      sensorType: "WindDirection"
+      height:
+        min: null
+        max: null
+      out_of_range:
+        min: 0.0
+        max: 360.0
+    - name: "Icing WS Detection"
+      sensorType: "WindSpeed"
+      height:
+        min: null
+        max: null
+      icing:
+        time_range: 7200
+        max_change: 0.02
+

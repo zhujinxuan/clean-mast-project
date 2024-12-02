@@ -9,6 +9,7 @@
 logs/
 data/*.csv
 *.yaml
+!example_project/config.yaml
 Manifest.toml
 
 # General ignores
