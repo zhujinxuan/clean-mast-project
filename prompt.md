@@ -1,6 +1,6 @@
 ﻿# CleanMast
 
-CleanMast is a Julia project for processing wind mast data, specifically designed to parse, clean, and analyze data from meteodyn mast CSV files.
+CleanMast is a Julia project for processing wind mast data, specifically designed to parse, clean, and reconstruct data from mast tower CSV files.
 
 ## Project Structure
 
@@ -41,7 +41,6 @@ Mast:
       sensor_types:
         Anem: WindSpeed
         Vane: WindDirection
-        Analog: Temperature
       stat_types:
         Avg: avg
         Max: max
@@ -50,43 +49,77 @@ Mast:
       units:
         m/s: speed
         Deg: degrees
-        C: celsius
+  rules:
+    - name: "High Wind Speed Layer Difference"
+      sensorType: "WindSpeed"
+      height:
+        min: 70.0
+        max: null
+      layer_difference:
+        lower_layer_height: 20.0
+        abs_diff:
+          min: null
+          max: 2.0
+        lower_wind_speed:
+          min: null
+          max: null
+    - name: "High Wind Speed Layer Difference"
+      sensorType: "WindDirection"
+      height:
+        min: 70.0
+        max: null
+      layer_difference:
+        lower_layer_height: 20.0
+        abs_diff:
+          min: null
+          max: 22.5
+        lower_wind_speed:
+          min: 3
+          max: 25
+    - name: "Wind Speed Range"
+      sensorType: "WindSpeed"
+      height:
+        min: null
+        max: null
+      out_of_range:
+        min: 0.0
+        max: 30.0
+    - name: "Wind Direction Range"
+      sensorType: "WindDirection"
+      height:
+        min: null
+        max: null
+      out_of_range:
+        min: 0.0
+        max: 360.0
+    - name: "Icing WS Detection"
+      sensorType: "WindSpeed"
+      height:
+        min: null
+        max: null
+      icing:
+        time_range: 7200
+        max_change: 0.02
 ```
+
+### Commonly needed Types
+
+struct SensorColumn
+    columnName::Symbol     # df Symbol corresponding to the sensor
+    sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
+    sensorDirection::String # Could be converted to Float64 later if needed
+    height::Float64
+    statType::String       # "avg" | "max" | "min" | "sd"
+end
+
+struct TimeSeriesData
+    df::DataFrame
+    sensors::Vector{SensorColumn}
+end
+
 
 ### Rule Configuration (rules.yaml)
 ```yaml
-rules:
-  - name: "High Wind Speed Layer Difference"
-    sensorType: "WindSpeed"
-    height:
-      min: 70.0
-      max: null
-    layer_difference:
-      lower_layer_height: 20.0
-      abs_diff:
-        min: null
-        max: 2.0
-      lower_wind_speed:
-        min: null
-        max: null
-
-  - name: "Wind Speed Range"
-    sensorType: "WindSpeed"
-    height:
-      min: null
-      max: null
-    out_of_range:
-      min: 0.0
-      max: 50.0
-
-  - name: "Icing Detection"
-    sensorType: "WindSpeed"
-    height:
-      min: null
-      max: null
-    icing:
-      time_range: 7200
-      max_change: 0.02
 ```
 
 ## Rule Types
@@ -116,15 +149,20 @@ Each rule must have exactly one of:
 - ✅ Column name parsing with flexible format
 - ✅ Basic data reading with type handling
 - ✅ Sensor metadata generation
+- [ ] Post metadata generation to diff Temperature and Pressure
 - ✅ Command line interface
 - ✅ Rule definition and loading
 - ✅ Rule processing implementation
 - ✅ Test coverage for rules
+- [ ] More detailed test for data cleaning rule
+- [ ] Tower shading adjustment
+- [ ] Reconstruct data within the mast data
+- [ ] Reconstruct data from mesoscale data
 - [ ] Performance optimization
 - [ ] Output formatting options
 
 ## Code Standards
 - Functional programming style preferred
 - Type specifications required
-- Unit tests for each rule type
+- Unit tests for data cleaning and data reconstructing
 - Use docstrings for functions and types
