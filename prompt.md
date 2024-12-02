@@ -104,6 +104,8 @@ Mast:
 
 ### Commonly needed Types
 
+Here TimeSeriesData is reading the mast time series and parse all sensors. All data cleaning and 
+```julia
 struct SensorColumn
     columnName::Symbol     # df Symbol corresponding to the sensor
     sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
@@ -113,9 +115,10 @@ struct SensorColumn
 end
 
 struct TimeSeriesData
-    df::DataFrame
+    df::DataFrame # where mast data csv stores, with timestamp by default as 
     sensors::Vector{SensorColumn}
 end
+```
 
 
 ### Rule Configuration (rules.yaml)
