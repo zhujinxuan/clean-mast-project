@@ -4,7 +4,7 @@
   sensor:
     column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
     timestamp_column: Timestamp
-    timestamp_format: "yyyy-MM-dd HH:mm"
+    timestamp_format: "yyyy/M/d HH:mm"
     mappings:
       sensor_types:
         Anem: WindSpeed
