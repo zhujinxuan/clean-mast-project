@@ -3,14 +3,9 @@ module ProcessTypes
 
 using DataFrames
 using Dates
-using ..Rules
+using ...Types.CleanRules
 using ...MastTimeSeries
 
-struct RuleViolation
-    rule::Rule
-    timestamp::DateTime
-    column::Symbol
-end
 
 function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{Symbol}
     return [s.columnName for s in sensors if 
@@ -22,7 +17,7 @@ end
 
 
 
-export RuleViolation, filter_applicable_columns
+export filter_applicable_columns
 
 end # module
 

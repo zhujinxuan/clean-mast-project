@@ -2,7 +2,7 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.CleanMastRules.Rules
+using CleanMastProject.Types.CleanRules
 import CleanMastProject.CleanMastRules.ProcessRange
 
 @testset "Range Rule Tests" begin

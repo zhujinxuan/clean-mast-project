@@ -12,7 +12,7 @@ Missing values are ignored.
 module ProcessRange
 
 using DataFrames
-using ..Rules
+using ...Types.CleanRules
 using ..ProcessTypes
 using ...MastTimeSeries
 

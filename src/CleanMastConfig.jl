@@ -4,7 +4,7 @@ module CleanMastConfig
 
 using YAML
 using DataFrames
-using ..CleanMastRules.Rules
+using CleanMastProject.Types.CleanRules
 
 struct SensorMappings
     sensor_types::Dict{String, String}

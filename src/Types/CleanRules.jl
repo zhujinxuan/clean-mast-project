@@ -1,7 +1,8 @@
-﻿# src/CleanMastRules/Rules.jl
-module Rules
+﻿# src/Types/CleanRules.jl
+module CleanRules
 
 using YAML
+using Dates
 
 struct HeightFilter
     min::Union{Nothing, Float64}
@@ -24,11 +25,14 @@ struct IcingCriteria
     max_change::Float64
 end
 
+struct ManualCriteria
+end
+
 struct Rule
     name::String
     sensorType::String
     height::HeightFilter
-    criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria}
+    criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria}
 end
 
 function parse_rule(config::Dict)::Rule
@@ -78,13 +82,16 @@ function parse_rule(config::Dict)::Rule
     )
 end
 
-function load_rules(config_path::String)::Vector{Rule}
-    yaml_data = YAML.load_file(config_path)
-    return [parse_rule(rule_config) for rule_config in yaml_data["rules"]]
+struct RuleViolation
+    rule::Rule
+    timestamp::DateTime
+    column::Symbol
 end
 
-export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria,
-       Rule, parse_rule, load_rules
+export RuleViolation
+
+export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria,ManualCriteria,
+       Rule, parse_rule
 
 end # module
 

@@ -10,8 +10,9 @@ CleanMast/
 │   ├── CleanMast.jl           # Main entry point
 │   ├── CleanMastConfig.jl     # Configuration handling
 │   ├── MastTimeSeries.jl      # Data processing and parsing
+│   ├── Types/  # Entry for type definition, providing dependency for difference moduls
+│   |   └── CleanRules.jl       # Rule definition for CleanMastRules
 │   └── CleanMastRules/        # Data cleaning rules
-│       ├── Rules.jl           # Rule definitions
 │       ├── ProcessTypes.jl    # Common types for processing
 │       ├── ProcessRange.jl    # Range validation
 │       ├── ProcessIcing.jl    # Icing detection

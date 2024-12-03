@@ -2,7 +2,8 @@
 module Process
 
 using DataFrames
-using ..Rules
+using Dates
+using ...Types.CleanRules
 using ..ProcessTypes
 using ..ProcessRange
 using ...MastTimeSeries
@@ -39,10 +40,12 @@ function apply_missing!(violations::Vector{RuleViolation}, data::TimeSeriesData)
     for v in violations
         push!(get!(by_column, v.column, DateTime[]), v.timestamp)
     end
+
+    symbols = Symbol.(names(df))
     
     # Set missing values column by column
     for (col, timestamps) in by_column
-        if col in names(df)
+        if col in symbols
             df[in.(df.timestamp, Ref(timestamps)), col] .= missing
         else
             @warn "Column $col not found in DataFrame"

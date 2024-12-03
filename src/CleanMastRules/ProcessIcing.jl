@@ -11,7 +11,7 @@ module ProcessIcing
 
 using DataFrames
 using Dates
-using ..Rules
+using ...Types.CleanRules
 using ..ProcessTypes
 using ...MastTimeSeries
 
