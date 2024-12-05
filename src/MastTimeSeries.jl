@@ -6,7 +6,7 @@ using DataFrames
 using YAML
 using CSV
 using Dates
-import ..CleanMastConfig: ProjectConfig, SensorConfig, SensorMappings
+import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping
 
 struct SensorColumn
     columnName::Symbol
@@ -60,90 +60,40 @@ Returns nothing if parsing fails.
 function parse_column_name(
     column_name::String, 
     format::String, 
-    mappings::SensorMappings
+    rules::Vector{MappingRule}
 )::Union{SensorColumn, Nothing}
-    try
-        # Find all placeholders in format
         placeholders = extract_format_placeholders(format)
         
-        # Check if required fields exist in format
         if !("sensorType" in placeholders && "height" in placeholders)
             @warn "Format string must contain at least {sensorType} and {height}"
             return nothing
         end
         
-        # Create regex pattern for all placeholders
         regex = create_regex_pattern(format, placeholders)
         m = match(regex, column_name)
         
-        if m === nothing
-            return nothing
-        end
+        m === nothing && return nothing
         
-        # Get mapped values using the mappings from config
-        sensor_type = get(mappings.sensor_types, m[:sensorType], m[:sensorType])
+        # Parse input dictionary from regex matches
+        input = Dict{String, Any}(
+            placeholder => placeholder == "height" ? 
+                parse(Float64, replace(m[Symbol(placeholder)], "m" => "")) :
+                string(m[Symbol(placeholder)])
+            for placeholder in placeholders
+        )
         
-        # Parse height (remove 'm' suffix if present)
-        height = parse(Float64, replace(m[:height], "m" => ""))
-        
-        # Get direction (default to empty string if not in format)
-        direction = "sensorDirection" in placeholders ? m[:sensorDirection] : ""
-        
-        # Get stat type (default to "avg" if not in format)
-        stat_type = if "statType" in placeholders
-            get(mappings.stat_types, m[:statType], lowercase(m[:statType]))
-        else
-            "avg"
-        end
+        # Apply mapping rules and create SensorColumn
+        rule_outcome = apply_mapping(rules, input)
         
         return SensorColumn(
             Symbol(column_name),
-            sensor_type,
-            direction,
-            height,
-            stat_type
+            something(rule_outcome.sensorType, input["sensorType"]),
+            something(rule_outcome.sensorDirection, get(input, "sensorDirection", "")),
+            something(rule_outcome.height, input["height"]),
+            something(rule_outcome.statType, get(input, "statType", "avg"))
         )
-    catch e
-        @warn "Failed to parse column $column_name" exception=e
-        return nothing
-    end
 end
 
-"""
-Test function to demonstrate usage
-"""
-function test_column_parsing()
-    # Example format strings
-    formats = [
-        "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
-        "{sensorType}_{height}m_{customField}_{statType}",
-        "Station1_{sensorType}_{height}m",
-        "{otherField}_{sensorType}_{height}m_{sensorDirection}"
-    ]
-    
-    # Example column names
-    columns = [
-        "Ch1_Anem_120.00m_ESE_Avg_m/s",
-        "WindSpeed_80m_Custom_Max",
-        "Station1_Temp_10m",
-        "XYZ_Vane_60m_N"
-    ]
-    
-    # Example mappings
-    mappings = SensorMappings(
-        Dict("Anem" => "WindSpeed", "Vane" => "WindDirection", "Temp" => "Temperature"),
-        Dict("Avg" => "avg", "Max" => "max", "Min" => "min"),
-        Dict()
-    )
-    
-    # Test each format with its corresponding column
-    for (fmt, col) in zip(formats, columns)
-        println("\nTesting format: ", fmt)
-        println("Column: ", col)
-        result = parse_column_name(col, fmt, mappings)
-        println("Result: ", result)
-    end
-end
 
 """
 Parse all column metadata in DataFrame.

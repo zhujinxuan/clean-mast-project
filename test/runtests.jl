@@ -13,7 +13,7 @@ project_dir = joinpath(test_dir, "..")
 Pkg.activate(project_dir)
 
 # Include all test files
-include("test_MastTimeSeries_parsing.jl")
+include("MastTimeSeries/test_parsing_column.jl")
 include("test_range_rules.jl")
 include("test_icing_rules.jl")
 include("test_layer_diff_rules.jl")

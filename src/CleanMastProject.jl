@@ -2,7 +2,11 @@ module CleanMastProject
 
 module Types
   include("./Types/CleanRules.jl")
+  export CleanRules
+  include("./Types/CleanMastConfig.jl")
+  export CleanMastConfig
 end
+export Types
 
 include("./CleanMastConfig.jl");
 export CleanMastConfig

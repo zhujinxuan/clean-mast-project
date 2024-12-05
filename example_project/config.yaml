@@ -6,17 +6,42 @@
     timestamp_column: Timestamp
     timestamp_format: "yyyy/M/d HH:mm"
     mappings:
-      sensor_types:
-        Anem: WindSpeed
-        Vane: WindDirection
-      stat_types:
-        Avg: avg
-        Max: max
-        Min: min
-        SD: sd
-      units:
-        m/s: speed
-        Deg: degrees
+     - match:
+         sensorType: Anem
+       rule:
+         sensorType: WindSpeed
+         unit: m/s
+     - match:
+         sensorType: Vane
+       rule:
+         sensorType: WindDirection
+         unit: deg
+     - match:
+         sensorType: Temp
+       rule:
+         sensorType: Temperature
+         unit: C
+     - match:
+         sensorType: Press
+       rule:
+         sensorType: Pressure
+         unit: hPa
+     - match:
+         statType: Avg
+       rule:
+         statType: avg
+     - match:
+         statType: Max
+       rule:
+         statType: max
+     - match:
+         statType: Min
+       rule:
+         statType: min
+     - match:
+         statType: SD
+       rule:
+         statType: sd
   rules:
     - name: "High Wind Speed Layer Difference"
       sensorType: "WindSpeed"
@@ -28,6 +53,19 @@
         abs_diff:
           min: null
           max: 2.0
+        lower_wind_speed:
+          min: null
+          max: null
+    - name: "High Wind Speed Layer Difference; 50m"
+      sensorType: "WindSpeed"
+      height:
+        min: null
+        max: 50
+      layer_difference:
+        lower_layer_height: 20.0
+        abs_diff:
+          min: null
+          max: 3.0
         lower_wind_speed:
           min: null
           max: null
@@ -68,4 +106,3 @@
       icing:
         time_range: 7200
         max_change: 0.02
-

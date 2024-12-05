@@ -1,4 +1,7 @@
 ﻿# src/Types/CleanRules.jl
+"""
+ Type definition for data cleaning
+"""
 module CleanRules
 
 using YAML
