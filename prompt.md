@@ -39,17 +39,43 @@ Mast:
     timestamp_column: Timestamp
     timestamp_format: "yyyy-MM-dd HH:mm"
     mappings:
-      sensor_types:
-        Anem: WindSpeed
-        Vane: WindDirection
-      stat_types:
-        Avg: avg
-        Max: max
-        Min: min
-        SD: sd
-      units:
-        m/s: speed
-        Deg: degrees
+     - match:
+         sensorType: Anem
+       rule:
+         sensorType: WindSpeed
+         unit: m/s
+     - match:
+         sensorType: Vane
+       rule:
+         sensorType: WindDirection
+         unit: deg
+     - match:
+         sensorType: Temp
+       rule:
+         sensorType: Temperature
+         unit: C
+     - match:
+         sensorType: Press
+       rule:
+         sensorType: Pressure
+         unit: hPa
+     - match:
+         statType: Avg
+       rule:
+         statType: avg
+     - match:
+         statType: Max
+       rule:
+         statType: max
+     - match:
+         statType: Min
+       rule:
+         statType: min
+     - match:
+         statType: SD
+       rule:
+         statType: sd
+
   rules:
     - name: "High Wind Speed Layer Difference"
       sensorType: "WindSpeed"

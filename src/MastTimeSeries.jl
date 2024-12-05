@@ -194,6 +194,67 @@ function normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
 end
 
 """
+Find the line number where consecutive regex patterns match.
+Returns the last matching line number.
+"""
+function find_skip_line(file_path::String, patterns::Vector{String})::Int
+    current_pattern_idx = 1
+    last_match_line = 0
+    
+    open(file_path) do file
+        for (line_num, line) in enumerate(eachline(file))
+            if occursin(Regex(patterns[current_pattern_idx]), line)
+                if current_pattern_idx == length(patterns)
+                    return line_num  # Found all patterns consecutively
+                end
+                current_pattern_idx += 1
+                last_match_line = line_num
+            else
+                # Reset if we break the consecutive pattern
+                current_pattern_idx = 1
+                # Check if the current line matches the first pattern
+                if occursin(Regex(patterns[1]), line)
+                    current_pattern_idx = 2
+                    last_match_line = line_num
+                end
+            end
+        end
+    end
+    
+    throw(ErrorException("Could not find consecutive matches for all patterns"))
+end
+
+"""
+Generate CSV reading options based on configuration and column names.
+"""
+function generate_csv_opts(config::ProjectConfig, project_dir::String)::Dict{Symbol, Any}
+    csv_file = joinpath(project_dir, config.mast.data_path)
+    
+    # Determine skip_to value
+    skip_to = if config.mast.skip_to isa Vector{String}
+        find_skip_line(csv_file, config.mast.skip_to)
+    else
+        config.mast.skip_to::Int
+    end
+    
+    # Get column names with determined skip rows
+    column_names = CSV.getnames(csv_file; skipto=skip_to)
+    
+    # Prepare types for all columns
+    column_types = Dict(
+        col => Union{Float64, Missing} for col in column_names
+    )
+    # Set timestamp column type
+    column_types[Symbol(config.mast.sensor.timestamp_column)] = DateTime
+    
+    return Dict{Symbol, Any}(
+        :skipto => skip_to,
+        :dateformat => config.mast.sensor.timestamp_format,
+        :types => column_types
+    )
+end
+
+"""
 Process CSV file and return TimeSeriesData.
 Uses existing sensors.yaml if available, otherwise parses column names.
 """
@@ -203,22 +264,8 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     csv_file = joinpath(project_dir, config.mast.data_path)
     
-    # Get column names with correct skip rows
-    column_names = CSV.getnames(csv_file; skipto=config.mast.skip_to)
-    
-    # Prepare types for all columns
-    column_types = Dict(
-        col => Union{Float64, Missing} for col in column_names
-    )
-    # Set timestamp column type
-    column_types[Symbol(config.mast.sensor.timestamp_column)] = DateTime
-    
-    # Prepare all CSV reading options
-    csv_opts = Dict(
-        :skipto => config.mast.skip_to,
-        :dateformat => config.mast.sensor.timestamp_format,
-        :types => column_types
-    )
+    # Generate CSV options (now takes project_dir instead of column_names)
+    csv_opts = generate_csv_opts(config, project_dir)
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)

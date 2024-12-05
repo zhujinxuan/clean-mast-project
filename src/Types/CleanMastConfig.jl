@@ -93,7 +93,7 @@ end
 
 struct MastConfig
   data_path::String
-  skip_to::Int
+  skip_to::Union{Int, Vector{String}}
   sensor::SensorConfig
   rules::Vector{Rule}  # Using Rules.Rule
 end
