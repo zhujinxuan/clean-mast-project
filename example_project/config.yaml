@@ -1,10 +1,14 @@
 ﻿Mast:
-  data_path: data.csv  # Path to data file (relative to config.yaml)
-  skip_to: 0          # Number of rows to skip in CSV
+  data_path: nrg-data.txt  # Path to data file (relative to config.yaml)
+  delim: "[ \t]+"  # Regex pattern to match one or more spaces or tabs
+  skip_to: 
+    - "^Date"
+    - "^Timestamp"
   sensor:
     column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
     timestamp_column: Timestamp
-    timestamp_format: "yyyy/M/d HH:mm"
+    timestamp_format: "yyyy-MM-dd HH:mm:ss"
+    delim: "\t"
     mappings:
      - match:
          sensorType: Anem

@@ -12,6 +12,7 @@ struct RuleOutcome
     statType::Union{String, Nothing}
     unit::Union{String, Nothing}
 end
+
 # Constructor for RuleOutcome with optional fields
 function RuleOutcome(;
     sensorType::Union{String, Nothing}=nothing,
@@ -31,7 +32,7 @@ struct MappingRule
 end
 export MappingRule
 
-function parse_mapping_rules(mapping_dict::Dict) :: Vector{MapingRule}
+function parse_mapping_rules(mapping_dict::Vector{Dict{Any, Any}}) :: Vector{MappingRule}
     rules = MappingRule[]
     
     for mapping in mapping_dict
@@ -44,7 +45,7 @@ function parse_mapping_rules(mapping_dict::Dict) :: Vector{MapingRule}
         rule_outcome = RuleOutcome(
             sensorType = get(rule_dict, "sensorType", nothing),
             sensorDirection = get(rule_dict, "sensorDirection", nothing),
-            height = rule_dict["height"] isa Number ? convert(Float64, rule_dict["height"]) : nothing,
+            height = get(rule_dict, "height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
             statType = get(rule_dict, "statType", nothing),
             unit = get(rule_dict, "unit", nothing)
         )
@@ -90,17 +91,21 @@ struct SensorConfig
   timestamp_format::String
   mappings:: Vector{MappingRule}
 end
+export SensorConfig
 
 struct MastConfig
   data_path::String
   skip_to::Union{Int, Vector{String}}
+  delim::Union{Nothing, String}
   sensor::SensorConfig
   rules::Vector{Rule}  # Using Rules.Rule
 end
+export MastConfig
 
 struct ProjectConfig
   mast::MastConfig
 end
+export ProjectConfig
 
 struct SensorMetadata
   columnName::String
@@ -110,5 +115,6 @@ struct SensorMetadata
   statType::String
   unit::String
 end
+export SensorMetadata
 
 end # end module

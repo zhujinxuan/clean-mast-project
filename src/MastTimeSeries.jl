@@ -247,11 +247,25 @@ function generate_csv_opts(config::ProjectConfig, project_dir::String)::Dict{Sym
     # Set timestamp column type
     column_types[Symbol(config.mast.sensor.timestamp_column)] = DateTime
     
-    return Dict{Symbol, Any}(
+    # Build options dictionary
+    opts = Dict{Symbol, Any}(
         :skipto => skip_to,
         :dateformat => config.mast.sensor.timestamp_format,
         :types => column_types
     )
+    
+    # Add delimiter if specified
+    if !isnothing(config.mast.delim)
+        # If delim starts and ends with '/', treat it as regex
+        if startswith(config.mast.delim, "/") && endswith(config.mast.delim, "/")
+            pattern = config.mast.delim[2:end-1]  # Remove the slashes
+            opts[:delim] = Regex(pattern)
+        else
+            opts[:delim] = config.mast.delim
+        end
+    end
+    
+    return opts
 end
 
 """
