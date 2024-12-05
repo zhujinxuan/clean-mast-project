@@ -1,13 +1,13 @@
 ﻿Mast:
   data_path: nrg-data.txt  # Path to data file (relative to config.yaml)
-  delim: "[ \t]+"  # Regex pattern to match one or more spaces or tabs
+  delim: "\t"
   skip_to: 
-    - "^Date"
-    - "^Timestamp"
+    - "/^Data/"
+    - "/^Timestamp/"
   sensor:
     column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
     timestamp_column: Timestamp
-    timestamp_format: "yyyy-MM-dd HH:mm:ss"
+    timestamp_format: "yyyy-mm-dd HH:MM:SS"
     delim: "\t"
     mappings:
      - match:

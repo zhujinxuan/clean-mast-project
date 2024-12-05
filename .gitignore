@@ -10,6 +10,8 @@ logs/
 *.csv
 *.yaml
 !example_project/config.yaml
+example_project/*.txt
+projects/*
 Manifest.toml
 
 # General ignores

@@ -171,7 +171,7 @@ Throws:
 """
 function normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
     # Check if the column exists
-    if !Symbol(timestamp_column_name) in names(df)
+    if !((timestamp_column_name) in names(df))
         throw(ArgumentError("Column '$timestamp_column_name' not found in DataFrame"))
     end
     
@@ -179,9 +179,9 @@ function normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
     rename!(df, Symbol(timestamp_column_name) => :timestamp)
     
     # If timestamp is not the first column, reorder columns
-    if names(df)[1] != :timestamp
+    if names(df)[1] != "timestamp"
         # Get all column names
-        cols = names(df)
+        cols = Symbol.(names(df))
         # Remove timestamp from current position
         filter!(x -> x != :timestamp, cols)
         # Create new column order with timestamp first
@@ -201,10 +201,10 @@ function find_skip_line(file_path::String, patterns::Vector{String})::Int
     current_pattern_idx = 1
     last_match_line = 0
     
-    open(file_path) do file
+    return open(file_path) do file
         for (line_num, line) in enumerate(eachline(file))
-            if occursin(Regex(patterns[current_pattern_idx]), line)
-                if current_pattern_idx == length(patterns)
+            if occursin(string_to_regex_or_string(patterns[current_pattern_idx]), line)
+                if current_pattern_idx == length(patterns) 
                     return line_num  # Found all patterns consecutively
                 end
                 current_pattern_idx += 1
@@ -213,15 +213,25 @@ function find_skip_line(file_path::String, patterns::Vector{String})::Int
                 # Reset if we break the consecutive pattern
                 current_pattern_idx = 1
                 # Check if the current line matches the first pattern
-                if occursin(Regex(patterns[1]), line)
+                if occursin(string_to_regex_or_string(patterns[1]), line)
                     current_pattern_idx = 2
                     last_match_line = line_num
                 end
             end
         end
+        throw(ErrorException("Could not find consecutive matches for all patterns"))
     end
-    
-    throw(ErrorException("Could not find consecutive matches for all patterns"))
+end
+
+"""
+Convert string to Regex if it's enclosed in forward slashes, otherwise return the string as is.
+Example: "/pattern/" -> Regex("pattern"), "," -> ","
+"""
+function string_to_regex_or_string(s::String)::Union{Regex,String}
+    if startswith(s, "/") && endswith(s, "/")
+        return Regex(s[2:end-1])  # Remove the slashes and convert to Regex
+    end
+    return s
 end
 
 """
@@ -237,33 +247,32 @@ function generate_csv_opts(config::ProjectConfig, project_dir::String)::Dict{Sym
         config.mast.skip_to::Int
     end
     
-    # Get column names with determined skip rows
-    column_names = CSV.getnames(csv_file; skipto=skip_to)
+    # Prepare the delimiter
+    delim = if !isnothing(config.mast.delim)
+        string_to_regex_or_string(config.mast.delim)
+    else
+        ','  # Default delimiter
+    end
+    
+    # Use CSV.File to read the file and extract column names
+    file = CSV.File(csv_file; header=skip_to, delim=delim)
+    column_names = propertynames(file)
     
     # Prepare types for all columns
-    column_types = Dict(
+    column_types = Dict{Symbol, Type}(
         col => Union{Float64, Missing} for col in column_names
     )
-    # Set timestamp column type
+    # Set timestamp column type 
     column_types[Symbol(config.mast.sensor.timestamp_column)] = DateTime
     
     # Build options dictionary
     opts = Dict{Symbol, Any}(
-        :skipto => skip_to,
+        :skipto => skip_to+1,
+        :header=> skip_to,
         :dateformat => config.mast.sensor.timestamp_format,
-        :types => column_types
+        :types => column_types,
+        :delim => delim
     )
-    
-    # Add delimiter if specified
-    if !isnothing(config.mast.delim)
-        # If delim starts and ends with '/', treat it as regex
-        if startswith(config.mast.delim, "/") && endswith(config.mast.delim, "/")
-            pattern = config.mast.delim[2:end-1]  # Remove the slashes
-            opts[:delim] = Regex(pattern)
-        else
-            opts[:delim] = config.mast.delim
-        end
-    end
     
     return opts
 end
