@@ -31,5 +31,7 @@ module Command
   export CheckConfig, CheckSensors, CleanData
 end
 export Command
+include("./TowerShading.jl")
+export TowerShading
 
 end

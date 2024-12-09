@@ -18,5 +18,6 @@ include("test_range_rules.jl")
 include("test_icing_rules.jl")
 include("test_layer_diff_rules.jl")
 include("process/test_apply_missing.jl")
+include("TowerShading/TowerShading.jl")
 
 # Add other test files here as needed

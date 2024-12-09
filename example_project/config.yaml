@@ -21,16 +21,6 @@
          sensorType: WindDirection
          unit: deg
      - match:
-         sensorType: Temp
-       rule:
-         sensorType: Temperature
-         unit: C
-     - match:
-         sensorType: Press
-       rule:
-         sensorType: Pressure
-         unit: hPa
-     - match:
          statType: Avg
        rule:
          statType: avg
