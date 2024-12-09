@@ -23,7 +23,7 @@ end
 
 find_wind_speed_column(height::Float64, sensors::Vector{SensorColumn}, 
                        max_height_diff::Float64=10.0)::Union{Symbol, Nothing} = 
-  let speed_sensors = filter(s -> s.sensorType == "WindSpeed", sensors)
+  let speed_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", sensors)
     isempty(speed_sensors) && return nothing
     height_diffs = map(s -> abs(s.height - height), speed_sensors)
     min_diff = minimum(height_diffs)
@@ -34,6 +34,7 @@ find_lower_layer_columns(target_col::SensorColumn, sensors::Vector{SensorColumn}
                          height_diff::Float64)::Vector{LayerComparison} = 
   filter(sensors) do s
     s.sensorType == target_col.sensorType &&
+    s.statType == target_col.statType &&
     s.height < target_col.height &&
     (target_col.height - s.height) ≤ height_diff
   end |> 
@@ -63,11 +64,11 @@ function check_speed_criteria(speed::Union{Missing, Float64}, criteria::RangeCri
 end
 
 """
-Shall pass if layer difference is within range
+Shall pass if layer difference is out of range
 """
 function check_diff_criteria(diff::Float64, criteria::RangeCriteria)::Bool
-  return (isnothing(criteria.min) || diff >= criteria.min) &&
-  (isnothing(criteria.max) || diff <= criteria.max)
+  return (!isnothing(criteria.min) && diff < criteria.min) ||
+  (!isnothing(criteria.max) && diff > criteria.max)
 end
 
 mk_timestamps(rule:: Rule, data:: TimeSeriesData, comparison::LayerComparison, target_sensor:: SensorColumn) :: Vector{DateTime} = filter(collect(enumerate(zip(
@@ -80,7 +81,7 @@ mk_timestamps(rule:: Rule, data:: TimeSeriesData, comparison::LayerComparison, t
 
           diff = calc_difference(upper, lower, target_sensor.sensorType)
 
-          if check_diff_criteria(
+          if !check_diff_criteria(
             diff,
             rule.criteria.abs_diff
           )

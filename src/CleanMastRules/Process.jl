@@ -6,6 +6,8 @@ using Dates
 using ...Types.CleanRules
 using ..ProcessTypes
 using ..ProcessRange
+using ..ProcessLayerDiff
+using ..ProcessIcing
 using ...MastTimeSeries
 
 function apply_rule(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}

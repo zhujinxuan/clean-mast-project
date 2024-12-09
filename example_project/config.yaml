@@ -46,6 +46,22 @@
          statType: SD
        rule:
          statType: sd
+     - match:
+         sensorType: Analog
+         unit: C
+       rule:
+         sensorType: Temperature
+     - match:
+         sensorType: Analog
+         unit: C
+       rule:
+         sensorType: Temperature
+     - match:
+         sensorType: Analog
+         unit: hPa
+       rule:
+         sensorType: Pressure
+         unit: hPa
   rules:
     - name: "High Wind Speed Layer Difference"
       sensorType: "WindSpeed"

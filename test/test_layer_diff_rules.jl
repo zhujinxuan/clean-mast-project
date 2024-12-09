@@ -17,12 +17,12 @@ using CleanMastProject.CleanMastRules.ProcessLayerDiff
       speed_60m = [7.0, 7.0, 7.0, 7.0, 7.0, 7.0,2.0]
     ),
     [
-      SensorColumn(:dir_100m, "WindDirection", "", 100.0, "avg"),
-      SensorColumn(:dir_80m, "WindDirection", "", 80.0, "avg"),
-      SensorColumn(:dir_60m, "WindDirection", "", 60.0, "avg"),
-      SensorColumn(:speed_100m, "WindSpeed", "", 100.0, "avg"),
-      SensorColumn(:speed_80m, "WindSpeed", "", 80.0, "avg"),
-      SensorColumn(:speed_60m, "WindSpeed", "", 60.0, "avg")
+      SensorColumn(:dir_100m, "WindDirection", "", 100.0, "avg", "deg"),
+      SensorColumn(:dir_80m, "WindDirection", "", 80.0, "avg", "deg"),
+      SensorColumn(:dir_60m, "WindDirection", "", 60.0, "avg", "deg"),
+      SensorColumn(:speed_100m, "WindSpeed", "", 100.0, "avg", "m/s"),
+      SensorColumn(:speed_80m, "WindSpeed", "", 80.0, "avg", "m/s"),
+      SensorColumn(:speed_60m, "WindSpeed", "", 60.0, "avg", "m/s")
     ]
   )
 

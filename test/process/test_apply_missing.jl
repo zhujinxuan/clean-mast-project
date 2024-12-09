@@ -17,9 +17,9 @@ function mk_time_series()
                 )
 
   sensors = [
-             SensorColumn(:ws_10m, "WindSpeed", "N", 10.0, "avg"),
-             SensorColumn(:ws_20m, "WindSpeed", "N", 20.0, "avg"),
-             SensorColumn(:wd_10m, "WindDirection", "N", 10.0, "avg")
+             SensorColumn(:ws_10m, "WindSpeed", "N", 10.0, "avg", "m/s"),
+             SensorColumn(:ws_20m, "WindSpeed", "N", 20.0, "avg", "m/s"),
+             SensorColumn(:wd_10m, "WindDirection", "N", 10.0, "avg", "deg")
             ]
 
   TimeSeriesData(df, sensors)

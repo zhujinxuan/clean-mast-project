@@ -14,6 +14,7 @@ struct SensorColumn
     sensorDirection::String # Could be converted to Float64 later if needed
     height::Float64
     statType::String       # "avg" | "max" | "min" | "sd"
+    unit::String
 end
 
 struct TimeSeriesData
@@ -90,7 +91,8 @@ function parse_column_name(
             something(rule_outcome.sensorType, input["sensorType"]),
             something(rule_outcome.sensorDirection, get(input, "sensorDirection", "")),
             something(rule_outcome.height, input["height"]),
-            something(rule_outcome.statType, get(input, "statType", "avg"))
+            something(rule_outcome.statType, get(input, "statType", "avg")),
+            something(rule_outcome.unit, get(input, "unit", ""))
         )
 end
 
@@ -127,28 +129,20 @@ Returns nothing if file doesn't exist or is invalid.
 function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn}, Nothing}
     sensors_path = joinpath(project_dir, "sensors.yaml")
     
-    if !isfile(sensors_path)
-        return nothing
-    end
+    !isfile(sensors_path) && return nothing
     
-    try
-        yaml_data = YAML.load_file(sensors_path)
-        sensors = SensorColumn[]
-        
-        for sensor in yaml_data["sensors"]
-            push!(sensors, SensorColumn(
-                Symbol(sensor["columnName"]),
-                sensor["sensorType"],
-                sensor["sensorDirection"],
-                sensor["height"],
-                sensor["statType"]
-            ))
-        end
-        
-        return sensors
-    catch e
-        @warn "Failed to load existing sensors.yaml" exception=e
-        return nothing
+    yaml_data = YAML.load_file(sensors_path)
+    
+    # Convert each sensor dict to SensorColumn using map
+    return map(yaml_data["sensors"]) do sensor
+        SensorColumn(
+            Symbol(sensor["columnName"]),
+            sensor["sensorType"],
+            sensor["sensorDirection"],
+            sensor["height"],
+            sensor["statType"],
+            sensor["unit"]
+        )
     end
 end
 
@@ -296,7 +290,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
-        valid_sensors = filter(s -> s.columnName ∈ names(df), existing_sensors)
+        valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
         return TimeSeriesData(df, valid_sensors)
     else
         # Parse column metadata and export to sensors.yaml
@@ -321,7 +315,8 @@ function export_sensors(sensors::Vector{SensorColumn}, project_dir::String)
             "sensorType" => sensor.sensorType,
             "sensorDirection" => sensor.sensorDirection,
             "height" => sensor.height,
-            "statType" => sensor.statType
+            "statType" => sensor.statType,
+            "unit" => sensor.unit
         ))
     end
     
