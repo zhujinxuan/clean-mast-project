@@ -52,14 +52,15 @@ function generate_synthetic_wind_data(;
     
     for height in heights
         col_name = Symbol("ws_$(Int(height))m")
-        df[!, col_name] = [
+        df[!, col_name] = Vector{Union{Missing, Float64}}([
             base_wind * (height/ref_height)^alpha
             for (base_wind, alpha) in zip(base_winds, alphas)
-        ]
+        ])
     end
     
     return df
 end
+
 
 function create_test_data()::TimeSeriesData
     df = generate_synthetic_wind_data()
@@ -70,6 +71,22 @@ function create_test_data()::TimeSeriesData
     ]
 
     TimeSeriesData(df, sensors)
+end
+
+function create_masked_test_data(original_data::TimeSeriesData, n_points::Int=20)
+    # Clone the data
+    masked_df = deepcopy(original_data.df)
+    
+    # Randomly select timestamps for masking at 80m and 120m
+    all_timestamps = masked_df.timestamp
+    mask_80m = rand(all_timestamps, n_points)
+    mask_120m = rand(all_timestamps, n_points)
+    
+    # Apply masks
+    masked_df[in.(masked_df.timestamp, Ref(mask_80m)), :ws_80m] .= missing
+    masked_df[in.(masked_df.timestamp, Ref(mask_120m)), :ws_120m] .= missing
+    
+    TimeSeriesData(masked_df, original_data.sensors)
 end
 
 @testset "WindSpeedTraining" begin
@@ -111,19 +128,31 @@ end
         @test result > reference_speed  # Higher height should give higher speed
     end
 
-    # @testset "reconstruct_wind_speeds integration" begin
-    #     data = create_test_data()
-    #     successes, failures = reconstruct_wind_speeds(data)
+    @testset "reconstruct_wind_speeds with masked data" begin
+        # Create original and masked data
+        original_data = create_test_data()
+        masked_data = create_masked_test_data(original_data)
         
-    #     @test !isempty(successes)
-    #     @test all(s -> s isa ReconstructedSuccess, successes)
-    #     @test all(f -> f isa ReconstructedFailure, failures)
+        # Perform reconstruction
+        successes, failures = reconstruct_wind_speeds(masked_data)
         
-    #     # Check that we got reconstructions for missing values
-    #     missing_timestamps = [DateTime(2024,1,1) + Hour(2), 
-    #                         DateTime(2024,1,1) + Hour(3),
-    #                         DateTime(2024,1,1) + Hour(4)]
-    #     @test all(s -> s.timestamp in missing_timestamps, successes)
-    # end
-
+        # Verify reconstructions
+        @test !isempty(successes)
+        @test length(successes) ≈ 40 atol=5  # Expect around 40 reconstructions (20 each height)
+        
+        # Check reconstruction accuracy
+        for success in successes
+            # Get original value
+            original_value = original_data.df[
+                original_data.df.timestamp .== success.timestamp, 
+                success.columnName
+            ][1]
+            
+            # Calculate relative error
+            relative_error = abs(success.value - original_value) / original_value
+            
+            # Test that error is less than 10%
+            @test relative_error < 0.10
+        end
+    end
 end 

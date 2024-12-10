@@ -32,10 +32,22 @@ struct DirectionCorrelation
 end
 
 """
-    find_reconstruction_targets(data::TimeSeriesData, sensorType::String)::Vector{ReconstructionTarget}
+    find_reconstruction_targets(data::TimeSeriesData, sensorType::String, statType::String, min_height::Float64)::Vector{ReconstructionTarget}
 
-Find all sensors of a specific type that need reconstruction in the time series data.
-sensorType can be "WindSpeed" or "WindDirection"
+Find all sensors of a specific type and statistical type that need reconstruction in the time series data. 
+The function filters sensors based on the specified sensor type, statistical type, and minimum height. 
+It returns a vector of `ReconstructionTarget` objects, each representing a timestamp and the columns 
+with missing values that require reconstruction.
+
+# Arguments
+- `data::TimeSeriesData`: The time series data containing sensor information.
+- `sensorType::String`: The type of sensor to filter (e.g., "WindSpeed" or "WindDirection").
+- `statType::String`: The statistical type of the sensor (e.g., "Mean", "Max").
+- `min_height::Float64`: The minimum height of the sensors to consider.
+
+# Returns
+- `Vector{ReconstructionTarget}`: A vector of `ReconstructionTarget` objects, each containing a timestamp 
+  and a list of column names with missing values.
 """
 function find_reconstruction_targets(data::TimeSeriesData, sensorType::String, statType::String, min_height::Float64)::Vector{ReconstructionTarget}
     # Get relevant sensor columns

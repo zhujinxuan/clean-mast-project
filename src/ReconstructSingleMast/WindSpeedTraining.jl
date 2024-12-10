@@ -125,7 +125,7 @@ function reconstruct_target(
     end
     
     reconstructed_speed = apply_wind_shear_profile(
-        WindSpeedProfile(profile.alpha, reference_height),
+        WindSpeedProfile(reference_height, profile.shear_exponent),
         reference_speed,
         sensor.height
     )
@@ -154,7 +154,7 @@ function reconstruct_wind_speeds(
     isempty(valid_sensors) && return ReconstructedSuccess[], ReconstructedFailure[]
     
     # Get reconstruction targets with filtered sensors
-    targets = find_reconstruction_targets(data.df, valid_sensors, data.successes, data.failures)
+    targets = find_reconstruction_targets(data, "WindSpeed", "avg", min_height)
     
     # Process each target and its columns
     results = map(targets) do target
