@@ -32,7 +32,7 @@ function calculate_vector_average(
     data::TimeSeriesData,
     direction_sensor::SensorColumn,
     speed_sensor::Union{SensorColumn, Nothing}
-)::Union{Tuple{Float64, Float64, Float64}, Nothing}
+)::Union{Tuple{Float64, Float64}, Nothing}
     # Get relevant columns and filter missing values
     if isnothing(speed_sensor)
         valid_data = dropmissing(data.df[!, [direction_sensor.columnName]])
@@ -56,7 +56,7 @@ function calculate_vector_average(
     # Calculate resultant wind speed
     speed = sqrt(x_mean^2 + y_mean^2)
     
-    return (x_mean, y_mean, total_weight)
+    return x_mean, y_mean
 end
 
 """
@@ -72,15 +72,13 @@ function calculate_direction_correlation(
     target_speed_sensor = find_nearest_speed_column(target_sensor, data.sensors)
     
     # Calculate vector averages
-    source_x, source_y, source_weight = calculate_vector_average(data, source_sensor, source_speed_col)
-    target_x, target_y, target_weight = calculate_vector_average(data, target_sensor, target_speed_col)
-    
-    # Check if we have valid data
-    (source_weight == 0 || target_weight == 0) && return nothing
+    source_vec = calculate_vector_average(data, source_sensor, source_speed_sensor)
+    target_vec = calculate_vector_average(data, target_sensor, target_speed_sensor)
+    if (isnothing(source_vec) || isnothing(target_vec)) return nothing
     
     # Convert back to directions and calculate difference
-    source_dir = vector_to_direction(source_x, source_y)
-    target_dir = vector_to_direction(target_x, target_y)
+    source_dir = vector_to_direction(source_vec...)
+    target_dir = vector_to_direction(target_vec...)
     
     # Calculate shortest angle difference
     diff = mod(target_dir - source_dir + 180, 360) - 180
@@ -106,6 +104,19 @@ function find_nearest_speed_column(
     return speed_sensors[nearest_idx]
 end
 
+
+"""
+Filter the data to include only rows within the specified hour
+"""
+function filter_data_for_one_hour(data::TimeSeriesData, timestamp::DateTime)::TimeSeriesData
+    hour_start = floor(timestamp, Hour)
+    hour_end = hour_start + Hour(1)
+    TimeSeriesData(
+        filter(row -> hour_start <= row.timestamp < hour_end, data.df),
+        data.sensors
+    )
+end
+
 """
 Create direction correlation for a specific target column using data from a one-hour window
 """
@@ -120,12 +131,7 @@ function create_correlation_for_target(
     isnothing(target_sensor) && return nothing
     
     # Filter data for one hour window
-    hour_start = floor(timestamp, Hour)
-    hour_end = hour_start + Hour(1)
-    hour_data = TimeSeriesData(
-        filter(row -> hour_start <= row.timestamp < hour_end, data.df),
-        data.sensors
-    )
+    hour_data = filter_data_for_one_hour(data, timestamp)
     
     # Find nearest sensor as reference with valid data at timestamp
     target_height = direction_sensors[target_sensor].height
