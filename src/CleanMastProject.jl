@@ -1,10 +1,14 @@
 module CleanMastProject
 
 module Types
+  include("./Types/MastTimeSeries.jl")
+  export MastTimeSeries
   include("./Types/CleanRules.jl")
   export CleanRules
   include("./Types/CleanMastConfig.jl")
   export CleanMastConfig
+  include("./Types/ReconstructSingleMast.jl")
+  export ReconstructSingleMast
 end
 export Types
 
@@ -24,14 +28,25 @@ module CleanMastRules
 end
 export CleanMastRules
 
+
+include("./TowerShading.jl")
+export TowerShading
+
+module ReconstructSingleMast
+  include("./ReconstructSingleMast/WindSpeedTraining.jl")
+  include("./ReconstructSingleMast/DirectionTraining.jl")
+  include("./ReconstructSingleMast/ProcessData.jl")
+  export ProcessData, WindSpeedTraining, DirectionTraining
+end
+export ReconstructSingleMast
+
 module Command
   include("./Command/CheckConfig.jl")
   include("./Command/CheckSensors.jl")
   include("./Command/CleanData.jl")
-  export CheckConfig, CheckSensors, CleanData
+  include("./Command/TowerShading.jl")
+  export CheckConfig, CheckSensors, CleanData, TowerShading
 end
 export Command
-include("./TowerShading.jl")
-export TowerShading
 
 end

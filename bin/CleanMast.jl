@@ -8,11 +8,13 @@ using ArgParse
 using CleanMastProject.Command.CheckConfig
 using CleanMastProject.Command.CheckSensors
 using CleanMastProject.Command.CleanData
+using CleanMastProject.Command.TowerShading
 
 const COMMAND_HANDLERS = Dict(
     "check:config" => CheckConfig.execute,
     "check:sensors" => CheckSensors.execute,
-    "clean:data" => CleanData.execute
+    "clean:data" => CleanData.execute,
+    "tower:shading" => TowerShading.execute
 )
 
 function main()

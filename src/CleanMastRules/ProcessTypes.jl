@@ -4,7 +4,7 @@ module ProcessTypes
 using DataFrames
 using Dates
 using ...Types.CleanRules
-using ...MastTimeSeries
+using ...Types.MastTimeSeries: SensorColumn
 
 
 function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{Symbol}

@@ -3,7 +3,7 @@ module CleanData
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...MastTimeSeries
+using ...Types.MastTimeSeries: TimeSeriesData
 using ...CleanMastRules: Process
 using Dates
 

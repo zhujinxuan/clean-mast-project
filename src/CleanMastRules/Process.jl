@@ -8,7 +8,7 @@ using ..ProcessTypes
 using ..ProcessRange
 using ..ProcessLayerDiff
 using ..ProcessIcing
-using ...MastTimeSeries
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 
 function apply_rule(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     if rule.criteria isa RangeCriteria

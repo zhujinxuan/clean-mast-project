@@ -6,21 +6,8 @@ using DataFrames
 using YAML
 using CSV
 using Dates
+using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData
 import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping
-
-struct SensorColumn
-    columnName::Symbol
-    sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
-    sensorDirection::String # Could be converted to Float64 later if needed
-    height::Float64
-    statType::String       # "avg" | "max" | "min" | "sd"
-    unit::String
-end
-
-struct TimeSeriesData
-    df::DataFrame
-    sensors::Vector{SensorColumn}
-end
 
 """
 Extract placeholder names from a format string.
