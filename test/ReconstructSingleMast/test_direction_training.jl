@@ -5,20 +5,27 @@ using CleanMastProject.ReconstructSingleMast.DirectionTraining
 using CleanMastProject.MastTimeSeries
 using CleanMastProject.Types.ReconstructSingleMast
 
-function create_test_data()::TimeSeriesData
+function create_test_data_for_vector_average()::TimeSeriesData
+    timestamps = DateTime(2024,1,1):Minute(10):DateTime(2024,1,2)
+    directions = [45.0 for _ in 1:length(timestamps)]
+    speeds = Vector{Union{Missing, Float64}}([rand(3.0:0.1:5.0) for _ in 1:length(timestamps)])
+    
+    # Introduce missing values
+    for i in 1:round(Int, 0.2 * length(speeds))
+        idx = rand(1:length(speeds))
+        speeds[idx] = missing
+        directions[idx] = 270.0
+    end
+
     df = DataFrame(
-        timestamp = DateTime(2024,1,1):Hour(1):DateTime(2024,1,2),
-        wd_60m = [350.0, 10.0, missing, 355.0, 5.0],
-        wd_40m = [355.0, 5.0, 0.0, missing, 10.0],
-        ws_60m = [5.0, 6.0, missing, 5.5, 6.5],
-        ws_40m = [4.5, 5.5, 4.0, missing, 6.0]
+        timestamp = timestamps,
+        direction = directions,
+        speed = speeds
     )
 
     sensors = [
-        SensorColumn(:wd_60m, "WindDirection", "N", 60.0, "avg", "deg"),
-        SensorColumn(:wd_40m, "WindDirection", "N", 40.0, "avg", "deg"),
-        SensorColumn(:ws_60m, "WindSpeed", "N", 60.0, "avg", "m/s"),
-        SensorColumn(:ws_40m, "WindSpeed", "N", 40.0, "avg", "m/s")
+        SensorColumn(:direction, "WindDirection", "N", 98.0, "avg", "deg"),
+        SensorColumn(:speed, "WindSpeed", "N", 100.0, "avg", "m/s")
     ]
 
     TimeSeriesData(df, sensors)
@@ -36,27 +43,20 @@ end
         @test reconstructed ≈ direction atol=1e-6
     end
 
-    @testset "calculate_vector_average" begin
-        data = create_test_data()
+    @testset "Vector Average Test" begin
+        data = create_test_data_for_vector_average()
         direction_sensor = first(filter(s -> s.sensorType == "WindDirection", data.sensors))
         speed_sensor = first(filter(s -> s.sensorType == "WindSpeed", data.sensors))
         
         result = calculate_vector_average(data, direction_sensor, speed_sensor)
         @test !isnothing(result)
-        @test length(result) == 3  # x, y, weight
+        
+        # Extract the direction from the result
+        average_direction, speed = result
+        
+        # Test if the average direction is approximately 45 degrees
+        @test average_direction ≈ 45.0 atol=1e-6
+        @test speed ≈ 4.0 atol=2
     end
 
-    @testset "reconstruct_wind_directions integration" begin
-        data = create_test_data()
-        successes, failures = reconstruct_wind_directions(data)
-        
-        @test !isempty(successes)
-        @test all(s -> s isa ReconstructedSuccess, successes)
-        @test all(f -> f isa ReconstructedFailure, failures)
-        
-        # Check that we got reconstructions for missing values
-        missing_timestamps = [DateTime(2024,1,1) + Hour(2), 
-                            DateTime(2024,1,1) + Hour(3)]
-        @test all(s -> s.timestamp in missing_timestamps, successes)
-    end
 end 

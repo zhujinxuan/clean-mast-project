@@ -17,13 +17,18 @@ function direction_to_vector(direction::Float64, speed::Float64=1.0)::Tuple{Floa
     rad = deg2rad(direction)
     (speed * sin(rad), speed * cos(rad))
 end
+export direction_to_vector
 
 """
 Convert vector components back to direction
 """
 function vector_to_direction(x::Float64, y::Float64)::Float64
-    mod(rad2deg(atan(x, y)) + 360, 360)
+    direction = y != 0 ? mod(rad2deg(atan(x, y)) + 360, 360) : 
+        x > 0 ? 90.0 : 270.0
+    return direction
 end
+export vector_to_direction
+
 
 """
 Calculate vector-averaged wind speed and direction for an hour of data
@@ -32,7 +37,7 @@ function calculate_vector_average(
     data::TimeSeriesData,
     direction_sensor::SensorColumn,
     speed_sensor::Union{SensorColumn, Nothing}
-)::Union{Tuple{Float64, Float64}, Nothing}
+)::Union{Tuple{Float64, Union{Float64, Missing}}, Nothing}
     # Get relevant columns and filter missing values
     if isnothing(speed_sensor)
         valid_data = dropmissing(data.df[!, [direction_sensor.columnName]])
@@ -56,8 +61,9 @@ function calculate_vector_average(
     # Calculate resultant wind speed
     speed = sqrt(x_mean^2 + y_mean^2)
     
-    return x_mean, y_mean
+    return (direction,isnothing(speed_sensor) ? nothing : speed)
 end
+export calculate_vector_average
 
 """
 Calculate mean direction difference between two heights using vector averaging
@@ -70,18 +76,15 @@ function calculate_direction_correlation(
     # Find nearest speed columns
     source_speed_sensor = find_nearest_speed_column(source_sensor, data.sensors)
     target_speed_sensor = find_nearest_speed_column(target_sensor, data.sensors)
-    
     # Calculate vector averages
-    source_vec = calculate_vector_average(data, source_sensor, source_speed_sensor)
-    target_vec = calculate_vector_average(data, target_sensor, target_speed_sensor)
-    if (isnothing(source_vec) || isnothing(target_vec)) return nothing
-    
-    # Convert back to directions and calculate difference
-    source_dir = vector_to_direction(source_vec...)
-    target_dir = vector_to_direction(target_vec...)
+    source_vector = calculate_vector_average(data, source_sensor, source_speed_sensor)
+    target_vector = calculate_vector_average(data, target_sensor, target_speed_sensor)
+    if (isnothing(source_vector) || isnothing(target_vector)) 
+        return nothing
+    end
     
     # Calculate shortest angle difference
-    diff = mod(target_dir - source_dir + 180, 360) - 180
+    diff = mod(first(target_vector) - first(source_vector) + 180, 360) - 180
     
     return diff
 end
