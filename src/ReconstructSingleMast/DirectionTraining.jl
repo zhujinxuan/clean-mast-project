@@ -130,33 +130,38 @@ function create_correlation_for_target(
     timestamp::DateTime
 )::Union{DirectionCorrelation, Nothing}
     # Find target sensor info
-    target_sensor = findfirst(s -> s.columnName == target_col, direction_sensors)
-    isnothing(target_sensor) && return nothing
+    target_sensor = first(filter(s -> s.columnName == target_col, direction_sensors))
     
     # Filter data for one hour window
     hour_data = filter_data_for_one_hour(data, timestamp)
     
     # Find nearest sensor as reference with valid data at timestamp
-    target_height = direction_sensors[target_sensor].height
-    valid_references = filter(direction_sensors) do sensor
-        !ismissing(hour_data.df[hour_data.df.timestamp .== timestamp, sensor.columnName][1])
+    target_height = target_sensor.height
+    
+    # Find nearest valid reference sensor
+    nearest_reference = reduce(direction_sensors, init=nothing) do best_so_far, sensor
+        # Skip if measurement is missing
+        ismissing(hour_data.df[hour_data.df.timestamp .== timestamp, sensor.columnName][1]) && return best_so_far
+        
+        # If first valid sensor, use it
+        isnothing(best_so_far) && return sensor
+        
+        # Keep sensor with height closest to target
+        abs(sensor.height - target_height) < abs(best_so_far.height - target_height) ? sensor : best_so_far
     end
     
-    isempty(valid_references) && return nothing
-    
-    reference = argmin(abs.(getfield.(valid_references, :height) .- target_height))
-    source = valid_references[reference]
+    isnothing(nearest_reference) && return nothing
     
     mean_diff = calculate_direction_correlation(
         hour_data,
-        source,
+        nearest_reference,
         target_sensor
     )
     
     isnothing(mean_diff) && return nothing
     
     return DirectionCorrelation(
-        source.height,
+        nearest_reference.height,
         target_height,
         mean_diff
     )
@@ -173,8 +178,13 @@ function reconstruct_target(
 )::Union{ReconstructedSuccess, ReconstructedFailure}
     row = filter(r -> r.timestamp == timestamp, data.df)[1, :]
     
+    reference_sensor = begin
+        idx = findfirst(s -> s.statType == "avg" && s.sensorType == "WindDirection" && s.height == correlation.source_height, data.sensors)
+        isnothing(idx) ? nothing : data.sensors[idx]
+    end
+
     # Find reference value
-    reference_val = row[target_col]
+    reference_val = row[reference_sensor.columnName]
     if ismissing(reference_val)
         return ReconstructedFailure(
             timestamp,
