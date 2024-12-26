@@ -31,6 +31,11 @@ struct DirectionCorrelation
     mean_difference::Float64  # Average directional difference
 end
 
+struct ReconstructionResults
+    successes::Vector{Dict{String, Any}}
+    failures::Vector{Dict{String, Any}}
+end
+
 """
     find_reconstruction_targets(data::TimeSeriesData, sensorType::String, statType::String, min_height::Float64)::Vector{ReconstructionTarget}
 

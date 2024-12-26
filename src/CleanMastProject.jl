@@ -44,9 +44,11 @@ module Command
   include("./Command/CheckConfig.jl")
   include("./Command/CheckSensors.jl")
   include("./Command/CleanData.jl")
+  include("./Command/CleanFiles.jl")
   include("./Command/TowerShading.jl")
   include("./Command/ReconstructSingleMast.jl")
-  export CheckConfig, CheckSensors, CleanData, TowerShading, ReconstructSingleMast
+  include("./Command/QuickStart.jl")
+  export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, ReconstructSingleMast, QuickStart
 end
 export Command
 

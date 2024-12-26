@@ -3,7 +3,7 @@ module ReconstructSingleMast
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, from_dict, to_dict
 using ...ReconstructSingleMast.ProcessData: process_data!
 
 export execute
@@ -31,20 +31,13 @@ function execute(dir::String)
     sensors_yaml = YAML.load_file(sensors_filepath)
     
     # Convert YAML sensors to SensorColumn objects
-    sensors = [SensorColumn(
-        Symbol(s["columnName"]),
-        s["sensorType"],
-        s["sensorDirection"],
-        s["height"],
-        s["statType"],
-        s["unit"]
-    ) for s in sensors_yaml["sensors"]]
+    sensors = map(s -> from_dict(SensorColumn, Dict{String,Any}(String(k) => v for (k,v) in s)), sensors_yaml["sensors"])
     
     time_series = TimeSeriesData(df, sensors)
     
-    # Process reconstruction
+    # Process reconstruction and get results
     println("Processing single mast reconstruction...")
-    process_data!(config, time_series)
+    reconstruction_results = process_data!(config, time_series)
     
     # Save processed data
     output_filename = "reconstruct_single_mast.$(original_filename).csv"
@@ -52,18 +45,20 @@ function execute(dir::String)
     
     # Save updated sensors to YAML
     sensors_yaml = Dict(
-        "sensors" => [Dict(
-            "columnName" => String(s.columnName),
-            "sensorType" => s.sensorType,
-            "sensorDirection" => s.sensorDirection,
-            "height" => s.height,
-            "statType" => s.statType,
-            "unit" => s.unit
-        ) for s in time_series.sensors]
+        "sensors" => map(to_dict, time_series.sensors)
     )
     
     open(joinpath(dir, "reconstruct_single_mast-sensors.yaml"), "w") do io
         YAML.write(io, sensors_yaml)
+    end
+
+    # Write reconstruction results to YAML
+    reconstruction_dict = Dict(
+        "successes" => reconstruction_results.successes,
+        "failures" => reconstruction_results.failures
+    )
+    open(joinpath(dir, "single-reconstruction.yaml"), "w") do io
+        YAML.write(io, reconstruction_dict)
     end
     
     println("Single mast reconstruction completed:")

@@ -4,7 +4,7 @@ using YAML
 using DataFrames
 using Dates
 
-using CleanMastProject.Types.ReconstructSingleMast: ReconstructedSuccess, ReconstructedFailure
+using CleanMastProject.Types.ReconstructSingleMast: ReconstructedSuccess, ReconstructedFailure, ReconstructionResults
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.CleanMastConfig: ProjectConfig
 
@@ -26,12 +26,12 @@ function reconstruct_measurements(
 end
 
 """
-Apply reconstruction to data.df and write results to single-reconstruction.yaml
+Apply reconstruction to data.df and return reconstruction results
 """
 function process_data!(
     config::ProjectConfig,
     data::TimeSeriesData
-)
+)::ReconstructionResults
     # Apply reconstruction
     successes, failures = reconstruct_measurements(config, data)
 
@@ -49,16 +49,13 @@ function process_data!(
         data.df[in.(data.df.timestamp, Ref(times)), col] .= values
     end
 
-    # Prepare data for YAML export
-    result = Dict(
-        "successes" => [Dict("timestamp" => s.timestamp, "columnName" => s.columnName, "value" => s.value) for s in successes],
-        "failures" => [Dict("timestamp" => f.timestamp, "columnName" => f.columnName, "reason" => f.reason) for f in failures]
+    # Prepare typed result
+    result = ReconstructionResults(
+        [Dict{String, Any}("timestamp" => s.timestamp, "columnName" => s.columnName, "value" => s.value) for s in successes],
+        [Dict{String, Any}("timestamp" => f.timestamp, "columnName" => f.columnName, "reason" => f.reason) for f in failures]
     )
 
-    # Write results to single-reconstruction.yaml
-    open("single-reconstruction.yaml", "w") do io
-        YAML.write(io, result)
-    end
+    return result
 end
 
 export reconstruct_measurements, process_data!
