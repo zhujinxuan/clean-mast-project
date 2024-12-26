@@ -7,25 +7,57 @@ using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.CleanMastConfig: TimeRange
 
 """
+Ensure TimeSeriesData has all timestamps in range at specified interval
+"""
+function ensure_complete_timeseries(ts::TimeSeriesData, time_range::TimeRange, 
+                                  interval::Minute=Minute(10))::TimeSeriesData
+    start_time = something(time_range.min, minimum(ts.df.timestamp))
+    end_time = something(time_range.max, maximum(ts.df.timestamp))
+    
+    # Generate complete timestamp sequence
+    all_timestamps = start_time:interval:end_time
+    
+    # Create DataFrame with all timestamps
+    complete_df = DataFrame(timestamp = collect(all_timestamps))
+    
+    # Join with existing data
+    result_df = leftjoin(complete_df, ts.df, on=:timestamp)
+    
+    TimeSeriesData(result_df, ts.sensors)
+end
+
+"""
+Prepare time series data by ensuring complete timestamps at specified interval
+"""
+function prepare_timeseries(ts::TimeSeriesData, time_range::TimeRange, 
+                          interval::Minute)::TimeSeriesData
+    # First ensure we have data for the full time range at specified interval
+    complete_ts = ensure_complete_timeseries(ts, time_range, interval)
+    
+    # Sort by timestamp to ensure proper ordering
+    sort!(complete_ts.df, :timestamp)
+    
+    complete_ts
+end
+
+"""
 Average data over 15-day periods within time_range, marking periods with >30% missing data as missing
 """
 function average_timeseries(ts::TimeSeriesData, time_range::TimeRange, period_days::Int=15)::TimeSeriesData
-    # Group data by 15-day periods
-    df = ts.df
+    # First ensure complete timeseries at appropriate interval
+    interval = ts.sensors[1].sensorType == "WindSpeed" ? Minute(10) : Minute(60)
+    prepared_ts = prepare_timeseries(ts, time_range, interval)
     
-    # Filter data within time range
-    start_time = something(time_range.min, minimum(df.timestamp))
-    end_time = something(time_range.max, maximum(df.timestamp))
-    time_mask = start_time .<= df.timestamp .<= end_time
-    period_df = df[time_mask, :]
+    start_time = something(time_range.min, minimum(prepared_ts.df.timestamp))
+    end_time = something(time_range.max, maximum(prepared_ts.df.timestamp))
     
     # Calculate periods relative to start_time
-    period_df[!, :period] = floor.(Int, (period_df.timestamp .- start_time) / Day(period_days))
+    prepared_ts.df[!, :period] = floor.(Int, (prepared_ts.df.timestamp .- start_time) / Day(period_days))
     
     # Calculate averages for each sensor in each period
     sensor_cols = [s.columnName for s in ts.sensors]
     
-    period_averages = combine(groupby(period_df, :period)) do group
+    period_averages = combine(groupby(prepared_ts.df, :period)) do group
         # For each sensor column
         result = Dict{Symbol, Union{Float64, Missing}}()
         for col in sensor_cols
@@ -62,89 +94,6 @@ function find_nearest_height_sensor(target_height::Float64, sensors::Vector{Sens
     return closest_sensor
 end
 
-"""
-Ensure TimeSeriesData has all timestamps in range at 10-minute intervals
-"""
-function ensure_complete_timeseries(ts::TimeSeriesData, time_range::TimeRange)::TimeSeriesData
-    start_time = something(time_range.min, minimum(ts.df.timestamp))
-    end_time = something(time_range.max, maximum(ts.df.timestamp))
-    
-    # Generate complete timestamp sequence
-    all_timestamps = start_time:Minute(10):end_time
-    
-    # Create DataFrame with all timestamps
-    complete_df = DataFrame(timestamp = all_timestamps)
-    
-    # Join with existing data
-    result_df = leftjoin(complete_df, ts.df, on=:timestamp)
-    
-    TimeSeriesData(result_df, ts.sensors)
-end
-
-"""
-Interpolate hourly meso data to 10-minute intervals
-"""
-function interpolate_meso_data(meso_ts::TimeSeriesData, time_range::TimeRange)::TimeSeriesData
-    # Ensure we have complete hourly data first
-    hourly_ts = ensure_complete_timeseries(meso_ts, time_range)
-    
-    # Generate 10-minute timestamps
-    start_time = something(time_range.min, minimum(hourly_ts.df.timestamp))
-    end_time = something(time_range.max, maximum(hourly_ts.df.timestamp))
-    target_timestamps = start_time:Minute(10):end_time
-    
-    # Create result DataFrame
-    result_df = DataFrame(timestamp = target_timestamps)
-    
-    # Interpolate each sensor
-    for sensor in meso_ts.sensors
-        col = sensor.columnName
-        # Linear interpolation
-        result_df[!, col] = linear_interpolate(
-            hourly_ts.df.timestamp,
-            hourly_ts.df[!, col],
-            target_timestamps
-        )
-    end
-    
-    TimeSeriesData(result_df, meso_ts.sensors)
-end
-
-"""
-Linear interpolation helper
-"""
-function linear_interpolate(x::Vector{DateTime}, y::Vector{Union{Float64, Missing}}, 
-                          xi::Vector{DateTime})::Vector{Union{Float64, Missing}}
-    # Convert DateTime to Float64 seconds for interpolation
-    x_float = Float64.(datetime2unix.(x))
-    xi_float = Float64.(datetime2unix.(xi))
-    
-    result = Vector{Union{Float64, Missing}}(missing, length(xi))
-    
-    for (i, x_i) in enumerate(xi_float)
-        # Find surrounding points
-        idx = searchsorted(x_float, x_i)
-        if idx.start == 1 || idx.stop > length(x_float)
-            continue  # Outside range - leave as missing
-        end
-        
-        left_idx = idx.start - 1
-        right_idx = idx.start
-        
-        # Skip if either surrounding point is missing
-        if ismissing(y[left_idx]) || ismissing(y[right_idx])
-            continue
-        end
-        
-        # Linear interpolation
-        t = (x_i - x_float[left_idx]) / (x_float[right_idx] - x_float[left_idx])
-        result[i] = y[left_idx] + t * (y[right_idx] - y[left_idx])
-    end
-    
-    return result
-end
-
-export average_timeseries, find_nearest_height_sensor, ensure_complete_timeseries, 
-       interpolate_meso_data
+export average_timeseries, find_nearest_height_sensor, prepare_timeseries
 
 end 

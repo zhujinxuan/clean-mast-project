@@ -4,7 +4,8 @@ using DataFrames
 using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.CleanMastConfig: TimeRange
 using ...Types.ReconstructMeso: WindSpeedTrainResults, WindDirectionTrainResults
-using ..DataProcessing: ensure_complete_timeseries, interpolate_meso_data
+using ..DataProcessing: prepare_timeseries
+using Dates
 
 """
 Fill missing data using trained correlations
@@ -14,13 +15,13 @@ function fill_missing_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
                          ws_results::WindSpeedTrainResults,
                          wd_results::WindDirectionTrainResults)::TimeSeriesData
     # Ensure complete timeseries for mast data
-    complete_ts = ensure_complete_timeseries(mast_ts, time_range)
+    complete_mast = prepare_timeseries(mast_ts, time_range, Minute(10))
     
-    # Interpolate meso data to 10-minute resolution
-    interp_meso = interpolate_meso_data(meso_ts, time_range)
+    # Prepare meso data with hourly resolution
+    complete_meso = prepare_timeseries(meso_ts, time_range, Minute(60))
     
     # Create result DataFrame
-    result_df = copy(complete_ts.df)
+    result_df = copy(complete_mast.df)
     
     # Fill wind speed gaps
     for (col_name, train_result) in ws_results
@@ -31,7 +32,7 @@ function fill_missing_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
         
         # Fill where we have meso data
         result_df[missing_mask, col_name] = @. train_result.slope * 
-            interp_meso.df[missing_mask, meso_col] + train_result.intercept
+            complete_meso.df[missing_mask, meso_col] + train_result.intercept
     end
     
     # Fill wind direction gaps
@@ -43,10 +44,10 @@ function fill_missing_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
         
         # Fill where we have meso data
         result_df[missing_mask, col_name] = @. mod(
-            interp_meso.df[missing_mask, meso_col] + train_result.diff, 360)
+            complete_meso.df[missing_mask, meso_col] + train_result.diff, 360)
     end
     
-    TimeSeriesData(result_df, complete_ts.sensors)
+    TimeSeriesData(result_df, complete_mast.sensors)
 end
 
 export fill_missing_data

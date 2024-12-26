@@ -22,3 +22,7 @@ include("TowerShading/TowerShading.jl")
 include("ReconstructSingleMast/test_wind_speed_training.jl")
 include("ReconstructSingleMast/test_direction_training.jl")
 # Add other test files here as needed
+
+@testset "CleanMast.jl" begin
+    include("test_reconstruct_meso.jl")
+end
