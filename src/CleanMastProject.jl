@@ -9,6 +9,8 @@ module Types
   export CleanRules
   include("./Types/CleanMastConfig.jl")
   export CleanMastConfig
+  include("./Types/ReconstructMeso.jl")
+  export ReconstructMeso
   include("./Types/ReconstructSingleMast.jl")
   export ReconstructSingleMast
 end
@@ -53,5 +55,8 @@ module Command
   export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, ReconstructSingleMast, QuickStart
 end
 export Command
+
+include("./ReconstructMeso.jl")
+export ReconstructMeso
 
 end
