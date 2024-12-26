@@ -186,6 +186,10 @@ function merge_wind_speeds!(
     select!(data.df, Not(unique(columns_to_drop)))
     new_sensors = filter(s -> !(s.columnName in columns_to_drop), new_sensors)
     
+    # Sort new_sensors to match DataFrame column order
+    df_columns = propertynames(data.df)
+    new_sensors = sort(new_sensors, by=s -> findfirst(==(s.columnName), df_columns))
+    
     return TimeSeriesData(data.df, new_sensors)
 end
 
