@@ -1,0 +1,7 @@
+Please use the types in the src/Types/*.jl file. remember to include the folder @Types unless I tell you otherwise.
+For new type definitions, please add them to the src/Types/*.jl file. The file name can be the module name under src/{module_name}/ or src/{module_name}.jl
+Prefer not to create empty arrays and append! or push! to them. Instead, use map or other functional ways to create them all together.
+Avoid for and while if no side effects are needed, use map, filter, reduce, etc.
+Avoid set value by for/while each index, create all indices and set them together with .= or = 
+Always have type hints.
+Don't make try and catch unless I tell you explicitly to do so.

@@ -45,7 +45,8 @@ module Command
   include("./Command/CheckSensors.jl")
   include("./Command/CleanData.jl")
   include("./Command/TowerShading.jl")
-  export CheckConfig, CheckSensors, CleanData, TowerShading
+  include("./Command/ReconstructSingleMast.jl")
+  export CheckConfig, CheckSensors, CleanData, TowerShading, ReconstructSingleMast
 end
 export Command
 

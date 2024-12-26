@@ -9,12 +9,14 @@ using CleanMastProject.Command.CheckConfig
 using CleanMastProject.Command.CheckSensors
 using CleanMastProject.Command.CleanData
 using CleanMastProject.Command.TowerShading
+using CleanMastProject.Command.ReconstructSingleMast
 
 const COMMAND_HANDLERS = Dict(
     "check:config" => CheckConfig.execute,
     "check:sensors" => CheckSensors.execute,
     "clean:data" => CleanData.execute,
-    "tower:shading" => TowerShading.execute
+    "tower:shading" => TowerShading.execute,
+    "reconstruct:single_mast" => ReconstructSingleMast.execute
 )
 
 function main()

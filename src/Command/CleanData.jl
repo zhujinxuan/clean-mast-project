@@ -4,6 +4,7 @@ using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
 using ...Types.MastTimeSeries: TimeSeriesData
+using ...MastTimeSeries: read_mast_data
 using ...CleanMastRules: Process
 using Dates
 

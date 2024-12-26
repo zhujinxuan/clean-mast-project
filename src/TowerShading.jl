@@ -5,6 +5,12 @@ using ..Types.CleanMastConfig: ProjectConfig
 using ..MastTimeSeries: TimeSeriesData, SensorColumn
 using Statistics
 
+mutable struct ChannelCounter
+    value::Int
+end
+
+const CHANNEL_COUNTER = ChannelCounter(200)
+
 """
     find_nearby_sensors(sensors::Vector{SensorColumn}, target_height::Float64, max_diff::Float64=2.0)
 
@@ -65,6 +71,8 @@ function generate_column_name(
     
     # Handle unit placeholder specially for wind speed
     name = replace(name, "{unit}" => "m/s")
+    name = replace(name, "{channel}" => string(CHANNEL_COUNTER.value))
+    CHANNEL_COUNTER.value += 1
     
     # Replace any remaining placeholders with "TS"
     name = replace(name, r"\{[^}]+\}" => "TS")
@@ -137,47 +145,46 @@ function merge_wind_speeds!(
     wind_speed_sensors = filter(s -> s.sensorType == "WindSpeed", sensors)
     heights = unique(s.height for s in wind_speed_sensors)
     
-    # Track columns to drop
-    columns_to_drop = Symbol[]
+    # Track columns to drop and new sensors to add
     new_sensors = copy(sensors)
+    columns_to_drop = Symbol[]
     
     # Process each height
     for height in heights
+        # Get all sensors at this height
         nearby_indices = find_nearby_sensors("WindSpeed", wind_speed_sensors, height)
         nearby_sensors = wind_speed_sensors[nearby_indices]
         
         # Skip if no sensors to merge
         length(nearby_sensors) <= 1 && continue
         
-        # Get preferred height for this group
         preferred_height = get_preferred_height([s.height for s in nearby_sensors])
         
-        # Group sensors by stat_type
+        # Group sensors by stat_type and merge
         for stat_type in ["avg", "sd"]
             stat_sensors = filter(s -> s.statType == stat_type, nearby_sensors)
             isempty(stat_sensors) && continue
+            length(stat_sensors) == 1 && continue
             
-            # Create new column name and sensor
+            # Create new merged sensor
             new_sensor = create_merged_sensor(config, preferred_height, stat_type)
             
-            # Merge data using maximum values
-            cols = [s.columnName for s in stat_sensors]
-            if all(col -> col in propertynames(data.df), cols)  # Check if columns exist
-                # Use the new function to calculate maximum values
-                data.df[!, new_sensor.columnName] = calculate_max_between_columns(data.df, cols)
-                
-                # Add new sensor and track columns to drop
+            # Find all columns to drop that match height and sensorType
+            cols_to_drop = [s.columnName for s in nearby_sensors]
+            
+            # Merge data using maximum values for existing columns
+            existing_cols = [s.columnName for s in stat_sensors]
+            if !isempty(existing_cols)
+                data.df[!, new_sensor.columnName] = calculate_max_between_columns(data.df, existing_cols)
                 push!(new_sensors, new_sensor)
-                append!(columns_to_drop, cols)
-                
-                # Remove original sensors from new_sensors list immediately
-                filter!(s -> !(s.columnName in cols), new_sensors)
+                append!(columns_to_drop, cols_to_drop)
             end
         end
     end
     
-    # Remove original columns
-    select!(data.df, Not(columns_to_drop))
+    # Drop all collected columns at once
+    select!(data.df, Not(unique(columns_to_drop)))
+    new_sensors = filter(s -> !(s.columnName in columns_to_drop), new_sensors)
     
     return TimeSeriesData(data.df, new_sensors)
 end
