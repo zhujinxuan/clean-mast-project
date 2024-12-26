@@ -116,3 +116,32 @@
       icing:
         time_range: 7200
         max_change: 0.02
+Meso:
+  data_path: era5.txt
+  delim: "\t"
+  skip_to: ["Date/time"]
+  timestamp_column: 
+   - "Date/time"
+  timestamp_format: "yyyy-mm-dd HH:MM:SS"
+  sensor:
+    column_format: "{sensorType}_{height}m [{unit}]
+    timestamp_column: Timestamp
+    timestamp_format: "yyyy-mm-dd HH:MM:SS"
+    delim: "\t"
+    mappings:
+     - match:
+         sensorType: Speed
+       rule:
+         sensorType: WindSpeed
+         unit: m/s
+         statType: avg
+     - match:
+         sensorType: Direction
+       rule:
+         sensorType: WindDirection
+         unit: deg
+         statType: avg
+Analysis:
+  time_range:
+    min: null
+    max: null

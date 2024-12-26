@@ -4,6 +4,7 @@ Types for project config, corresponding to {project_dir}/config.yaml
 """
 module CleanMastConfig
 using ..CleanRules
+using ..Utils
 
 struct RuleOutcome
     sensorType::Union{String, Nothing}
@@ -32,28 +33,26 @@ struct MappingRule
 end
 export MappingRule
 
-function parse_mapping_rules(mapping_dict::Vector{Dict{Any, Any}}) :: Vector{MappingRule}
-    rules = MappingRule[]
-    
-    for mapping in mapping_dict
-        match_dict = Dict{String, Union{Nothing, Float64, String}}()
-        for (k, v) in mapping["match"]
-            match_dict[k] = v isa Number ? convert(Float64, v) : v
-        end
-        
-        rule_dict = mapping["rule"]
-        rule_outcome = RuleOutcome(
-            sensorType = get(rule_dict, "sensorType", nothing),
-            sensorDirection = get(rule_dict, "sensorDirection", nothing),
-            height = get(rule_dict, "height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
-            statType = get(rule_dict, "statType", nothing),
-            unit = get(rule_dict, "unit", nothing)
+# Constructor from dictionary for RuleOutcome
+function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
+    RuleOutcome(
+        get(dict, "sensorType", nothing),
+        get(dict, "sensorDirection", nothing),
+        get(dict, "height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
+        get(dict, "statType", nothing),
+        get(dict, "unit", nothing)
+    )
+end
+
+function parse_mapping_rules(mapping_dict::Vector{Dict{String, Any}}) :: Vector{MappingRule}
+    map(mapping_dict) do mapping
+        match_dict = Dict{String, Union{Nothing, Float64, String}}(
+            k => v isa Number ? convert(Float64, v) : v 
+            for (k, v) in mapping["match"]
         )
         
-        push!(rules, MappingRule(match_dict, rule_outcome))
+        MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(mapping["rule"])))
     end
-    
-    return rules
 end
 
 export parse_mapping_rules
@@ -102,8 +101,28 @@ struct MastConfig
 end
 export MastConfig
 
+struct TimeRange
+    min::Union{Nothing, DateTime}
+    max::Union{Nothing, DateTime}
+end
+
+struct AnalysisConfig
+    time_range::TimeRange
+end
+
+struct MesoConfig
+    data_path::String
+    delim::Union{Nothing, String}
+    skip_to::Union{Int, Vector{String}}
+    timestamp_column::Vector{String}
+    timestamp_format::String
+    sensor::SensorConfig
+end
+
 struct ProjectConfig
-  mast::MastConfig
+    mast::MastConfig
+    meso::MesoConfig
+    analysis::AnalysisConfig
 end
 export ProjectConfig
 
@@ -116,5 +135,64 @@ struct SensorMetadata
   unit::String
 end
 export SensorMetadata
+
+function from_dict(::Type{TimeRange}, dict::Dict{String, Any})::TimeRange
+    TimeRange(
+        get(dict, "min", nothing),
+        get(dict, "max", nothing)
+    )
+end
+
+function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
+    AnalysisConfig(
+        from_dict(TimeRange, dict["time_range"])
+    )
+end
+
+function from_dict(::Type{MesoConfig}, dict::Dict{String, Any})::MesoConfig
+    MesoConfig(
+        dict["data_path"],
+        get(dict, "delim", nothing),
+        Vector{String}(dict["skip_to"]),
+        Vector{String}(dict["timestamp_column"]),
+        dict["timestamp_format"],
+        from_dict(SensorConfig, Dict{String, Any}(dict["sensor"]))
+    )
+end
+
+function to_dict(tr::TimeRange)::Dict
+    Dict(
+        "min" => tr.min,
+        "max" => tr.max
+    )
+end
+
+function to_dict(ac::AnalysisConfig)::Dict
+    Dict(
+        "time_range" => to_dict(ac.time_range)
+    )
+end
+
+function to_dict(mc::MesoConfig)::Dict
+    Dict(
+        "data_path" => mc.data_path,
+        "delim" => mc.delim,
+        "skip_to" => mc.skip_to,
+        "timestamp_column" => mc.timestamp_column,
+        "timestamp_format" => mc.timestamp_format,
+        "sensor" => to_dict(mc.sensor)
+    )
+end
+
+function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
+    SensorConfig(
+        dict["column_format"],
+        dict["timestamp_column"],
+        dict["timestamp_format"],
+        parse_mapping_rules(dict["mappings"])
+    )
+end
+
+export TimeRange, AnalysisConfig, MesoConfig
 
 end # end module

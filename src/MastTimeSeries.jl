@@ -6,6 +6,7 @@ using DataFrames
 using YAML
 using CSV
 using Dates
+using ..Types.Utils: from_dict
 using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData
 import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping
 
@@ -122,14 +123,24 @@ function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn},
     
     # Convert each sensor dict to SensorColumn using map
     return map(yaml_data["sensors"]) do sensor
-        SensorColumn(
-            Symbol(sensor["columnName"]),
-            sensor["sensorType"],
-            sensor["sensorDirection"],
-            sensor["height"],
-            sensor["statType"],
-            sensor["unit"]
-        )
+        from_dict(SensorColumn, sensor)
+    end
+end
+
+"""
+Try to load existing meso-sensors.yaml from project directory.
+Returns nothing if file doesn't exist or is invalid.
+"""
+function load_existing_meso_sensors(project_dir::String)::Union{Vector{SensorColumn}, Nothing}
+    sensors_path = joinpath(project_dir, "meso-sensors.yaml")
+    
+    !isfile(sensors_path) && return nothing
+    
+    yaml_data = YAML.load_file(sensors_path)
+    
+    # Convert each sensor dict to SensorColumn using map
+    return map(yaml_data["sensors"]) do sensor
+        from_dict(SensorColumn, sensor)
     end
 end
 
@@ -218,19 +229,19 @@ end
 """
 Generate CSV reading options based on configuration and column names.
 """
-function generate_csv_opts(config::ProjectConfig, project_dir::String)::Dict{Symbol, Any}
-    csv_file = joinpath(project_dir, config.mast.data_path)
+function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::String)::Dict{Symbol, Any}
+    csv_file = joinpath(project_dir, config.data_path)
     
     # Determine skip_to value
-    skip_to = if config.mast.skip_to isa Vector{String}
-        find_skip_line(csv_file, config.mast.skip_to)
+    skip_to = if config.skip_to isa Vector{String}
+        find_skip_line(csv_file, config.skip_to)
     else
-        config.mast.skip_to::Int
+        config.skip_to::Int
     end
     
     # Prepare the delimiter
-    delim = if !isnothing(config.mast.delim)
-        string_to_regex_or_string(config.mast.delim)
+    delim = if !isnothing(config.delim)
+        string_to_regex_or_string(config.delim)
     else
         ','  # Default delimiter
     end
@@ -244,13 +255,13 @@ function generate_csv_opts(config::ProjectConfig, project_dir::String)::Dict{Sym
         col => Union{Float64, Missing} for col in column_names
     )
     # Set timestamp column type 
-    column_types[Symbol(config.mast.sensor.timestamp_column)] = DateTime
+    column_types[Symbol(config.sensor.timestamp_column)] = DateTime
     
     # Build options dictionary
     opts = Dict{Symbol, Any}(
         :skipto => skip_to+1,
         :header=> skip_to,
-        :dateformat => config.mast.sensor.timestamp_format,
+        :dateformat => config.sensor.timestamp_format,
         :types => column_types,
         :delim => delim
     )
@@ -269,7 +280,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     csv_file = joinpath(project_dir, config.mast.data_path)
     
     # Generate CSV options (now takes project_dir instead of column_names)
-    csv_opts = generate_csv_opts(config, project_dir)
+    csv_opts = generate_csv_opts(config.mast, project_dir)
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
@@ -285,6 +296,38 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
         
         # Export sensors only if we had to parse them
         export_sensors(sensors, project_dir)
+        
+        return TimeSeriesData(df, sensors)
+    end
+end
+
+"""
+Process Meso CSV file and return TimeSeriesData.
+Uses existing sensors.yaml if available, otherwise parses column names.
+"""
+function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesData
+    # First try to load existing sensors
+    existing_sensors = load_existing_meso_sensors(project_dir)
+    
+    csv_file = joinpath(project_dir, config.meso.data_path)
+    
+    # Generate CSV options
+    csv_opts = generate_csv_opts(config.meso, project_dir)
+    
+    # Read the CSV with all options
+    df = CSV.read(csv_file, DataFrame; csv_opts...)
+    normalize_timestamp!(df, config.meso.sensor.timestamp_column)
+    
+    if !isnothing(existing_sensors)
+        # Validate that all columns in sensors.yaml exist in the DataFrame
+        valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
+        return TimeSeriesData(df, valid_sensors)
+    else
+        # Parse column metadata and export to sensors.yaml
+        sensors = parse_column_metadata(df, config.meso.sensor)
+        
+        # Export sensors only if we had to parse them
+        export_meso_sensors(sensors, project_dir)
         
         return TimeSeriesData(df, sensors)
     end
@@ -313,8 +356,31 @@ function export_sensors(sensors::Vector{SensorColumn}, project_dir::String)
     end
 end
 
+"""
+Export meso sensor metadata to meso-sensors.yaml
+"""
+function export_meso_sensors(sensors::Vector{SensorColumn}, project_dir::String)
+    sensor_data = Dict{String, Any}[]
+    
+    for sensor in sensors
+        push!(sensor_data, Dict(
+            "columnName" => String(sensor.columnName),
+            "sensorType" => sensor.sensorType,
+            "sensorDirection" => sensor.sensorDirection,
+            "height" => sensor.height,
+            "statType" => sensor.statType,
+            "unit" => sensor.unit
+        ))
+    end
+    
+    # Write to meso-sensors.yaml
+    open(joinpath(project_dir, "meso-sensors.yaml"), "w") do io
+        YAML.write(io, Dict("sensors" => sensor_data))
+    end
+end
+
 # At the end of MastTimeSeries.jl
-export SensorColumn, TimeSeriesData, read_mast_data,
+export SensorColumn, TimeSeriesData, read_mast_data, read_meso_data,
        # Export parsing functions for testing
        parse_column_name, extract_format_placeholders, create_regex_pattern
 

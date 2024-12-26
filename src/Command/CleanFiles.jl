@@ -14,18 +14,20 @@ function execute(dir::String)
     # Parse config to get data file path
     config = parse_config(dir)
     data_path = joinpath(dir, config.mast.data_path)
+    meso_data_path = joinpath(dir, config.meso.data_path)
     config_path = joinpath(dir, "config.yaml")
     
     # Check essential files exist
     !isfile(config_path) && error("Config file not found: $config_path")
     !isfile(data_path) && error("Data file not found: $data_path")
+    !isfile(meso_data_path) && error("Meso data file not found: $meso_data_path")
     
     # Create archive directory with timestamp
     timestamp = Dates.format(now(), "yyyy-mm-dd_HHMMSS")
     archive_dir = joinpath(dir, "archived", timestamp)
     
     # Get all files except config.yaml and data file
-    essential_files = [config_path, data_path]
+    essential_files = [config_path, data_path, meso_data_path]
     files_to_archive = filter(
         f -> isfile(f) && !(f in essential_files),
         [joinpath(dir, f) for f in readdir(dir)]
