@@ -3,9 +3,9 @@ module TestTraining
 using Test
 using Dates
 using DataFrames
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.ReconstructMeso: TrainingTimeRange
-using ...ReconstructMeso.Training
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
+using CleanMastProject.ReconstructMeso.Training
 
 @testset "Training" begin
     # Create test data with known correlation

@@ -135,10 +135,26 @@ struct SensorMetadata
 end
 export SensorMetadata
 
+function parse_datetime(value::String)::Union{DateTime, Nothing}
+    try
+        if length(value) <= 10  # Format: "2024-11-20"
+            DateTime(Date(value))
+        else  # Format: "2024-11-20 23:59:59"
+            DateTime(value, dateformat"yyyy-mm-dd HH:MM:SS")
+        end
+    catch
+        nothing
+    end
+end
+
 function from_dict(::Type{TimeRange}, dict::Dict{String, Any})::TimeRange
     TimeRange(
-        get(dict, "min", nothing),
-        get(dict, "max", nothing)
+        let min_val = get(dict, "min", nothing)
+            min_val isa String ? parse_datetime(min_val) : min_val
+        end,
+        let max_val = get(dict, "max", nothing)
+            max_val isa String ? parse_datetime(max_val) : max_val
+        end
     )
 end
 

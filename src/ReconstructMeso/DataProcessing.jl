@@ -10,17 +10,29 @@ using ...Types.CleanMastConfig: TimeRange
 Ensure TimeSeriesData has all timestamps in range at specified interval
 """
 function ensure_complete_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, 
-                                  interval::Minute=Minute(10))::TimeSeriesData
-    # Generate complete timestamp sequence
-    all_timestamps = time_range.min:interval:time_range.max
+                                  interval::Period)::TimeSeriesData
+    start_time = time_range.min
+    end_time = time_range.max
     
-    # Create DataFrame with all timestamps
-    complete_df = DataFrame(timestamp = collect(all_timestamps))
+    # Create complete timestamp sequence
+    complete_timestamps = collect(start_time:interval:end_time)
     
-    # Join with existing data
-    result_df = leftjoin(complete_df, ts.df, on=:timestamp)
+    # Create new DataFrame with complete timestamps and initialize with Union{Missing, Float64}
+    new_df = DataFrame(timestamp = complete_timestamps)
     
-    TimeSeriesData(result_df, ts.sensors)
+    # Add sensor columns with missing values, ensuring proper type
+    for sensor in ts.sensors
+        new_df[!, sensor.columnName] = Vector{Union{Missing, Float64}}(missing, length(complete_timestamps))
+    end
+    
+    # Fill in existing values
+    matching_timestamps = map(t -> t ∈ ts.df.timestamp, complete_timestamps)
+    matching_indices = indexin(complete_timestamps[matching_timestamps], ts.df.timestamp)
+    sensor_columns = [s.columnName for s in ts.sensors]
+    
+    new_df[matching_timestamps, sensor_columns] = ts.df[matching_indices, sensor_columns]
+    
+    TimeSeriesData(new_df, ts.sensors)
 end
 
 """
@@ -40,36 +52,26 @@ end
 """
 Average data over 15-day periods within time_range, marking periods with >30% missing data as missing
 """
-function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period_days::Int=15)::TimeSeriesData
-    # First ensure complete timeseries at appropriate interval
-    interval = ts.sensors[1].sensorType == "WindSpeed" ? Minute(10) : Minute(60)
-    prepared_ts = prepare_timeseries(ts, time_range, interval)
+function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period_days::Int) :: TimeSeriesData
+    # Filter data within time range
+    filtered_df = filter(row -> time_range.min <= row.timestamp <= time_range.max, ts.df)
     
-    # Calculate periods relative to start_time
-    prepared_ts.df[!, :period] = floor.(Int, (prepared_ts.df.timestamp .- time_range.min) / Day(period_days))
+    # Calculate averages for each sensor
+    result_df = DataFrame(timestamp = [time_range.min])
     
-    # Calculate averages for each sensor in each period
-    sensor_cols = [s.columnName for s in ts.sensors]
-    
-    period_averages = combine(groupby(prepared_ts.df, :period)) do group
-        # For each sensor column
-        result = Dict{Symbol, Union{Float64, Missing}}()
-        for col in sensor_cols
-            values = group[!, col]
-            # If more than 30% missing, return missing
-            if mean(ismissing.(values)) > 0.3
-                result[col] = missing
-            else
-                result[col] = mean(skipmissing(values))
-            end
+    for sensor in ts.sensors
+        values = filtered_df[!, sensor.columnName]
+        # Only compute average if we have enough non-missing values (e.g., >70%)
+        non_missing = count(!ismissing, values)
+        if non_missing > 0.7 * length(values)
+            avg_value = mean(skipmissing(values))
+        else
+            avg_value = missing
         end
-        # Add timestamp as middle of period
-        period_start = time_range.min + Day(period_days * first(group.period))
-        result[:timestamp] = period_start + Day(period_days ÷ 2)
-        result
+        result_df[!, sensor.columnName] = [avg_value]
     end
     
-    TimeSeriesData(period_averages, ts.sensors)
+    TimeSeriesData(result_df, ts.sensors)
 end
 
 """
@@ -91,26 +93,22 @@ end
 """
 Calculate training time range from mast time series and optional time range input
 """
-function calculate_training_timerange(mast_ts::TimeSeriesData, time_range::TimeRange)::TrainingTimeRange
-    mast_min = minimum(mast_ts.df.timestamp)
-    mast_max = maximum(mast_ts.df.timestamp)
-    
-    if !isnothing(time_range.min) && !isnothing(time_range.max)
-        return TrainingTimeRange(time_range.min, time_range.max)
+function calculate_training_timerange(ts::TimeSeriesData, time_range::Union{TimeRange,Nothing}) :: TrainingTimeRange
+    if isnothing(time_range)
+        time_range = TimeRange(nothing, nothing)
     end
     
-    if !isnothing(time_range.min)
-        range_min = time_range.min
-        range_max = min(time_range.min + Year(1), mast_max)
-    elseif !isnothing(time_range.max)
-        range_max = time_range.max
-        range_min = max(time_range.max - Year(1), mast_min)
-    else
-        range_max = mast_max
-        range_min = max(mast_max - Year(1), mast_min)
-    end
+    # Get data bounds
+    data_max = maximum(ts.df.timestamp)
     
-    TrainingTimeRange(range_min, range_max)
+    # Calculate default range (1 year before max date)
+    default_min = something(time_range.max, data_max) - Year(1)
+    
+    # Determine actual min and max
+    actual_min = something(time_range.min, default_min)
+    actual_max = something(time_range.max, actual_min + Year(1))
+    
+    TrainingTimeRange(actual_min, actual_max)
 end
 
 export average_timeseries, find_nearest_height_sensor, prepare_timeseries, calculate_training_timerange

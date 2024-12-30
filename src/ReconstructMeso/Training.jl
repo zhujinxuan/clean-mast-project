@@ -27,13 +27,14 @@ function train_wind_speed(avg_mast_ts::TimeSeriesData, avg_meso_ts::TimeSeriesDa
         mast_values = avg_mast_ts.df[!, mast_sensor.columnName]
         meso_values = avg_meso_ts.df[!, meso_sensor.columnName]
         
-        paired_values = filter(pair -> !ismissing(pair[1]) && !ismissing(pair[2]), 
-                             zip(mast_values, meso_values))
+        paired_values = collect(zip(mast_values, meso_values))
+        filtered_pairs = filter(pair -> !ismissing(pair[1]) && !ismissing(pair[2]), paired_values)
         
-        length(paired_values) < 10 && continue
+        length(filtered_pairs) < 10 && continue
         
-        # Unzip the filtered pairs into x and y vectors
-        y, x = collect(zip(paired_values...))
+        # Convert filtered pairs to vectors
+        y = Float64[pair[1] for pair in filtered_pairs]  # mast values
+        x = Float64[pair[2] for pair in filtered_pairs]  # meso values
         
         # Simple linear regression
         slope = cov(x, y) / var(x)
@@ -66,13 +67,13 @@ function train_wind_direction(avg_mast_ts::TimeSeriesData, avg_meso_ts::TimeSeri
         mast_values = avg_mast_ts.df[!, mast_sensor.columnName]
         meso_values = avg_meso_ts.df[!, meso_sensor.columnName]
         
-        paired_values = filter(pair -> !ismissing(pair[1]) && !ismissing(pair[2]), 
-                             zip(mast_values, meso_values))
+        paired_values = collect(zip(mast_values, meso_values))
+        filtered_pairs = filter(pair -> !ismissing(pair[1]) && !ismissing(pair[2]), paired_values)
         
-        length(paired_values) < 10 && continue
+        length(filtered_pairs) < 10 && continue
         
         # Unzip the filtered pairs
-        mast_filtered, meso_filtered = collect(zip(paired_values...))
+        mast_filtered, meso_filtered = collect(zip(filtered_pairs...))
         
         diffs = @. mod((mast_filtered - meso_filtered + 180), 360) - 180
         mean_diff = mean(diffs)

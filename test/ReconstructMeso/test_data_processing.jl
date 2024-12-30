@@ -3,21 +3,27 @@ module TestDataProcessing
 using Test
 using Dates
 using DataFrames
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.ReconstructMeso: TrainingTimeRange
-using ...ReconstructMeso.DataProcessing
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
+using CleanMastProject.Types.CleanMastConfig: TimeRange
+using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeseries, 
+    prepare_timeseries, average_timeseries, find_nearest_height_sensor, 
+    calculate_training_timerange
 
 @testset "DataProcessing" begin
     # Create test data
-    timestamps = DateTime(2024,1,1):Hour(1):DateTime(2024,1,2)
+    timestamps = collect(DateTime(2024,1,1):Hour(1):DateTime(2024,1,2))
+    ws_data = [5.0, 6.0, missing, 7.0, 8.0, 6.0, missing, 5.0, 
+              4.0, 7.0, missing, 8.0, 6.0, missing, 7.0, 5.0, 
+              6.0, 7.0, missing, 8.0, 5.0, 6.0, missing, 7.0, 8.0]
+    wd_data = [180.0, 185.0, missing, 190.0, 195.0, 180.0, missing, 185.0,
+              190.0, 185.0, missing, 180.0, 185.0, missing, 190.0, 185.0,
+              180.0, 185.0, missing, 190.0, 185.0, 180.0, missing, 185.0, 190.0]
+    
     df = DataFrame(
         timestamp = timestamps,
-        ws_80m = [5.0, 6.0, missing, 7.0, 8.0, 6.0, missing, 5.0, 
-                  4.0, 7.0, missing, 8.0, 6.0, missing, 7.0, 5.0, 
-                  6.0, 7.0, missing, 8.0, 5.0, 6.0, missing, 7.0],
-        wd_80m = [180.0, 185.0, missing, 190.0, 195.0, 180.0, missing, 185.0,
-                  190.0, 185.0, missing, 180.0, 185.0, missing, 190.0, 185.0,
-                  180.0, 185.0, missing, 190.0, 185.0, 180.0, missing, 185.0]
+        ws_80m = ws_data,
+        wd_80m = wd_data
     )
     
     sensors = [
@@ -82,24 +88,24 @@ using ...ReconstructMeso.DataProcessing
     end
 
     @testset "calculate_training_timerange" begin
-        # Add new test for the conversion function
+        # Test with no time range specified
         input_range = TimeRange(nothing, nothing)
         result = calculate_training_timerange(ts, input_range)
         @test result isa TrainingTimeRange
-        @test result.min <= result.max
-        @test result.max - result.min ≤ Year(1)
+        @test result.min == DateTime(2023,1,2)
+        @test result.max == DateTime(2024,1,2)
 
         # Test with specified min
         input_range = TimeRange(DateTime(2024,1,1), nothing)
         result = calculate_training_timerange(ts, input_range)
         @test result.min == DateTime(2024,1,1)
-        @test result.max - result.min ≤ Year(1)
+        @test result.max == DateTime(2025,1,1)
 
         # Test with specified max
         input_range = TimeRange(nothing, DateTime(2024,1,2))
         result = calculate_training_timerange(ts, input_range)
         @test result.max == DateTime(2024,1,2)
-        @test result.max - result.min ≤ Year(1)
+        @test result.min == DateTime(2023,1,2)
 
         # Test with both specified
         input_range = TimeRange(DateTime(2024,1,1), DateTime(2024,1,2))

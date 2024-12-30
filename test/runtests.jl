@@ -24,5 +24,8 @@ include("ReconstructSingleMast/test_direction_training.jl")
 # Add other test files here as needed
 
 @testset "Meso reconstruction" begin
+    include("ReconstructMeso/test_training.jl")
+    include("ReconstructMeso/test_data_processing.jl")
+    include("ReconstructMeso/test_reconstruction.jl")
     include("test_reconstruct_meso.jl")
 end
