@@ -143,6 +143,7 @@ using CleanMastProject.ReconstructMeso.Reconstruction: calculate_interpolated_va
         ws_results_missing = interpolate_meso_values(meso_ts_missing, hours_to_test, :ws)
         @test ws_results_missing[DateTime(2023, 1, 1, 0)] ≈ 10.0
         @test ws_results_missing[DateTime(2023, 1, 1, 1)] ≈ 11.25
+        @test ws_results_missing[DateTime(2023, 1, 1, 2)] ≈ 12.5
         @test ws_results_missing[DateTime(2023, 1, 1, 3)] ≈ 13.75
         @test ws_results_missing[DateTime(2023, 1, 1, 4)] ≈ 15.0
     end
