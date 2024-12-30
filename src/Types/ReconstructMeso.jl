@@ -17,6 +17,16 @@ struct WindDirectionTrainResult
     diff::Float64
 end
 
+struct TrainingTimeRange
+    min::DateTime
+    max::DateTime
+    
+    function TrainingTimeRange(min::DateTime, max::DateTime)
+        min <= max || throw(ArgumentError("min must be <= max"))
+        new(min, max)
+    end
+end
+
 # Type alias for training results
 const WindSpeedTrainResults = Dict{Symbol, WindSpeedTrainResult}
 const WindDirectionTrainResults = Dict{Symbol, WindDirectionTrainResult}
@@ -55,6 +65,6 @@ function to_dict(wdtr::WindDirectionTrainResult)::Dict{String, Any}
     )
 end
 
-export WindSpeedTrainResult, WindDirectionTrainResult, WindSpeedTrainResults, WindDirectionTrainResults
+export WindSpeedTrainResult, WindDirectionTrainResult, WindSpeedTrainResults, WindDirectionTrainResults, TrainingTimeRange
 
 end 

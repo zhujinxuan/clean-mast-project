@@ -4,7 +4,7 @@ using Test
 using Dates
 using DataFrames
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.CleanMastConfig: TimeRange
+using ...Types.ReconstructMeso: TrainingTimeRange
 using ...ReconstructMeso.Training
 
 @testset "Training" begin
@@ -37,6 +37,8 @@ using ...ReconstructMeso.Training
     
     mast_ts = TimeSeriesData(mast_df, mast_sensors)
     meso_ts = TimeSeriesData(meso_df, meso_sensors)
+
+    time_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,10))
 
     @testset "train_wind_speed" begin
         ws_results = train_wind_speed(mast_ts, meso_ts)

@@ -1,4 +1,5 @@
 using Test
+using ...Types.ReconstructMeso: TrainingTimeRange
 
 include("./ReconstructMeso/test_data_processing.jl")
 include("./ReconstructMeso/test_training.jl")
@@ -7,6 +8,7 @@ include("./ReconstructMeso/test_reconstruction.jl")
 @testset "ReconstructMeso" begin
     # Create test data for full integration test
     timestamps = DateTime(2024,1,1):Hour(1):DateTime(2024,1,10)
+    time_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,10))
     
     # Mast data with missing values
     mast_df = DataFrame(
@@ -36,7 +38,7 @@ include("./ReconstructMeso/test_reconstruction.jl")
     meso_ts = TimeSeriesData(meso_df, meso_sensors)
     
     @testset "reconstruct_from_meso" begin
-        result = reconstruct_from_meso(mast_ts, meso_ts)
+        result = reconstruct_from_meso(mast_ts, meso_ts, time_range)
         
         # Check that we have no missing values in the reconstruction period
         @test !any(ismissing, result.df[25:72, :ws_80m])

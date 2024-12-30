@@ -11,14 +11,13 @@ using Dates
 Fill missing data using trained correlations
 """
 function fill_missing_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
-                         time_range::TimeRange, 
+                         training_time_range::TrainingTimeRange, 
                          ws_results::WindSpeedTrainResults,
                          wd_results::WindDirectionTrainResults)::TimeSeriesData
-    # Ensure complete timeseries for mast data
-    complete_mast = prepare_timeseries(mast_ts, time_range, Minute(10))
     
-    # Prepare meso data with hourly resolution
-    complete_meso = prepare_timeseries(meso_ts, time_range, Minute(60))
+    # Ensure complete timeseries for mast and meso data
+    complete_mast = prepare_timeseries(mast_ts, training_range, Minute(10))
+    complete_meso = prepare_timeseries(meso_ts, training_range, Minute(60))
     
     # Create result DataFrame
     result_df = copy(complete_mast.df)

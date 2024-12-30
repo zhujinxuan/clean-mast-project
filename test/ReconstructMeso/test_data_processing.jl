@@ -4,7 +4,7 @@ using Test
 using Dates
 using DataFrames
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.CleanMastConfig: TimeRange
+using ...Types.ReconstructMeso: TrainingTimeRange
 using ...ReconstructMeso.DataProcessing
 
 @testset "DataProcessing" begin
@@ -26,7 +26,7 @@ using ...ReconstructMeso.DataProcessing
     ]
     
     ts = TimeSeriesData(df, sensors)
-    time_range = TimeRange(DateTime(2024,1,1,2), DateTime(2024,1,1,22))
+    time_range = TrainingTimeRange(DateTime(2024,1,1,2), DateTime(2024,1,1,22))
 
     @testset "ensure_complete_timeseries" begin
         # Test 10-minute completion
@@ -79,6 +79,33 @@ using ...ReconstructMeso.DataProcessing
         
         # Test no match
         @test isnothing(find_nearest_height_sensor(80.0, sensors_multi, "Temperature"))
+    end
+
+    @testset "calculate_training_timerange" begin
+        # Add new test for the conversion function
+        input_range = TimeRange(nothing, nothing)
+        result = calculate_training_timerange(ts, input_range)
+        @test result isa TrainingTimeRange
+        @test result.min <= result.max
+        @test result.max - result.min ≤ Year(1)
+
+        # Test with specified min
+        input_range = TimeRange(DateTime(2024,1,1), nothing)
+        result = calculate_training_timerange(ts, input_range)
+        @test result.min == DateTime(2024,1,1)
+        @test result.max - result.min ≤ Year(1)
+
+        # Test with specified max
+        input_range = TimeRange(nothing, DateTime(2024,1,2))
+        result = calculate_training_timerange(ts, input_range)
+        @test result.max == DateTime(2024,1,2)
+        @test result.max - result.min ≤ Year(1)
+
+        # Test with both specified
+        input_range = TimeRange(DateTime(2024,1,1), DateTime(2024,1,2))
+        result = calculate_training_timerange(ts, input_range)
+        @test result.min == DateTime(2024,1,1)
+        @test result.max == DateTime(2024,1,2)
     end
 end
 
