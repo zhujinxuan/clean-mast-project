@@ -22,8 +22,16 @@ function create_test_config()::ProjectConfig
         sensor_config,     # sensor
         Rule[]            # rules
     )
+
+    meso_config = MesoConfig(
+        "data.csv",        # data_path
+        1,                 # skip_to
+        ",",              # delim
+        sensor_config,     # sensor
+    )
+    analysis_config = AnalysisConfig(TimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")))
     
-    return ProjectConfig(mast_config)
+    return ProjectConfig(mast_config, meso_config, analysis_config)
 end
 
 function create_test_sensors()::Vector{SensorColumn}
@@ -53,6 +61,24 @@ function create_test_data()::TimeSeriesData
     )
     
     return TimeSeriesData(df, create_test_sensors())
+end
+
+function find_tower_column(df::DataFrame, suffix::String)
+    # Find columns that start with "Ch" followed by digits
+    pattern = r"Ch(\d+)_(.+)"
+    matching_cols = filter(col -> occursin(pattern, String(col)), propertynames(df))
+    
+    for col in matching_cols
+        m = match(pattern, String(col))
+        if m !== nothing
+            number = parse(Int, m.captures[1])
+            col_suffix = m.captures[2]
+            if number >= 200 && col_suffix == suffix
+                return col
+            end
+        end
+    end
+    error("No column found matching pattern Ch{200+}_$suffix")
 end
 
 @testset "TowerShading" begin
@@ -98,10 +124,11 @@ end
         
         @testset "basic name generation" begin
             name = TowerShading.generate_column_name(config, 60.0, "avg")
+
             @test occursin("WindSpeed", name)
+            @test occursin("Ch2", name)
             @test occursin("60m", name)
             @test occursin("avg", name)
-            @test occursin("TS", name)  # Unknown placeholders replaced with TS
             @test occursin("m/s", name)  # Check for unit
         end
         
@@ -120,16 +147,17 @@ end
             result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
             
             # Check that new columns were created
-            @test Symbol("ChTS_WindSpeed_60m_avg_m/s") in propertynames(result.df)
-            @test Symbol("ChTS_WindSpeed_60m_sd_m/s") in propertynames(result.df)
+            avg_col = find_tower_column(result.df, "WindSpeed_60m_avg_m/s")
+            sd_col = find_tower_column(result.df, "WindSpeed_60m_sd_m/s")
             
             # Check that old columns were removed
             @test !(Symbol("Ch1_WindSpeed_60m_avg_m/s") in propertynames(result.df))
             @test !(Symbol("Ch2_WindSpeed_60m_avg_m/s") in propertynames(result.df))
             
             # Check that merged values are maximum of originals
-            @test result.df[1, Symbol("ChTS_WindSpeed_60m_avg_m/s")] == max(5.0, 4.5)
-            @test result.df[2, Symbol("ChTS_WindSpeed_60m_avg_m/s")] == max(6.0, 7.0)
+            @test result.df[1, avg_col] == max(5.0, 4.5)
+            @test result.df[2, avg_col] == max(6.0, 7.0)
+            @test result.df[2, sd_col] == 0.8
         end
         
         @testset "sensor metadata" begin

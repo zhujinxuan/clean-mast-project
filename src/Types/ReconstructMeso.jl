@@ -1,6 +1,7 @@
 module ReconstructMeso
 using DataFrames
 using ..Utils
+using ..MastTimeSeries
 using Dates
 
 struct WindSpeedTrainResult

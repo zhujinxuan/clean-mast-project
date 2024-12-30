@@ -8,7 +8,7 @@ using CSV
 using Dates
 using ..Types.Utils: from_dict
 using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData
-import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping
+import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping, MastConfig, MesoConfig
 
 """
 Extract placeholder names from a format string.

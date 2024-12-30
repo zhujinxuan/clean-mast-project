@@ -3,6 +3,7 @@
 Types for project config, corresponding to {project_dir}/config.yaml
 """
 module CleanMastConfig
+using Dates
 using ..CleanRules
 using ..Utils
 
@@ -112,10 +113,8 @@ end
 
 struct MesoConfig
     data_path::String
-    delim::Union{Nothing, String}
     skip_to::Union{Int, Vector{String}}
-    timestamp_column::Vector{String}
-    timestamp_format::String
+    delim::Union{Nothing, String}
     sensor::SensorConfig
 end
 
@@ -152,10 +151,8 @@ end
 function from_dict(::Type{MesoConfig}, dict::Dict{String, Any})::MesoConfig
     MesoConfig(
         dict["data_path"],
-        get(dict, "delim", nothing),
         Vector{String}(dict["skip_to"]),
-        Vector{String}(dict["timestamp_column"]),
-        dict["timestamp_format"],
+        get(dict, "delim", nothing),
         from_dict(SensorConfig, Dict{String, Any}(dict["sensor"]))
     )
 end
@@ -178,8 +175,6 @@ function to_dict(mc::MesoConfig)::Dict
         "data_path" => mc.data_path,
         "delim" => mc.delim,
         "skip_to" => mc.skip_to,
-        "timestamp_column" => mc.timestamp_column,
-        "timestamp_format" => mc.timestamp_format,
         "sensor" => to_dict(mc.sensor)
     )
 end

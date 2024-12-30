@@ -120,12 +120,9 @@ Meso:
   data_path: era5.txt
   delim: "\t"
   skip_to: ["Date/time"]
-  timestamp_column: 
-   - "Date/time"
-  timestamp_format: "yyyy-mm-dd HH:MM:SS"
   sensor:
     column_format: "{sensorType}_{height}m [{unit}]
-    timestamp_column: Timestamp
+    timestamp_column: "Date/time"
     timestamp_format: "yyyy-mm-dd HH:MM:SS"
     delim: "\t"
     mappings:
