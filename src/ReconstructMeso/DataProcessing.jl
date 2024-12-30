@@ -50,25 +50,48 @@ function prepare_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange,
 end
 
 """
-Average data over 15-day periods within time_range, marking periods with >30% missing data as missing
+Average data over 15-day periods within time_range, marking periods with >30% missing data as missing.
+The last period is marked as missing if it covers less than 2/3 of period_days.
 """
 function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period_days::Int) :: TimeSeriesData
     # Filter data within time range
-    filtered_df = filter(row -> time_range.min <= row.timestamp <= time_range.max, ts.df)
+    filtered_df = filter(row -> time_range.min <= row.timestamp, ts.df)
     
-    # Calculate averages for each sensor
-    result_df = DataFrame(timestamp = [time_range.min])
+    # Create period start timestamps
+    period_starts = collect(time_range.min:Day(period_days):time_range.max)
+    result_df = DataFrame(timestamp = period_starts)
     
     for sensor in ts.sensors
-        values = filtered_df[!, sensor.columnName]
-        # Only compute average if we have enough non-missing values (e.g., >70%)
-        non_missing = count(!ismissing, values)
-        if non_missing > 0.7 * length(values)
-            avg_value = mean(skipmissing(values))
-        else
-            avg_value = missing
+        # Initialize result column with missing values
+        result_df[!, sensor.columnName] = Vector{Union{Missing, Float64}}(missing, length(period_starts))
+    end
+
+    last_ts = maximum(filtered_df.timestamp)
+    # For each period
+    for (i, period_start) in enumerate(period_starts)
+        period_end = period_start + Day(period_days)
+        
+        # Get values for this period
+        period_df = filter(row -> 
+            period_start <= row.timestamp < period_end, 
+            filtered_df)
+        
+        # For the last period, check if we have enough days
+        if i == length(period_starts)
+            days_in_period = (last_ts - period_start).value / (1000 * 60 * 60 * 24)  # Convert ms to days
+            if days_in_period < 2/3 * period_days
+                continue  # Skip processing, leaving it as missing
+            end
         end
-        result_df[!, sensor.columnName] = [avg_value]
+        
+        # Only compute average if we have enough non-missing values (>70%)
+        for sensor in ts.sensors
+            period_values = period_df[!, sensor.columnName]
+            non_missing = count(!ismissing, period_values)
+            if !isempty(period_values) && non_missing > 0.7 * length(period_values)
+                result_df[i, sensor.columnName] = mean(skipmissing(period_values))
+            end
+        end
     end
     
     TimeSeriesData(result_df, ts.sensors)
