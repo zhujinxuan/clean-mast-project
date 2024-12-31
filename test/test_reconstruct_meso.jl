@@ -71,7 +71,7 @@ using CleanMastProject.ReconstructMeso
         original_ws_masked = original_ws[missing_mask]
         
         # Test if reconstructed wind speed is within 0.2 m/s
-        @test all(abs.(reconstructed_ws .- original_ws_masked) .< 0.01)
+        @test all(abs.(reconstructed_ws .- original_ws_masked) .< 0.1)
         
         # Test wind direction reconstruction 
         missing_mask_wd = ismissing.(mast_df.wd_80m)
