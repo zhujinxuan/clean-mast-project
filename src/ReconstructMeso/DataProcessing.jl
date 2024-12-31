@@ -89,7 +89,9 @@ function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, p
             period_values = period_df[!, sensor.columnName]
             non_missing = count(!ismissing, period_values)
             if !isempty(period_values) && non_missing > 0.7 * length(period_values)
-                result_df[i, sensor.columnName] = mean(skipmissing(period_values))
+                result_df[i, sensor.columnName] = sensor.sensorType == "WindDirection" ? 
+                    average_angles(collect(skipmissing(period_values))) :
+                    mean(skipmissing(period_values))
             end
         end
     end
@@ -132,6 +134,15 @@ function calculate_training_timerange(ts::TimeSeriesData, time_range::Union{Time
     actual_max = something(time_range.max, actual_min + Year(1))
     
     TrainingTimeRange(actual_min, actual_max)
+end
+
+function average_angles(angles::Vector{<:Real})::Float64
+    # Convert to radians and calculate mean of vector components
+    rad_angles = deg2rad.(angles)
+    mean_sin = mean(sin.(rad_angles))
+    mean_cos = mean(cos.(rad_angles))
+    # Convert back to degrees and ensure positive angle
+    return mod(rad2deg(atan(mean_sin, mean_cos)), 360.0)
 end
 
 export average_timeseries, find_nearest_height_sensor, prepare_timeseries, calculate_training_timerange
