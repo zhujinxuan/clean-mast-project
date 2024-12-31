@@ -9,33 +9,37 @@ using CleanMastProject.Types.CleanMastConfig: TimeRange
 using CleanMastProject.ReconstructMeso
 
 @testset "ReconstructMeso" begin
-    # Create test data with 10-minute timestamps
-    timestamps = collect(DateTime(2024,1,1):Minute(10):(DateTime(2025,1,1) - Second(1)))
+    # Create mast test data with 10-minute timestamps
+    mast_timestamps = collect(DateTime(2024,1,1):Minute(10):(DateTime(2025,1,1) - Second(1)))
+    
+    # Create meso test data with hourly timestamps
+    meso_timestamps = collect(DateTime(2024,1,1):Hour(1):(DateTime(2025,1,1) - Second(1)))
     
     # Calculate time in years for the sinusoidal pattern
-    t_years = [(t - DateTime(2024,1,1)).value/1000/60/60/24/365.25 for t in timestamps]
+    mast_t_years = [(t - DateTime(2024,1,1)).value/1000/60/60/24/365.25 for t in mast_timestamps]
+    meso_t_years = [(t - DateTime(2024,1,1)).value/1000/60/60/24/365.25 for t in meso_timestamps]
     w = 2π  # angular frequency for annual cycle
     
-    # Create mast data with sinusoidal pattern
+    # Create mast data with sinusoidal pattern (10-min resolution)
     mast_df = DataFrame(
-        timestamp = timestamps,
-        ws_80m = Vector{Union{Missing, Float64}}(5.0 .+ 2.0 .* sin.(w .* t_years)),
-        wd_80m = Vector{Union{Missing, Float64}}([mod(180.0 + (i/4800.0), 360.0) for i in 1:length(timestamps)])
+        timestamp = mast_timestamps,
+        ws_80m = Vector{Union{Missing, Float64}}(5.0 .+ 2.0 .* sin.(w .* mast_t_years)),
+        wd_80m = Vector{Union{Missing, Float64}}([mod(180.0 + (i/2880.0), 360.0) for i in 1:length(mast_timestamps)])
     )
     # Store original unmasked data for comparison
     original_ws = copy(mast_df.ws_80m)
     original_wd = copy(mast_df.wd_80m)
     
-    # Add some missing values
-    missing_indices = rand(1:length(timestamps), div(length(timestamps), 3))
+    # Add some missing values to mast data
+    missing_indices = rand(1:length(mast_timestamps), div(length(mast_timestamps), 3))
     mast_df.ws_80m[missing_indices] .= missing
     mast_df.wd_80m[missing_indices] .= missing
     
-    # Create meso data with related sinusoidal pattern
+    # Create meso data with related sinusoidal pattern (hourly resolution)
     meso_df = DataFrame(
-        timestamp = timestamps,
-        ws_75m = Vector{Union{Missing, Float64}}(3.0 .+ sin.(w .* t_years)),
-        wd_75m = Vector{Union{Missing, Float64}}([mod(200.0 + (i/4800.0), 360.0) for i in 1:length(timestamps)])
+        timestamp = meso_timestamps,
+        ws_75m = Vector{Union{Missing, Float64}}(3.0 .+ sin.(w .* meso_t_years)),
+        wd_75m = Vector{Union{Missing, Float64}}([mod(200.0 + (i/480.0), 360.0) for i in 1:length(meso_timestamps)])
     )
     
     mast_sensors = [
@@ -54,7 +58,6 @@ using CleanMastProject.ReconstructMeso
     time_range = TimeRange(DateTime(2024,1,1), DateTime(2024,12,31,23,59,59))
 
     @testset "reconstruct_meso" begin
-        
         result = reconstruct_from_meso(mast_ts, meso_ts, time_range)
         
         @test size(result.df, 1) == size(mast_df, 1)
