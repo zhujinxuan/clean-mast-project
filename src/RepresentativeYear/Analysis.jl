@@ -4,9 +4,9 @@ using DataFrames
 using Statistics
 using Dates
 using GLM
-using ..Types.RepresentativeYear
-using ..Types.MastTimeSeries: TimeSeriesData
-using ..Types.ReconstructMeso: TrainingTimeRange
+using ...Types.RepresentativeYear
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.ReconstructMeso: TrainingTimeRange
 
 """
 Find target wind speed sensor closest to specified height
@@ -14,7 +14,7 @@ Find target wind speed sensor closest to specified height
 function find_target_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
     ws_sensors = filter(s -> 
         s.sensorType == "WindSpeed" && 
-        s.statType == avg,
+        s.statType == "avg",
         ts.sensors
     )
     
@@ -214,7 +214,9 @@ function calculate_sector_slope(sector_data::DataFrame, target_sensor::SensorCol
     meso_ws = last(names(sector_data, r"^ws_.*m$"))
     
     # Perform linear regression using target sensor
-    model = lm(@formula($(target_sensor.columnName) ~ $(Symbol(meso_ws))), sector_data)
+    # Use @eval to create the formula dynamically
+    formula = @eval @formula($(Symbol(target_sensor.columnName)) ~ $(Symbol(meso_ws)))
+    model = lm(formula, sector_data)
     coef(model)[2]  # Return slope
 end
 

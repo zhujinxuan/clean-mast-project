@@ -3,6 +3,7 @@ using Test
 using DataFrames
 using Dates
 using CleanMastProject.Types.CleanRules
+using CleanMastProject.Types.MastTimeSeries: SensorColumn
 import CleanMastProject.CleanMastRules.ProcessRange
 
 @testset "Range Rule Tests" begin

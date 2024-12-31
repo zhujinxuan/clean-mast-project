@@ -190,4 +190,14 @@ end
 
 export reconstruct_wind_speeds
 
+function find_training_pairs(ts::TimeSeriesData)::Vector{TrainingPair}
+    # Get all wind speed sensors
+    ws_sensors = filter(s -> 
+        s.sensorType == "WindSpeed" && 
+        s.statType == "avg",  # Changed from enum to string
+        ts.sensors
+    )
+    # ... rest of function
+end
+
 end # module 

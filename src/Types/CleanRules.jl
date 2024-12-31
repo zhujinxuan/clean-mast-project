@@ -4,8 +4,9 @@
 """
 module CleanRules
 
-using YAML
+using DataFrames
 using Dates
+using ..MastTimeSeries: SensorColumn, VALID_STAT_TYPES
 
 struct HeightFilter
     min::Union{Nothing, Float64}
@@ -89,6 +90,49 @@ struct RuleViolation
     rule::Rule
     timestamp::DateTime
     column::Symbol
+end
+
+struct RuleOutcome
+    sensorType::Union{String, Nothing} 
+    sensorDirection::Union{String, Nothing} 
+    height::Union{Float64, Nothing} 
+    statType::Union{String, Nothing}
+    unit::Union{String, Nothing} 
+end
+
+function RuleOutcome(;
+    sensorType::Union{String, Nothing}=nothing,
+    sensorDirection::Union{String, Nothing}=nothing,
+    height::Union{Float64, Nothing}=nothing,
+    statType::Union{String, Nothing}=nothing,
+    unit::Union{String, Nothing}=nothing
+)
+    # Validate statType if provided
+    if !isnothing(statType) && !(statType in VALID_STAT_TYPES)
+        throw(ArgumentError("Invalid statType: $statType. Must be one of: $(join(VALID_STAT_TYPES, ", "))"))
+    end
+    
+    RuleOutcome(sensorType, sensorDirection, height, statType, unit)
+end
+
+function to_dict(r::RuleOutcome)::Dict{String, Any}
+    Dict{String, Any}(
+        "sensorType" => r.sensorType,
+        "sensorDirection" => r.sensorDirection,
+        "height" => r.height,
+        "statType" => r.statType,
+        "unit" => r.unit
+    )
+end
+
+function from_dict(::Type{RuleOutcome}, d::Dict{String, Any})::RuleOutcome
+    RuleOutcome(
+        sensorType = get(d, "sensorType", nothing),
+        sensorDirection = get(d, "sensorDirection", nothing),
+        height = get(d, "height", nothing),
+        statType = get(d, "statType", nothing),
+        unit = get(d, "unit", nothing)
+    )
 end
 
 export RuleViolation

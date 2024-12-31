@@ -13,6 +13,8 @@ module Types
   export ReconstructMeso
   include("./Types/ReconstructSingleMast.jl")
   export ReconstructSingleMast
+  include("./Types/RepresentativeYear.jl")
+  export RepresentativeYear
 end
 export Types
 
