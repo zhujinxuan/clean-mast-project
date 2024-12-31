@@ -6,7 +6,7 @@ using DataFrames
 using YAML
 using CSV
 using Dates
-using ..Types.Utils: from_dict
+using ..Types.Utils: from_dict, to_dict
 using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData
 import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping, MastConfig, MesoConfig
 
@@ -123,7 +123,7 @@ function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn},
     
     # Convert each sensor dict to SensorColumn using map
     return map(yaml_data["sensors"]) do sensor
-        from_dict(SensorColumn, sensor)
+        from_dict(SensorColumn, Dict{String, Any}(sensor))
     end
 end
 
@@ -140,7 +140,7 @@ function load_existing_meso_sensors(project_dir::String)::Union{Vector{SensorCol
     
     # Convert each sensor dict to SensorColumn using map
     return map(yaml_data["sensors"]) do sensor
-        from_dict(SensorColumn, sensor)
+        from_dict(SensorColumn, Dict{String, Any}(sensor))
     end
 end
 

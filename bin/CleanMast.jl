@@ -12,6 +12,7 @@ using CleanMastProject.Command.TowerShading
 using CleanMastProject.Command.ReconstructSingleMast
 using CleanMastProject.Command.QuickStart
 using CleanMastProject.Command.CleanFiles
+using CleanMastProject.Command.ReconstructMeso
 
 const COMMAND_HANDLERS = Dict(
     "check:config" => CheckConfig.execute,
@@ -20,6 +21,7 @@ const COMMAND_HANDLERS = Dict(
     "clean:files" => CleanFiles.execute,
     "tower:shading" => TowerShading.execute,
     "reconstruct:single_mast" => ReconstructSingleMast.execute,
+    "reconstruct:meso" => ReconstructMeso.execute,
     "quickstart" => QuickStart.execute,
 )
 

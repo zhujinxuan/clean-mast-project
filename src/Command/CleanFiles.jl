@@ -11,25 +11,26 @@ function execute(dir::String)
     # Check if directory exists
     !isdir(dir) && error("Directory does not exist: $dir")
     
-    # Parse config to get data file path
+    # Parse config to get data file paths
     config = parse_config(dir)
-    data_path = joinpath(dir, config.mast.data_path)
-    meso_data_path = joinpath(dir, config.meso.data_path)
-    config_path = joinpath(dir, "config.yaml")
+    essential_paths = [
+        joinpath(dir, "config.yaml"),
+        joinpath(dir, config.mast.data_path),
+        joinpath(dir, config.meso.data_path)
+    ]
     
     # Check essential files exist
-    !isfile(config_path) && error("Config file not found: $config_path")
-    !isfile(data_path) && error("Data file not found: $data_path")
-    !isfile(meso_data_path) && error("Meso data file not found: $meso_data_path")
+    for path in essential_paths
+        !isfile(path) && error("Essential file not found: $path")
+    end
     
     # Create archive directory with timestamp
     timestamp = Dates.format(now(), "yyyy-mm-dd_HHMMSS")
     archive_dir = joinpath(dir, "archived", timestamp)
     
-    # Get all files except config.yaml and data file
-    essential_files = [config_path, data_path, meso_data_path]
+    # Get all files except essential files
     files_to_archive = filter(
-        f -> isfile(f) && !(f in essential_files),
+        f -> isfile(f) && !(f in essential_paths),
         [joinpath(dir, f) for f in readdir(dir)]
     )
     

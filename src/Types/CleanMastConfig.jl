@@ -4,8 +4,8 @@ Types for project config, corresponding to {project_dir}/config.yaml
 """
 module CleanMastConfig
 using Dates
+import ..Utils: from_dict, to_dict
 using ..CleanRules
-using ..Utils
 
 struct RuleOutcome
     sensorType::Union{String, Nothing}
@@ -160,7 +160,7 @@ end
 
 function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
     AnalysisConfig(
-        from_dict(TimeRange, dict["time_range"])
+        from_dict(TimeRange, Dict{String, Any}(dict["time_range"]))
     )
 end
 
@@ -173,20 +173,20 @@ function from_dict(::Type{MesoConfig}, dict::Dict{String, Any})::MesoConfig
     )
 end
 
-function to_dict(tr::TimeRange)::Dict
+function to_dict(tr::TimeRange)::Dict{String, Any}
     Dict(
         "min" => tr.min,
         "max" => tr.max
     )
 end
 
-function to_dict(ac::AnalysisConfig)::Dict
+function to_dict(ac::AnalysisConfig)::Dict{String, Any}
     Dict(
         "time_range" => to_dict(ac.time_range)
     )
 end
 
-function to_dict(mc::MesoConfig)::Dict
+function to_dict(mc::MesoConfig)::Dict{String, Any}
     Dict(
         "data_path" => mc.data_path,
         "delim" => mc.delim,
@@ -200,7 +200,25 @@ function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
         dict["column_format"],
         dict["timestamp_column"],
         dict["timestamp_format"],
-        parse_mapping_rules(dict["mappings"])
+        parse_mapping_rules(Vector{Dict{String, Any}}(dict["mappings"]))
+    )
+end
+
+function from_dict(::Type{MastConfig}, dict::Dict{String, Any})::MastConfig
+    MastConfig(
+        dict["data_path"],
+        dict["skip_to"],
+        get(dict, "delim", nothing),
+        from_dict(SensorConfig, Dict{String, Any}(dict["sensor"])),
+        haskey(dict, "rules") ? [parse_rule(rule) for rule in dict["rules"]] : Rule[]
+    )
+end
+
+function from_dict(::Type{ProjectConfig}, dict::Dict{String, Any})::ProjectConfig
+    ProjectConfig(
+        from_dict(MastConfig, Dict{String, Any}(dict["Mast"])),
+        from_dict(MesoConfig, Dict{String, Any}(dict["Meso"])),
+        from_dict(AnalysisConfig, Dict{String, Any}(dict["Analysis"]))
     )
 end
 

@@ -78,20 +78,20 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         input_range = TimeRange(nothing, nothing)
         result = calculate_training_timerange(ts, input_range)
         @test result isa TrainingTimeRange
-        @test result.min == DateTime(2023,1,2)
-        @test result.max == DateTime(2024,1,2)
+        @test result.min == DateTime(2023,1,1)
+        @test result.max == DateTime(2024,1,1) - Second(1)
 
         # Test with specified min
         input_range = TimeRange(DateTime(2024,1,1), nothing)
         result = calculate_training_timerange(ts, input_range)
         @test result.min == DateTime(2024,1,1)
-        @test result.max == DateTime(2025,1,1)
+        @test result.max == DateTime(2025,1,1) - Second(1)
 
         # Test with specified max
         input_range = TimeRange(nothing, DateTime(2024,1,2))
         result = calculate_training_timerange(ts, input_range)
         @test result.max == DateTime(2024,1,2)
-        @test result.min == DateTime(2023,1,2)
+        @test result.min == DateTime(2023,1,1)
 
         # Test with both specified
         input_range = TimeRange(DateTime(2024,1,1), DateTime(2024,1,2))
@@ -136,7 +136,7 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         full_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,1) + Day(n_days))
         
         # Get 15-day averages for the entire period
-        averaged = average_timeseries(ts, full_range, 15)
+        averaged = average_timeseries(ts, full_range, Day(15))
         
         # For each 15-day period in the averaged data
         for i in 1:(size(averaged.df, 1)-1)
@@ -197,7 +197,7 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         
         # Test averaging over the full period
         full_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,1) + Day(n_days))
-        averaged = average_timeseries(ts, full_range, 15)
+        averaged = average_timeseries(ts, full_range, Day(15))
         
         # Find the 12th period in the averaged results
         period_12_idx = findfirst(t -> t == DateTime(2024,1,1) + Day(165), averaged.df.timestamp)

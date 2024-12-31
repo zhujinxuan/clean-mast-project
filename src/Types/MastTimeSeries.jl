@@ -1,6 +1,7 @@
 module MastTimeSeries
 
 using DataFrames
+import ..Types.Utils: from_dict, to_dict
 export SensorColumn, TimeSeriesData
 
 struct SensorColumn

@@ -50,15 +50,15 @@ function prepare_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange,
 end
 
 """
-Average data over 15-day periods within time_range, marking periods with >30% missing data as missing.
-The last period is marked as missing if it covers less than 2/3 of period_days.
+Average data over specified period within time_range, marking periods with >30% missing data as missing.
+The last period is marked as missing if it covers less than 2/3 of the period.
 """
-function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period_days::Int) :: TimeSeriesData
+function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period::Period) :: TimeSeriesData
     # Filter data within time range
     filtered_df = filter(row -> time_range.min <= row.timestamp, ts.df)
     
     # Create period start timestamps
-    period_starts = collect(time_range.min:Day(period_days):time_range.max)
+    period_starts = collect(time_range.min:period:time_range.max)
     result_df = DataFrame(timestamp = period_starts)
     
     for sensor in ts.sensors
@@ -69,17 +69,17 @@ function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, p
     last_ts = maximum(filtered_df.timestamp)
     # For each period
     for (i, period_start) in enumerate(period_starts)
-        period_end = period_start + Day(period_days)
+        period_end = period_start + period
         
         # Get values for this period
         period_df = filter(row -> 
             period_start <= row.timestamp < period_end, 
             filtered_df)
         
-        # For the last period, check if we have enough days
+        # For the last period, check if we have enough time coverage
         if i == length(period_starts)
-            days_in_period = (last_ts - period_start).value / (1000 * 60 * 60 * 24)  # Convert ms to days
-            if days_in_period < 2/3 * period_days
+            period_coverage = (last_ts - period_start) / period
+            if period_coverage < 2/3
                 continue  # Skip processing, leaving it as missing
             end
         end
@@ -127,11 +127,11 @@ function calculate_training_timerange(ts::TimeSeriesData, time_range::Union{Time
     data_max = maximum(ts.df.timestamp)
     
     # Calculate default range (1 year before max date)
-    default_min = something(time_range.max, data_max) - Year(1)
+    default_min = floor(something(time_range.max, data_max) - Year(1),Month(1))
     
     # Determine actual min and max
     actual_min = something(time_range.min, default_min)
-    actual_max = something(time_range.max, actual_min + Year(1))
+    actual_max = something(time_range.max, actual_min + Year(1) - Second(1))
     
     TrainingTimeRange(actual_min, actual_max)
 end

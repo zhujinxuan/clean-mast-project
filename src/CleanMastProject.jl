@@ -44,6 +44,9 @@ module ReconstructSingleMast
 end
 export ReconstructSingleMast
 
+include("./ReconstructMeso.jl")
+export ReconstructMeso
+
 module Command
   include("./Command/CheckConfig.jl")
   include("./Command/CheckSensors.jl")
@@ -51,12 +54,12 @@ module Command
   include("./Command/CleanFiles.jl")
   include("./Command/TowerShading.jl")
   include("./Command/ReconstructSingleMast.jl")
+  include("./Command/ReconstructMeso.jl")
   include("./Command/QuickStart.jl")
-  export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, ReconstructSingleMast, QuickStart
+  export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
+         ReconstructSingleMast, ReconstructMeso, QuickStart
 end
 export Command
 
-include("./ReconstructMeso.jl")
-export ReconstructMeso
 
 end
