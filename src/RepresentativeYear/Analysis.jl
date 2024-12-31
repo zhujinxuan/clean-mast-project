@@ -94,7 +94,7 @@ function find_representative_year(
     # Group by year and calculate mean speeds
     yearly_means = combine(
         groupby(meso_ts.df, dt -> floor(dt.timestamp, Year)),
-        [sensor.columnName => mean∘skipmissing for sensor in meso_ts.sensors if sensor.sensorType == "WindSpeed"]...
+        [sensor.columnName => mean∘skipmissing for sensor in meso_ts.sensors if sensor.sensorType == "WindSpeed" && sensor.statType == "avg"]...
     )
     rename!(yearly_means, :timestamp_floor => :year_start)
     
@@ -230,7 +230,7 @@ function calculate_sector_meso_diff(
     center::Float64
 )::Float64
     # Get wind speed sensor
-    ws_sensor = first(filter(s -> s.sensorType == "WindSpeed", meso_ts.sensors))
+    ws_sensor = first(filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", meso_ts.sensors))
     
     # Filter data for direction sector
     sector_data = filter_direction_sector(meso_ts, meso_ts, center)
