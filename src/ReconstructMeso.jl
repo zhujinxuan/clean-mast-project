@@ -40,7 +40,14 @@ function reconstruct_from_meso(
     println(ws_results)
     
     # Fill missing data
-    Reconstruction.fill_missing_data(complete_mast, complete_meso, actual_time_range, ws_results, wd_results)
+    reconstructed = Reconstruction.fill_missing_data(
+        complete_mast, 
+        complete_meso, 
+        actual_time_range, 
+        ws_results, 
+        wd_results
+    )
+    
 end
 
 export reconstruct_from_meso, default_time_range

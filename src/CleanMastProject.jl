@@ -46,6 +46,8 @@ export ReconstructSingleMast
 
 include("./ReconstructMeso.jl")
 export ReconstructMeso
+include("./RepresentativeYear.jl")
+export RepresentativeYear
 
 module Command
   include("./Command/CheckConfig.jl")
@@ -55,9 +57,10 @@ module Command
   include("./Command/TowerShading.jl")
   include("./Command/ReconstructSingleMast.jl")
   include("./Command/ReconstructMeso.jl")
+  include("./Command/RepresentativeYearCalibration.jl")
   include("./Command/QuickStart.jl")
   export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
-         ReconstructSingleMast, ReconstructMeso, QuickStart
+         ReconstructSingleMast, ReconstructMeso, RepresentativeYearCalibration, QuickStart
 end
 export Command
 
