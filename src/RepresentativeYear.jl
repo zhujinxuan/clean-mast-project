@@ -17,17 +17,22 @@ function calibrate_to_representative_year(
     mast_time_range::TrainingTimeRange;
     target_height::Float64=120.0  # Default to 120m
 )::TimeSeriesData
-    # Find target sensor
-    target_sensor = find_target_sensor(mast_ts, target_height)
-    if isnothing(target_sensor)
-        error("No suitable wind speed sensor found near height $(target_height)m")
+    # Find target sensors in both mast and meso data
+    mast_sensor = find_target_mast_sensor(mast_ts, target_height)
+    if isnothing(mast_sensor)
+        error("No suitable wind speed sensor found in mast data near height $(target_height)m")
     end
     
-    # Calculate mean speeds for target sensor
-    meso_full_mean = calculate_mean_speed(meso_ts, target_sensor)
+    meso_sensor = find_target_meso_sensor(meso_ts, target_height)
+    if isnothing(meso_sensor)
+        error("No suitable wind speed sensor found in meso data near height $(target_height)m")
+    end
+    
+    # Calculate mean speeds for meso sensor
+    meso_full_mean = calculate_mean_speed(meso_ts, meso_sensor)
     meso_range_mean = calculate_mean_speed(
         filter(row -> mast_time_range.min <= row.timestamp <= mast_time_range.max, meso_ts),
-        target_sensor
+        meso_sensor
     )
     
     # Check if calibration is needed
@@ -46,13 +51,13 @@ function calibrate_to_representative_year(
         meso_ts,
         mast_time_range,
         ref_year_start,
-        target_sensor
+        meso_sensor
     )
     
     # Create calibration results
     calibration = CalibrationResults(
         ref_year_start,
-        target_sensor,
+        meso_sensor,
         meso_range_mean / meso_full_mean,
         directional_cals,
         true

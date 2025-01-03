@@ -9,9 +9,9 @@ using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.ReconstructMeso: TrainingTimeRange
 
 """
-Find target wind speed sensor closest to specified height
+Find target wind speed sensor closest to specified height in mast data
 """
-function find_target_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
+function find_target_mast_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
     ws_sensors = filter(s -> 
         s.sensorType == "WindSpeed" && 
         s.statType == "avg",
@@ -24,6 +24,26 @@ function find_target_sensor(ts::TimeSeriesData, target_height::Float64)::Union{S
     closest = argmin(map(s -> abs(s.height - target_height), ws_sensors))
     ws_sensors[closest]
 end
+export find_target_mast_sensor
+
+"""
+Find target wind speed sensor closest to specified height in meso data
+"""
+function find_target_meso_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
+    # Filter for wind speed sensors with avg statType
+    ws_sensors = filter(s -> 
+        s.sensorType == "WindSpeed" && 
+        s.statType == "avg",
+        ts.sensors
+    )
+    
+    isempty(ws_sensors) && return nothing
+    
+    # Find sensor closest to target height
+    closest = argmin(map(s -> abs(s.height - target_height), ws_sensors))
+    ws_sensors[closest]
+end
+export find_target_meso_sensor
 
 """
 Calculate mean wind speed for a specific sensor
@@ -54,6 +74,7 @@ function find_direction_sector(angle::Float64)::Int
     # Handle edge case
     sector > 16 ? 1 : sector
 end
+export find_direction_sector
 
 """
 Average time series to hourly resolution
@@ -72,6 +93,7 @@ function average_to_hourly(ts::TimeSeriesData)::TimeSeriesData
     rename!(hourly_df, :timestamp_floor => :timestamp)
     TimeSeriesData(hourly_df, ts.sensors)
 end
+export average_to_hourly
 
 """
 Calculate circular mean for wind directions
@@ -82,6 +104,7 @@ function circular_mean(angles::Vector{Float64})::Float64
     mean_cos = mean(cos.(rad))
     mod(rad2deg(atan(mean_sin, mean_cos)), 360.0)
 end
+export circular_mean
 
 """
 Find the latest representative year
@@ -108,6 +131,7 @@ function find_representative_year(
     
     error("No representative year found within threshold")
 end
+export find_representative_year
 
 """
 Calculate directional calibrations for a specific sensor

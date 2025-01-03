@@ -37,7 +37,6 @@ function reconstruct_from_meso(
     # Train correlations
     ws_results = Training.train_wind_speed(avg_mast, avg_meso, min_height)
     wd_results = Training.train_wind_direction(avg_mast, avg_meso, min_height)
-    println(ws_results)
     
     # Fill missing data
     reconstructed = Reconstruction.fill_missing_data(

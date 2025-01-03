@@ -29,3 +29,7 @@ include("ReconstructSingleMast/test_direction_training.jl")
     include("ReconstructMeso/test_reconstruction.jl")
     include("test_reconstruct_meso.jl")
 end
+
+@testset "Representative Year" begin
+    include("RepresentativeYear/test_analysis.jl")
+end
