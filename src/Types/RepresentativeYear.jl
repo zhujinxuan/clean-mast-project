@@ -14,7 +14,6 @@ end
 struct CalibrationResults
     reference_year::DateTime
     target_sensor::SensorColumn  # The sensor being calibrated
-    meso_ratio::Float64  # Ratio of mean speeds (training_range / full_period)
     directional_calibrations::Vector{DirectionalCalibration}
     is_calibration_needed::Bool
 end

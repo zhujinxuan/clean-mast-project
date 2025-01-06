@@ -80,17 +80,26 @@ export find_direction_sector
 Average time series to hourly resolution
 """
 function average_to_hourly(ts::TimeSeriesData)::TimeSeriesData
+    # Create a copy of the DataFrame with hour floor column
+    df = copy(ts.df)
+    df.hour_floor = floor.(df.timestamp, Hour)
+    
+    # Group by hour floor and calculate means
     hourly_df = combine(
-        groupby(ts.df, dt -> floor(dt.timestamp, Hour)),
+        groupby(df, :hour_floor),
         [
             sensor.columnName => 
                 sensor.sensorType == "WindDirection" ? 
-                    x -> circular_mean(collect(skipmissing(x))) :
-                    mean∘skipmissing
+                    (x -> circular_mean(collect(skipmissing(x)))) => sensor.columnName :
+                    mean∘skipmissing => sensor.columnName
             for sensor in ts.sensors
         ]...
     )
-    rename!(hourly_df, :timestamp_floor => :timestamp)
+    
+    # Rename hour_floor back to timestamp and sort
+    rename!(hourly_df, :hour_floor => :timestamp)
+    sort!(hourly_df, :timestamp)
+    
     TimeSeriesData(hourly_df, ts.sensors)
 end
 export average_to_hourly
@@ -107,24 +116,28 @@ end
 export circular_mean
 
 """
-Find the latest representative year
+Find the latest representative year, the return value is the year start date
 """
 function find_representative_year(
     meso_ts::TimeSeriesData,
-    full_period_mean::Float64;
+    full_period_mean::Float64,
+    meso_sensor::SensorColumn;
     threshold::Float64=0.02
 )::DateTime
-    # Group by year and calculate mean speeds
+    # Create a copy of DataFrame with year start column
+    df = copy(meso_ts.df)
+    df.year_start = floor.(df.timestamp, Year)
+    
+    # Group by year and calculate mean speed for the specific sensor
     yearly_means = combine(
-        groupby(meso_ts.df, dt -> floor(dt.timestamp, Year)),
-        [sensor.columnName => mean∘skipmissing for sensor in meso_ts.sensors if sensor.sensorType == "WindSpeed" && sensor.statType == "avg"]...
+        groupby(df, :year_start),
+        meso_sensor.columnName => mean∘skipmissing => :mean_speed
     )
-    rename!(yearly_means, :timestamp_floor => :year_start)
     
     # Find latest year within threshold
     for year_start in sort(yearly_means.year_start, rev=true)
-        year_means = yearly_means[yearly_means.year_start .== year_start, :]
-        if all(abs.(values(year_means[2:end]) .- full_period_mean) ./ full_period_mean .<= threshold)
+        year_mean = yearly_means[yearly_means.year_start .== year_start, :mean_speed][1]
+        if abs(year_mean - full_period_mean) / full_period_mean <= threshold
             return year_start
         end
     end
@@ -133,66 +146,108 @@ function find_representative_year(
 end
 export find_representative_year
 
+function filter_training_range(ts::TimeSeriesData, training_range::TrainingTimeRange)::TimeSeriesData
+    df = ts.df[training_range.min .<= ts.df.timestamp .<= training_range.max, :]
+    TimeSeriesData(df, ts.sensors)
+end
+export filter_training_range
+
 """
-Calculate directional calibrations for a specific sensor
+Calculate directional calibrations using both mast and meso sensors
 """
 function calculate_directional_calibrations(
     mast_ts::TimeSeriesData,
     meso_ts::TimeSeriesData,
     training_range::TrainingTimeRange,
     ref_year_start::DateTime,
-    target_sensor::SensorColumn
+    mast_sensor::SensorColumn,
+    meso_sensor::SensorColumn
 )::Vector{DirectionalCalibration}
     # Average both to hourly
     hourly_mast = average_to_hourly(mast_ts)
     hourly_meso = average_to_hourly(meso_ts)
+    training_range_hourly_mast = filter_training_range(hourly_mast, training_range)
+    training_range_hourly_meso = filter_training_range(hourly_meso, training_range)
     
+    sector_meso_diff_df = calculate_sector_meso_diff(
+        hourly_meso, 
+        training_range,
+        ref_year_start,
+        meso_sensor
+    )
     map(DIRECTION_SECTORS) do sector
-        # Filter data for this sector
-        sector_data = filter_direction_sector(hourly_mast, hourly_meso, sector.center)
+        # Filter data for this sector using mast wind speed sensor
+        sector_data = filter_direction_sector(training_range_hourly_mast, training_range_hourly_meso, sector.center, mast_sensor)
         
-        # Calculate slope for this sector using target sensor
-        slope = calculate_sector_slope(sector_data, target_sensor)
+        # Calculate slope for this sector using both sensors
+        slope = calculate_sector_slope(sector_data, mast_sensor, meso_sensor)
         
         # Calculate meso speed difference
-        meso_diff = calculate_sector_meso_diff(
-            hourly_meso, 
-            training_range,
-            ref_year_start,
-            sector.center
-        )
-        
-        DirectionalCalibration(sector.center, slope, meso_diff)
+        meso_speed_diff = sector_meso_diff_df[sector_meso_diff_df.sector .== sector.name, :meso_speed_diff][1]
+        DirectionalCalibration(sector.center, slope, meso_speed_diff)
     end
 end
 
 """
-Apply calibration to time series
+Apply calibration to time series with validation checks
 """
 function apply_calibration(
     ts::TimeSeriesData,
-    calibration::CalibrationResults
+    calibration::CalibrationResults;
+    min_speed::Float64 = 0.5,
+    max_speed::Float64 = 25.0
 )::TimeSeriesData
     if !calibration.is_calibration_needed
         return ts
     end
     
     result_df = copy(ts.df)
-    
+    target_col = calibration.target_sensor.columnName
+    dir_col = find_matching_direction_sensor(ts, calibration.target_sensor)
     # Apply calibration for each row
     for row in eachrow(result_df)
+        # Skip if original value is missing
+        ismissing(row[target_col]) && continue
+        
         # Find direction sector
-        direction = get_primary_direction(row, ts.sensors)
-        sector = find_direction_sector(direction)
+        sector = find_direction_sector(row[dir_col.columnName])
         cal = calibration.directional_calibrations[sector]
         
-        # Apply calibration only to target sensor
-        if !ismissing(row[calibration.target_sensor.columnName])
-            row[calibration.target_sensor.columnName] *= (1.0 + cal.meso_speed_diff * cal.slope)
+        # Calculate calibrated value
+        original_value = row[target_col]
+        calibrated_value = original_value + cal.meso_speed_diff * cal.slope
+        
+        # Only apply calibration if result is within valid range
+        if min_speed <= calibrated_value <= max_speed
+            row[target_col] = calibrated_value
         end
     end
     
     TimeSeriesData(result_df, ts.sensors)
+end
+export apply_calibration
+
+"""
+Find wind direction sensor closest to given wind speed sensor
+"""
+function find_matching_direction_sensor(
+    ts::TimeSeriesData, 
+    ws_sensor::SensorColumn
+)::Union{SensorColumn, Nothing}
+    dir_sensors = filter(s -> s.sensorType == "WindDirection" && s.statType == "avg", ts.sensors)
+    isempty(dir_sensors) && return nothing
+    
+    # Find direction sensor with height closest to wind speed sensor
+    closest = argmin(map(s -> abs(s.height - ws_sensor.height), dir_sensors))
+    dir_sensors[closest]
+end
+
+"""
+Calculate circular difference from a reference direction
+"""
+function abs_circular_diff(direction::Float64, reference::Float64)::Float64
+    diff = abs(direction - reference)
+    min(diff, 360.0 - diff)
 end
 
 """
@@ -201,47 +256,62 @@ Filter data for a specific direction sector
 function filter_direction_sector(
     mast_ts::TimeSeriesData,
     meso_ts::TimeSeriesData,
-    center::Float64
+    center::Float64,
+    mast_ws_sensor::SensorColumn
 )::DataFrame
-    # Get primary direction column from mast
-    dir_sensor = first(filter(s -> s.sensorType == "WindDirection", mast_ts.sensors))
-    
-    # Filter data within ±11.25° of center
-    lower = mod(center - 11.25, 360.0)
-    upper = mod(center + 11.25, 360.0)
+    # Get direction sensor closest to wind speed sensor height
+    dir_sensor = find_matching_direction_sensor(mast_ts, mast_ws_sensor)
+    if isnothing(dir_sensor)
+        error("No wind direction sensor found in mast data")
+    end
     
     # Join mast and meso data
     df = innerjoin(mast_ts.df, meso_ts.df, on=:timestamp)
     
-    if lower > upper  # Handles case around 0/360
-        filter(row -> 
-            !ismissing(row[dir_sensor.columnName]) && 
-            (row[dir_sensor.columnName] >= lower || row[dir_sensor.columnName] < upper),
-            df)
-    else
-        filter(row -> 
-            !ismissing(row[dir_sensor.columnName]) && 
-            lower <= row[dir_sensor.columnName] < upper,
-            df)
-    end
+    # Add circular difference column
+    df.dir_diff = map(row -> 
+        ismissing(row[dir_sensor.columnName]) ? Inf : 
+        abs_circular_diff(row[dir_sensor.columnName], center),
+        eachrow(df))
+    
+    # Filter rows within ±11.25° of center
+    filter(row -> row.dir_diff <= 11.25, df)
 end
 
 """
 Calculate slope for a direction sector using linear regression
 """
-function calculate_sector_slope(sector_data::DataFrame, target_sensor::SensorColumn)::Float64
+function calculate_sector_slope(
+    sector_data::DataFrame, 
+    mast_sensor::SensorColumn,
+    meso_sensor::SensorColumn
+)::Float64
     if nrow(sector_data) < 2
         return 1.0  # Default to no adjustment if insufficient data
     end
-    
-    # Get meso wind speed column (assumes it's the last ws_ column)
-    meso_ws = last(names(sector_data, r"^ws_.*m$"))
-    
-    # Perform linear regression using target sensor
-    # Use @eval to create the formula dynamically
-    formula = @eval @formula($(Symbol(target_sensor.columnName)) ~ $(Symbol(meso_ws)))
+    # Create formula using both sensor column names
+    formula = @eval @formula($(Symbol(mast_sensor.columnName)) ~ $(Symbol(meso_sensor.columnName)))
     model = lm(formula, sector_data)
     coef(model)[2]  # Return slope
+end
+
+"""
+Calculate mean speed for a direction sector
+"""
+function calculate_sector_meso_mean(meso_ts::TimeSeriesData, speed_sensor::SensorColumn)::DataFrame
+    df = copy(meso_ts.df)
+
+    dir_sensor = find_matching_direction_sensor(meso_ts, speed_sensor)
+    # Map each direction to its sector number and then to sector name
+    df.sector = map(eachrow(df)) do row
+        sector_idx = find_direction_sector(row[dir_sensor.columnName])
+        DIRECTION_SECTORS[sector_idx].name
+    end
+    
+    # Group by sector name and calculate mean
+    sector_df = combine(groupby(df, :sector), speed_sensor.columnName => mean∘skipmissing => :mean_speed)
+    sort!(sector_df, :sector)  # Sort by sector name for consistency
+    sector_df
 end
 
 """
@@ -251,39 +321,25 @@ function calculate_sector_meso_diff(
     meso_ts::TimeSeriesData,
     training_range::TrainingTimeRange,
     ref_year_start::DateTime,
-    center::Float64
-)::Float64
-    # Get wind speed sensor
-    ws_sensor = first(filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", meso_ts.sensors))
+    meso_sensor::SensorColumn
+)::DataFrame
+    meso_training_ts = filter_training_range(meso_ts, training_range)
+    meso_ref_year_ts = filter_training_range(meso_ts, TrainingTimeRange(ref_year_start, ref_year_start + Year(1) - Second(1)))
     
-    # Filter data for direction sector
-    sector_data = filter_direction_sector(meso_ts, meso_ts, center)
+    meso_training_sector_df = calculate_sector_meso_mean(meso_training_ts, meso_sensor)
+    meso_ref_year_sector_df = calculate_sector_meso_mean(meso_ref_year_ts, meso_sensor)
     
-    # Calculate means for training range and reference year
-    training_mean = mean(skipmissing(
-        sector_data[training_range.min .<= sector_data.timestamp .<= training_range.max, ws_sensor.columnName]
-    ))
+    # Rename columns before joining
+    rename!(meso_training_sector_df, :mean_speed => :training_mean_speed)
+    rename!(meso_ref_year_sector_df, :mean_speed => :ref_year_mean_speed)
     
-    ref_year_end = ref_year_start + Year(1) - Second(1)
-    ref_year_mean = mean(skipmissing(
-        sector_data[ref_year_start .<= sector_data.timestamp .<= ref_year_end, ws_sensor.columnName]
-    ))
+    # Join and calculate difference
+    result_df = innerjoin(meso_training_sector_df, meso_ref_year_sector_df, on=:sector)
+    result_df.meso_speed_diff = result_df.ref_year_mean_speed .- result_df.training_mean_speed
     
-    # Return relative difference
-    (ref_year_mean - training_mean) / training_mean
+    result_df
 end
 
-"""
-Get primary wind direction from a row of data
-"""
-function get_primary_direction(row::DataFrameRow, sensors::Vector{SensorColumn})::Float64
-    # Find highest wind direction sensor
-    dir_sensors = filter(s -> s.sensorType == "WindDirection", sensors)
-    primary_sensor = last(sort(dir_sensors, by=s -> s.height))
-    
-    # Return direction, defaulting to 0 if missing
-    ismissing(row[primary_sensor.columnName]) ? 0.0 : row[primary_sensor.columnName]
-end
 
 export calculate_mean_speed, is_calibration_needed, find_representative_year,
        calculate_directional_calibrations, apply_calibration

@@ -30,10 +30,14 @@ function calibrate_to_representative_year(
     
     # Calculate mean speeds for meso sensor
     meso_full_mean = calculate_mean_speed(meso_ts, meso_sensor)
-    meso_range_mean = calculate_mean_speed(
-        filter(row -> mast_time_range.min <= row.timestamp <= mast_time_range.max, meso_ts),
-        meso_sensor
+    
+    # Filter DataFrame and create new TimeSeriesData for training range
+    training_df = filter(
+        row -> mast_time_range.min <= row.timestamp <= mast_time_range.max, 
+        meso_ts.df
     )
+    training_ts = TimeSeriesData(training_df, meso_ts.sensors)
+    meso_range_mean = calculate_mean_speed(training_ts, meso_sensor)
     
     # Check if calibration is needed
     needs_calibration = is_calibration_needed(meso_full_mean, meso_range_mean)
@@ -43,7 +47,7 @@ function calibrate_to_representative_year(
     end
     
     # Find representative year start DateTime
-    ref_year_start = find_representative_year(meso_ts, meso_full_mean)
+    ref_year_start = find_representative_year(meso_ts, meso_full_mean, meso_sensor)
     
     # Calculate directional calibrations
     directional_cals = calculate_directional_calibrations(
@@ -51,18 +55,17 @@ function calibrate_to_representative_year(
         meso_ts,
         mast_time_range,
         ref_year_start,
+        mast_sensor,
         meso_sensor
     )
     
     # Create calibration results
     calibration = CalibrationResults(
         ref_year_start,
-        meso_sensor,
-        meso_range_mean / meso_full_mean,
+        mast_sensor,
         directional_cals,
         true
     )
-    
     # Apply calibration
     apply_calibration(mast_ts, calibration)
 end

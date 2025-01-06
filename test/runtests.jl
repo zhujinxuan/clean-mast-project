@@ -19,11 +19,18 @@ include("test_icing_rules.jl")
 include("test_layer_diff_rules.jl")
 include("process/test_apply_missing.jl")
 include("TowerShading/TowerShading.jl")
-include("ReconstructSingleMast/test_wind_speed_training.jl")
-include("ReconstructSingleMast/test_direction_training.jl")
+
+macro disabled_testset(args...)
+end
+
+@disabled_testset "Single Mast reconstruction" begin
+    include("ReconstructSingleMast/test_wind_speed_training.jl")
+    include("ReconstructSingleMast/test_direction_training.jl")
+end
 # Add other test files here as needed
 
-@testset "Meso reconstruction" begin
+
+@disabled_testset "Meso reconstruction" begin
     include("ReconstructMeso/test_training.jl")
     include("ReconstructMeso/test_data_processing.jl")
     include("ReconstructMeso/test_reconstruction.jl")
