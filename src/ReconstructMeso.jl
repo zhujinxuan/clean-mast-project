@@ -20,35 +20,30 @@ function reconstruct_from_meso(
     mast_ts::TimeSeriesData,
     meso_ts::TimeSeriesData,
     time_range::Union{TimeRange, Nothing}=nothing;
-    training_period::Period=Hour(4),
     min_height::Float64=50.0
 )::TimeSeriesData
-    # Use default time range if none provided
+    # Calculate training time range
     actual_time_range = calculate_training_timerange(mast_ts, time_range)
     
-    # Prepare complete timeseries first
-    complete_mast = DataProcessing.prepare_timeseries(mast_ts, actual_time_range, Minute(10))
-    complete_meso = DataProcessing.prepare_timeseries(meso_ts, actual_time_range, Minute(60))
-    
-    # Average data for training
-    avg_mast = DataProcessing.average_timeseries(complete_mast, actual_time_range, training_period)
-    avg_meso = DataProcessing.average_timeseries(complete_meso, actual_time_range, training_period)
+    # Prepare mast and meso data with proper timestamps and interpolation
+    complete_mast, interpolated_meso = prepare_training_data(mast_ts, meso_ts, actual_time_range)
     
     # Train correlations
-    ws_results = Training.train_wind_speed(avg_mast, avg_meso, min_height)
-    wd_results = Training.train_wind_direction(avg_mast, avg_meso, min_height)
+    ws_results = Training.train_wind_speed(complete_mast, interpolated_meso, min_height)
+    wd_results = Training.train_wind_direction(complete_mast, interpolated_meso, min_height)
     
     # Fill missing data
     reconstructed = Reconstruction.fill_missing_data(
         complete_mast, 
-        complete_meso, 
+        interpolated_meso, 
         actual_time_range, 
         ws_results, 
         wd_results
     )
     
+    reconstructed
 end
 
-export reconstruct_from_meso, default_time_range
+export reconstruct_from_meso
 
 end 

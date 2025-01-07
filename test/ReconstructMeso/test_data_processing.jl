@@ -8,8 +8,8 @@ using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
 using CleanMastProject.Types.CleanMastConfig: TimeRange
 using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeseries, 
-    prepare_timeseries, average_timeseries, find_nearest_height_sensor, 
-    calculate_training_timerange
+    find_nearest_height_sensor, calculate_training_timerange, interpolate_meso_data,
+    prepare_training_data
 
 @testset "DataProcessing" begin
     # Create test data
@@ -48,11 +48,65 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         @test all(diff(completed_hourly.df.timestamp) .== Hour(1))
     end
 
-    @testset "prepare_timeseries" begin
-        prepared = prepare_timeseries(ts, time_range, Minute(10))
-        @test issorted(prepared.df.timestamp)
-        @test first(prepared.df.timestamp) == DateTime(2024,1,1,2)
-        @test last(prepared.df.timestamp) == DateTime(2024,1,1,22)
+    @testset "interpolate_meso_data" begin
+        # Create test data with hourly values
+        meso_ts = TimeSeriesData(
+            DataFrame(
+                timestamp = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22)),
+                ws_80m = collect(5.0:25.0),
+                wd_80m = mod.(collect(170.0:10.0:390.0), 360.0)
+            ),
+            sensors
+        )
+        
+        # Test interpolation to 10-minute intervals
+        interpolated = interpolate_meso_data(meso_ts, time_range)
+        
+        # Check timestamps
+        @test size(interpolated.df, 1) == 121  # 20 hours * 6 10-min intervals + 1
+        @test all(diff(interpolated.df.timestamp) .== Minute(10))
+        
+        # Check wind speed interpolation (linear)
+        @test interpolated.df[1, :ws_80m] ≈ 5.0  # First value
+        @test interpolated.df[7, :ws_80m] ≈ 5.5  # Midpoint between 5.0 and 6.0
+        
+        # Check wind direction interpolation (circular)
+        @test interpolated.df[1, :wd_80m] ≈ 170.0  # First value
+        # Test circular interpolation across 360° boundary
+        idx = findfirst(x -> x.wd_80m > 350.0, meso_ts.df)
+        if !isnothing(idx)
+            before_val = meso_ts.df[idx, :wd_80m]
+            after_val = meso_ts.df[idx+1, :wd_80m]
+            midpoint_idx = (idx-1)*6 + 4  # Index in interpolated data for midpoint
+            expected = mod(before_val + (after_val - before_val + 180) % 360 - 180, 360) / 2
+            @test isapprox(interpolated.df[midpoint_idx, :wd_80m], expected, atol=1.0)
+        end
+    end
+
+    @testset "prepare_training_data" begin
+        # Create test meso data with hourly values
+        meso_ts = TimeSeriesData(
+            DataFrame(
+                timestamp = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22)),
+                ws_80m = collect(5.0:25.0),
+                wd_80m = mod.(collect(170.0:10.0:390.0), 360.0)
+            ),
+            sensors
+        )
+        
+        # Test preparation of both datasets
+        complete_mast, interpolated_meso = prepare_training_data(ts, meso_ts, time_range)
+        
+        # Check mast data
+        @test size(complete_mast.df, 1) == 121
+        @test all(diff(complete_mast.df.timestamp) .== Minute(10))
+        
+        # Check meso data
+        @test size(interpolated_meso.df, 1) == 121
+        @test all(diff(interpolated_meso.df.timestamp) .== Minute(10))
+        
+        # Check alignment of timestamps
+        @test all(complete_mast.df.timestamp .== interpolated_meso.df.timestamp)
     end
 
     @testset "find_nearest_height_sensor" begin
@@ -98,121 +152,6 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         result = calculate_training_timerange(ts, input_range)
         @test result.min == DateTime(2024,1,1)
         @test result.max == DateTime(2024,1,2)
-    end
-
-    @testset "average_timeseries with annual pattern" begin
-        # Parameters for wind speed pattern
-        n_days = 365
-        n_hours = 24 * n_days
-        base_wind = 8.0  # base wind speed
-        amplitude = 2.0  # seasonal variation amplitude
-        w = 2π / (365 * 24)  # angular frequency (per hour)
-        noise_amplitude = 1.0  # random noise amplitude
-        
-        # Generate timestamps
-        timestamps = collect(DateTime(2024,1,1):Hour(1):DateTime(2024,1,1) + Hour(n_hours-1))
-        
-        # Generate time indices (in hours)
-        t = 0.0:(n_hours-1)
-        
-        # Generate wind speeds: base + seasonal + noise
-        ws_data = Vector{Union{Missing,Float64}}(undef, n_hours)
-        ws_data .= base_wind .+ amplitude .* sin.(w .* t) .+ (rand(n_hours) .- 0.5) .* 2 .* noise_amplitude
-        
-        # Add 5% missing values randomly
-        missing_indices = rand(1:n_hours, round(Int, n_hours * 0.05))
-        ws_data[missing_indices] .= missing
-        
-        df = DataFrame(
-            timestamp = timestamps,
-            ws_80m = ws_data
-        )
-        
-        sensors = [
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s")
-        ]
-        
-        ts = TimeSeriesData(df, sensors)
-        full_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,1) + Day(n_days))
-        
-        # Get 15-day averages for the entire period
-        averaged = average_timeseries(ts, full_range, Day(15))
-        
-        # For each 15-day period in the averaged data
-        for i in 1:(size(averaged.df, 1)-1)
-            period_start = averaged.df[i, :timestamp]
-            
-            # Calculate theoretical mean for this period
-            t_start = (period_start - DateTime(2024,1,1)).value ÷ (1000 * 3600)  # hours since start (value is in milliseconds)
-            t_period = t_start:(t_start + 24*15 - 1)
-            
-            # Theoretical mean (without noise, as noise should average to ~0)
-            theoretical_mean = base_wind + amplitude * mean(sin.(w .* t_period))
-            
-            # Test that average is within 0.1 m/s of theoretical mean
-            # (allowing for some deviation due to noise and missing values)
-            @test !ismissing(averaged.df[i, :ws_80m])
-            @test abs(averaged.df[i, :ws_80m] - theoretical_mean) < 0.1
-            
-            # Print for verification
-            @info "Period starting $(period_start)" theoretical=theoretical_mean actual=averaged.df[i, :ws_80m]
-        end
-    end
-
-    @testset "average_timeseries with high missing ratio" begin
-        # Use same parameters as annual pattern test
-        n_days = 360
-        n_hours = 24 * n_days
-        base_wind = 8.0
-        amplitude = 2.0
-        w = 2π / (365 * 24)
-        
-        # Generate base data
-        timestamps = collect(DateTime(2024,1,1):Hour(1):DateTime(2024,1,1) + Hour(n_hours-1))
-        t = 0.0:(n_hours-1)
-        ws_data = base_wind .+ amplitude .* sin.(w .* t)
-        
-        # Create DataFrame
-        df = DataFrame(
-            timestamp = timestamps,
-            ws_80m = Vector{Union{Missing, Float64}}(ws_data)
-        )
-        
-        sensors = [
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s")
-        ]
-        
-        # Set 50% of values to missing in 12th and 13th 15-day periods (days 165-179)
-        period_12_start = DateTime(2024,1,1) + Day(165)  # (11 * 15) 
-        period_12_end = period_12_start + Day(15)
-        
-        # Find all indices in the period range
-        period_indices = findall(t -> period_12_start <= t < period_12_end, timestamps)
-        # Randomly select 50% of indices to set as missing
-        indices_to_set_missing = period_indices[rand(Bool, length(period_indices))]
-        
-        df[indices_to_set_missing, :ws_80m] .= missing
-        
-        ts = TimeSeriesData(df, sensors)
-        
-        # Test averaging over the full period
-        full_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,1) + Day(n_days))
-        averaged = average_timeseries(ts, full_range, Day(15))
-        
-        # Find the 12th period in the averaged results
-        period_12_idx = findfirst(t -> t == DateTime(2024,1,1) + Day(165), averaged.df.timestamp)
-        
-        # Test that these periods are missing
-        @test ismissing(averaged.df[period_12_idx, :ws_80m])
-        
-        # Test that other periods are not missing
-        @test !ismissing(averaged.df[period_12_idx-1, :ws_80m])  # period 11
-        
-        # Print for verification
-        @info "Periods 11-14" begin
-            period_11=averaged.df[period_12_idx-1, :ws_80m]
-            period_12=averaged.df[period_12_idx, :ws_80m]
-        end
     end
 end
 

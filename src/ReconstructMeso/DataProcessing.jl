@@ -6,6 +6,7 @@ using Dates
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.ReconstructMeso: TrainingTimeRange
 using ...Types.CleanMastConfig: TimeRange
+
 """
 Ensure TimeSeriesData has all timestamps in range at specified interval
 """
@@ -36,67 +37,118 @@ function ensure_complete_timeseries(ts::TimeSeriesData, time_range::TrainingTime
 end
 
 """
-Prepare time series data by ensuring complete timestamps at specified interval
+Interpolate meso data to 10-minute intervals using vector calculation
 """
-function prepare_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, 
-                          interval::Minute)::TimeSeriesData
-    # First ensure we have data for the full time range at specified interval
-    complete_ts = ensure_complete_timeseries(ts, time_range, interval)
+function interpolate_meso_data(ts::TimeSeriesData, time_range::TrainingTimeRange)::TimeSeriesData
+    # Ensure data is sorted by timestamp
+    sorted_df = sort(ts.df, :timestamp)
     
-    # Sort by timestamp to ensure proper ordering
-    sort!(complete_ts.df, :timestamp)
+    # Create target timestamps at 10-minute intervals
+    target_timestamps = collect(time_range.min:Minute(10):time_range.max)
+    result_df = DataFrame(timestamp = target_timestamps)
     
-    complete_ts
-end
-
-"""
-Average data over specified period within time_range, marking periods with >30% missing data as missing.
-The last period is marked as missing if it covers less than 2/3 of the period.
-"""
-function average_timeseries(ts::TimeSeriesData, time_range::TrainingTimeRange, period::Period) :: TimeSeriesData
-    # Filter data within time range
-    filtered_df = filter(row -> time_range.min <= row.timestamp, ts.df)
-    
-    # Create period start timestamps
-    period_starts = collect(time_range.min:period:time_range.max)
-    result_df = DataFrame(timestamp = period_starts)
-    
+    # Interpolate each sensor column
     for sensor in ts.sensors
+        col = sensor.columnName
+        values = sorted_df[!, col]
+        timestamps = sorted_df.timestamp
+        
         # Initialize result column with missing values
-        result_df[!, sensor.columnName] = Vector{Union{Missing, Float64}}(missing, length(period_starts))
-    end
-
-    last_ts = maximum(filtered_df.timestamp)
-    # For each period
-    for (i, period_start) in enumerate(period_starts)
-        period_end = period_start + period
+        result_values = Vector{Union{Missing, Float64}}(missing, length(target_timestamps))
         
-        # Get values for this period
-        period_df = filter(row -> 
-            period_start <= row.timestamp < period_end, 
-            filtered_df)
+        # Find valid data points
+        valid_mask = .!ismissing.(values)
+        if !any(valid_mask)
+            result_df[!, col] = result_values
+            continue
+        end
         
-        # For the last period, check if we have enough time coverage
-        if i == length(period_starts)
-            period_coverage = (last_ts - period_start) / period
-            if period_coverage < 2/3
-                continue  # Skip processing, leaving it as missing
+        valid_times = timestamps[valid_mask]
+        valid_values = values[valid_mask]
+        
+        # For each target timestamp, find surrounding valid points
+        for (i, target_time) in enumerate(target_timestamps)
+            # Find indices of surrounding points
+            before_idx = findlast(t -> t <= target_time, valid_times)
+            after_idx = findfirst(t -> t > target_time, valid_times)
+            
+            if isnothing(before_idx)
+                # Before first valid point
+                result_values[i] = missing
+            elseif isnothing(after_idx)
+                # After last valid point
+                result_values[i] = missing
+            else
+                # Interpolate between points
+                before_time = valid_times[before_idx]
+                after_time = valid_times[after_idx]
+                before_val = valid_values[before_idx]
+                after_val = valid_values[after_idx]
+                
+                # Calculate interpolation fraction
+                time_frac = (target_time - before_time) / (after_time - before_time)
+                
+                if sensor.sensorType == "WindDirection"
+                    # Handle circular interpolation for wind direction
+                    angle_diff = mod(after_val - before_val + 180, 360) - 180
+                    result_values[i] = mod(before_val + time_frac * angle_diff, 360)
+                else
+                    # Linear interpolation for other values
+                    result_values[i] = before_val + time_frac * (after_val - before_val)
+                end
             end
         end
         
-        # Only compute average if we have enough non-missing values (>70%)
-        for sensor in ts.sensors
-            period_values = period_df[!, sensor.columnName]
-            non_missing = count(!ismissing, period_values)
-            if !isempty(period_values) && non_missing > 0.7 * length(period_values)
-                result_df[i, sensor.columnName] = sensor.sensorType == "WindDirection" ? 
-                    average_angles(collect(skipmissing(period_values))) :
-                    mean(skipmissing(period_values))
-            end
-        end
+        result_df[!, col] = result_values
     end
     
     TimeSeriesData(result_df, ts.sensors)
+end
+
+"""
+Prepare mast and meso data for training by ensuring complete timestamps and proper interpolation
+"""
+function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData, 
+                             time_range::TrainingTimeRange)::Tuple{TimeSeriesData, TimeSeriesData}
+    # Ensure mast data has complete 10-minute timestamps
+    complete_mast = ensure_complete_timeseries(mast_ts, time_range, Minute(10))
+    
+    # Interpolate meso data to 10-minute intervals
+    interpolated_meso = interpolate_meso_data(meso_ts, time_range)
+    
+    return complete_mast, interpolated_meso
+end
+
+"""
+Calculate training time range from mast time series and optional time range input
+"""
+function calculate_training_timerange(ts::TimeSeriesData, time_range::Union{TimeRange,Nothing}) :: TrainingTimeRange
+    if isnothing(time_range)
+        time_range = TimeRange(nothing, nothing)
+    end
+    
+    # Get data bounds
+    data_max = maximum(ts.df.timestamp)
+    
+    # Calculate default range (1 year before max date)
+    default_min = floor(something(time_range.max, data_max) - Year(1), Month(1))
+    
+    # Determine actual min and max
+    actual_min = something(time_range.min, default_min)
+    actual_max = something(time_range.max, actual_min + Year(1))
+    # If actual_max is at the start of day, then reduce by 1 second to avoid partial day
+    if is_start_of_day(actual_max)
+        actual_max -= Second(1)
+    end
+    
+    TrainingTimeRange(actual_min, actual_max)
+end
+
+"""
+Check if a given DateTime is at the start of a day
+"""
+function is_start_of_day(dt::DateTime)::Bool
+    return hour(dt) == 0 && minute(dt) == 0 && second(dt) == 0
 end
 
 """
@@ -115,36 +167,6 @@ function find_nearest_height_sensor(target_height::Float64, sensors::Vector{Sens
     return closest_sensor
 end
 
-"""
-Calculate training time range from mast time series and optional time range input
-"""
-function calculate_training_timerange(ts::TimeSeriesData, time_range::Union{TimeRange,Nothing}) :: TrainingTimeRange
-    if isnothing(time_range)
-        time_range = TimeRange(nothing, nothing)
-    end
-    
-    # Get data bounds
-    data_max = maximum(ts.df.timestamp)
-    
-    # Calculate default range (1 year before max date)
-    default_min = floor(something(time_range.max, data_max) - Year(1),Month(1))
-    
-    # Determine actual min and max
-    actual_min = something(time_range.min, default_min)
-    actual_max = something(time_range.max, actual_min + Year(1) - Second(1))
-    
-    TrainingTimeRange(actual_min, actual_max)
-end
-
-function average_angles(angles::Vector{<:Real})::Float64
-    # Convert to radians and calculate mean of vector components
-    rad_angles = deg2rad.(angles)
-    mean_sin = mean(sin.(rad_angles))
-    mean_cos = mean(cos.(rad_angles))
-    # Convert back to degrees and ensure positive angle
-    return mod(rad2deg(atan(mean_sin, mean_cos)), 360.0)
-end
-
-export average_timeseries, find_nearest_height_sensor, prepare_timeseries, calculate_training_timerange
+export prepare_training_data, calculate_training_timerange, find_nearest_height_sensor
 
 end 
