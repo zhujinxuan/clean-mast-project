@@ -3,7 +3,8 @@ module Reconstruction
 using DataFrames
 using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.CleanMastConfig: TimeRange
-using ...Types.ReconstructMeso: WindSpeedTrainResults, WindDirectionTrainResults, TrainingTimeRange
+using ...Types.ReconstructMeso: WindSpeedTrainResults, WindDirectionTrainResults, TrainingTimeRange,
+                               WindSpeedTrainResult, WindDirectionTrainResult, WindSpeedSectorModel
 using ..DataProcessing: prepare_training_data
 using Dates
 

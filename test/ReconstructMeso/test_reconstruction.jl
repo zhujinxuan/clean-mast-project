@@ -84,7 +84,7 @@ using CleanMastProject.ReconstructMeso.Reconstruction: fill_missing_data, get_se
 
     @testset "fill_missing_data" begin
         result = fill_missing_data(mast_ts, meso_ts, time_range, ws_results, wd_results)
-        
+
         # Check wind speed reconstruction
         for (i, row) in enumerate(eachrow(result.df))
             if ismissing(mast_df.ws_80m[i])

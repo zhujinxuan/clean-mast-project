@@ -37,14 +37,14 @@ function ensure_complete_timeseries(ts::TimeSeriesData, time_range::TrainingTime
 end
 
 """
-Interpolate meso data to 10-minute intervals using vector calculation
+Interpolate meso data to specified interval using vector calculation, by default interval is 10 minutes
 """
-function interpolate_meso_data(ts::TimeSeriesData, time_range::TrainingTimeRange)::TimeSeriesData
+function interpolate_meso_data(ts::TimeSeriesData, time_range::TrainingTimeRange; interval::Period=Minute(10))::TimeSeriesData
     # Ensure data is sorted by timestamp
     sorted_df = sort(ts.df, :timestamp)
     
     # Create target timestamps at 10-minute intervals
-    target_timestamps = collect(time_range.min:Minute(10):time_range.max)
+    target_timestamps = collect(time_range.min:interval:time_range.max)
     result_df = DataFrame(timestamp = target_timestamps)
     
     # Interpolate each sensor column

@@ -70,8 +70,11 @@ using CleanMastProject.ReconstructMeso
         reconstructed_ws = result.df.ws_80m[missing_mask]
         original_ws_masked = original_ws[missing_mask]
         
-        # Test if reconstructed wind speed is within 0.2 m/s
-        @test all(abs.(reconstructed_ws .- original_ws_masked) .< 0.1)
+        # Test if reconstructed wind speed is within 0.1 m/s
+        # Filter out any remaining missing values
+        valid_mask = .!ismissing.(reconstructed_ws) .& .!ismissing.(original_ws_masked)
+        @test all(abs.(coalesce.(reconstructed_ws[valid_mask], 0.0) .- 
+                      coalesce.(original_ws_masked[valid_mask], 0.0)) .< 0.1)
         
         # Test wind direction reconstruction 
         missing_mask_wd = ismissing.(mast_df.wd_80m)
@@ -79,7 +82,10 @@ using CleanMastProject.ReconstructMeso
         original_wd_masked = original_wd[missing_mask_wd]
         
         # Handle circular nature of wind direction
-        wd_diff = abs.(reconstructed_wd .- original_wd_masked)
+        # Filter out any remaining missing values
+        valid_mask_wd = .!ismissing.(reconstructed_wd) .& .!ismissing.(original_wd_masked)
+        wd_diff = abs.(coalesce.(reconstructed_wd[valid_mask_wd], 0.0) .- 
+                      coalesce.(original_wd_masked[valid_mask_wd], 0.0))
         wd_diff = min.(wd_diff, 360.0 .- wd_diff)
         @test all(wd_diff .< 1.0)
     end

@@ -23,14 +23,14 @@ include("TowerShading/TowerShading.jl")
 macro disabled_testset(args...)
 end
 
-@disabled_testset "Single Mast reconstruction" begin
+@testset "Single Mast reconstruction" begin
     include("ReconstructSingleMast/test_wind_speed_training.jl")
     include("ReconstructSingleMast/test_direction_training.jl")
 end
 # Add other test files here as needed
 
 
-@disabled_testset "Meso reconstruction" begin
+@testset "Meso reconstruction" begin
     include("ReconstructMeso/test_training.jl")
     include("ReconstructMeso/test_data_processing.jl")
     include("ReconstructMeso/test_reconstruction.jl")

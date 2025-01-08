@@ -1,7 +1,7 @@
 module TestDataProcessing
 
 using Test
-using Dates
+using Dates: DateTime, Hour, Minute, Second, hour, minute
 using DataFrames
 using Statistics
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
@@ -50,11 +50,14 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
 
     @testset "interpolate_meso_data" begin
         # Create test data with hourly values
+        timestamps = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22))
+        n_points = length(timestamps)
+        # every hour, wind direction changes by 6 degrees
         meso_ts = TimeSeriesData(
             DataFrame(
-                timestamp = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22)),
-                ws_80m = collect(5.0:25.0),
-                wd_80m = mod.(collect(170.0:10.0:390.0), 360.0)
+                timestamp = timestamps,
+                ws_80m = collect(range(5.0, 25.0, length=n_points)),
+                wd_80m = mod.(collect(range(170.0, 390.0, length=n_points)), 360.0)
             ),
             sensors
         )
@@ -68,28 +71,30 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         
         # Check wind speed interpolation (linear)
         @test interpolated.df[1, :ws_80m] ≈ 5.0  # First value
-        @test interpolated.df[7, :ws_80m] ≈ 5.5  # Midpoint between 5.0 and 6.0
+        @test interpolated.df[4, :ws_80m] ≈ 5.5  # Midpoint between 5.0 and 6.0
         
         # Check wind direction interpolation (circular)
         @test interpolated.df[1, :wd_80m] ≈ 170.0  # First value
         # Test circular interpolation across 360° boundary
-        idx = findfirst(x -> x.wd_80m > 350.0, meso_ts.df)
+        idx = findfirst(i -> meso_ts.df[i, :wd_80m] > 350.0, 1:nrow(meso_ts.df))
         if !isnothing(idx)
             before_val = meso_ts.df[idx, :wd_80m]
             after_val = meso_ts.df[idx+1, :wd_80m]
             midpoint_idx = (idx-1)*6 + 4  # Index in interpolated data for midpoint
-            expected = mod(before_val + (after_val - before_val + 180) % 360 - 180, 360) / 2
+            expected = mod((before_val + after_val+360)/2, 360)
             @test isapprox(interpolated.df[midpoint_idx, :wd_80m], expected, atol=1.0)
         end
     end
 
     @testset "prepare_training_data" begin
         # Create test meso data with hourly values
+        timestamps = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22))
+        n_points = length(timestamps)
         meso_ts = TimeSeriesData(
             DataFrame(
-                timestamp = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22)),
-                ws_80m = collect(5.0:25.0),
-                wd_80m = mod.(collect(170.0:10.0:390.0), 360.0)
+                timestamp = timestamps,
+                ws_80m = collect(range(5.0, 25.0, length=n_points)),
+                wd_80m = mod.(collect(range(170.0, 390.0, length=n_points)), 360.0)
             ),
             sensors
         )
@@ -144,14 +149,71 @@ using CleanMastProject.ReconstructMeso.DataProcessing: ensure_complete_timeserie
         # Test with specified max
         input_range = TimeRange(nothing, DateTime(2024,1,2))
         result = calculate_training_timerange(ts, input_range)
-        @test result.max == DateTime(2024,1,2)
+        @test result.max == DateTime(2024,1,2) - Second(1)
         @test result.min == DateTime(2023,1,1)
 
         # Test with both specified
         input_range = TimeRange(DateTime(2024,1,1), DateTime(2024,1,2))
         result = calculate_training_timerange(ts, input_range)
         @test result.min == DateTime(2024,1,1)
-        @test result.max == DateTime(2024,1,2)
+        @test result.max == DateTime(2024,1,2) - Second(1)
+    end
+
+    @testset "interpolate_meso_data with specific pattern" begin
+        # Create functions for the true wind patterns
+        function true_wind_speed(t::DateTime)::Float64
+            h = hour(t) + minute(t)/60
+            if h <= 6
+                return 5.0 + (8.0 - 5.0) * h / 6  # Linear increase from 5 to 8
+            elseif h <= 18
+                return 8.0  # Constant at 8
+            else
+                return 8.0 - (8.0 - 5.0) * (h - 18) / 6  # Linear decrease from 8 to 5
+            end
+        end
+
+        function true_wind_direction(t::DateTime)::Float64
+            h = hour(t) + minute(t)/60
+            if h <= 6
+                return 30.0 + (210.0 - 30.0) * h / 6  # Linear increase from 30 to 210
+            elseif h <= 18
+                return 210.0  # Constant at 210
+            else
+                # Handle circular interpolation for direction
+                return mod(210.0 + (30.0 + 360.0 - 210.0) * (h - 18) / 6, 360.0)
+            end
+        end
+
+        # Create hourly data
+        timestamps = collect(DateTime(2024,1,1):Hour(1):(DateTime(2024,1,2)))
+        df = DataFrame(
+            timestamp = timestamps,
+            ws_80m = map(true_wind_speed, timestamps),
+            wd_80m = map(true_wind_direction, timestamps)
+        )
+
+        sensors = [
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
+        ]
+
+        ts = TimeSeriesData(df, sensors)
+        time_range = TrainingTimeRange(DateTime(2024,1,1), DateTime(2024,1,2) - Second(1))
+
+        # Interpolate to 10-minute intervals
+        interpolated = interpolate_meso_data(ts, time_range)
+
+        # Check timestamps
+        @test size(interpolated.df, 1) == 24 * 6  # 24 hours * 6 10-min intervals
+        @test all(diff(interpolated.df.timestamp) .== Minute(10))
+
+        # Check interpolated values against true functions
+        for df_timestamp in DateTime(2024,1,1):Minute(10):DateTime(2024,1,1,23) 
+            idx = findfirst(timestamp -> timestamp == df_timestamp, interpolated.df.timestamp)
+            @test isapprox(interpolated.df[idx, :ws_80m], true_wind_speed(df_timestamp), atol=0.1)
+            dir_diff = abs(mod(interpolated.df[idx, :wd_80m] - true_wind_direction(df_timestamp) + 180, 360) - 180)
+            @test dir_diff < 1.0
+        end
     end
 end
 
