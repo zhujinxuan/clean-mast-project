@@ -6,7 +6,7 @@ module CleanRules
 
 using DataFrames
 using Dates
-using ..MastTimeSeries: SensorColumn, VALID_STAT_TYPES
+using ..MastTimeSeries: SensorColumn
 
 struct HeightFilter
     min::Union{Nothing, Float64}
@@ -107,10 +107,6 @@ function RuleOutcome(;
     statType::Union{String, Nothing}=nothing,
     unit::Union{String, Nothing}=nothing
 )
-    # Validate statType if provided
-    if !isnothing(statType) && !(statType in VALID_STAT_TYPES)
-        throw(ArgumentError("Invalid statType: $statType. Must be one of: $(join(VALID_STAT_TYPES, ", "))"))
-    end
     
     RuleOutcome(sensorType, sensorDirection, height, statType, unit)
 end

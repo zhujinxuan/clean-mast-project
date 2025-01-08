@@ -3,8 +3,6 @@ module MastTimeSeries
 using DataFrames
 import ..Types.Utils: from_dict, to_dict
 
-const VALID_STAT_TYPES = ["avg", "max", "min", "sd"]
-
 struct SensorColumn
     columnName::Symbol
     sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
@@ -15,9 +13,6 @@ struct SensorColumn
     
     function SensorColumn(columnName::Symbol, sensorType::String, sensorDirection::String, 
                          height::Float64, statType::String, unit::String)
-        if !(statType in VALID_STAT_TYPES)
-            throw(ArgumentError("Invalid statType: $statType. Must be one of: $(join(VALID_STAT_TYPES, ", "))"))
-        end
         new(columnName, sensorType, sensorDirection, height, statType, unit)
     end
 end

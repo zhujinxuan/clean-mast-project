@@ -2,7 +2,7 @@ module TowerShading
 
 using DataFrames
 using ..Types.CleanMastConfig: ProjectConfig
-using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn, VALID_STAT_TYPES
+using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using Statistics
 
 mutable struct ChannelCounter
@@ -161,7 +161,7 @@ function merge_wind_speeds!(
         preferred_height = get_preferred_height([s.height for s in nearby_sensors])
         
         # Group sensors by stat_type and merge
-        for stat_type in VALID_STAT_TYPES
+        for stat_type in unique([s.statType for s in nearby_sensors])
             stat_sensors = filter(s -> s.statType == stat_type, nearby_sensors)
             isempty(stat_sensors) && continue
             length(stat_sensors) == 1 && continue
