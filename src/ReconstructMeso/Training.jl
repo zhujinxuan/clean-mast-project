@@ -74,11 +74,7 @@ function process_windspeed_sensor_pair(mast_sensor::SensorColumn, meso_sensor::S
         
         if nrow(sector_data) >= 5  # Minimum points for regression
             # Fit linear model using GLM
-            model = try
-                lm(@formula(mast_speed ~ meso_speed), sector_data)
-            catch
-                lm(@formula(mast_speed ~ meso_speed), paired_data)
-            end
+            model = lm(@formula(mast_speed ~ meso_speed), sector_data)
             coef_result = coef(model)
             WindSpeedSectorModel(sector_start, sector_end, coef_result[2], coef_result[1])
         else
@@ -89,7 +85,7 @@ function process_windspeed_sensor_pair(mast_sensor::SensorColumn, meso_sensor::S
         end
     end
     
-    WindSpeedTrainResult(mast_sensor, meso_sensor, sector_models)
+    WindSpeedTrainResult(mast_sensor, meso_sensor, meso_dir_sensor, sector_models)
 end
 
 """

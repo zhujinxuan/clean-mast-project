@@ -52,6 +52,7 @@ using CleanMastProject.ReconstructMeso.Reconstruction: fill_missing_data, get_se
         :ws_80m => WindSpeedTrainResult(
             mast_sensors[1],
             meso_sensors[1],
+            meso_sensors[2],
             sector_models
         )
     )

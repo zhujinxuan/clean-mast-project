@@ -12,8 +12,9 @@ struct WindSpeedSectorModel
 end
 
 struct WindSpeedTrainResult
-    mastSensor::SensorColumn
-    mesoSensor::SensorColumn
+    mastSpeedSensor::SensorColumn
+    mesoSpeedSensor::SensorColumn
+    mesoDirectionSensor::SensorColumn
     sector_models::Vector{WindSpeedSectorModel}  # Models for each direction sector
 end
 
@@ -57,16 +58,18 @@ end
 
 function from_dict(::Type{WindSpeedTrainResult}, dict::Dict{String, Any})::WindSpeedTrainResult
     WindSpeedTrainResult(
-        from_dict(SensorColumn, dict["mastSensor"]),
-        from_dict(SensorColumn, dict["mesoSensor"]),
+        from_dict(SensorColumn, dict["mastSpeedSensor"]),
+        from_dict(SensorColumn, dict["mesoSpeedSensor"]),
+        from_dict(SensorColumn, dict["mesoDirectionSensor"]),
         [from_dict(WindSpeedSectorModel, m) for m in dict["sector_models"]]
     )
 end
 
 function to_dict(wstr::WindSpeedTrainResult)::Dict{String, Any}
     Dict{String, Any}(
-        "mastSensor" => to_dict(wstr.mastSensor),
-        "mesoSensor" => to_dict(wstr.mesoSensor),
+        "mastSpeedSensor" => to_dict(wstr.mastSpeedSensor),
+        "mesoSpeedSensor" => to_dict(wstr.mesoSpeedSensor),
+        "mesoDirectionSensor" => to_dict(wstr.mesoDirectionSensor),
         "sector_models" => [to_dict(m) for m in wstr.sector_models]
     )
 end
