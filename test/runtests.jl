@@ -19,6 +19,7 @@ include("test_icing_rules.jl")
 include("test_layer_diff_rules.jl")
 include("process/test_apply_missing.jl")
 include("TowerShading/TowerShading.jl")
+include("test_sector.jl")
 
 macro disabled_testset(args...)
 end
@@ -39,4 +40,8 @@ end
 
 @testset "Representative Year" begin
     include("RepresentativeYear/test_analysis.jl")
+end
+
+@testset "Turbulence Intensity" begin
+    include("TurbulenceIntensity/test_turbulence_intensity.jl")
 end

@@ -17,6 +17,22 @@ struct SensorColumn
     end
 end
 
+"""
+Find nearest height sensor of specified type in sensors list
+"""
+function find_nearest_height_sensor(target_height::Float64, sensors::Vector{SensorColumn}, 
+                                  sensor_type::String, stat_type::String="avg")::Union{SensorColumn, Nothing}
+    matching_sensors = filter(s -> s.sensorType == sensor_type && s.statType == stat_type, sensors)
+    isempty(matching_sensors) && return nothing
+    
+    # Find sensor with closest height
+    closest_sensor = reduce((s1, s2) -> 
+        abs(s1.height - target_height) < abs(s2.height - target_height) ? s1 : s2, 
+        matching_sensors)
+    
+    return closest_sensor
+end
+
 struct TimeSeriesData
     df::DataFrame
     sensors::Vector{SensorColumn}

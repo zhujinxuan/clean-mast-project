@@ -6,6 +6,7 @@ using ...CleanMastConfig
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, from_dict
 using ...RepresentativeYear: calibrate_to_representative_year
 using ...Types.ReconstructMeso: TrainingTimeRange
+using ...MastTimeSeries: read_meso_data
 
 export execute
 
@@ -44,7 +45,7 @@ function execute(dir::String)
     )
     
     # Get target height from config or use default
-    target_height = get(config.analysis, "target_height", 120.0)
+    target_height = something(config.analysis.target_height, 120.0)
     
     # Perform calibration
     println("Performing representative year calibration for $(target_height)m wind speed...")

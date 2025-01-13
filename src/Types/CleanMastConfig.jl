@@ -109,6 +109,8 @@ end
 
 struct AnalysisConfig
     time_range::TimeRange
+    target_height::Union{Nothing, Float64}
+    ti_target_height::Union{Nothing, Float64}
 end
 
 struct MesoConfig
@@ -160,7 +162,9 @@ end
 
 function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
     AnalysisConfig(
-        from_dict(TimeRange, Dict{String, Any}(dict["time_range"]))
+        from_dict(TimeRange, Dict{String, Any}(dict["time_range"])),
+        get(dict, "target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
+        get(dict, "ti_target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing
     )
 end
 
@@ -182,7 +186,9 @@ end
 
 function to_dict(ac::AnalysisConfig)::Dict{String, Any}
     Dict(
-        "time_range" => to_dict(ac.time_range)
+        "time_range" => to_dict(ac.time_range),
+        "target_height" => ac.target_height,
+        "ti_target_height" => ac.ti_target_height
     )
 end
 

@@ -4,6 +4,7 @@ using Dates
 using CleanMastProject.ReconstructSingleMast.DirectionTraining
 using CleanMastProject.MastTimeSeries
 using CleanMastProject.Types.ReconstructSingleMast
+using CleanMastProject.Types.Sector: abs_degree_diff
 
 function create_test_data_for_vector_average()::TimeSeriesData
     timestamps = DateTime(2024,1,1):Minute(10):DateTime(2024,1,2)
@@ -168,10 +169,10 @@ end
                 success.columnName
             ][1]
             
-            diff = mod(success.value - original_value + 180, 360) - 180
+            diff = abs_degree_diff(success.value, original_value)
             
             message_diff = "Only $(round(reconstruction_rate * 100, digits=1))% of values were reconstructed"
-            @test abs(diff) ≤ 15.0 
+            @test abs(diff) ≤ 15.0
         end
     end
 end

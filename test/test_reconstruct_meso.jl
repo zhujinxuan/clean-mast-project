@@ -7,6 +7,7 @@ using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
 using CleanMastProject.Types.CleanMastConfig: TimeRange
 using CleanMastProject.ReconstructMeso
+using CleanMastProject.Types.Sector: abs_degree_diff
 
 @testset "ReconstructMeso" begin
     # Create mast test data with 10-minute timestamps
@@ -58,12 +59,19 @@ using CleanMastProject.ReconstructMeso
     time_range = TimeRange(DateTime(2024,1,1), DateTime(2024,12,31,23,59,59))
 
     @testset "reconstruct_meso" begin
-        result = reconstruct_from_meso(mast_ts, meso_ts, time_range)
+        result, ws_results, wd_results = reconstruct_from_meso(mast_ts, meso_ts, time_range)
         
+        # Test reconstructed data
         @test size(result.df, 1) == size(mast_df, 1)
         @test all(result.df.timestamp .== mast_df.timestamp)
         @test count(ismissing, result.df.ws_80m) < count(ismissing, mast_df.ws_80m)
         @test count(ismissing, result.df.wd_80m) < count(ismissing, mast_df.wd_80m)
+        
+        # Test training results structure
+        @test haskey(ws_results, :ws_80m)
+        @test haskey(wd_results, :wd_80m)
+        @test ws_results[:ws_80m].mastSpeedSensor.columnName == :ws_80m
+        @test wd_results[:wd_80m].mastSensor.columnName == :wd_80m
         
         # Test reconstructed values against original formula
         missing_mask = ismissing.(mast_df.ws_80m)
@@ -84,9 +92,8 @@ using CleanMastProject.ReconstructMeso
         # Handle circular nature of wind direction
         # Filter out any remaining missing values
         valid_mask_wd = .!ismissing.(reconstructed_wd) .& .!ismissing.(original_wd_masked)
-        wd_diff = abs.(coalesce.(reconstructed_wd[valid_mask_wd], 0.0) .- 
-                      coalesce.(original_wd_masked[valid_mask_wd], 0.0))
-        wd_diff = min.(wd_diff, 360.0 .- wd_diff)
+        wd_diff = abs_degree_diff.(coalesce.(reconstructed_wd[valid_mask_wd], 0.0), 
+                                 coalesce.(original_wd_masked[valid_mask_wd], 0.0))
         @test all(wd_diff .< 1.0)
     end
 end

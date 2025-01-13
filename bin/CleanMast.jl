@@ -14,6 +14,7 @@ using CleanMastProject.Command.QuickStart
 using CleanMastProject.Command.CleanFiles
 using CleanMastProject.Command.ReconstructMeso
 using CleanMastProject.Command.RepresentativeYearCalibration
+using CleanMastProject.Command.TurbulenceIntensity
 
 const COMMAND_HANDLERS = Dict(
     "check:config" => CheckConfig.execute,
@@ -24,6 +25,7 @@ const COMMAND_HANDLERS = Dict(
     "reconstruct:single_mast" => ReconstructSingleMast.execute,
     "reconstruct:meso" => ReconstructMeso.execute,
     "representative_year:calibration" => RepresentativeYearCalibration.execute,
+    "calculate:ti_matrix" => TurbulenceIntensity.calculate,
     "quickstart" => QuickStart.execute,
 )
 

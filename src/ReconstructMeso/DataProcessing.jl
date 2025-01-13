@@ -3,7 +3,7 @@ module DataProcessing
 using DataFrames
 using Statistics
 using Dates
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
 using ...Types.ReconstructMeso: TrainingTimeRange
 using ...Types.CleanMastConfig: TimeRange
 
@@ -151,22 +151,6 @@ function is_start_of_day(dt::DateTime)::Bool
     return hour(dt) == 0 && minute(dt) == 0 && second(dt) == 0
 end
 
-"""
-Find nearest height sensor of specified type in sensors list
-"""
-function find_nearest_height_sensor(target_height::Float64, sensors::Vector{SensorColumn}, 
-                                  sensor_type::String, stat_type::String="avg")::Union{SensorColumn, Nothing}
-    matching_sensors = filter(s -> s.sensorType == sensor_type && s.statType == stat_type, sensors)
-    isempty(matching_sensors) && return nothing
-    
-    # Find sensor with closest height
-    closest_sensor = reduce((s1, s2) -> 
-        abs(s1.height - target_height) < abs(s2.height - target_height) ? s1 : s2, 
-        matching_sensors)
-    
-    return closest_sensor
-end
-
-export prepare_training_data, calculate_training_timerange, find_nearest_height_sensor
+export prepare_training_data, calculate_training_timerange
 
 end 

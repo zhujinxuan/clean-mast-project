@@ -5,6 +5,7 @@ using Statistics
 using Dates
 using GLM
 using ...Types.RepresentativeYear
+using ...Types.Sector: DIRECTION_SECTORS, abs_degree_diff
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.ReconstructMeso: TrainingTimeRange
 
@@ -243,14 +244,6 @@ function find_matching_direction_sensor(
 end
 
 """
-Calculate circular difference from a reference direction
-"""
-function abs_circular_diff(direction::Float64, reference::Float64)::Float64
-    diff = abs(direction - reference)
-    min(diff, 360.0 - diff)
-end
-
-"""
 Filter data for a specific direction sector
 """
 function filter_direction_sector(
@@ -271,7 +264,7 @@ function filter_direction_sector(
     # Add circular difference column
     df.dir_diff = map(row -> 
         ismissing(row[dir_sensor.columnName]) ? Inf : 
-        abs_circular_diff(row[dir_sensor.columnName], center),
+        abs_degree_diff(row[dir_sensor.columnName], center),
         eachrow(df))
     
     # Filter rows within ±11.25° of center

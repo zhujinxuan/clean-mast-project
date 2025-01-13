@@ -105,7 +105,28 @@ function execute(dir::String)
     
     # Process reconstruction using meso data
     println("Processing meso reconstruction...")
-    reconstructed_ts = reconstruct_from_meso(mast_ts, meso_ts, config.analysis.time_range)
+    reconstructed_ts, ws_results, wd_results = reconstruct_from_meso(mast_ts, meso_ts, config.analysis.time_range)
+    
+    # Save training results to YAML
+    ws_results_yaml = Dict{String, Any}()
+    for (col, result) in ws_results
+        ws_results_yaml[String(col)] = to_dict(result)
+    end
+    
+    wd_results_yaml = Dict{String, Any}()
+    for (col, result) in wd_results
+        wd_results_yaml[String(col)] = to_dict(result)
+    end
+    
+    # Combine both results into a single dictionary
+    training_results = Dict{String, Any}(
+        "ws_results" => ws_results_yaml,
+        "wd_results" => wd_results_yaml
+    )
+    
+    open(joinpath(dir, "reconstruct_meso-training.yaml"), "w") do io
+        YAML.write(io, training_results)
+    end
     
     # Analyze reconstruction results
     println("\nReconstruction Statistics:")
@@ -166,6 +187,7 @@ function execute(dir::String)
     println("\nMeso reconstruction completed:")
     println("- Saved processed data to $(output_filename)")
     println("- Saved sensors to reconstruct_meso-sensors.yaml")
+    println("- Saved training results to reconstruct_meso-training.yaml")
 end
 
 end # module 

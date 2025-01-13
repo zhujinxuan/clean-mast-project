@@ -18,26 +18,7 @@ struct CalibrationResults
     is_calibration_needed::Bool
 end
 
-# Constants for direction sectors
-const DIRECTION_SECTORS = [
-    (name="N", center=0.0),
-    (name="NNE", center=22.5),
-    (name="NE", center=45.0),
-    (name="ENE", center=67.5),
-    (name="E", center=90.0),
-    (name="ESE", center=112.5),
-    (name="SE", center=135.0),
-    (name="SSE", center=157.5),
-    (name="S", center=180.0),
-    (name="SSW", center=202.5),
-    (name="SW", center=225.0),
-    (name="WSW", center=247.5),
-    (name="W", center=270.0),
-    (name="WNW", center=292.5),
-    (name="NW", center=315.0),
-    (name="NNW", center=337.5)
-]
 
-export DirectionalCalibration, CalibrationResults, DIRECTION_SECTORS
+export DirectionalCalibration, CalibrationResults
 
 end 

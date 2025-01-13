@@ -4,11 +4,9 @@ using DataFrames
 using Statistics
 using GLM
 using Dates
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.ReconstructMeso: WindSpeedTrainResult, WindDirectionTrainResult,
-                               WindSpeedTrainResults, WindDirectionTrainResults,
-                               WindSpeedSectorModel
-using ..DataProcessing: find_nearest_height_sensor
+using ...Types.ReconstructMeso
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
+using ..DataProcessing: prepare_training_data
 
 # Constants for direction sectors (22.5 degrees each)
 const SECTOR_SIZE = 22.5
@@ -75,13 +73,13 @@ function process_windspeed_sensor_pair(mast_sensor::SensorColumn, meso_sensor::S
         if nrow(sector_data) >= 5  # Minimum points for regression
             # Fit linear model using GLM
             model = lm(@formula(mast_speed ~ meso_speed), sector_data)
-            coef_result = coef(model)
-            WindSpeedSectorModel(sector_start, sector_end, coef_result[2], coef_result[1])
+            coefs = coef(model)
+            WindSpeedSectorModel(sector_start, sector_end, coefs[2], coefs[1])
         else
             # Use overall correlation if not enough data in sector
             model = lm(@formula(mast_speed ~ meso_speed), paired_data)
-            coef_result = coef(model)
-            WindSpeedSectorModel(sector_start, sector_end, coef_result[2], coef_result[1])
+            coefs = coef(model)
+            WindSpeedSectorModel(sector_start, sector_end, coefs[2], coefs[1])
         end
     end
     

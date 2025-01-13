@@ -21,7 +21,7 @@ function reconstruct_from_meso(
     meso_ts::TimeSeriesData,
     time_range::Union{TimeRange, Nothing}=nothing;
     min_height::Float64=50.0
-)::TimeSeriesData
+)::Tuple{TimeSeriesData, WindSpeedTrainResults, WindDirectionTrainResults}
     # Calculate training time range
     actual_time_range = calculate_training_timerange(mast_ts, time_range)
     
@@ -41,7 +41,7 @@ function reconstruct_from_meso(
         wd_results
     )
     
-    reconstructed
+    return reconstructed, ws_results, wd_results
 end
 
 export reconstruct_from_meso

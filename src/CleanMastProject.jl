@@ -15,6 +15,8 @@ module Types
   export ReconstructSingleMast
   include("./Types/RepresentativeYear.jl")
   export RepresentativeYear
+  include("./Types/Sector.jl")
+  export Sector
 end
 export Types
 
@@ -44,12 +46,17 @@ module ReconstructSingleMast
   include("./ReconstructSingleMast/ProcessData.jl")
   export ProcessData, WindSpeedTraining, DirectionTraining
 end
-export ReconstructSingleMast
 
+export ReconstructSingleMast
 include("./ReconstructMeso.jl")
 export ReconstructMeso
+
+
 include("./RepresentativeYear.jl")
 export RepresentativeYear
+
+include("./TurbulenceIntensity.jl")
+export TurbulenceIntensity
 
 module Command
   include("./Command/CheckConfig.jl")
@@ -60,9 +67,11 @@ module Command
   include("./Command/ReconstructSingleMast.jl")
   include("./Command/ReconstructMeso.jl")
   include("./Command/RepresentativeYearCalibration.jl")
+  include("./Command/TurbulenceIntensity.jl")
   include("./Command/QuickStart.jl")
   export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
-         ReconstructSingleMast, ReconstructMeso, RepresentativeYearCalibration, QuickStart
+         ReconstructSingleMast, ReconstructMeso, RepresentativeYearCalibration, 
+         TurbulenceIntensity, QuickStart
 end
 export Command
 

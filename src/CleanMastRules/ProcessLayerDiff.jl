@@ -13,6 +13,7 @@ module ProcessLayerDiff
 using DataFrames
 using Dates
 using ...Types.CleanRules
+using ...Types.Sector: abs_degree_diff
 using ..ProcessTypes
 using ...MastTimeSeries
 
@@ -45,7 +46,7 @@ find_lower_layer_columns(target_col::SensorColumn, sensors::Vector{SensorColumn}
 
 function calc_difference(upper_val::Float64, lower_val::Float64, sensor_type::String)::Float64 
   if (sensor_type == "WindDirection")
-  return min(abs(upper_val - lower_val), 360 - abs(upper_val - lower_val))
+    return abs_degree_diff(upper_val, lower_val)
   end
   return abs(upper_val - lower_val)
 end
