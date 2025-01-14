@@ -7,6 +7,7 @@ using Dates
 using ...Types.ReconstructSingleMast
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...Types.CleanMastConfig
+using ...Types.Sector: degree_diff
 
 const DEFAULT_REFERENCE_HEIGHT = 50.0
 
@@ -84,7 +85,7 @@ function calculate_direction_correlation(
     end
     
     # Calculate shortest angle difference
-    diff = mod(first(target_vector) - first(source_vector) + 180, 360) - 180
+    diff = degree_diff(first(target_vector), first(source_vector))
     
     return diff
 end

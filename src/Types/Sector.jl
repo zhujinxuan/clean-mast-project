@@ -37,10 +37,18 @@ const SECTOR_DEGREES = [sector.center for sector in DIRECTION_SECTORS]
 Calculate the smallest angle difference between two angles in degrees
 """
 function abs_degree_diff(a1::Float64, a2::Float64)::Float64
-    diff = abs(mod(a1, 360.0) - mod(a2, 360.0))
-    return min(diff, 360.0 - diff)
+    return abs(degree_diff(a1, a2))
 end
 export abs_degree_diff
+
+"""
+Calculate the angle difference between two angles in degrees.
+Returns the smallest angle difference in the range [-180, 180) degrees.
+"""
+function degree_diff(a1::Float64, a2::Float64)::Float64
+    return mod(a1 - a2 + 180.0, 360.0) - 180.0
+end
+export degree_diff
 
 """
 Get the direction sector for a given wind direction in degrees

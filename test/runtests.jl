@@ -3,45 +3,84 @@
 using Test
 using Pkg
 
-# 获取 `test` 目录的绝对路径
+# Get absolute path of test directory
 test_dir = @__DIR__
-
-# 构造相对路径到主项目目录
 project_dir = joinpath(test_dir, "..")
 
-# 激活主项目环境
+# Activate project environment
 Pkg.activate(project_dir)
 
-# Include all test files
-include("MastTimeSeries/test_parsing_column.jl")
-include("test_range_rules.jl")
-include("test_icing_rules.jl")
-include("test_layer_diff_rules.jl")
-include("process/test_apply_missing.jl")
-include("TowerShading/TowerShading.jl")
-include("test_sector.jl")
+# Define test sets and their corresponding files
+const TEST_SETS = Dict{String, Vector{String}}(
+    "parsing" => ["MastTimeSeries/test_parsing_column.jl"],
+    "rules" => [
+        "test_range_rules.jl",
+        "test_icing_rules.jl",
+        "test_layer_diff_rules.jl"
+    ],
+    "process" => ["process/test_apply_missing.jl"],
+    "tower" => ["TowerShading/TowerShading.jl"],
+    "sector" => ["test_sector.jl"],
+    "single_mast" => [
+        "ReconstructSingleMast/test_wind_speed_training.jl",
+        "ReconstructSingleMast/test_direction_training.jl"
+    ],
+    "meso" => [
+        "ReconstructMeso/test_training.jl",
+        "ReconstructMeso/test_data_processing.jl",
+        "ReconstructMeso/test_reconstruction.jl",
+        "test_reconstruct_meso.jl"
+    ],
+    "representative_year" => ["RepresentativeYear/test_analysis.jl"],
+    "turbulence" => ["TurbulenceIntensity/test_turbulence_intensity.jl"]
+)
 
-macro disabled_testset(args...)
+# Helper function to list available test sets
+function print_available_test_sets()
+    println("Available test sets:")
+    for (name, files) in sort(collect(TEST_SETS))
+        println("  $name:")
+        for file in files
+            println("    - $file")
+        end
+    end
 end
 
-@testset "Single Mast reconstruction" begin
-    include("ReconstructSingleMast/test_wind_speed_training.jl")
-    include("ReconstructSingleMast/test_direction_training.jl")
+# Parse command line arguments
+function parse_args()
+    if isempty(ARGS)
+        return collect(keys(TEST_SETS))  # Run all tests if no arguments
+    elseif ARGS[1] in ["--help", "-h"]
+        println("Usage: julia runtests.jl [test_set1 test_set2 ...]")
+        println("Run specific test sets. If no test set is specified, runs all tests.")
+        println()
+        print_available_test_sets()
+        exit(0)
+    else
+        # Validate test set names
+        invalid_sets = setdiff(ARGS, keys(TEST_SETS))
+        if !isempty(invalid_sets)
+            println("Error: Invalid test sets: ", join(invalid_sets, ", "))
+            println()
+            print_available_test_sets()
+            exit(1)
+        end
+        return ARGS
+    end
 end
-# Add other test files here as needed
 
-
-@testset "Meso reconstruction" begin
-    include("ReconstructMeso/test_training.jl")
-    include("ReconstructMeso/test_data_processing.jl")
-    include("ReconstructMeso/test_reconstruction.jl")
-    include("test_reconstruct_meso.jl")
+# Run selected test sets
+function run_test_sets(selected_sets)
+    for test_set in selected_sets
+        files = TEST_SETS[test_set]
+        @testset "$test_set" begin
+            for file in files
+                include(file)
+            end
+        end
+    end
 end
 
-@testset "Representative Year" begin
-    include("RepresentativeYear/test_analysis.jl")
-end
-
-@testset "Turbulence Intensity" begin
-    include("TurbulenceIntensity/test_turbulence_intensity.jl")
-end
+# Main execution
+selected_sets = parse_args()
+run_test_sets(selected_sets)

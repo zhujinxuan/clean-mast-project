@@ -6,6 +6,7 @@ using GLM
 using Dates
 using ...Types.ReconstructMeso
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
+using ...Types.Sector: degree_diff
 using ..DataProcessing: prepare_training_data
 
 # Constants for direction sectors (22.5 degrees each)
@@ -139,7 +140,7 @@ function process_winddirection_sensor_pair(mast_sensor::SensorColumn, meso_senso
     mast_filtered, meso_filtered = map(i -> Float64[p[i] for p in valid_pairs], (1, 2))
     
     # Calculate direction differences considering circular nature
-    diffs = @. mod((mast_filtered - meso_filtered + 180), 360) - 180
+    diffs = degree_diff.(mast_filtered, meso_filtered)
     mean_diff = mean(diffs)
     
     WindDirectionTrainResult(mast_sensor, meso_sensor, mean_diff)

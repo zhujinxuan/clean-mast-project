@@ -4,14 +4,17 @@ using Test
 using DataFrames
 using Dates
 using Statistics
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig
+using CSV
+using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.Sector: DIRECTION_SECTORS
 using CleanMastProject.TurbulenceIntensity
 
 """Helper function to create test config"""
 function create_test_config(;
     ti_target_height::Union{Nothing, Float64}=nothing,
-    target_height::Union{Nothing, Float64}=nothing
+    target_height::Union{Nothing, Float64}=nothing,
+    data_path::String="data.csv"
 )::ProjectConfig
     time_range = TimeRange(nothing, nothing)
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
@@ -25,7 +28,7 @@ function create_test_config(;
     )
     
     mast_config = MastConfig(
-        "data.csv",
+        data_path,
         1,
         ",",
         sensor_config,
@@ -33,7 +36,7 @@ function create_test_config(;
     )
     
     meso_config = MesoConfig(
-        "data.csv",
+        data_path,
         1,
         ",",
         sensor_config
@@ -112,59 +115,104 @@ end
         @test wd.height == 120.0
     end
     
-    @testset "calculate_ti_matrix" begin
+    @testset "calculate_ti_series" begin
         ts = create_test_data()
+        ws_avg, ws_sd, wd = find_ti_sensors(ts, 80.0)
         
-        # Test with explicit ti_target_height
-        config = create_test_config(ti_target_height=80.0)
-        result = calculate_ti_matrix(config, ts)
+        ti_df = calculate_ti_series(ts.df, ws_avg.columnName, ws_sd.columnName, wd.columnName)
         
         # Check structure
-        @test size(result, 2) == 18  # min_speed, max_speed, and 16 direction sectors
-        @test names(result)[1:2] == ["min_speed", "max_speed"]
-        @test all(sector in DIRECTION_SECTORS for sector in names(result)[3:end])
+        @test names(ti_df) == ["ws_avg", "ws_sd", "wd", "ti", "sector"]
+        
+        # Check TI calculation
+        @test all(ti_df.ti .≈ 0.1)  # For 80m data
+        @test all(ti_df.sector .== "N")  # All in North sector
+    end
+    
+    @testset "calculate_sector_stats" begin
+        ts = create_test_data()
+        ws_avg, ws_sd, wd = find_ti_sensors(ts, 80.0)
+        ti_df = calculate_ti_series(ts.df, ws_avg.columnName, ws_sd.columnName, wd.columnName)
+        
+        sector_stats, mean_ti, std_ti, representative_ti = calculate_sector_stats(ti_df)
+        
+        # Check structure
+        @test names(sector_stats) == ["sector", "mean_speed", "ti", "std", "occurrence"]
+        
+        # Check values for North sector
+        north_stats = first(sector_stats[sector_stats.sector .== "N", :])
+        @test north_stats.mean_speed ≈ 9.0
+        @test north_stats.ti ≈ 0.1
+        @test north_stats.occurrence == 7  # Number of timestamps
+        
+        # Check overall statistics
+        @test mean_ti ≈ 0.1
+        @test representative_ti ≈ mean_ti + std_ti
+    end
+    
+    @testset "calculate_ti_matrix" begin
+        ts = create_test_data()
+        ws_avg, ws_sd, wd = find_ti_sensors(ts, 80.0)
+        ti_df = calculate_ti_series(ts.df, ws_avg.columnName, ws_sd.columnName, wd.columnName)
+        sector_stats, mean_ti, std_ti, _ = calculate_sector_stats(ti_df)
+        
+        # Test with default bins
+        result = calculate_ti_matrix(ti_df, DEFAULT_WIND_SPEED_BINS, mean_ti)
+        
+        # Check structure
+        @test size(result, 2) == 18  # v_min, v_max, and 16 direction sectors
+        @test names(result)[1:2] == ["v_min", "v_max"]
+        @test all(sector.name in names(result) for sector in DIRECTION_SECTORS)
         
         # Check known TI values
         # Find row for 8-10 m/s bin
-        row_80m = findfirst(i -> 8.0 <= result.min_speed[i] < 10.0, 1:nrow(result))
+        row_80m = findfirst(i -> 8.0 ≤ result.v_min[i] < 10.0, 1:nrow(result))
         @test !ismissing(result[row_80m, "N"])
         @test isapprox(result[row_80m, "N"], 0.1, atol=0.01)
         
-        # Test with target_height fallback
-        config = create_test_config(target_height=100.0)
-        result = calculate_ti_matrix(config, ts)
-        
-        # Check known TI values for 100m
-        row_100m = findfirst(i -> 10.0 <= result.min_speed[i] < 12.0, 1:nrow(result))
-        @test !ismissing(result[row_100m, "NE"])
-        @test isapprox(result[row_100m, "NE"], 0.15, atol=0.01)
-        
-        # Test with default height (120m)
-        config = create_test_config()
-        result = calculate_ti_matrix(config, ts)
-        
-        # Check known TI values for 120m
-        row_120m = findfirst(i -> 12.0 <= result.min_speed[i] < 14.0, 1:nrow(result))
-        @test !ismissing(result[row_120m, "E"])
-        @test isapprox(result[row_120m, "E"], 0.2, atol=0.01)
-        
-        # Check that sectors with no data are missing
-        @test ismissing(result[row_120m, "N"])
-        @test ismissing(result[row_120m, "S"])
-        
-        # Test with custom wind speed bins
-        custom_bins = [0.0, 5.0, 10.0, 15.0, 20.0]
-        result = calculate_ti_matrix(config, ts, custom_bins)
-        
-        # Check structure with custom bins
-        @test size(result, 1) == length(custom_bins) - 1
-        @test all(result.min_speed .== custom_bins[1:end-1])
-        @test all(result.max_speed .== custom_bins[2:end])
-        
-        # Check TI values in custom bins
-        row_120m = findfirst(i -> 10.0 <= result.min_speed[i] < 15.0, 1:nrow(result))
-        @test !ismissing(result[row_120m, "E"])
-        @test isapprox(result[row_120m, "E"], 0.2, atol=0.01)
+        # Check missing sectors are filled with mean_ti
+        @test all(result[row_80m, sector.name] == mean_ti for sector in DIRECTION_SECTORS if sector.name != "N")
+    end
+    
+    @testset "process_turbulence_intensity" begin
+        ts = create_test_data()
+        mktempdir() do temp_dir
+            # Create config with temporary directory
+            config = create_test_config(
+                ti_target_height=80.0,
+                data_path=joinpath(temp_dir, "data.csv")
+            )
+            
+            # Process turbulence intensity
+            process_turbulence_intensity(config, ts)
+            
+            # Check output files exist
+            @test isfile(joinpath(temp_dir, "analysis", "turbulence_intensity.csv"))
+            @test isfile(joinpath(temp_dir, "analysis", "turbulence_intensity_report.csv"))
+            @test isfile(joinpath(temp_dir, "analysis", "meteodyn_ti.txt"))
+            
+            # Check main TI results
+            ti_results = CSV.read(
+                joinpath(temp_dir, "analysis", "turbulence_intensity.csv"),
+                DataFrame
+            )
+            @test names(ti_results) == ["sector", "mean_speed", "ti", "std", "occurrence"]
+            @test "N" in ti_results.sector
+            
+            # Check report
+            report = CSV.read(
+                joinpath(temp_dir, "analysis", "turbulence_intensity_report.csv"),
+                DataFrame
+            )
+            @test names(report) == ["mast", "mean_ti", "representative_ti", "ti_std"]
+            @test nrow(report) == 1
+            @test report.mast[1] == basename(temp_dir)
+            
+            # Check Meteodyn file format
+            meteodyn_lines = readlines(joinpath(temp_dir, "analysis", "meteodyn_ti.txt"))
+            @test length(meteodyn_lines) == length(DEFAULT_WIND_SPEED_BINS)
+            @test all(length(split(line, "\t")) == 17 for line in meteodyn_lines[2:end])
+        end
     end
 end
 
