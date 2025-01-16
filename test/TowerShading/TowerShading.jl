@@ -39,12 +39,12 @@ end
 
 function create_test_sensors()::Vector{SensorColumn}
     return [
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 40.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch1_Temperature_60m_N/A_avg_C"), Symbol("Ch1_Temperature_60m_N/A_avg_C"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "Temperature", "N/A", 60.0, "avg", "C")
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "avg", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_60m_270_avg_m/s")),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "avg", "m/s", originalColumnName=Symbol("Ch2_WindSpeed_60m_90_avg_m/s")),
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "sd", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_60m_270_sd_m/s")),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "sd", "m/s", originalColumnName=Symbol("Ch2_WindSpeed_60m_90_sd_m/s")),
+        SensorColumn(Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 40.0, "avg", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_40m_270_avg_m/s")),
+        SensorColumn(Symbol("Ch1_Temperature_60m_N/A_avg_C"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "Temperature", "N/A", 60.0, "avg", "C", originalColumnName=Symbol("Ch1_Temperature_60m_N/A_avg_C"))
     ]
 end
 

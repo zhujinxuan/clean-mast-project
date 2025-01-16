@@ -14,18 +14,16 @@ struct SensorColumn
     unit::String
     multiplier::Union{Float64, Nothing}
     
-    function SensorColumn(columnName::Symbol, originalColumnName::Symbol, columnFormat::String,
-                         sensorType::String, sensorDirection::String, 
-                         height::Float64, statType::String, unit::String, 
+    function SensorColumn(columnName::Symbol, 
+                         columnFormat::String,
+                         sensorType::String, 
+                         sensorDirection::String, 
+                         height::Float64, 
+                         statType::String, 
+                         unit::String;
+                         originalColumnName::Symbol=columnName,
                          multiplier::Union{Float64, Nothing}=nothing)
         new(columnName, originalColumnName, columnFormat, sensorType, sensorDirection, height, statType, unit, multiplier)
-    end
-
-    # Convenience constructor when original and new names are the same
-    function SensorColumn(columnName::Symbol, columnFormat::String, sensorType::String, sensorDirection::String, 
-                         height::Float64, statType::String, unit::String, 
-                         multiplier::Union{Float64, Nothing}=nothing)
-        new(columnName, columnName, columnFormat, sensorType, sensorDirection, height, statType, unit, multiplier)
     end
 end
 
@@ -59,14 +57,14 @@ function from_dict(::Type{SensorColumn}, d::Dict{String, Any})::SensorColumn
     columnFormat = get(d, "columnFormat", "")  # Default to empty string if not provided
     SensorColumn(
         columnName,
-        Symbol(originalColumnName),
         columnFormat,
         d["sensorType"],
         d["sensorDirection"],
         d["height"],
         d["statType"],
         d["unit"],
-        get(d, "multiplier", nothing)
+        originalColumnName=Symbol(originalColumnName),
+        multiplier=get(d, "multiplier", nothing)
     )
 end
 

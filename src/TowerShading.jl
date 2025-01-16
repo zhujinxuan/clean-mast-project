@@ -85,13 +85,13 @@ function create_merged_sensor(
     
     return SensorColumn(
         Symbol(new_name),            # columnName
-        base_sensor.columnName,      # originalColumnName (from first sensor)
         base_sensor.columnFormat,    # columnFormat
         base_sensor.sensorType,      # sensorType
         "N/A",                       # sensorDirection
         preferred_height,            # height
         base_sensor.statType,        # statType
-        base_sensor.unit             # unit
+        base_sensor.unit,            # unit
+        originalColumnName=base_sensor.columnName  # originalColumnName from first sensor
     )
 end
 

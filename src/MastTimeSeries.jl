@@ -97,14 +97,14 @@ function parse_column_name(
         
         sensor = SensorColumn(
             Symbol(new_column_name),
-            Symbol(column_name),  # Keep original name
             format,              # Store the format used
             something(rule_outcome.sensorType, input["sensorType"]),
             sensorDirection,
             something(rule_outcome.height, input["height"]),
             something(rule_outcome.statType, get(input, "statType", "avg")),
             something(rule_outcome.unit, get(input, "unit", "")),
-            rule_outcome.multiplier
+            multiplier=rule_outcome.multiplier,
+            originalColumnName=Symbol(column_name)
         )
         
         return sensor::Union{SensorColumn, Nothing}
