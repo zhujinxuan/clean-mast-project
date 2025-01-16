@@ -5,7 +5,7 @@ using DataFrames
 using Dates
 using Statistics
 using CSV
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule
+using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule, FormatConfig
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using CleanMastProject.Types.Sector: DIRECTION_SECTORS
 using CleanMastProject.TurbulenceIntensity
@@ -19,13 +19,15 @@ function create_test_config(;
     time_range = TimeRange(nothing, nothing)
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
     
-    mapping_rules = MappingRule[]
-    sensor_config = SensorConfig(
+    format = FormatConfig(
         "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
         "timestamp",
         "yyyy-mm-dd HH:MM:SS",
-        mapping_rules
+        ",",
+        MappingRule[]
     )
+    
+    sensor_config = SensorConfig(format)
     
     mast_config = MastConfig(
         data_path,
@@ -36,7 +38,7 @@ function create_test_config(;
     )
     
     meso_config = MesoConfig(
-        data_path,
+        "meso.csv",
         1,
         ",",
         sensor_config

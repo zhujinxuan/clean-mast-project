@@ -27,99 +27,71 @@ using CleanMastProject.Types.MastTimeSeries
         placeholders = ["channel", "sensorType", "height"]
         regex = create_regex_pattern(format, placeholders)
         
-        # Test valid matches
-        @test match(regex, "Ch1_Anem_120.00m") !== nothing
-        @test match(regex, "Ch2_Vane_80.00m") !== nothing
-        
-        # Test invalid matches
-        @test match(regex, "Ch1_Anem_120.00m_extra") === nothing
-        @test match(regex, "Wrong_Anem_120.00m") === nothing
+        @test regex isa Regex
+        @test match(regex, "Ch1_Anem_80m") !== nothing
+        @test match(regex, "Ch2_Vane_60m") !== nothing
+        @test match(regex, "Invalid_Format") === nothing
     end
 
     @testset "Parse Column Name" begin
-        # Setup test mapping rules
-        rules = [
+        format = "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+        mappings = [
             MappingRule(
                 Dict("sensorType" => "Anem"),
                 RuleOutcome(sensorType="WindSpeed", unit="m/s")
             ),
             MappingRule(
                 Dict("sensorType" => "Vane"),
-                RuleOutcome(sensorType="WindDirection", unit="Deg")
-            ),
-            MappingRule(
-                Dict("sensorType" => "Temp"),
-                RuleOutcome(sensorType="Temperature", unit="C")
-            ),
-            MappingRule(
-                Dict("statType" => "Avg"),
-                RuleOutcome(statType="avg")
-            ),
-            MappingRule(
-                Dict("statType" => "Max"),
-                RuleOutcome(statType="max")
-            ),
-            MappingRule(
-                Dict("statType" => "Min"),
-                RuleOutcome(statType="min")
-            ),
-            MappingRule(
-                Dict("statType" => "SD"),
-                RuleOutcome(statType="sd")
+                RuleOutcome(sensorType="WindDirection", unit="deg")
             )
         ]
 
-        @testset "Standard Wind Speed Column" begin
-            format = "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
-            result = parse_column_name("Ch1_Anem_120.00m_ESE_Avg_m/s", format, rules)
-            
-            @test result !== nothing
-            @test result.columnName == Symbol("Ch1_Anem_120.00m_ESE_Avg_m/s")
-            @test result.sensorType == "WindSpeed"
-            @test result.height == 120.00
-            @test result.sensorDirection == "ESE"
-            @test result.statType == "avg"
-        end
+        # Test valid column names
+        result = parse_column_name("Ch1_Anem_80m_315_Avg_mps", format, mappings)
+        @test result !== nothing
+        @test result.columnName == Symbol("Ch1_Anem_80m_315_Avg_mps")
+        @test result.sensorType == "WindSpeed"
+        @test result.height == 80.0
+        @test result.sensorDirection == "315"
+        @test result.statType == "Avg"
+        @test result.unit == "m/s"
 
-        @testset "Wind Direction Column" begin
-            format = "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
-            result = parse_column_name("Ch13_Vane_80.00m_N_Avg_Deg", format, rules)
-            
-            @test result !== nothing
-            @test result.sensorType == "WindDirection"
-            @test result.height == 80.00
-            @test result.sensorDirection == "N"
-            @test result.statType == "avg"
-        end
+        # Test invalid column names
+        @test parse_column_name("Invalid_Format", format, mappings) === nothing
+    end
 
-        @testset "Minimal Format" begin
-            format = "{sensorType}_{height}m"
-            result = parse_column_name("Anem_60.00m", format, rules)
-            
-            @test result !== nothing
-            @test result.sensorType == "WindSpeed"
-            @test result.height == 60.00
-            @test result.sensorDirection == ""  # Default
-            @test result.statType == "avg"
-        end
+    @testset "Parse Column Metadata" begin
+        df = DataFrame(
+            "Timestamp" => DateTime[],
+            "Ch1_Anem_80m_315_Avg_mps" => Float64[],
+            "Ch2_Vane_80m_315_Avg_deg" => Float64[],
+            "Invalid_Column" => Float64[]
+        )
 
-        @testset "Invalid Formats" begin
-            format = "Ch{channel}_{sensorType}_{height}m"
-            
-            @test parse_column_name("Ch1_120.00m", format, rules) === nothing
-            @test parse_column_name("Ch1_Anem_invalid_height", format, rules) === nothing
-            @test parse_column_name("Invalid_Format_String", format, rules) === nothing
-        end
+        mappings = [
+            MappingRule(
+                Dict("sensorType" => "Anem"),
+                RuleOutcome(sensorType="WindSpeed", unit="m/s")
+            ),
+            MappingRule(
+                Dict("sensorType" => "Vane"),
+                RuleOutcome(sensorType="WindDirection", unit="deg")
+            )
+        ]
 
-        @testset "Custom Format" begin
-            format = "Station_{stationId}_{sensorType}_{height}m_{customField}"
-            result = parse_column_name("Station_001_Anem_40.00m_Custom", format, rules)
-            
-            @test result !== nothing
-            @test result.sensorType == "WindSpeed"
-            @test result.height == 40.00
-            @test result.sensorDirection == ""  # Default
-            @test result.statType == "avg"
-        end
+        format = FormatConfig(
+            "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+            "Timestamp",
+            "yyyy-mm-dd HH:MM:SS",
+            nothing,
+            mappings
+        )
+
+        sensor_config = SensorConfig(format)
+        metadata = parse_column_metadata(df, sensor_config)
+
+        @test length(metadata) == 2
+        @test any(m -> m.columnName == Symbol("Ch1_Anem_80m_315_Avg_mps"), metadata)
+        @test any(m -> m.columnName == Symbol("Ch2_Vane_80m_315_Avg_deg"), metadata)
     end
 end

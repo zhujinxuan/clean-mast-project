@@ -8,9 +8,8 @@
 # Project-specific ignores
 logs/
 *.csv
-*.yaml
 !example_project/config.yaml
-example_project/*.txt
+example_project/*
 projects/*
 Manifest.toml
 

@@ -84,14 +84,17 @@ function apply_mapping(rules::Vector{MappingRule}, input::Dict{String, Any})::Ru
   reduce(merge_outcomes, map(rule -> rule.rule, matching_rules))
 end
 
+struct FormatConfig
+    column_format::String
+    timestamp_column::String
+    timestamp_format::String
+    delim::Union{Nothing, String}
+    mappings::Vector{MappingRule}
+end
 
 struct SensorConfig
-  column_format::String
-  timestamp_column::String
-  timestamp_format::String
-  mappings:: Vector{MappingRule}
+    format::Union{String, FormatConfig}  # Either a preset name or a custom format config
 end
-export SensorConfig
 
 struct MastConfig
   data_path::String
@@ -201,13 +204,37 @@ function to_dict(mc::MesoConfig)::Dict{String, Any}
     )
 end
 
-function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
-    SensorConfig(
+function from_dict(::Type{FormatConfig}, dict::Dict{String, Any})::FormatConfig
+    FormatConfig(
         dict["column_format"],
         dict["timestamp_column"],
         dict["timestamp_format"],
-        parse_mapping_rules(Vector{Dict{String, Any}}(dict["mappings"]))
+        get(dict, "delim", nothing),
+        parse_mapping_rules(Vector{Dict{String, Any}}(get(dict, "mappings", [])))
     )
+end
+
+function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
+    if haskey(dict, "format")
+        if dict["format"] isa String
+            # Preset format name
+            format = dict["format"]
+        else
+            # Custom format config
+            format = from_dict(FormatConfig, Dict{String, Any}(dict["format"]))
+        end
+    else
+        # For backward compatibility, treat top-level keys as format config
+        format = from_dict(FormatConfig, Dict{String, Any}(
+            "column_format" => dict["column_format"],
+            "timestamp_column" => dict["timestamp_column"],
+            "timestamp_format" => dict["timestamp_format"],
+            "delim" => get(dict, "delim", nothing),
+            "mappings" => get(dict, "mappings", [])
+        ))
+    end
+
+    SensorConfig(format)
 end
 
 function from_dict(::Type{MastConfig}, dict::Dict{String, Any})::MastConfig

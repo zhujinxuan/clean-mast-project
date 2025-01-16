@@ -84,6 +84,15 @@ function parse_column_name(
         )
 end
 
+"""
+Get format configuration from SensorConfig.
+"""
+function get_format_config(sensor_config::SensorConfig)::FormatConfig
+    if sensor_config.format isa String
+        error("Preset format name found but format was not loaded: $(sensor_config.format)")
+    end
+    sensor_config.format::FormatConfig
+end
 
 """
 Parse all column metadata in DataFrame.
@@ -93,15 +102,16 @@ function parse_column_metadata(
     df::DataFrame,
     sensor_config::SensorConfig
 )::Vector{SensorColumn}
+    format = get_format_config(sensor_config)
     metadata = SensorColumn[]
     
     for col_name in names(df)
         # Skip timestamp column
-        if col_name == sensor_config.timestamp_column
+        if col_name == format.timestamp_column
             continue
         end
         
-        parsed = parse_column_name(col_name, sensor_config.column_format, sensor_config.mappings)
+        parsed = parse_column_name(col_name, format.column_format, format.mappings)
         if !isnothing(parsed)
             push!(metadata, parsed)
         end
@@ -239,9 +249,14 @@ function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::S
         config.skip_to::Int
     end
     
+    # Get format config
+    format = get_format_config(config.sensor)
+    
     # Prepare the delimiter
     delim = if !isnothing(config.delim)
         string_to_regex_or_string(config.delim)
+    elseif !isnothing(format.delim)
+        string_to_regex_or_string(format.delim)
     else
         ','  # Default delimiter
     end
@@ -255,13 +270,13 @@ function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::S
         col => Union{Float64, Missing} for col in column_names
     )
     # Set timestamp column type 
-    column_types[Symbol(config.sensor.timestamp_column)] = DateTime
+    column_types[Symbol(format.timestamp_column)] = DateTime
     
     # Build options dictionary
     opts = Dict{Symbol, Any}(
         :skipto => skip_to+1,
         :header=> skip_to,
-        :dateformat => config.sensor.timestamp_format,
+        :dateformat => format.timestamp_format,
         :types => column_types,
         :delim => delim
     )
@@ -284,7 +299,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
-    normalize_timestamp!(df, config.mast.sensor.timestamp_column)
+    normalize_timestamp!(df, get_format_config(config.mast.sensor).timestamp_column)
     
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
