@@ -1,7 +1,7 @@
 module SensorFormats
 
 using YAML
-using ..Types.CleanMastConfig: FormatConfig, SensorConfig, MappingRule, parse_mapping_rules
+using ..Types.CleanMastConfig: SensorConfig, MappingRule
 using ..Types.Utils: from_dict
 
 const FORMATS_DIR = joinpath(dirname(@__FILE__), "..", "formats", "sensor")
@@ -14,7 +14,7 @@ function load_preset_format(format_name::String)::SensorConfig
     !isfile(format_path) && error("Format file not found: $format_path")
 
     config = YAML.load_file(format_path)
-    format = from_dict(FormatConfig, Dict{String, Any}(config))
+    format = from_dict(SensorConfig, Dict{String, Any}(config["sensor"]))
     
     SensorConfig(format)
 end

@@ -45,7 +45,10 @@ function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
     )
 end
 
-function parse_mapping_rules(mapping_dict::Vector{Dict{String, Any}}) :: Vector{MappingRule}
+"""
+Parse a vector of mapping rules from a dictionary.
+"""
+function from_dict(::Type{Vector{MappingRule}}, mapping_dict::Vector{Dict{String, Any}}) :: Vector{MappingRule}
     map(mapping_dict) do mapping
         match_dict = Dict{String, Union{Nothing, Float64, String}}(
             k => v isa Number ? convert(Float64, v) : v 
@@ -55,8 +58,6 @@ function parse_mapping_rules(mapping_dict::Vector{Dict{String, Any}}) :: Vector{
         MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(mapping["rule"])))
     end
 end
-
-export parse_mapping_rules
 
 # Safe version of something that returns nothing if all args are nothing
 safe_something(args...) = all(isnothing, args) ? nothing : something(args...)
@@ -211,7 +212,7 @@ function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
         dict["timestamp_format"],
         get(dict, "delim", nothing),
         dict["skip_to"],
-        parse_mapping_rules(Vector{Dict{String, Any}}(get(dict, "mappings", [])))
+        from_dict(Vector{MappingRule}, Vector{Dict{String, Any}}(get(dict, "mappings", [])))
     )
 end
 
