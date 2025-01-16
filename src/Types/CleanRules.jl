@@ -97,7 +97,8 @@ struct RuleOutcome
     sensorDirection::Union{String, Nothing} 
     height::Union{Float64, Nothing} 
     statType::Union{String, Nothing}
-    unit::Union{String, Nothing} 
+    unit::Union{String, Nothing}
+    multiplier::Union{Float64, Nothing}
 end
 
 function RuleOutcome(;
@@ -105,10 +106,10 @@ function RuleOutcome(;
     sensorDirection::Union{String, Nothing}=nothing,
     height::Union{Float64, Nothing}=nothing,
     statType::Union{String, Nothing}=nothing,
-    unit::Union{String, Nothing}=nothing
+    unit::Union{String, Nothing}=nothing,
+    multiplier::Union{Float64, Nothing}=nothing
 )
-    
-    RuleOutcome(sensorType, sensorDirection, height, statType, unit)
+    RuleOutcome(sensorType, sensorDirection, height, statType, unit, multiplier)
 end
 
 function to_dict(r::RuleOutcome)::Dict{String, Any}
@@ -117,7 +118,8 @@ function to_dict(r::RuleOutcome)::Dict{String, Any}
         "sensorDirection" => r.sensorDirection,
         "height" => r.height,
         "statType" => r.statType,
-        "unit" => r.unit
+        "unit" => r.unit,
+        "multiplier" => r.multiplier
     )
 end
 
@@ -127,7 +129,8 @@ function from_dict(::Type{RuleOutcome}, d::Dict{String, Any})::RuleOutcome
         sensorDirection = get(d, "sensorDirection", nothing),
         height = get(d, "height", nothing),
         statType = get(d, "statType", nothing),
-        unit = get(d, "unit", nothing)
+        unit = get(d, "unit", nothing),
+        multiplier = get(d, "multiplier", nothing)
     )
 end
 

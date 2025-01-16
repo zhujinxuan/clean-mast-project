@@ -8,10 +8,10 @@ using CleanMastProject.TowerShading
 """Helper functions for creating test data"""
 function create_test_config()::ProjectConfig
     sensor_config = SensorConfig(
-        "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
-        "timestamp",
+        "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+        "Timestamp",
         "yyyy-mm-dd HH:MM:SS",
-        ",",
+        nothing,
         1,
         MappingRule[]
     )

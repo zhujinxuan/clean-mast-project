@@ -20,10 +20,10 @@ function create_test_config(;
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
     
     sensor_config = SensorConfig(
-        "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
-        "timestamp",
+        "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+        "Timestamp",
         "yyyy-mm-dd HH:MM:SS",
-        ",",
+        nothing,
         1,
         MappingRule[]
     )

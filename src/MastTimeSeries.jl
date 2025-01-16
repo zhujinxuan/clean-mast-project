@@ -8,7 +8,7 @@ using CSV
 using Dates
 using ..Types.Utils: from_dict, to_dict
 using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData
-import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping, MastConfig, MesoConfig
+import ..Types.CleanMastConfig: ProjectConfig, SensorConfig, MappingRule, apply_mapping, MastConfig, MesoConfig, RuleOutcome
 
 """
 Extract placeholder names from a format string.
@@ -51,37 +51,57 @@ function parse_column_name(
     format::String, 
     rules::Vector{MappingRule}
 )::Union{SensorColumn, Nothing}
-        placeholders = extract_format_placeholders(format)
-        
-        if !("sensorType" in placeholders && "height" in placeholders)
-            @warn "Format string must contain at least {sensorType} and {height}"
-            return nothing
+    placeholders = extract_format_placeholders(format)
+    
+    if !("sensorType" in placeholders && "height" in placeholders)
+        @warn "Format string must contain at least {sensorType} and {height}"
+        return nothing::Union{SensorColumn, Nothing}
+    end
+    
+    regex = create_regex_pattern(format, placeholders)
+    m = match(regex, column_name)
+    
+    if m === nothing 
+        return nothing::Union{SensorColumn, Nothing}
+    end
+    
+    # Parse input dictionary from regex matches
+    input = Dict{String, Any}(
+        placeholder => placeholder == "height" ? 
+            parse(Float64, replace(m[Symbol(placeholder)], "m" => "")) :
+            string(m[Symbol(placeholder)])
+        for placeholder in placeholders
+    )
+    
+    # Apply mapping rules and create SensorColumn
+    rule_outcome = apply_mapping(rules, input)
+    
+    # Update input dictionary with rule_outcome values
+    for field in fieldnames(RuleOutcome)
+        value = getfield(rule_outcome, field)
+        if !isnothing(value) && haskey(input, String(field))
+            input[String(field)] = value
         end
-        
-        regex = create_regex_pattern(format, placeholders)
-        m = match(regex, column_name)
-        
-        m === nothing && return nothing
-        
-        # Parse input dictionary from regex matches
-        input = Dict{String, Any}(
-            placeholder => placeholder == "height" ? 
-                parse(Float64, replace(m[Symbol(placeholder)], "m" => "")) :
-                string(m[Symbol(placeholder)])
-            for placeholder in placeholders
-        )
-        
-        # Apply mapping rules and create SensorColumn
-        rule_outcome = apply_mapping(rules, input)
-        
-        return SensorColumn(
-            Symbol(column_name),
-            something(rule_outcome.sensorType, input["sensorType"]),
-            something(rule_outcome.sensorDirection, get(input, "sensorDirection", "")),
-            something(rule_outcome.height, input["height"]),
-            something(rule_outcome.statType, get(input, "statType", "avg")),
-            something(rule_outcome.unit, get(input, "unit", ""))
-        )
+    end
+    
+    # Generate new column name using format and updated placeholders
+    new_column_name = format
+    for (key, value) in input
+        new_column_name = replace(new_column_name, "{$key}" => (key =="height" && floor(value) == value) ? Int64(value) : value)
+    end
+    
+    sensor = SensorColumn(
+        Symbol(new_column_name),
+        Symbol(column_name),  # Keep original name
+        something(rule_outcome.sensorType, input["sensorType"]),
+        something(rule_outcome.sensorDirection, get(input, "sensorDirection", "")),
+        something(rule_outcome.height, input["height"]),
+        something(rule_outcome.statType, get(input, "statType", "avg")),
+        something(rule_outcome.unit, get(input, "unit", "")),
+        rule_outcome.multiplier
+    )
+    
+    return sensor::Union{SensorColumn, Nothing}
 end
 
 """
@@ -96,29 +116,27 @@ function get_sensor_config(sensor_config::Union{String, SensorConfig})::SensorCo
 end
 
 """
-Parse all column metadata in DataFrame.
-Skip columns that can't be parsed.
+Parse column metadata from DataFrame using sensor configuration.
+Returns a vector of SensorColumn objects.
 """
-function parse_column_metadata(
-    df::DataFrame,
-    sensor_config::SensorConfig
-)::Vector{SensorColumn}
-    metadata = SensorColumn[]
+function parse_column_metadata(df::DataFrame, sensor_config::SensorConfig)::Vector{SensorColumn}
+    # Skip timestamp column
+    data_columns = setdiff(names(df), [sensor_config.timestamp_column])
     
-    for col_name in names(df)
-        # Skip timestamp column
-        if col_name == sensor_config.timestamp_column
-            continue
-        end
-        
-        parsed = parse_column_name(col_name, sensor_config.column_format, sensor_config.mappings)
-        if !isnothing(parsed)
-            push!(metadata, parsed)
+    # Parse each column name
+    sensors = SensorColumn[]
+    for column_name in data_columns
+        sensor = parse_column_name(String(column_name), sensor_config.column_format, sensor_config.mappings)
+        if !isnothing(sensor)
+            push!(sensors, sensor)
+        else
+            @warn "Failed to parse column: $column_name"
         end
     end
     
-    return metadata
+    return sensors
 end
+export parse_column_metadata
 
 """
 Try to load existing sensors.yaml from project directory.
@@ -283,7 +301,7 @@ function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::S
 end
 
 """
-Process CSV file and return TimeSeriesData.
+Process Mast CSV file and return TimeSeriesData.
 Uses existing sensors.yaml if available, otherwise parses column names.
 """
 function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesData
@@ -292,28 +310,29 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     csv_file = joinpath(project_dir, config.mast.data_path)
     
-    # Generate CSV options (now takes project_dir instead of column_names)
+    # Generate CSV options
     csv_opts = generate_csv_opts(config.mast, project_dir)
-    
-    # Get sensor config
-    sensor_config = get_sensor_config(config.mast.sensor)
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
-    normalize_timestamp!(df, sensor_config.timestamp_column)
+    normalize_timestamp!(df, config.mast.sensor.timestamp_column)
     
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
         valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
-        return TimeSeriesData(df, valid_sensors)
+        ts = TimeSeriesData(df, valid_sensors)
+        apply_multipliers!(ts.df, ts.sensors)
+        return ts
     else
         # Parse column metadata and export to sensors.yaml
-        sensors = parse_column_metadata(df, sensor_config)
+        sensors = parse_column_metadata(df, config.mast.sensor)
         
         # Export sensors only if we had to parse them
         export_sensors(sensors, project_dir)
         
-        return TimeSeriesData(df, sensors)
+        ts = TimeSeriesData(df, sensors)
+        apply_multipliers!(ts.df, ts.sensors)
+        return ts
     end
 end
 
@@ -337,7 +356,9 @@ function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
         valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
-        return TimeSeriesData(df, valid_sensors)
+        ts = TimeSeriesData(df, valid_sensors)
+        apply_multipliers!(ts.df, ts.sensors)
+        return ts
     else
         # Parse column metadata and export to sensors.yaml
         sensors = parse_column_metadata(df, config.meso.sensor)
@@ -345,7 +366,9 @@ function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
         # Export sensors only if we had to parse them
         export_meso_sensors(sensors, project_dir)
         
-        return TimeSeriesData(df, sensors)
+        ts = TimeSeriesData(df, sensors)
+        apply_multipliers!(ts.df, ts.sensors)
+        return ts
     end
 end
 
@@ -358,11 +381,13 @@ function export_sensors(sensors::Vector{SensorColumn}, project_dir::String)
     for sensor in sensors
         push!(sensor_data, Dict(
             "columnName" => String(sensor.columnName),
+            "originalColumnName" => String(sensor.originalColumnName),
             "sensorType" => sensor.sensorType,
             "sensorDirection" => sensor.sensorDirection,
             "height" => sensor.height,
             "statType" => sensor.statType,
-            "unit" => sensor.unit
+            "unit" => sensor.unit,
+            "multiplier" => sensor.multiplier
         ))
     end
     
@@ -381,11 +406,13 @@ function export_meso_sensors(sensors::Vector{SensorColumn}, project_dir::String)
     for sensor in sensors
         push!(sensor_data, Dict(
             "columnName" => String(sensor.columnName),
+            "originalColumnName" => String(sensor.originalColumnName),
             "sensorType" => sensor.sensorType,
             "sensorDirection" => sensor.sensorDirection,
             "height" => sensor.height,
             "statType" => sensor.statType,
-            "unit" => sensor.unit
+            "unit" => sensor.unit,
+            "multiplier" => sensor.multiplier
         ))
     end
     
@@ -394,6 +421,32 @@ function export_meso_sensors(sensors::Vector{SensorColumn}, project_dir::String)
         YAML.write(io, Dict("sensors" => sensor_data))
     end
 end
+
+"""
+Apply multipliers and rename columns in DataFrame based on sensor configurations.
+Uses functional programming principles for efficiency.
+"""
+function apply_multipliers!(df::DataFrame, sensors::Vector{SensorColumn})::DataFrame
+    # Filter sensors with non-nothing multipliers or different column names
+    transform_sensors = filter(s -> !isnothing(s.multiplier) || s.columnName != s.originalColumnName, sensors)
+    
+    # First rename columns if needed
+    for sensor in transform_sensors
+        if sensor.columnName != sensor.originalColumnName
+            rename!(df, sensor.originalColumnName => sensor.columnName)
+        end
+    end
+    
+    # Then apply multipliers using broadcasting
+    for sensor in transform_sensors
+        if !isnothing(sensor.multiplier)
+            df[!, sensor.columnName] .*= sensor.multiplier
+        end
+    end
+    
+    return df
+end
+export apply_multipliers!
 
 # At the end of MastTimeSeries.jl
 export SensorColumn, TimeSeriesData, read_mast_data, read_meso_data,

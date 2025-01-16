@@ -13,6 +13,7 @@ struct RuleOutcome
     height::Union{Float64, Nothing}
     statType::Union{String, Nothing}
     unit::Union{String, Nothing}
+    multiplier::Union{Float64, Nothing}
 end
 
 # Constructor for RuleOutcome with optional fields
@@ -21,9 +22,10 @@ function RuleOutcome(;
     sensorDirection::Union{String, Nothing}=nothing,
     height::Union{Float64, Nothing}=nothing,
     statType::Union{String, Nothing}=nothing,
-    unit::Union{String, Nothing}=nothing
+    unit::Union{String, Nothing}=nothing,
+    multiplier::Union{Float64, Nothing}=nothing
 )
-    RuleOutcome(sensorType, sensorDirection, height, statType, unit)
+    RuleOutcome(sensorType, sensorDirection, height, statType, unit, multiplier)
 end
 export RuleOutcome
 
@@ -41,7 +43,8 @@ function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
         get(dict, "sensorDirection", nothing),
         get(dict, "height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
         get(dict, "statType", nothing),
-        get(dict, "unit", nothing)
+        get(dict, "unit", nothing),
+        get(dict, "multiplier", nothing) |> m -> m isa Number ? convert(Float64, m) : nothing
     )
 end
 
@@ -69,7 +72,8 @@ RuleOutcome(
             safe_something(b.sensorDirection, a.sensorDirection, nothing),
             safe_something(b.height, a.height, nothing),
             safe_something(b.statType, a.statType, nothing),
-            safe_something(b.unit, a.unit, nothing)
+            safe_something(b.unit, a.unit, nothing),
+            safe_something(b.multiplier, a.multiplier, nothing)
            )
 
 # Functional rule matching
@@ -80,7 +84,7 @@ end
 # Functional apply_mapping
 function apply_mapping(rules::Vector{MappingRule}, input::Dict{String, Any})::RuleOutcome
   matching_rules = filter(rule -> matches_rule(rule, input), rules)
-  isempty(matching_rules) && return RuleOutcome(nothing, nothing, nothing, nothing, nothing)
+  isempty(matching_rules) && return RuleOutcome(nothing, nothing, nothing, nothing, nothing, nothing)
 
   reduce(merge_outcomes, map(rule -> rule.rule, matching_rules))
 end
@@ -93,6 +97,7 @@ struct SensorConfig
     skip_to::Union{Int, Vector{String}}
     mappings::Vector{MappingRule}
 end
+export SensorConfig
 
 struct MastConfig
   data_path::String
