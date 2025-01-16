@@ -19,28 +19,23 @@ function create_test_config(;
     time_range = TimeRange(nothing, nothing)
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
     
-    format = FormatConfig(
+    sensor_config = SensorConfig(
         "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
         "timestamp",
         "yyyy-mm-dd HH:MM:SS",
         ",",
+        1,
         MappingRule[]
     )
     
-    sensor_config = SensorConfig(format)
-    
     mast_config = MastConfig(
         data_path,
-        1,
-        ",",
         sensor_config,
         Rule[]
     )
     
     meso_config = MesoConfig(
         "meso.csv",
-        1,
-        ",",
         sensor_config
     )
     

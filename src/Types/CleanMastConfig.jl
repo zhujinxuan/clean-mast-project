@@ -84,23 +84,18 @@ function apply_mapping(rules::Vector{MappingRule}, input::Dict{String, Any})::Ru
   reduce(merge_outcomes, map(rule -> rule.rule, matching_rules))
 end
 
-struct FormatConfig
+struct SensorConfig
     column_format::String
     timestamp_column::String
     timestamp_format::String
     delim::Union{Nothing, String}
+    skip_to::Union{Int, Vector{String}}
     mappings::Vector{MappingRule}
-end
-
-struct SensorConfig
-    format::Union{String, FormatConfig}  # Either a preset name or a custom format config
 end
 
 struct MastConfig
   data_path::String
-  skip_to::Union{Int, Vector{String}}
-  delim::Union{Nothing, String}
-  sensor::SensorConfig
+  sensor::Union{String, SensorConfig}
   rules::Vector{Rule}  # Using Rules.Rule
 end
 export MastConfig
@@ -118,8 +113,6 @@ end
 
 struct MesoConfig
     data_path::String
-    skip_to::Union{Int, Vector{String}}
-    delim::Union{Nothing, String}
     sensor::SensorConfig
 end
 
@@ -174,8 +167,6 @@ end
 function from_dict(::Type{MesoConfig}, dict::Dict{String, Any})::MesoConfig
     MesoConfig(
         dict["data_path"],
-        Vector{String}(dict["skip_to"]),
-        get(dict, "delim", nothing),
         from_dict(SensorConfig, Dict{String, Any}(dict["sensor"]))
     )
 end
@@ -195,53 +186,38 @@ function to_dict(ac::AnalysisConfig)::Dict{String, Any}
     )
 end
 
+function to_dict(sc::SensorConfig)::Dict{String, Any}
+    Dict(
+        "column_format" => sc.column_format,
+        "timestamp_column" => sc.timestamp_column,
+        "timestamp_format" => sc.timestamp_format,
+        "delim" => sc.delim,
+        "skip_to" => sc.skip_to,
+        "mappings" => to_dict(sc.mappings)
+    )
+end
+
 function to_dict(mc::MesoConfig)::Dict{String, Any}
     Dict(
         "data_path" => mc.data_path,
-        "delim" => mc.delim,
-        "skip_to" => mc.skip_to,
         "sensor" => to_dict(mc.sensor)
     )
 end
 
-function from_dict(::Type{FormatConfig}, dict::Dict{String, Any})::FormatConfig
-    FormatConfig(
+function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
+    SensorConfig(
         dict["column_format"],
         dict["timestamp_column"],
         dict["timestamp_format"],
         get(dict, "delim", nothing),
+        dict["skip_to"],
         parse_mapping_rules(Vector{Dict{String, Any}}(get(dict, "mappings", [])))
     )
-end
-
-function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
-    if haskey(dict, "format")
-        if dict["format"] isa String
-            # Preset format name
-            format = dict["format"]
-        else
-            # Custom format config
-            format = from_dict(FormatConfig, Dict{String, Any}(dict["format"]))
-        end
-    else
-        # For backward compatibility, treat top-level keys as format config
-        format = from_dict(FormatConfig, Dict{String, Any}(
-            "column_format" => dict["column_format"],
-            "timestamp_column" => dict["timestamp_column"],
-            "timestamp_format" => dict["timestamp_format"],
-            "delim" => get(dict, "delim", nothing),
-            "mappings" => get(dict, "mappings", [])
-        ))
-    end
-
-    SensorConfig(format)
 end
 
 function from_dict(::Type{MastConfig}, dict::Dict{String, Any})::MastConfig
     MastConfig(
         dict["data_path"],
-        dict["skip_to"],
-        get(dict, "delim", nothing),
         from_dict(SensorConfig, Dict{String, Any}(dict["sensor"])),
         haskey(dict, "rules") ? [parse_rule(rule) for rule in dict["rules"]] : Rule[]
     )

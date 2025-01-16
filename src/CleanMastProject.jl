@@ -19,6 +19,8 @@ module Types
   export Sector
 end
 export Types
+include("./SensorFormats.jl")
+export SensorFormats
 
 include("./CleanMastConfig.jl");
 export CleanMastConfig

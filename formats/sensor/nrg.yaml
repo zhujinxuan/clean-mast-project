@@ -3,6 +3,9 @@ format:
   timestamp_column: Timestamp
   timestamp_format: "yyyy-mm-dd HH:MM:SS"
   delim: "\t"
+  skip_to: 
+    - "/^Data/"
+    - "/^Timestamp/"
   mappings:
     - match:
         sensorType: Anem

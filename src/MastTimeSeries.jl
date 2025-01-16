@@ -85,13 +85,14 @@ function parse_column_name(
 end
 
 """
-Get format configuration from SensorConfig.
+Get sensor configuration, loading preset if needed.
 """
-function get_format_config(sensor_config::SensorConfig)::FormatConfig
-    if sensor_config.format isa String
-        error("Preset format name found but format was not loaded: $(sensor_config.format)")
+function get_sensor_config(sensor_config::Union{String, SensorConfig})::SensorConfig
+    if sensor_config isa String
+        load_preset_format(sensor_config)
+    else
+        sensor_config
     end
-    sensor_config.format::FormatConfig
 end
 
 """
@@ -102,16 +103,15 @@ function parse_column_metadata(
     df::DataFrame,
     sensor_config::SensorConfig
 )::Vector{SensorColumn}
-    format = get_format_config(sensor_config)
     metadata = SensorColumn[]
     
     for col_name in names(df)
         # Skip timestamp column
-        if col_name == format.timestamp_column
+        if col_name == sensor_config.timestamp_column
             continue
         end
         
-        parsed = parse_column_name(col_name, format.column_format, format.mappings)
+        parsed = parse_column_name(col_name, sensor_config.column_format, sensor_config.mappings)
         if !isnothing(parsed)
             push!(metadata, parsed)
         end
@@ -242,21 +242,19 @@ Generate CSV reading options based on configuration and column names.
 function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::String)::Dict{Symbol, Any}
     csv_file = joinpath(project_dir, config.data_path)
     
+    # Get sensor config
+    sensor_config = get_sensor_config(config.sensor)
+    
     # Determine skip_to value
-    skip_to = if config.skip_to isa Vector{String}
-        find_skip_line(csv_file, config.skip_to)
+    skip_to = if sensor_config.skip_to isa Vector{String}
+        find_skip_line(csv_file, sensor_config.skip_to)
     else
-        config.skip_to::Int
+        sensor_config.skip_to::Int
     end
     
-    # Get format config
-    format = get_format_config(config.sensor)
-    
     # Prepare the delimiter
-    delim = if !isnothing(config.delim)
-        string_to_regex_or_string(config.delim)
-    elseif !isnothing(format.delim)
-        string_to_regex_or_string(format.delim)
+    delim = if !isnothing(sensor_config.delim)
+        string_to_regex_or_string(sensor_config.delim)
     else
         ','  # Default delimiter
     end
@@ -270,13 +268,13 @@ function generate_csv_opts(config::Union{MastConfig, MesoConfig}, project_dir::S
         col => Union{Float64, Missing} for col in column_names
     )
     # Set timestamp column type 
-    column_types[Symbol(format.timestamp_column)] = DateTime
+    column_types[Symbol(sensor_config.timestamp_column)] = DateTime
     
     # Build options dictionary
     opts = Dict{Symbol, Any}(
         :skipto => skip_to+1,
         :header=> skip_to,
-        :dateformat => format.timestamp_format,
+        :dateformat => sensor_config.timestamp_format,
         :types => column_types,
         :delim => delim
     )
@@ -297,9 +295,12 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     # Generate CSV options (now takes project_dir instead of column_names)
     csv_opts = generate_csv_opts(config.mast, project_dir)
     
+    # Get sensor config
+    sensor_config = get_sensor_config(config.mast.sensor)
+    
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
-    normalize_timestamp!(df, get_format_config(config.mast.sensor).timestamp_column)
+    normalize_timestamp!(df, sensor_config.timestamp_column)
     
     if !isnothing(existing_sensors)
         # Validate that all columns in sensors.yaml exist in the DataFrame
@@ -307,7 +308,7 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
         return TimeSeriesData(df, valid_sensors)
     else
         # Parse column metadata and export to sensors.yaml
-        sensors = parse_column_metadata(df, config.mast.sensor)
+        sensors = parse_column_metadata(df, sensor_config)
         
         # Export sensors only if we had to parse them
         export_sensors(sensors, project_dir)

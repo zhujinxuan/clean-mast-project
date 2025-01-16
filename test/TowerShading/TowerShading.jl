@@ -7,28 +7,26 @@ using CleanMastProject.TowerShading
 
 """Helper functions for creating test data"""
 function create_test_config()::ProjectConfig
-    mapping_rules = MappingRule[]
     sensor_config = SensorConfig(
-        "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",  # column_format
-        "timestamp",                                       # timestamp_column
-        "yyyy-mm-dd HH:MM:SS",                            # timestamp_format
-        mapping_rules                                      # mappings
+        "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
+        "timestamp",
+        "yyyy-mm-dd HH:MM:SS",
+        ",",
+        1,
+        MappingRule[]
     )
     
     mast_config = MastConfig(
-        "data.csv",        # data_path
-        1,                 # skip_to
-        ",",              # delim
-        sensor_config,     # sensor
-        Rule[]            # rules
+        "data.csv",
+        sensor_config,
+        Rule[]
     )
-
+    
     meso_config = MesoConfig(
-        "data.csv",        # data_path
-        1,                 # skip_to
-        ",",              # delim
-        sensor_config,     # sensor
+        "meso.csv",
+        sensor_config
     )
+    
     analysis_config = AnalysisConfig(
         TimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")),
         nothing,  # target_height
