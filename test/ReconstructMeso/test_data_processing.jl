@@ -28,8 +28,8 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
     )
     
     sensors = [
-        SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-        SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
+        SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
     ]
     
     ts = TimeSeriesData(df, sensors)
@@ -116,9 +116,9 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
 
     @testset "find_nearest_height_sensor" begin
         sensors_multi = [
-            SensorColumn(:ws_60m, "WindSpeed", "N", 60.0, "avg", "m/s"),
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s")
+            SensorColumn(:ws_60m, "ws_60m", "WindSpeed", "N", 60.0, "avg", "m/s"),
+            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s")
         ]
         
         # Test exact match
@@ -193,8 +193,8 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
         )
 
         sensors = [
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
+            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
         ]
 
         ts = TimeSeriesData(df, sensors)

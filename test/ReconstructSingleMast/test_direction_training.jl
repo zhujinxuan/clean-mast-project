@@ -24,8 +24,8 @@ function create_test_data_for_vector_average()::TimeSeriesData
     )
 
     sensors = [
-        SensorColumn(:direction, "WindDirection", "N", 98.0, "avg", "deg"),
-        SensorColumn(:speed, "WindSpeed", "N", 100.0, "avg", "m/s")
+        SensorColumn(:direction, "direction", "WindDirection", "N", 98.0, "avg", "deg"),
+        SensorColumn(:speed, "speed", "WindSpeed", "N", 100.0, "avg", "m/s")
     ]
 
     TimeSeriesData(df, sensors)
@@ -104,10 +104,10 @@ function create_test_layered_data(
     
     # Define sensors
     sensors = [
-        SensorColumn(:direction_98m, "WindDirection", "N", 98.0, "avg", "deg"),
-        SensorColumn(:direction_118m, "WindDirection", "N", 118.0, "avg", "deg"),
-        SensorColumn(:speed_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
-        SensorColumn(:speed_120m, "WindSpeed", "N", 120.0, "avg", "m/s")
+        SensorColumn(:direction_98m, "direction_98m", "WindDirection", "N", 98.0, "avg", "deg"),
+        SensorColumn(:direction_118m, "direction_118m", "WindDirection", "N", 118.0, "avg", "deg"),
+        SensorColumn(:speed_100m, "speed_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
+        SensorColumn(:speed_120m, "speed_120m", "WindSpeed", "N", 120.0, "avg", "m/s")
     ]
     
     TimeSeriesData(df, sensors)

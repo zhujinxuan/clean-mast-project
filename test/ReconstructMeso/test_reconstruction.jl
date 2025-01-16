@@ -27,13 +27,13 @@ using CleanMastProject.ReconstructMeso.Reconstruction: fill_missing_data, get_se
     )
     
     mast_sensors = [
-        SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-        SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
+        SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
     ]
     
     meso_sensors = [
-        SensorColumn(:ws_75m, "WindSpeed", "N", 75.0, "avg", "m/s"),
-        SensorColumn(:wd_75m, "WindDirection", "N", 75.0, "avg", "deg")
+        SensorColumn(:ws_75m, "ws_75m", "WindSpeed", "N", 75.0, "avg", "m/s"),
+        SensorColumn(:wd_75m, "wd_75m", "WindDirection", "N", 75.0, "avg", "deg")
     ]
     
     mast_ts = TimeSeriesData(mast_df, mast_sensors)

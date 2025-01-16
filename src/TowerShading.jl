@@ -5,12 +5,6 @@ using ..Types.CleanMastConfig: ProjectConfig
 using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using Statistics
 
-mutable struct ChannelCounter
-    value::Int
-end
-
-const CHANNEL_COUNTER = ChannelCounter(200)
-
 """
     find_nearby_sensors(sensors::Vector{SensorColumn}, target_height::Float64, max_diff::Float64=2.0)
 
@@ -52,57 +46,52 @@ function get_preferred_height(heights::Vector{Float64})::Float64
 end
 
 """
-    generate_column_name(config::ProjectConfig, height::Float64, stat_type::String)::String
-
-Generate a column name using the project's column format.
-Uses "TS" (Tower Shading) for unknown placeholders.
-"""
-function generate_column_name(
-    config::ProjectConfig, 
-    height::Float64, 
-    stat_type::String
-)::String
-    format = config.mast.sensor.column_format
-    
-    # Replace known placeholders
-    name = replace(format, "{height}" => "$(Int(round(height)))")
-    name = replace(name, "{sensorType}" => "WindSpeed")
-    name = replace(name, "{statType}" => stat_type)
-    
-    # Handle unit placeholder specially for wind speed
-    name = replace(name, "{unit}" => "m/s")
-    name = replace(name, "{channel}" => string(CHANNEL_COUNTER.value))
-    CHANNEL_COUNTER.value += 1
-    
-    # Replace any remaining placeholders with "TS"
-    name = replace(name, r"\{[^}]+\}" => "TS")
-    
-    return name
-end
-
-"""
     create_merged_sensor(
-        config::ProjectConfig,
-        height::Float64,
-        stat_type::String
+        stat_sensors::Vector{SensorColumn},
+        preferred_height::Float64
     )::SensorColumn
 
-Create a new SensorColumn for merged data.
+Create a new SensorColumn for merged data using the format and information from the first sensor.
 """
 function create_merged_sensor(
-    config::ProjectConfig,
-    height::Float64,
-    stat_type::String
+    stat_sensors::Vector{SensorColumn},
+    preferred_height::Float64
 )::SensorColumn
-    column_name = generate_column_name(config, height, stat_type)
+    base_sensor = stat_sensors[1]
+    
+    # Create input dictionary from sensor fields
+    input = Dict{String, Any}(
+        "sensorType" => base_sensor.sensorType,
+        "height" => preferred_height,
+        "statType" => base_sensor.statType,
+        "unit" => base_sensor.unit,
+        "sensorDirection" => "N/A"
+    )
+    
+    # Extract channel from original name
+    m = match(r"Ch(\d+)", String(base_sensor.columnName))
+    if !isnothing(m)
+        input["channel"] = m.captures[1]
+    end
+    
+    # Generate new name using format
+    new_name = base_sensor.columnFormat
+    for (key, value) in input
+        new_name = replace(new_name, "{$key}" => (key == "height" && floor(value) == value) ? Int64(value) : value)
+    end
+    
+    # Replace any remaining placeholders with "TS"
+    new_name = replace(new_name, r"\{[^}]+\}" => "TS")
     
     return SensorColumn(
-        Symbol(column_name),
-        "WindSpeed",
-        "N/A",  # sensorDirection
-        height,
-        stat_type,
-        "m/s"   # Assuming wind speed is always in m/s
+        Symbol(new_name),            # columnName
+        base_sensor.columnName,      # originalColumnName (from first sensor)
+        base_sensor.columnFormat,    # columnFormat
+        base_sensor.sensorType,      # sensorType
+        "N/A",                       # sensorDirection
+        preferred_height,            # height
+        base_sensor.statType,        # statType
+        base_sensor.unit             # unit
     )
 end
 
@@ -162,12 +151,12 @@ function merge_wind_speeds!(
         
         # Group sensors by stat_type and merge
         for stat_type in unique([s.statType for s in nearby_sensors])
-            stat_sensors = filter(s -> s.statType == stat_type, nearby_sensors)
+            stat_sensors = filter(s -> s.statType == stat_type && s.sensorType == "WindSpeed", nearby_sensors)
             isempty(stat_sensors) && continue
             length(stat_sensors) == 1 && continue
             
             # Create new merged sensor
-            new_sensor = create_merged_sensor(config, preferred_height, stat_type)
+            new_sensor = create_merged_sensor(stat_sensors, preferred_height)
             
             # Find all columns to drop that match height and sensorType
             cols_to_drop = [s.columnName for s in nearby_sensors]

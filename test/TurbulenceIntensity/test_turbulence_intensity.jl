@@ -5,7 +5,7 @@ using DataFrames
 using Dates
 using Statistics
 using CSV
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule, FormatConfig
+using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using CleanMastProject.Types.Sector: DIRECTION_SECTORS
 using CleanMastProject.TurbulenceIntensity
@@ -20,7 +20,7 @@ function create_test_config(;
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
     
     sensor_config = SensorConfig(
-        "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+        ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"],
         "Timestamp",
         "yyyy-mm-dd HH:MM:SS",
         nothing,
@@ -52,19 +52,19 @@ function create_test_data()::TimeSeriesData
     # Create sensors at different heights
     sensors = [
         # 80m sensors
-        SensorColumn(Symbol("Ch1_WindSpeed_80m_avg_m/s"), "WindSpeed", "N", 80.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch1_WindSpeed_80m_sd_m/s"), "WindSpeed", "N", 80.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch1_WindDirection_80m_avg_deg"), "WindDirection", "N", 80.0, "avg", "deg"),
+        SensorColumn(Symbol("Ch1_WindSpeed_80m_avg_m/s"), "Ch1_WindSpeed_80m_avg_m/s", "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch1_WindSpeed_80m_sd_m/s"), "Ch1_WindSpeed_80m_sd_m/s", "WindSpeed", "N", 80.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch1_WindDirection_80m_avg_deg"), "Ch1_WindDirection_80m_avg_deg", "WindDirection", "N", 80.0, "avg", "deg"),
         
         # 100m sensors
-        SensorColumn(Symbol("Ch2_WindSpeed_100m_avg_m/s"), "WindSpeed", "N", 100.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch2_WindSpeed_100m_sd_m/s"), "WindSpeed", "N", 100.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch2_WindDirection_100m_avg_deg"), "WindDirection", "N", 100.0, "avg", "deg"),
+        SensorColumn(Symbol("Ch2_WindSpeed_100m_avg_m/s"), "Ch2_WindSpeed_100m_avg_m/s", "WindSpeed", "N", 100.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch2_WindSpeed_100m_sd_m/s"), "Ch2_WindSpeed_100m_sd_m/s", "WindSpeed", "N", 100.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch2_WindDirection_100m_avg_deg"), "Ch2_WindDirection_100m_avg_deg", "WindDirection", "N", 100.0, "avg", "deg"),
         
         # 120m sensors
-        SensorColumn(Symbol("Ch3_WindSpeed_120m_avg_m/s"), "WindSpeed", "N", 120.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch3_WindSpeed_120m_sd_m/s"), "WindSpeed", "N", 120.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch3_WindDirection_120m_avg_deg"), "WindDirection", "N", 120.0, "avg", "deg")
+        SensorColumn(Symbol("Ch3_WindSpeed_120m_avg_m/s"), "Ch3_WindSpeed_120m_avg_m/s", "WindSpeed", "N", 120.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch3_WindSpeed_120m_sd_m/s"), "Ch3_WindSpeed_120m_sd_m/s", "WindSpeed", "N", 120.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch3_WindDirection_120m_avg_deg"), "Ch3_WindDirection_120m_avg_deg", "WindDirection", "N", 120.0, "avg", "deg")
     ]
     
     # Create DataFrame with controlled test data

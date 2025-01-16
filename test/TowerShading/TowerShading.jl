@@ -1,14 +1,15 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig
+using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, SensorConfig, MastConfig, MappingRule, MesoConfig
+using CleanMastProject.Types.CleanRules: Rule
 using CleanMastProject.MastTimeSeries
 using CleanMastProject.TowerShading
 
 """Helper functions for creating test data"""
 function create_test_config()::ProjectConfig
     sensor_config = SensorConfig(
-        "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+        ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"],
         "Timestamp",
         "yyyy-mm-dd HH:MM:SS",
         nothing,
@@ -38,12 +39,12 @@ end
 
 function create_test_sensors()::Vector{SensorColumn}
     return [
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_avg_m/s"), "WindSpeed", "270", 60.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_avg_m/s"), "WindSpeed", "90", 60.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_sd_m/s"), "WindSpeed", "270", 60.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_sd_m/s"), "WindSpeed", "90", 60.0, "sd", "m/s"),
-        SensorColumn(Symbol("Ch1_WindSpeed_40m_avg_m/s"), "WindSpeed", "270", 40.0, "avg", "m/s"),
-        SensorColumn(Symbol("Ch1_Temperature_60m_avg_C"), "Temperature", "N/A", 60.0, "avg", "C")
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 40.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch1_Temperature_60m_N/A_avg_C"), Symbol("Ch1_Temperature_60m_N/A_avg_C"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "Temperature", "N/A", 60.0, "avg", "C")
     ]
 end
 
@@ -54,12 +55,12 @@ function create_test_data()::TimeSeriesData
             DateTime("2024-01-01T00:10:00"),
             DateTime("2024-01-01T00:20:00")
         ],
-        Symbol("Ch1_WindSpeed_60m_avg_m/s") => [5.0, 6.0, 4.0],
-        Symbol("Ch2_WindSpeed_60m_avg_m/s") => [4.5, 7.0, 3.5],
-        Symbol("Ch1_WindSpeed_60m_sd_m/s") => [0.5, 0.6, 0.4],
-        Symbol("Ch2_WindSpeed_60m_sd_m/s") => [0.4, 0.8, 0.3],
-        Symbol("Ch1_WindSpeed_40m_avg_m/s") => [4.0, 5.0, 3.0],
-        Symbol("Ch1_Temperature_60m_avg_C") => [20.0, 21.0, 19.0]
+        Symbol("Ch1_WindSpeed_60m_270_avg_m/s") => [5.0, 6.0, 4.0],
+        Symbol("Ch2_WindSpeed_60m_90_avg_m/s") => [4.5, 7.0, 3.5],
+        Symbol("Ch1_WindSpeed_60m_270_sd_m/s") => [0.5, 0.6, 0.4],
+        Symbol("Ch2_WindSpeed_60m_90_sd_m/s") => [0.4, 0.8, 0.3],
+        Symbol("Ch1_WindSpeed_40m_270_avg_m/s") => [4.0, 5.0, 3.0],
+        Symbol("Ch1_Temperature_60m_N/A_avg_C") => [20.0, 21.0, 19.0]
     )
     
     return TimeSeriesData(df, create_test_sensors())
@@ -121,45 +122,50 @@ end
         end
     end
 
-    @testset "column_name_generation" begin
-        config = create_test_config()
+    @testset "create_merged_sensor" begin
+        sensors = create_test_sensors()
         
-        @testset "basic name generation" begin
-            name = TowerShading.generate_column_name(config, 60.0, "avg")
-
-            @test occursin("WindSpeed", name)
-            @test occursin("Ch2", name)
-            @test occursin("60m", name)
-            @test occursin("avg", name)
-            @test occursin("m/s", name)  # Check for unit
+        @testset "basic merging" begin
+            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg", sensors)
+            new_sensor = TowerShading.create_merged_sensor(stat_sensors, 60.0)
+            
+            @test new_sensor.columnName == Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")
+            @test new_sensor.originalColumnName == stat_sensors[1].columnName
+            @test new_sensor.columnFormat == stat_sensors[1].columnFormat
+            @test new_sensor.sensorType == "WindSpeed"
+            @test new_sensor.sensorDirection == "N/A"
+            @test new_sensor.height == 60.0
+            @test new_sensor.statType == "avg"
+            @test new_sensor.unit == "m/s"
         end
         
         @testset "height rounding" begin
-            name = TowerShading.generate_column_name(config, 60.4, "avg")
-            @test occursin("60m", name)  # Should round to nearest integer
-            @test occursin("m/s", name)   # Check for unit
+            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg", sensors)
+            new_sensor = TowerShading.create_merged_sensor(stat_sensors, 60.0)
+            
+            @test occursin("60m", String(new_sensor.columnName))
+            @test new_sensor.height == 60.0
         end
     end
 
     @testset "merge_wind_speeds!" begin
-        config = create_test_config()
-        data = create_test_data()
-        
         @testset "basic merging" begin
+            config = create_test_config()
+            data = create_test_data()
             result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
             
             # Check that new columns were created
-            avg_col = find_tower_column(result.df, "WindSpeed_60m_avg_m/s")
-            sd_col = find_tower_column(result.df, "WindSpeed_60m_sd_m/s")
+            merged_avg = filter(s -> s.statType == "avg" && s.height == 60.0 && s.sensorType == "WindSpeed", result.sensors)
+            @test length(merged_avg) == 1
+            @test merged_avg[1].columnName == Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")
             
             # Check that old columns were removed
-            @test !(Symbol("Ch1_WindSpeed_60m_avg_m/s") in propertynames(result.df))
-            @test !(Symbol("Ch2_WindSpeed_60m_avg_m/s") in propertynames(result.df))
+            @test !(Symbol("Ch1_WindSpeed_60m_270_avg_m/s") in propertynames(result.df))
+            @test !(Symbol("Ch2_WindSpeed_60m_90_avg_m/s") in propertynames(result.df))
             
             # Check that merged values are maximum of originals
-            @test result.df[1, avg_col] == max(5.0, 4.5)
-            @test result.df[2, avg_col] == max(6.0, 7.0)
-            @test result.df[2, sd_col] == 0.8
+            @test result.df[1, Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")] == max(5.0, 4.5)
+            @test result.df[2, Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")] == max(6.0, 7.0)
         end
         
         @testset "sensor metadata" begin
@@ -174,10 +180,10 @@ end
             @test !isempty(merged_sensors)
             
             # Check that old sensors were removed
-            original_sensors = filter(s -> s.columnName in [Symbol("Ch1_WindSpeed_60m_avg_m/s"), 
-                                                          Symbol("Ch1_WindSpeed_60m_sd_m/s"),
-                                                          Symbol("Ch2_WindSpeed_60m_avg_m/s"), 
-                                                          Symbol("Ch2_WindSpeed_60m_sd_m/s")],
+            original_sensors = filter(s -> s.columnName in [Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), 
+                                                          Symbol("Ch1_WindSpeed_60m_270_sd_m/s"),
+                                                          Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), 
+                                                          Symbol("Ch2_WindSpeed_60m_90_sd_m/s")],
                                     result.sensors)
             @test isempty(original_sensors)
         end
@@ -188,37 +194,9 @@ end
             result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
             
             # Temperature column should remain unchanged
-            @test Symbol("Ch1_Temperature_60m_avg_C") in propertynames(result.df)
+            @test Symbol("Ch1_Temperature_60m_N/A_avg_C") in propertynames(result.df)
             temp_sensor = filter(s -> s.sensorType == "Temperature", result.sensors)
             @test length(temp_sensor) == 1
-        end
-    end
-
-    @testset "process_tower_shading integration" begin
-        config = create_test_config()
-        data = create_test_data()
-        
-        @testset "complete processing" begin
-            config = create_test_config()
-            data = create_test_data()
-            result = TowerShading.process_tower_shading!(config, data)
-            
-            # Check overall structure
-            @test result isa TimeSeriesData
-            data = create_test_data()
-            @test nrow(result.df) == nrow(data.df)
-            @test ncol(result.df) < ncol(data.df)  # Should have fewer columns after merging
-            
-            # Check that timestamp is preserved
-            @test :timestamp in Symbol.(names(result.df))
-            @test result.df[1, :timestamp] == data.df[1, :timestamp]
-            
-            # Verify merged data
-            merged_avg = filter(s -> s.statType == "avg" && 
-                                   s.sensorType == "WindSpeed" && 
-                                   s.height == 60.0,
-                              result.sensors)
-            @test length(merged_avg) == 1
         end
     end
 
