@@ -1,7 +1,186 @@
-Please use the types in the src/Types/*.jl file. remember to include the folder @Types unless I tell you otherwise.
-For new type definitions, please add them to the src/Types/*.jl file. The file name can be the module name under src/{module_name}/ or src/{module_name}.jl
-Prefer not to create empty arrays and append! or push! to them. Instead, use map or other functional ways to create them all together.
-Avoid for and while if no side effects are needed, use map, filter, reduce, etc.
-Avoid set value by for/while each index, create all indices and set them together with .= or = 
-Always have type hints.
-Don't make try and catch unless I tell you explicitly to do so.
+;; Cursor Rules for Julia Data Analysis
+;; Combining functional programming with practical data manipulation
+;; Inspired by functional programming and data science best practices
+
+(define-cursor-rules
+  ;; Core Philosophy
+  (philosophy
+    (principles
+      (type-first "Begin with clear type definitions")
+      (data-transformation "Focus on data flow and explicit transformations")
+      (smart-mutation "Use mutation strategically for performance when scope is clear")
+      (functional-style "Prefer functional operations over imperative")
+      (vectorization "Utilize Julia's vectorization capabilities")
+      (reproducibility "Ensure analysis workflows are reproducible")))
+
+  ;; Data Analysis Foundations
+  (data-analysis
+    (dependencies
+      (DataFrames "Primary data manipulation library")
+      (CSV "File I/O operations")
+      (Statistics "Basic statistical operations")
+      (StatsBase "Advanced statistical operations")
+      (Gadfly "Main plotting library - grammar of graphics")
+      (GLM "Statistical modeling and regression analysis")
+      (DataFramesMeta "DataFrame transformation macros")
+      (Distributions "Probability distributions and testing"))
+    
+    (conventions
+      (method-chaining "Use |> for data transformation pipelines")
+      (views "Use @view for memory-efficient data slicing")
+      (grouping "Use groupby for data aggregation")
+      (broadcasting "Use dot syntax for vectorization")))
+
+  ;; Function Design
+  (functions
+    (rules
+      (small-functions "Keep functions under 30 lines")
+      (single-responsibility "Each function does one thing well")
+      (pure-functions "Prefer pure functions without side effects")
+      (typed-arguments "Use type annotations for function arguments")
+      (return-type-annotation "Specify return types when not obvious")))
+
+  ;; Data Transformation
+  (transformations
+    (prefer
+      (map "Use map instead of explicit loops")
+      (filter "Use filter for selection operations")
+      (reduce "Use reduce for aggregation")
+      (broadcasting "Use dot syntax for vectorization")
+      (comprehensions "Use array comprehensions for clear intent"))
+    (mutation-strategy
+      (scope-rules
+        "Use mutation for clearly scoped temporary DataFrames"
+        "Prefer ! suffix for functions that mutate their arguments"
+        "Create local copies before mutation with copy() or similar"
+        "Document mutation behavior in function docstrings")
+      (performance-rules
+        "Use in-place operations for large DataFrames in local scope"
+        "Chain mutations using broadcasting fusion"
+        "Consider using views for non-mutating operations")
+      (safety-rules
+        "Avoid mutating shared or global data structures"
+        "Return mutated objects explicitly"
+        "Use let blocks to contain mutation scope")))
+    (rules
+      (explicit-selection "Use proper column selection with select!, subset")
+      (type-conversion "Use appropriate types: categorical for factors")
+      (missing-data "Handle missing values explicitly with Missing type")
+      (data-validation "Implement data quality checks early")))
+
+  ;; Visualization
+  (visualization
+    (rules
+      (gadfly-usage
+        "Use Gadfly.jl for grammar of graphics based plotting"
+        "Leverage layered plotting approach"
+        "Use statistical transformations within plots")
+      (plot-elements
+        "Include clear titles, labels, and legends"
+        "Use colorblind-friendly scales from ColorSchemes.jl"
+        "Set appropriate figure dimensions with cm/inch units"
+        "Use themes for consistent styling")
+      (composable-plots
+        "Create reusable plot components"
+        "Use plot composition operators: hstack, vstack"
+        "Implement custom Geom types for specialized visualizations")))
+
+  ;; Jupyter (Pluto) Notebook Practices
+  (notebook-practices
+    (rules
+      (organization
+        "Structure notebooks with clear markdown sections"
+        "Keep code cells focused and modular"
+        "Document analysis steps comprehensively")
+      (reproducibility
+        "Use environment management (Project.toml)"
+        "Include data loading and preprocessing steps"
+        "Consider Pluto.jl for reactivity")))
+
+  ;; Performance Optimization
+  (performance
+    (rules
+      (vectorization "Use broadcast operations with dot syntax")
+      (views "Use views instead of copies when possible")
+      (type-stability "Ensure type stability in hot paths")
+      (parallel "Use ThreadsX for parallel operations")
+      (large-data "Consider JuliaDB or Dagger for big data")))
+
+  ;; Error Handling
+  (error-handling
+    (rules
+      (type-checking "Use type assertions for data validation")
+      (missing-values "Handle missing data with skipmissing or coalesce")
+      (return-values "Return meaningful values or Nothing for expected edge cases")
+      (assertions "Use @assert for internal checks during development")
+      (error-propagation "Let errors propagate up unless explicitly asked to catch")))
+
+  ;; Code Organization
+  (organization
+    (rules
+      (file-structure
+        "Place all type definitions in src/Types/*.jl"
+        "Group related types in themed files (e.g., Types/DataTypes.jl, Types/ModelTypes.jl)"
+        "Export types with explicit exports.jl")
+      (module-structure
+        "Organize analysis into logical sections"
+        "Create reusable functions for common operations")
+      (naming-conventions
+        "Use descriptive names for variables and functions"
+        "Follow Julia naming conventions")
+      (documentation
+        "Document data sources and assumptions"
+        "Include examples in docstrings")))
+
+  ;; Data Science Workflow
+  (statistical-modeling
+    (rules
+      (model-specification
+        "Use formula interface for model specification"
+        "Properly encode categorical variables"
+        "Select appropriate link functions for GLMs")
+      (model-diagnostics
+        "Check model assumptions"
+        "Use diagnostic plots"
+        "Analyze residuals and influence measures")
+      (model-selection
+        "Use AIC/BIC for model comparison"
+        "Implement cross-validation when appropriate"
+        "Consider nested model testing"))
+    (best-practices
+      (documentation
+        "Document model assumptions"
+        "Report coefficient interpretations"
+        "Include confidence intervals")
+      (validation
+        "Check for multicollinearity"
+        "Validate predictive performance"
+        "Report appropriate fit statistics")))
+
+  (workflow
+    (steps
+      (exploration
+        "Begin with data summary statistics"
+        "Use describe, showcols for initial overview"
+        "Check data types and missing values")
+      (cleaning
+        "Handle missing data appropriately"
+        "Convert data types as needed"
+        "Remove or flag outliers")
+      (analysis
+        "Use appropriate statistical methods"
+        "Document assumptions and methodologies"
+        "Create reproducible analysis pipelines")
+      (visualization
+        "Create informative visualizations"
+        "Use appropriate plot types for data"
+        "Ensure plots are publication-ready")))
+
+  ;; Code Generation Preferences
+  (generation
+    (preferences
+      (dataframes-meta "Suggest @chain for data transformations")
+      (type-safety "Include type annotations for clarity")
+      (documentation "Generate comprehensive docstrings")
+      (vectorization "Prefer vectorized operations")
+      (plotting "Include complete plot specifications"))))

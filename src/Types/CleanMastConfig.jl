@@ -90,7 +90,7 @@ function apply_mapping(rules::Vector{MappingRule}, input::Dict{String, Any})::Ru
 end
 
 struct SensorConfig
-    column_format::String
+    column_formats::Vector{String}  # Multiple format patterns
     timestamp_column::String
     timestamp_format::String
     delim::Union{Nothing, String}
@@ -193,13 +193,13 @@ function to_dict(ac::AnalysisConfig)::Dict{String, Any}
 end
 
 function to_dict(sc::SensorConfig)::Dict{String, Any}
-    Dict(
-        "column_format" => sc.column_format,
+    Dict{String, Any}(
+        "column_formats" => sc.column_formats,
         "timestamp_column" => sc.timestamp_column,
         "timestamp_format" => sc.timestamp_format,
         "delim" => sc.delim,
         "skip_to" => sc.skip_to,
-        "mappings" => to_dict(sc.mappings)
+        "mappings" => map(to_dict, sc.mappings)
     )
 end
 
@@ -210,14 +210,25 @@ function to_dict(mc::MesoConfig)::Dict{String, Any}
     )
 end
 
-function from_dict(::Type{SensorConfig}, dict::Dict{String, Any})::SensorConfig
+function from_dict(::Type{SensorConfig}, d::Dict{String, Any})::SensorConfig
+    # Support both single format (backward compatibility) and multiple formats
+    formats = if haskey(d, "column_formats")
+        d["column_formats"]
+    elseif haskey(d, "column_format")
+        [d["column_format"]]
+    else
+        error("Either column_format or column_formats must be specified")
+    end
+
+    mappings = map(m -> from_dict(MappingRule, m), d["mappings"])
+    
     SensorConfig(
-        dict["column_format"],
-        dict["timestamp_column"],
-        dict["timestamp_format"],
-        get(dict, "delim", nothing),
-        dict["skip_to"],
-        from_dict(Vector{MappingRule}, Vector{Dict{String, Any}}(get(dict, "mappings", [])))
+        formats,
+        d["timestamp_column"],
+        d["timestamp_format"],
+        get(d, "delim", nothing),
+        get(d, "skip_to", 1),
+        mappings
     )
 end
 
@@ -238,5 +249,15 @@ function from_dict(::Type{ProjectConfig}, dict::Dict{String, Any})::ProjectConfi
 end
 
 export TimeRange, AnalysisConfig, MesoConfig
+
+# Constructor from dictionary for MappingRule
+function from_dict(::Type{MappingRule}, dict::Dict{String, Any})::MappingRule
+    match_dict = Dict{String, Union{Nothing, Float64, String}}(
+        k => v isa Number ? convert(Float64, v) : v 
+        for (k, v) in dict["match"]
+    )
+    
+    MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(dict["rule"])))
+end
 
 end # end module

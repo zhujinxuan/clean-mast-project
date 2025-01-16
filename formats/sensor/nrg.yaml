@@ -1,5 +1,7 @@
 sensor:
-  column_format: "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+  column_formats:
+    - "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+    - "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}" 
   timestamp_column: Timestamp
   timestamp_format: "yyyy-mm-dd HH:MM:SS"
   delim: "\t"

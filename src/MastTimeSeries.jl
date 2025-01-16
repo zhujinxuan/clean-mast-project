@@ -43,65 +43,106 @@ function create_regex_pattern(format::String, placeholders::Vector{String})::Reg
 end
 
 """
-Parse a single column name based on format pattern.
-Returns nothing if parsing fails.
+Parse a single column name based on multiple format patterns.
+Returns nothing if parsing fails for all formats.
 """
 function parse_column_name(
     column_name::String, 
-    format::String, 
+    formats::Vector{String}, 
     rules::Vector{MappingRule}
 )::Union{SensorColumn, Nothing}
-    placeholders = extract_format_placeholders(format)
-    
-    if !("sensorType" in placeholders && "height" in placeholders)
-        @warn "Format string must contain at least {sensorType} and {height}"
-        return nothing::Union{SensorColumn, Nothing}
-    end
-    
-    regex = create_regex_pattern(format, placeholders)
-    m = match(regex, column_name)
-    
-    if m === nothing 
-        return nothing::Union{SensorColumn, Nothing}
-    end
-    
-    # Parse input dictionary from regex matches
-    input = Dict{String, Any}(
-        placeholder => placeholder == "height" ? 
-            parse(Float64, replace(m[Symbol(placeholder)], "m" => "")) :
-            string(m[Symbol(placeholder)])
-        for placeholder in placeholders
-    )
-    
-    # Apply mapping rules and create SensorColumn
-    rule_outcome = apply_mapping(rules, input)
-    
-    # Update input dictionary with rule_outcome values
-    for field in fieldnames(RuleOutcome)
-        value = getfield(rule_outcome, field)
-        if !isnothing(value) && haskey(input, String(field))
-            input[String(field)] = value
+    # Try each format until one succeeds
+    for format in formats
+        placeholders = extract_format_placeholders(format)
+        
+        if !("sensorType" in placeholders && "height" in placeholders)
+            @warn "Format string must contain at least {sensorType} and {height}: $format"
+            continue
         end
+        
+        regex = create_regex_pattern(format, placeholders)
+        m = match(regex, column_name)
+        
+        if isnothing(m)
+            continue
+        end
+        
+        # Parse input dictionary from regex matches
+        input = Dict{String, Any}(
+            placeholder => placeholder == "height" ? 
+                parse(Float64, replace(m[Symbol(placeholder)], "m" => "")) :
+                string(m[Symbol(placeholder)])
+            for placeholder in placeholders
+        )
+        
+        # Apply mapping rules and create SensorColumn
+        rule_outcome = apply_mapping(rules, input)
+        
+        # Update input dictionary with rule_outcome values
+        for field in fieldnames(RuleOutcome)
+            value = getfield(rule_outcome, field)
+            if !isnothing(value) && haskey(input, String(field))
+                input[String(field)] = value
+            end
+        end
+        
+        # Generate new column name using format and updated placeholders
+        new_column_name = format
+        for (key, value) in input
+            new_column_name = replace(new_column_name, "{$key}" => (key == "height" && floor(value) == value) ? Int64(value) : value)
+        end
+        
+        # Add empty sensorDirection if not in format
+        sensorDirection = get(input, "sensorDirection", "")
+        
+        sensor = SensorColumn(
+            Symbol(new_column_name),
+            Symbol(column_name),  # Keep original name
+            format,              # Store the format used
+            something(rule_outcome.sensorType, input["sensorType"]),
+            sensorDirection,
+            something(rule_outcome.height, input["height"]),
+            something(rule_outcome.statType, get(input, "statType", "avg")),
+            something(rule_outcome.unit, get(input, "unit", "")),
+            rule_outcome.multiplier
+        )
+        
+        return sensor::Union{SensorColumn, Nothing}
     end
     
-    # Generate new column name using format and updated placeholders
-    new_column_name = format
-    for (key, value) in input
-        new_column_name = replace(new_column_name, "{$key}" => (key =="height" && floor(value) == value) ? Int64(value) : value)
-    end
-    
-    sensor = SensorColumn(
-        Symbol(new_column_name),
-        Symbol(column_name),  # Keep original name
-        something(rule_outcome.sensorType, input["sensorType"]),
-        something(rule_outcome.sensorDirection, get(input, "sensorDirection", "")),
-        something(rule_outcome.height, input["height"]),
-        something(rule_outcome.statType, get(input, "statType", "avg")),
-        something(rule_outcome.unit, get(input, "unit", "")),
-        rule_outcome.multiplier
+    return nothing::Union{SensorColumn, Nothing}
+end
+
+"""
+Generate a new column name for a sensor using its stored format
+"""
+function generate_column_name(sensor::SensorColumn)::Symbol
+    # Create input dictionary from sensor fields
+    input = Dict{String, Any}(
+        "sensorType" => sensor.sensorType,
+        "height" => sensor.height,
+        "statType" => sensor.statType,
+        "unit" => sensor.unit
     )
     
-    return sensor::Union{SensorColumn, Nothing}
+    # Add optional fields if they exist
+    if !isempty(sensor.sensorDirection)
+        input["sensorDirection"] = sensor.sensorDirection
+    end
+    
+    # Extract channel from original name if it exists
+    m = match(r"Ch(\d+)", String(sensor.originalColumnName))
+    if !isnothing(m)
+        input["channel"] = m.captures[1]
+    end
+    
+    # Generate new name using format
+    new_name = sensor.columnFormat
+    for (key, value) in input
+        new_name = replace(new_name, "{$key}" => (key == "height" && floor(value) == value) ? Int64(value) : value)
+    end
+    
+    return Symbol(new_name)
 end
 
 """
@@ -126,7 +167,7 @@ function parse_column_metadata(df::DataFrame, sensor_config::SensorConfig)::Vect
     # Parse each column name
     sensors = SensorColumn[]
     for column_name in data_columns
-        sensor = parse_column_name(String(column_name), sensor_config.column_format, sensor_config.mappings)
+        sensor = parse_column_name(String(column_name), sensor_config.column_formats, sensor_config.mappings)
         if !isnothing(sensor)
             push!(sensors, sensor)
         else
@@ -430,17 +471,26 @@ function apply_multipliers!(df::DataFrame, sensors::Vector{SensorColumn})::DataF
     # Filter sensors with non-nothing multipliers or different column names
     transform_sensors = filter(s -> !isnothing(s.multiplier) || s.columnName != s.originalColumnName, sensors)
     
-    # First rename columns if needed
+    # Create a mapping of original to new column names
+    column_renames = Dict{Symbol, Symbol}()
+    
+    # First collect all the new names
     for sensor in transform_sensors
         if sensor.columnName != sensor.originalColumnName
-            rename!(df, sensor.originalColumnName => sensor.columnName)
+            # Generate new column name using the stored format
+            new_name = generate_column_name(sensor)
+            column_renames[sensor.originalColumnName] = new_name
         end
     end
+    
+    # Rename all columns at once
+    rename!(df, collect(column_renames))
     
     # Then apply multipliers using broadcasting
     for sensor in transform_sensors
         if !isnothing(sensor.multiplier)
-            df[!, sensor.columnName] .*= sensor.multiplier
+            target_col = sensor.columnName
+            df[!, target_col] .*= sensor.multiplier
         end
     end
     

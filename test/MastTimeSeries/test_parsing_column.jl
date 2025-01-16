@@ -38,7 +38,7 @@ using CleanMastProject.SensorFormats
     end
 
     @testset "Parse Column Name with Basic Mappings" begin
-        format = "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+        formats = ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"]
         mappings = [
             MappingRule(
                 Dict("sensorType" => "Anem"),
@@ -47,28 +47,32 @@ using CleanMastProject.SensorFormats
             MappingRule(
                 Dict("sensorType" => "Vane"),
                 RuleOutcome(sensorType="WindDirection", unit="deg", multiplier=1.0)
-            )
+            ),
+            MappingRule(Dict("statType" => "Avg"), RuleOutcome(statType="avg")),
+            MappingRule(Dict("statType" => "Max"), RuleOutcome(statType="max")),
+            MappingRule(Dict("statType" => "Min"), RuleOutcome(statType="min")),
+            MappingRule(Dict("statType" => "SD"), RuleOutcome(statType="sd"))
         ]
 
         # Test valid column names
         original_name = "Ch1_Anem_80m_315_Avg_mps"
-        result = parse_column_name(original_name, format, mappings)
+        result = parse_column_name(original_name, formats, mappings)
         @test result !== nothing
-        @test result.columnName == Symbol(original_name)  # No change in name as unit matches
         @test result.originalColumnName == Symbol(original_name)
+        @test result.columnName == Symbol("Ch1_WindSpeed_80m_315_avg_m/s")
         @test result.sensorType == "WindSpeed"
         @test result.height == 80.0
         @test result.sensorDirection == "315"
-        @test result.statType == "Avg"
+        @test result.statType == "avg"
         @test result.unit == "m/s"
         @test result.multiplier == 1.0
 
         # Test invalid column names
-        @test parse_column_name("Invalid_Format", format, mappings) === nothing
+        @test parse_column_name("Invalid_Format", formats, mappings) === nothing
     end
 
     @testset "Parse Column Name with Unit Conversion" begin
-        format = "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"
+        formats = ["Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"]
         mappings = [
             MappingRule(
                 Dict("sensorType" => "Analog", "unit" => "hPa"),
@@ -77,25 +81,29 @@ using CleanMastProject.SensorFormats
             MappingRule(
                 Dict("sensorType" => "Analog", "unit" => "C"),
                 RuleOutcome(sensorType="Temperature", unit="C", multiplier=1.0)
-            )
+            ),
+            MappingRule(Dict("statType" => "Avg"), RuleOutcome(statType="avg")),
+            MappingRule(Dict("statType" => "Max"), RuleOutcome(statType="max")),
+            MappingRule(Dict("statType" => "Min"), RuleOutcome(statType="min")),
+            MappingRule(Dict("statType" => "SD"), RuleOutcome(statType="sd"))
         ]
 
         # Test pressure conversion
         original_pressure_name = "Ch1_Analog_80m_Avg_hPa"
-        result = parse_column_name(original_pressure_name, format, mappings)
+        result = parse_column_name(original_pressure_name, formats, mappings)
         @test result !== nothing
         @test result.originalColumnName == Symbol(original_pressure_name)
-        @test result.columnName == Symbol("Ch1_Pressure_80m_Avg_Pa")  # Name reconstructed from format
+        @test result.columnName == Symbol("Ch1_Pressure_80m_avg_Pa")
         @test result.sensorType == "Pressure"
         @test result.unit == "Pa"
         @test result.multiplier == 100.0
 
         # Test temperature without conversion
         original_temp_name = "Ch2_Analog_80m_Avg_C"
-        result = parse_column_name(original_temp_name, format, mappings)
+        result = parse_column_name(original_temp_name, formats, mappings)
         @test result !== nothing
         @test result.originalColumnName == Symbol(original_temp_name)
-        @test result.columnName == Symbol("Ch2_Temperature_80m_Avg_C")  # Name reconstructed from format
+        @test result.columnName == Symbol("Ch2_Temperature_80m_avg_C")
         @test result.sensorType == "Temperature"
         @test result.unit == "C"
         @test result.multiplier == 1.0
@@ -122,11 +130,16 @@ using CleanMastProject.SensorFormats
             MappingRule(
                 Dict("sensorType" => "Analog", "unit" => "hPa"),
                 RuleOutcome(sensorType="Pressure", unit="Pa", multiplier=100.0)
-            )
+            ),
+            MappingRule(Dict("statType" => "Avg"), RuleOutcome(statType="avg")),
+            MappingRule(Dict("statType" => "Max"), RuleOutcome(statType="max")),
+            MappingRule(Dict("statType" => "Min"), RuleOutcome(statType="min")),
+            MappingRule(Dict("statType" => "SD"), RuleOutcome(statType="sd"))
         ]
 
         sensor_config = SensorConfig(
-            "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+            ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+             "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"],
             "Timestamp",
             "yyyy-mm-dd HH:MM:SS",
             nothing,
@@ -138,46 +151,49 @@ using CleanMastProject.SensorFormats
 
         @test length(metadata) == 3
         
-        # Check wind speed sensor (name reconstructed from format)
+        # Check wind speed sensor
         ws_sensor = first(filter(m -> m.sensorType == "WindSpeed", metadata))
         @test ws_sensor.originalColumnName == Symbol("Ch1_Anem_80m_315_Avg_mps")
-        @test ws_sensor.columnName == Symbol("Ch1_WindSpeed_80m_315_Avg_m/s")
+        @test ws_sensor.columnName == Symbol("Ch1_WindSpeed_80m_315_avg_m/s")
+        @test ws_sensor.statType == "avg"
         
-        # Check wind direction sensor (name reconstructed from format)
+        # Check wind direction sensor
         wd_sensor = first(filter(m -> m.sensorType == "WindDirection", metadata))
         @test wd_sensor.originalColumnName == Symbol("Ch2_Vane_80m_315_Avg_deg")
-        @test wd_sensor.columnName == Symbol("Ch2_WindDirection_80m_315_Avg_deg")
+        @test wd_sensor.columnName == Symbol("Ch2_WindDirection_80m_315_avg_deg")
+        @test wd_sensor.statType == "avg"
         
-        # Check pressure sensor (name reconstructed from format)
+        # Check pressure sensor
         pressure_sensor = first(filter(m -> m.sensorType == "Pressure", metadata))
         @test pressure_sensor.originalColumnName == Symbol("Ch3_Analog_80m_Avg_hPa")
-        @test pressure_sensor.columnName == Symbol("Ch3_Pressure_80m_Avg_Pa")
+        @test pressure_sensor.columnName == Symbol("Ch3_Pressure_80m_avg_Pa")
         @test pressure_sensor.unit == "Pa"
         @test pressure_sensor.multiplier == 100.0
+        @test pressure_sensor.statType == "avg"
     end
 
     @testset "Multiple Matching Rules" begin
-        format = "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"
+        formats = ["Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"]
         mappings = [
             MappingRule(
                 Dict("sensorType" => "Anem"),
                 RuleOutcome(sensorType="WindSpeed", multiplier=1.0)
             ),
             MappingRule(
-                Dict("statType" => "Avg"),
-                RuleOutcome(statType="avg", multiplier=1.0)
-            ),
-            MappingRule(
                 Dict("unit" => "mps"),
                 RuleOutcome(unit="m/s", multiplier=1.0)
-            )
+            ),
+            MappingRule(Dict("statType" => "Avg"), RuleOutcome(statType="avg")),
+            MappingRule(Dict("statType" => "Max"), RuleOutcome(statType="max")),
+            MappingRule(Dict("statType" => "Min"), RuleOutcome(statType="min")),
+            MappingRule(Dict("statType" => "SD"), RuleOutcome(statType="sd"))
         ]
 
         original_name = "Ch1_Anem_80m_Avg_mps"
-        result = parse_column_name(original_name, format, mappings)
+        result = parse_column_name(original_name, formats, mappings)
         @test result !== nothing
         @test result.originalColumnName == Symbol(original_name)
-        @test result.columnName == Symbol("Ch1_WindSpeed_80m_avg_m/s")  # Name reconstructed from format
+        @test result.columnName == Symbol("Ch1_WindSpeed_80m_avg_m/s")
         @test result.sensorType == "WindSpeed"
         @test result.statType == "avg"
         @test result.unit == "m/s"
@@ -189,15 +205,15 @@ using CleanMastProject.SensorFormats
             # Create a temporary format file
             format_path = joinpath(temp_dir, "test.yaml")
             format_config = Dict(
-                "column_format" => "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}",
+                "column_formats" => ["Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"],
                 "timestamp_column" => "Timestamp",
                 "timestamp_format" => "yyyy-mm-dd HH:MM:SS",
                 "delim" => "\t",
                 "skip_to" => 1,
                 "mappings" => [
-                    Dict(
-                        "match" => Dict("sensorType" => "Anem"),
-                        "rule" => Dict(
+                    Dict{String, Any}(
+                        "match" => Dict{String, Any}("sensorType" => "Anem"),
+                        "rule" => Dict{String, Any}(
                             "sensorType" => "WindSpeed",
                             "unit" => "m/s",
                             "multiplier" => 1.0
@@ -211,7 +227,7 @@ using CleanMastProject.SensorFormats
 
             # Test loading the format
             sensor_config = from_dict(SensorConfig, format_config)
-            @test sensor_config.column_format == "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"
+            @test sensor_config.column_formats == ["Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"]
             @test sensor_config.timestamp_column == "Timestamp"
             @test sensor_config.delim == "\t"
             @test length(sensor_config.mappings) == 1
@@ -242,11 +258,16 @@ using CleanMastProject.SensorFormats
             MappingRule(
                 Dict("sensorType" => "Analog", "unit" => "hPa"),
                 RuleOutcome(sensorType="Pressure", unit="Pa", multiplier=100.0)
-            )
+            ),
+            MappingRule(Dict("statType" => "Avg"), RuleOutcome(statType="avg")),
+            MappingRule(Dict("statType" => "Max"), RuleOutcome(statType="max")),
+            MappingRule(Dict("statType" => "Min"), RuleOutcome(statType="min")),
+            MappingRule(Dict("statType" => "SD"), RuleOutcome(statType="sd"))
         ]
 
         sensor_config = SensorConfig(
-            "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+            ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}",
+             "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}"],
             "Timestamp",
             "yyyy-mm-dd HH:MM:SS",
             nothing,
@@ -259,16 +280,19 @@ using CleanMastProject.SensorFormats
         # Check metadata before transformation
         @test length(metadata) == 3
         
+        # Create new DataFrame for transformation
+        df_transformed = copy(df)
+        
         # Apply transformations
-        df_transformed = apply_multipliers!(df, metadata)
+        df_transformed = apply_multipliers!(df_transformed, metadata)
         
         # Check column renames and transformations
         @test !("Ch3_Analog_80m_Avg_hPa" in names(df_transformed))  # Old column should be gone
-        @test "Ch3_Pressure_80m_Avg_Pa" in names(df_transformed)    # New column should exist
-        @test df_transformed[1, "Ch3_Pressure_80m_Avg_Pa"] ≈ 101325.0  # 1013.25 * 100
+        @test "Ch3_Pressure_80m_avg_Pa" in names(df_transformed)    # New column should exist
+        @test df_transformed[1, "Ch3_Pressure_80m_avg_Pa"] ≈ 101325.0  # 1013.25 * 100
         
         # Check that other columns were preserved but renamed according to sensor type
-        @test df_transformed[1, "Ch1_WindSpeed_80m_315_Avg_m/s"] == 5.0
-        @test df_transformed[1, "Ch2_WindDirection_80m_315_Avg_deg"] == 180.0
+        @test df_transformed[1, "Ch1_WindSpeed_80m_315_avg_m/s"] == 5.0
+        @test df_transformed[1, "Ch2_WindDirection_80m_315_avg_deg"] == 180.0
     end
 end
