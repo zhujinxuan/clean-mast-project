@@ -3,10 +3,11 @@ module RepresentativeYearCalibration
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, from_dict
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...RepresentativeYear: calibrate_to_representative_year
 using ...Types.ReconstructMeso: TrainingTimeRange
 using ...MastTimeSeries: read_meso_data
+using ...Types.Utils: from_dict, to_dict
 
 export execute
 
@@ -62,14 +63,9 @@ function execute(dir::String)
     
     # Save sensors to YAML (they remain unchanged)
     sensors_yaml = Dict(
-        "sensors" => [Dict(
-            "columnName" => String(s.columnName),
-            "sensorType" => s.sensorType,
-            "sensorDirection" => s.sensorDirection,
-            "height" => s.height,
-            "statType" => s.statType,
-            "unit" => s.unit
-        ) for s in calibrated_ts.sensors]
+        "sensors" => [
+            to_dict(s) for s in calibrated_ts.sensors
+        ]
     )
     
     open(joinpath(dir, "rep_year_calibration-sensors.yaml"), "w") do io

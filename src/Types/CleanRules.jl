@@ -1,12 +1,13 @@
 ﻿# src/Types/CleanRules.jl
 """
- Type definition for data cleaning
+Type definition for data cleaning
 """
 module CleanRules
 
 using DataFrames
 using Dates
 using ..MastTimeSeries: SensorColumn
+import ..Utils: from_dict
 
 struct HeightFilter
     min::Union{Nothing, Float64}
@@ -39,7 +40,7 @@ struct Rule
     criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria}
 end
 
-function parse_rule(config::Dict)::Rule
+function from_dict(::Type{Rule}, config::Dict)::Rule
     # Validate one and only one criteria type exists
     criteria_keys = ["out_of_range", "layer_difference", "icing"]
     present_keys = filter(k -> haskey(config, k), criteria_keys)
@@ -92,51 +93,9 @@ struct RuleViolation
     column::Symbol
 end
 
-struct RuleOutcome
-    sensorType::Union{String, Nothing} 
-    sensorDirection::Union{String, Nothing} 
-    height::Union{Float64, Nothing} 
-    statType::Union{String, Nothing}
-    unit::Union{String, Nothing}
-    multiplier::Union{Float64, Nothing}
-end
-
-function RuleOutcome(;
-    sensorType::Union{String, Nothing}=nothing,
-    sensorDirection::Union{String, Nothing}=nothing,
-    height::Union{Float64, Nothing}=nothing,
-    statType::Union{String, Nothing}=nothing,
-    unit::Union{String, Nothing}=nothing,
-    multiplier::Union{Float64, Nothing}=nothing
-)
-    RuleOutcome(sensorType, sensorDirection, height, statType, unit, multiplier)
-end
-
-function to_dict(r::RuleOutcome)::Dict{String, Any}
-    Dict{String, Any}(
-        "sensorType" => r.sensorType,
-        "sensorDirection" => r.sensorDirection,
-        "height" => r.height,
-        "statType" => r.statType,
-        "unit" => r.unit,
-        "multiplier" => r.multiplier
-    )
-end
-
-function from_dict(::Type{RuleOutcome}, d::Dict{String, Any})::RuleOutcome
-    RuleOutcome(
-        sensorType = get(d, "sensorType", nothing),
-        sensorDirection = get(d, "sensorDirection", nothing),
-        height = get(d, "height", nothing),
-        statType = get(d, "statType", nothing),
-        unit = get(d, "unit", nothing),
-        multiplier = get(d, "multiplier", nothing)
-    )
-end
-
 export RuleViolation
 
-export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria,ManualCriteria,
+export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria,
        Rule, parse_rule
 
 end # module

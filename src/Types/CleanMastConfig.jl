@@ -5,7 +5,7 @@ Types for project config, corresponding to {project_dir}/config.yaml
 module CleanMastConfig
 using Dates
 import ..Utils: from_dict, to_dict
-using ..CleanRules
+using ..CleanRules: Rule
 
 struct RuleOutcome
     sensorType::Union{String, Nothing}
@@ -27,16 +27,18 @@ function RuleOutcome(;
 )
     RuleOutcome(sensorType, sensorDirection, height, statType, unit, multiplier)
 end
-export RuleOutcome
 
-# Define a single mapping rule
-struct MappingRule
-    match::Dict{String, Union{Nothing, Float64, String}}
-    rule::RuleOutcome
+function to_dict(r::RuleOutcome)::Dict{String, Any}
+    Dict{String, Any}(
+        "sensorType" => r.sensorType,
+        "sensorDirection" => r.sensorDirection,
+        "height" => r.height,
+        "statType" => r.statType,
+        "unit" => r.unit,
+        "multiplier" => r.multiplier
+    )
 end
-export MappingRule
 
-# Constructor from dictionary for RuleOutcome
 function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
     RuleOutcome(
         get(dict, "sensorType", nothing),
@@ -48,18 +50,30 @@ function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
     )
 end
 
-"""
-Parse a vector of mapping rules from a dictionary.
-"""
-function from_dict(::Type{Vector{MappingRule}}, mapping_dict::Vector{Dict{String, Any}}) :: Vector{MappingRule}
-    map(mapping_dict) do mapping
-        match_dict = Dict{String, Union{Nothing, Float64, String}}(
-            k => v isa Number ? convert(Float64, v) : v 
-            for (k, v) in mapping["match"]
-        )
-        
-        MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(mapping["rule"])))
-    end
+export RuleOutcome
+
+# Define a single mapping rule
+struct MappingRule
+    match::Dict{String, Union{Nothing, Float64, String}}
+    rule::RuleOutcome
+end
+export MappingRule
+
+# Constructor from dictionary for MappingRule
+function from_dict(::Type{MappingRule}, dict::Dict{String, Any})::MappingRule
+    match_dict = Dict{String, Union{Nothing, Float64, String}}(
+        k => v isa Number ? convert(Float64, v) : v 
+        for (k, v) in dict["match"]
+    )
+    
+    MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(dict["rule"])))
+end
+
+function to_dict(mr::MappingRule)::Dict{String, Any}
+    Dict{String, Any}(
+        "match" => mr.match,
+        "rule" => to_dict(mr.rule)
+    )
 end
 
 # Safe version of something that returns nothing if all args are nothing
@@ -102,7 +116,7 @@ export SensorConfig
 struct MastConfig
   data_path::String
   sensor::Union{String, SensorConfig}
-  rules::Vector{Rule}  # Using Rules.Rule
+  rules::Vector{Rule}  
 end
 export MastConfig
 
@@ -220,7 +234,7 @@ function from_dict(::Type{SensorConfig}, d::Dict{String, Any})::SensorConfig
         error("Either column_format or column_formats must be specified")
     end
 
-    mappings = map(m -> from_dict(MappingRule, m), d["mappings"])
+    mappings = map(m -> from_dict(MappingRule, Dict{String, Any}(m)), d["mappings"])
     
     SensorConfig(
         formats,
@@ -236,7 +250,7 @@ function from_dict(::Type{MastConfig}, dict::Dict{String, Any})::MastConfig
     MastConfig(
         dict["data_path"],
         from_dict(SensorConfig, Dict{String, Any}(dict["sensor"])),
-        haskey(dict, "rules") ? [parse_rule(rule) for rule in dict["rules"]] : Rule[]
+        haskey(dict, "rules") ? [from_dict(Rule, rule) for rule in dict["rules"]] : []
     )
 end
 
@@ -249,15 +263,5 @@ function from_dict(::Type{ProjectConfig}, dict::Dict{String, Any})::ProjectConfi
 end
 
 export TimeRange, AnalysisConfig, MesoConfig
-
-# Constructor from dictionary for MappingRule
-function from_dict(::Type{MappingRule}, dict::Dict{String, Any})::MappingRule
-    match_dict = Dict{String, Union{Nothing, Float64, String}}(
-        k => v isa Number ? convert(Float64, v) : v 
-        for (k, v) in dict["match"]
-    )
-    
-    MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(dict["rule"])))
-end
 
 end # end module

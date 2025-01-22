@@ -209,6 +209,7 @@ function apply_calibration(
     for row in eachrow(result_df)
         # Skip if original value is missing
         ismissing(row[target_col]) && continue
+        ismissing(row[dir_col.columnName]) && continue
         
         # Find direction sector
         sector = find_direction_sector(row[dir_col.columnName])
@@ -234,9 +235,9 @@ Find wind direction sensor closest to given wind speed sensor
 function find_matching_direction_sensor(
     ts::TimeSeriesData, 
     ws_sensor::SensorColumn
-)::Union{SensorColumn, Nothing}
+)::SensorColumn
     dir_sensors = filter(s -> s.sensorType == "WindDirection" && s.statType == "avg", ts.sensors)
-    isempty(dir_sensors) && return nothing
+    isempty(dir_sensors) && error("No wind direction sensors found in data")
     
     # Find direction sensor with height closest to wind speed sensor
     closest = argmin(map(s -> abs(s.height - ws_sensor.height), dir_sensors))
@@ -254,9 +255,6 @@ function filter_direction_sector(
 )::DataFrame
     # Get direction sensor closest to wind speed sensor height
     dir_sensor = find_matching_direction_sensor(mast_ts, mast_ws_sensor)
-    if isnothing(dir_sensor)
-        error("No wind direction sensor found in mast data")
-    end
     
     # Join mast and meso data
     df = innerjoin(mast_ts.df, meso_ts.df, on=:timestamp)

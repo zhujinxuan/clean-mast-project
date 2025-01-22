@@ -1,0 +1,21 @@
+sensor:
+  column_formats:
+    - "{sensorType}_{height}m {unit}"
+  timestamp_column: "Date/time"
+  timestamp_format: "yyyy-mm-dd HH:MM:SS"
+  delim: "\t"
+  skip_to: 
+  - "Date/time"
+  mappings:
+    - match:
+        sensorType: Speed
+      rule:
+        sensorType: WindSpeed
+        unit: m/s
+        statType: avg
+    - match:
+        sensorType: Direction
+      rule:
+        sensorType: WindDirection
+        unit: deg
+        statType: avg

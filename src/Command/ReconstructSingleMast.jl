@@ -31,7 +31,7 @@ function execute(dir::String)
     sensors_yaml = YAML.load_file(sensors_filepath)
     
     # Convert YAML sensors to SensorColumn objects
-    sensors = map(s -> from_dict(SensorColumn, Dict{String,Any}(String(k) => v for (k,v) in s)), sensors_yaml["sensors"])
+    sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_yaml["sensors"]]
     
     time_series = TimeSeriesData(df, sensors)
     
@@ -61,7 +61,34 @@ function execute(dir::String)
         YAML.write(io, reconstruction_dict)
     end
     
-    println("Single mast reconstruction completed:")
+    # Display reconstruction statistics
+    total_reconstructed = length(reconstruction_results.successes)
+    total_failures = length(reconstruction_results.failures)
+    total_attempts = total_reconstructed + total_failures
+    success_rate = total_attempts > 0 ? round(total_reconstructed / total_attempts * 100, digits=1) : 0.0
+
+    println("\nReconstruction Statistics:")
+    println("==========================")
+    println("Total points attempted: $total_attempts")
+    println("Successfully reconstructed: $total_reconstructed")
+    println("Failed to reconstruct: $total_failures")
+    println("Success rate: $(success_rate)%")
+
+    # Group successes by column to show per-sensor statistics
+    successes_by_column = Dict{Symbol, Int}()
+    for success in reconstruction_results.successes
+        col = success["columnName"]
+        successes_by_column[col] = get(successes_by_column, col, 0) + 1
+    end
+
+    if !isempty(successes_by_column)
+        println("\nReconstructions by sensor:")
+        for (col, count) in sort(collect(successes_by_column))
+            println("  $col: $count points")
+        end
+    end
+    
+    println("\nSingle mast reconstruction completed:")
     println("- Saved processed data to $(output_filename)")
     println("- Saved updated sensors to reconstruct_single_mast-sensors.yaml")
     println("- Saved reconstruction details to single-reconstruction.yaml")

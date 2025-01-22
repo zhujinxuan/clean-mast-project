@@ -3,7 +3,7 @@
 module CleanMastConfig
 
 using YAML
-using ..Types.Utils: from_dict
+using ..Types.Utils: from_dict, to_dict
 using ..Types.CleanRules
 using ..Types.CleanMastConfig
 using ..SensorFormats: load_preset_format
@@ -19,20 +19,16 @@ function parse_config(dir::String)::ProjectConfig
     config_dict = Dict{String, Any}(config)
 
     # Load preset formats if specified
-    if haskey(config_dict, "Mast") && haskey(config_dict["Mast"], "sensor") && 
-       haskey(config_dict["Mast"]["sensor"], "format") && config_dict["Mast"]["sensor"]["format"] isa String
-        config_dict["Mast"]["sensor"] = merge(
-            load_preset_format(config_dict["Mast"]["sensor"]["format"]),
-            Dict{String, Any}(config_dict["Mast"]["sensor"])
-        )
+    if haskey(config_dict, "Mast") && haskey(config_dict["Mast"], "sensor")
+        if config_dict["Mast"]["sensor"] isa String
+            config_dict["Mast"]["sensor"] = to_dict(load_preset_format(config_dict["Mast"]["sensor"]))
+        end
     end
 
-    if haskey(config_dict, "Meso") && haskey(config_dict["Meso"], "sensor") && 
-       haskey(config_dict["Meso"]["sensor"], "format") && config_dict["Meso"]["sensor"]["format"] isa String
-        config_dict["Meso"]["sensor"] = merge(
-            load_preset_format(config_dict["Meso"]["sensor"]["format"]),
-            Dict{String, Any}(config_dict["Meso"]["sensor"])
-        )
+    if haskey(config_dict, "Meso") && haskey(config_dict["Meso"], "sensor")
+        if config_dict["Meso"]["sensor"] isa String
+            config_dict["Meso"]["sensor"] = to_dict(load_preset_format(config_dict["Meso"]["sensor"]))
+        end
     end
 
     from_dict(ProjectConfig, config_dict)

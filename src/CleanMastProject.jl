@@ -76,6 +76,8 @@ module Command
          TurbulenceIntensity, QuickStart
 end
 export Command
+include("./CleanMastCli.jl")
+export CleanMastCli
 
 
 end

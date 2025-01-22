@@ -162,56 +162,23 @@ Returns a vector of SensorColumn objects.
 """
 function parse_column_metadata(df::DataFrame, sensor_config::SensorConfig)::Vector{SensorColumn}
     # Skip timestamp column
-    data_columns = setdiff(names(df), [sensor_config.timestamp_column])
+    data_columns = setdiff(names(df), [sensor_config.timestamp_column, "timestamp"])
     
     # Parse each column name
     sensors = SensorColumn[]
     for column_name in data_columns
+        
         sensor = parse_column_name(String(column_name), sensor_config.column_formats, sensor_config.mappings)
         if !isnothing(sensor)
             push!(sensors, sensor)
         else
-            @warn "Failed to parse column: $column_name"
+            @warn "Failed to parse sensor column: $column_name"
         end
     end
     
     return sensors
 end
 export parse_column_metadata
-
-"""
-Try to load existing sensors.yaml from project directory.
-Returns nothing if file doesn't exist or is invalid.
-"""
-function load_existing_sensors(project_dir::String)::Union{Vector{SensorColumn}, Nothing}
-    sensors_path = joinpath(project_dir, "sensors.yaml")
-    
-    !isfile(sensors_path) && return nothing
-    
-    yaml_data = YAML.load_file(sensors_path)
-    
-    # Convert each sensor dict to SensorColumn using map
-    return map(yaml_data["sensors"]) do sensor
-        from_dict(SensorColumn, Dict{String, Any}(sensor))
-    end
-end
-
-"""
-Try to load existing meso-sensors.yaml from project directory.
-Returns nothing if file doesn't exist or is invalid.
-"""
-function load_existing_meso_sensors(project_dir::String)::Union{Vector{SensorColumn}, Nothing}
-    sensors_path = joinpath(project_dir, "meso-sensors.yaml")
-    
-    !isfile(sensors_path) && return nothing
-    
-    yaml_data = YAML.load_file(sensors_path)
-    
-    # Convert each sensor dict to SensorColumn using map
-    return map(yaml_data["sensors"]) do sensor
-        from_dict(SensorColumn, Dict{String, Any}(sensor))
-    end
-end
 
 """
     normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
@@ -347,7 +314,6 @@ Uses existing sensors.yaml if available, otherwise parses column names.
 """
 function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesData
     # First try to load existing sensors
-    existing_sensors = load_existing_sensors(project_dir)
     
     csv_file = joinpath(project_dir, config.mast.data_path)
     
@@ -358,23 +324,15 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     df = CSV.read(csv_file, DataFrame; csv_opts...)
     normalize_timestamp!(df, config.mast.sensor.timestamp_column)
     
-    if !isnothing(existing_sensors)
-        # Validate that all columns in sensors.yaml exist in the DataFrame
-        valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
-        ts = TimeSeriesData(df, valid_sensors)
-        apply_multipliers!(ts.df, ts.sensors)
-        return ts
-    else
-        # Parse column metadata and export to sensors.yaml
-        sensors = parse_column_metadata(df, config.mast.sensor)
-        
-        # Export sensors only if we had to parse them
-        export_sensors(sensors, project_dir)
-        
-        ts = TimeSeriesData(df, sensors)
-        apply_multipliers!(ts.df, ts.sensors)
-        return ts
-    end
+    # Parse column metadata and export to sensors.yaml
+    sensors = parse_column_metadata(df, config.mast.sensor)
+    
+    # Export sensors only if we had to parse them
+    export_sensors(sensors, project_dir)
+    
+    ts = TimeSeriesData(df, sensors)
+    apply_multipliers!(ts.df, ts.sensors)
+    return ts
 end
 
 """
@@ -383,7 +341,6 @@ Uses existing sensors.yaml if available, otherwise parses column names.
 """
 function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesData
     # First try to load existing sensors
-    existing_sensors = load_existing_meso_sensors(project_dir)
     
     csv_file = joinpath(project_dir, config.meso.data_path)
     
@@ -394,43 +351,22 @@ function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     df = CSV.read(csv_file, DataFrame; csv_opts...)
     normalize_timestamp!(df, config.meso.sensor.timestamp_column)
     
-    if !isnothing(existing_sensors)
-        # Validate that all columns in sensors.yaml exist in the DataFrame
-        valid_sensors = filter(s -> s.columnName ∈ Symbol.(names(df)), existing_sensors)
-        ts = TimeSeriesData(df, valid_sensors)
-        apply_multipliers!(ts.df, ts.sensors)
-        return ts
-    else
-        # Parse column metadata and export to sensors.yaml
-        sensors = parse_column_metadata(df, config.meso.sensor)
-        
-        # Export sensors only if we had to parse them
-        export_meso_sensors(sensors, project_dir)
-        
-        ts = TimeSeriesData(df, sensors)
-        apply_multipliers!(ts.df, ts.sensors)
-        return ts
-    end
+    # Parse column metadata and export to sensors.yaml
+    sensors = parse_column_metadata(df, config.meso.sensor)
+    
+    # Export sensors only if we had to parse them
+    export_meso_sensors(sensors, project_dir)
+    
+    ts = TimeSeriesData(df, sensors)
+    apply_multipliers!(ts.df, ts.sensors)
+    return ts
 end
 
 """
 Export sensor metadata to sensors.yaml
 """
 function export_sensors(sensors::Vector{SensorColumn}, project_dir::String)
-    sensor_data = Dict{String, Any}[]
-    
-    for sensor in sensors
-        push!(sensor_data, Dict(
-            "columnName" => String(sensor.columnName),
-            "originalColumnName" => String(sensor.originalColumnName),
-            "sensorType" => sensor.sensorType,
-            "sensorDirection" => sensor.sensorDirection,
-            "height" => sensor.height,
-            "statType" => sensor.statType,
-            "unit" => sensor.unit,
-            "multiplier" => sensor.multiplier
-        ))
-    end
+    sensor_data = [to_dict(sensor) for sensor in sensors]
     
     # Write to sensors.yaml
     open(joinpath(project_dir, "sensors.yaml"), "w") do io
@@ -442,21 +378,7 @@ end
 Export meso sensor metadata to meso-sensors.yaml
 """
 function export_meso_sensors(sensors::Vector{SensorColumn}, project_dir::String)
-    sensor_data = Dict{String, Any}[]
-    
-    for sensor in sensors
-        push!(sensor_data, Dict(
-            "columnName" => String(sensor.columnName),
-            "originalColumnName" => String(sensor.originalColumnName),
-            "sensorType" => sensor.sensorType,
-            "sensorDirection" => sensor.sensorDirection,
-            "height" => sensor.height,
-            "statType" => sensor.statType,
-            "unit" => sensor.unit,
-            "multiplier" => sensor.multiplier
-        ))
-    end
-    
+    sensor_data = [to_dict(sensor) for sensor in sensors]
     # Write to meso-sensors.yaml
     open(joinpath(project_dir, "meso-sensors.yaml"), "w") do io
         YAML.write(io, Dict("sensors" => sensor_data))

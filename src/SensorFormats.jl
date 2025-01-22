@@ -14,9 +14,7 @@ function load_preset_format(format_name::String)::SensorConfig
     !isfile(format_path) && error("Format file not found: $format_path")
 
     config = YAML.load_file(format_path)
-    format = from_dict(SensorConfig, Dict{String, Any}(config["sensor"]))
-    
-    SensorConfig(format)
+    from_dict(SensorConfig, Dict{String, Any}(config["sensor"]))
 end
 
 """

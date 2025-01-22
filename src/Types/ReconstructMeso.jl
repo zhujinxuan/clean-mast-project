@@ -1,6 +1,6 @@
 module ReconstructMeso
 using DataFrames
-using ..Utils
+import ..Utils: from_dict, to_dict
 using ..MastTimeSeries
 using Dates
 

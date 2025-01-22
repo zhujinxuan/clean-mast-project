@@ -5,6 +5,7 @@ using ...Types.CleanMastConfig
 using ...CleanMastConfig
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...TowerShading: process_tower_shading!
+using ...Types.Utils: from_dict, to_dict
 
 export execute
 
@@ -31,14 +32,7 @@ function execute(dir::String)
     sensors_yaml = YAML.load_file(sensors_filepath)
     
     # Convert YAML sensors to SensorColumn objects
-    sensors = [SensorColumn(
-        Symbol(s["columnName"]),
-        s["sensorType"],
-        s["sensorDirection"],
-        s["height"],
-        s["statType"],
-        s["unit"]
-    ) for s in sensors_yaml["sensors"]]
+    sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_yaml["sensors"]]
     
     time_series = TimeSeriesData(df, sensors)
     
@@ -52,14 +46,7 @@ function execute(dir::String)
     
     # Save updated sensors to YAML
     sensors_yaml = Dict(
-        "sensors" => [Dict(
-            "columnName" => String(s.columnName),
-            "sensorType" => s.sensorType,
-            "sensorDirection" => s.sensorDirection,
-            "height" => s.height,
-            "statType" => s.statType,
-            "unit" => s.unit
-        ) for s in result.sensors]
+        "sensors" => [to_dict(s) for s in result.sensors]
     )
     
     open(joinpath(dir, "tower-shading-sensors.yaml"), "w") do io
