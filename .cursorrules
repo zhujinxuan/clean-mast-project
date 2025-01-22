@@ -48,6 +48,12 @@
       (reduce "Use reduce for aggregation")
       (broadcasting "Use dot syntax for vectorization")
       (comprehensions "Use array comprehensions for clear intent"))
+    (missing-data-rules
+      (explicit-checks "Always check for missing with ismissing before comparisons")
+      (propagation "Allow missing values to propagate through transformations")
+      (aggregation "Use skipmissing for statistical operations")
+      (filtering "Handle missing explicitly in filter conditions")
+      (grouping "Consider missing as a separate group in groupby operations"))
     (mutation-strategy
       (scope-rules
         "Use mutation for clearly scoped temporary DataFrames"

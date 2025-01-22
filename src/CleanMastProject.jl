@@ -17,6 +17,8 @@ module Types
   export RepresentativeYear
   include("./Types/Sector.jl")
   export Sector
+  include("./Types/TurbulenceIntensity.jl")
+  export TurbulenceIntensity
 end
 export Types
 include("./SensorFormats.jl")

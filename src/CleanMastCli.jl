@@ -155,7 +155,7 @@ Comonicon.@cast module Analyze
     - `dir`: Project directory containing config.yaml
     """
     Comonicon.@cast function turbulence(dir::String)
-        TurbulenceIntensity.calculate(dir)
+        TurbulenceIntensity.execute(dir)
     end
 end
 
