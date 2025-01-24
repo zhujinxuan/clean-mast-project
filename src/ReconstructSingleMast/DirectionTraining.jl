@@ -21,6 +21,32 @@ end
 export direction_to_vector
 
 """
+Get speeds for vector averaging, handling missing values
+Returns a vector of speeds with missing values replaced by mean or default value
+"""
+function get_speeds_for_averaging(
+    data::AbstractDataFrame,
+    speed_sensor::Union{SensorColumn, Nothing}
+)::Vector{Float64}
+    if isnothing(speed_sensor)
+        return ones(nrow(data))
+    end
+    
+    # Get speeds and handle missing values
+    speed_col = Symbol(speed_sensor.columnName)  # Convert string column name to symbol
+    raw_speeds = data[!, speed_col]
+    if all(ismissing, raw_speeds)
+        return ones(nrow(data))  # If all speeds missing, use 1.0
+    end
+    
+    # Replace missing speeds with mean of available speeds
+    valid_speeds = filter(!ismissing, raw_speeds)
+    mean_speed = mean(valid_speeds)
+    return map(s -> ismissing(s) ? mean_speed : s, raw_speeds)
+end
+export get_speeds_for_averaging
+
+"""
 Convert vector components back to direction
 """
 function vector_to_direction(x::Float64, y::Float64)::Float64
@@ -39,17 +65,16 @@ function calculate_vector_average(
     direction_sensor::SensorColumn,
     speed_sensor::Union{SensorColumn, Nothing}
 )::Union{Tuple{Float64, Union{Float64, Missing}}, Nothing}
-    # Get relevant columns and filter missing values
-    if isnothing(speed_sensor)
-        valid_data = dropmissing(data.df[!, [direction_sensor.columnName]])
-    else
-        valid_data = dropmissing(data.df[!, [direction_sensor.columnName, speed_sensor.columnName]])
-    end
+    # Get relevant columns and filter missing direction values
+    columns = isnothing(speed_sensor) ? 
+        [direction_sensor.columnName] : 
+        [direction_sensor.columnName, speed_sensor.columnName]
+    valid_data = dropmissing(data.df[!, columns])
     
     isempty(valid_data) && return nothing
     
-    # Get speeds vector (or ones if no speed column)
-    speeds = isnothing(speed_sensor) ? ones(nrow(valid_data)) : valid_data[!, speed_sensor.columnName]
+    # Get speeds with missing values handled
+    speeds = get_speeds_for_averaging(valid_data, speed_sensor)
     directions = valid_data[!, direction_sensor.columnName]
     
     # Convert directions to radians and calculate components
@@ -62,7 +87,7 @@ function calculate_vector_average(
     # Calculate resultant wind speed
     speed = sqrt(x_mean^2 + y_mean^2)
     
-    return (direction,isnothing(speed_sensor) ? nothing : speed)
+    return (direction, isnothing(speed_sensor) ? missing : speed)
 end
 export calculate_vector_average
 
@@ -122,7 +147,49 @@ function filter_data_for_one_hour(data::TimeSeriesData, timestamp::DateTime)::Ti
 end
 
 """
-Create direction correlation for a specific target column using data from a one-hour window
+Calculate time-mean direction difference between two heights
+"""
+function calculate_time_mean_direction_diff(
+    data::TimeSeriesData,
+    lower_height::Float64,
+    upper_height::Float64
+)::Union{Float64, Nothing}
+    # Find sensors at specified heights
+    lower_sensor = findfirst(s -> 
+        s.sensorType == "WindDirection" && 
+        s.statType == "avg" && 
+        s.height ≈ lower_height, 
+        data.sensors)
+    upper_sensor = findfirst(s -> 
+        s.sensorType == "WindDirection" && 
+        s.statType == "avg" && 
+        s.height ≈ upper_height, 
+        data.sensors)
+    
+    isnothing(lower_sensor) && return nothing
+    isnothing(upper_sensor) && return nothing
+    
+    # Get all valid pairs of measurements
+    valid_rows = filter(eachrow(data.df)) do row
+        !ismissing(row[data.sensors[lower_sensor].columnName]) && 
+        !ismissing(row[data.sensors[upper_sensor].columnName])
+    end
+    
+    isempty(valid_rows) && return nothing
+    
+    # Calculate mean direction difference
+    diffs = map(valid_rows) do row
+        degree_diff(
+            row[data.sensors[upper_sensor].columnName],
+            row[data.sensors[lower_sensor].columnName]
+        )
+    end
+    
+    mean(diffs)
+end
+
+"""
+Create direction correlation for target with fallback to time-mean difference
 """
 function create_correlation_for_target(
     data::TimeSeriesData,
@@ -130,19 +197,26 @@ function create_correlation_for_target(
     direction_sensors::Vector{SensorColumn},
     timestamp::DateTime
 )::Union{DirectionCorrelation, Nothing}
-    # Find target sensor info
-    target_sensor = first(filter(s -> s.columnName == target_col, direction_sensors))
+    # Get target sensor
+    target_sensor = findfirst(s -> s.columnName == target_col, data.sensors)
+    isnothing(target_sensor) && return nothing
+    target_height = data.sensors[target_sensor].height
     
-    # Filter data for one hour window
-    hour_data = filter_data_for_one_hour(data, timestamp)
+    # Get data for this hour (use full hour instead of single timestamp)
+    hour_start = floor(timestamp, Hour)
+    hour_data = TimeSeriesData(
+        filter(r -> hour_start <= r.timestamp < hour_start + Hour(1), data.df),
+        data.sensors
+    )
     
-    # Find nearest sensor as reference with valid data at timestamp
-    target_height = target_sensor.height
+    # Filter out the target sensor from potential reference sensors
+    reference_sensors = filter(s -> s.columnName != target_col, direction_sensors)
     
-    # Find nearest valid reference sensor
-    nearest_reference = reduce(direction_sensors, init=nothing) do best_so_far, sensor
-        # Skip if measurement is missing
-        ismissing(hour_data.df[hour_data.df.timestamp .== timestamp, sensor.columnName][1]) && return best_so_far
+    # Find nearest valid reference sensor with data in this hour
+    nearest_reference = reduce(reference_sensors, init=nothing) do best_so_far, sensor
+        # Check if sensor has any valid data in this hour
+        has_valid_data = any(!ismissing, hour_data.df[:, sensor.columnName])
+        !has_valid_data && return best_so_far
         
         # If first valid sensor, use it
         isnothing(best_so_far) && return sensor
@@ -151,21 +225,47 @@ function create_correlation_for_target(
         abs(sensor.height - target_height) < abs(best_so_far.height - target_height) ? sensor : best_so_far
     end
     
-    isnothing(nearest_reference) && return nothing
+    if !isnothing(nearest_reference)
+        mean_diff = calculate_direction_correlation(
+            hour_data,
+            nearest_reference,
+            data.sensors[target_sensor]
+        )
+        
+        !isnothing(mean_diff) && return DirectionCorrelation(
+            nearest_reference.height,
+            target_height,
+            mean_diff
+        )
+    end
     
-    mean_diff = calculate_direction_correlation(
-        hour_data,
-        nearest_reference,
-        target_sensor
-    )
+    # If direct correlation fails, try using time-mean difference with nearest height
+    sorted_heights = sort(unique([s.height for s in direction_sensors]))
+    target_idx = searchsortedfirst(sorted_heights, target_height)
     
-    isnothing(mean_diff) && return nothing
+    if target_idx > 1  # Try lower height first
+        time_mean_diff = calculate_time_mean_direction_diff(data, sorted_heights[target_idx-1], target_height)
+        if !isnothing(time_mean_diff)
+            return DirectionCorrelation(
+                sorted_heights[target_idx-1],
+                target_height,
+                time_mean_diff
+            )
+        end
+    end
     
-    return DirectionCorrelation(
-        nearest_reference.height,
-        target_height,
-        mean_diff
-    )
+    if target_idx <= length(sorted_heights)  # Then try higher height
+        time_mean_diff = calculate_time_mean_direction_diff(data, target_height, sorted_heights[target_idx])
+        if !isnothing(time_mean_diff)
+            return DirectionCorrelation(
+                sorted_heights[target_idx],
+                target_height,
+                -time_mean_diff  # Negate since we're using higher height as reference
+            )
+        end
+    end
+    
+    return nothing
 end
 
 """
