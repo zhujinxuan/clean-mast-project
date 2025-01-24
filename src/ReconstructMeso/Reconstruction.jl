@@ -1,11 +1,12 @@
 module Reconstruction
 
 using DataFrames
-using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.CleanMastConfig: TimeRange
 using ...Types.ReconstructMeso: WindSpeedTrainResults, WindDirectionTrainResults, TrainingTimeRange,
                                WindSpeedTrainResult, WindDirectionTrainResult, WindSpeedSectorModel
 using ..DataProcessing: prepare_training_data
+using ...Types.Sector: degree_diff
 using Dates
 
 """
@@ -24,26 +25,37 @@ function get_sector_model(direction::Float64, train_result::WindSpeedTrainResult
 end
 
 """
-Fill missing wind speed data using trained correlations
+Ensure DataFrame has all timestamps in the training range
 """
-function fill_missing_data_ws(df::DataFrame, meso_ts::TimeSeriesData, ws_results::WindSpeedTrainResults)::DataFrame
-    result_df = copy(df)
+function ensure_training_range(df::DataFrame, time_range::TrainingTimeRange)::DataFrame
+    # Create complete timestamp sequence
+    complete_df = DataFrame(timestamp = collect(time_range.min:Minute(10):time_range.max))
     
+    # Join with existing data, filling missing values
+    result_df = leftjoin(complete_df, df, on = :timestamp)
+    
+    sort!(result_df, :timestamp)
+    result_df
+end
+
+"""
+Fill missing wind speed data using trained correlations (in-place)
+"""
+function fill_missing_data_ws!(df::DataFrame, interpolated_meso_ts::TimeSeriesData, ws_results::WindSpeedTrainResults)
     for (col_name, train_result) in ws_results
         meso_speed_col = train_result.mesoSpeedSensor.columnName
         meso_dir_col = train_result.mesoDirectionSensor.columnName
         
-        missing_mask = ismissing.(result_df[!, col_name])
-        !any(missing_mask) && continue
+        # Get all timestamps where we have mast data (missing or not)
+        mast_times = df.timestamp
         
-        # Get all missing timestamps
-        missing_times = result_df[missing_mask, :timestamp]
-        
-        # Create a DataFrame with missing timestamps and corresponding meso data
-        meso_data = DataFrame(
-            timestamp = missing_times,
-            meso_ws = map(t -> get(meso_ts.df[findfirst(==(t), meso_ts.df.timestamp), :], meso_speed_col, missing), missing_times),
-            meso_wd = map(t -> get(meso_ts.df[findfirst(==(t), meso_ts.df.timestamp), :], meso_dir_col, missing), missing_times)
+        # Create a DataFrame with mast timestamps and select matching meso data
+        mast_df = DataFrame(timestamp = mast_times)
+        meso_data = select(
+            interpolated_meso_ts.df[in.(interpolated_meso_ts.df.timestamp, Ref(Set(mast_times))), :],
+            :timestamp,
+            meso_speed_col => :meso_ws,
+            meso_dir_col => :meso_wd
         )
 
         sector_models = map(meso_data.meso_wd) do wd
@@ -74,62 +86,80 @@ function fill_missing_data_ws(df::DataFrame, meso_ts::TimeSeriesData, ws_results
             minimum([maximum([ws * slope + intercept,0.5]), 25])
         end
 
-        # refill result_df with meso_data.mast_ws
-        for (i, t) in enumerate(meso_data.timestamp)
-            result_df[findfirst(==(t), result_df.timestamp), col_name] = meso_data.mast_ws[i]
-        end
+        # Only fill in missing values in the df
+        missing_mask = ismissing.(df[!, col_name])
+        df[missing_mask, col_name] = meso_data.mast_ws[missing_mask]
     end
-    
-    result_df
 end
 
 """
-Fill missing wind direction data using trained correlations
+Fill missing wind direction data using trained correlations (in-place)
 """
-function fill_missing_data_wd(df::DataFrame, meso_ts::TimeSeriesData, wd_results::WindDirectionTrainResults)::DataFrame
-    result_df = copy(df)
-    
+function fill_missing_data_wd!(df::DataFrame, interpolated_meso_ts::TimeSeriesData, wd_results::WindDirectionTrainResults)
     for (col_name, train_result) in wd_results
         meso_col = train_result.mesoSensor.columnName
-        missing_mask = ismissing.(result_df[!, col_name])
         
+        # Get all timestamps where we have mast data (missing or not)
+        mast_times = df.timestamp
+        missing_mask = ismissing.(df[!, col_name])
+        
+        # Process each timestamp where we need to fill data
         if any(missing_mask)
-            missing_times = result_df[missing_mask, :timestamp]
+            missing_times = mast_times[missing_mask]
             missing_indices = findall(missing_mask)
             
-            # Process each missing timestamp
             for (idx, missing_time) in zip(missing_indices, missing_times)
-                meso_idx = findfirst(==(missing_time), meso_ts.df.timestamp)
+                meso_idx = findfirst(==(missing_time), interpolated_meso_ts.df.timestamp)
                 
                 if !isnothing(meso_idx)
-                    meso_val = meso_ts.df[meso_idx, meso_col]
+                    meso_val = interpolated_meso_ts.df[meso_idx, meso_col]
                     if !ismissing(meso_val)
-                        result_df[idx, col_name] = mod(meso_val + train_result.diff, 360)
+                        df[idx, col_name] = mod(meso_val + train_result.diff, 360)
                     end
                 end
             end
         end
     end
-    
-    result_df
 end
 
 """
 Fill missing data using trained correlations, handling different time resolutions
-and interpolating missing meso data
+and interpolating missing meso data. Note that interpolated_meso_ts is already interpolated to 10-minute intervals.
+
+Parameters
+----------
+mast_ts : TimeSeriesData
+    The mast time series data with missing values to fill
+interpolated_meso_ts : TimeSeriesData 
+    The meso time series data, already interpolated to 10-minute intervals
+training_time_range : TrainingTimeRange
+    The time range to fill data for
+ws_results : WindSpeedTrainResults
+    The trained wind speed correlations
+wd_results : WindDirectionTrainResults
+    The trained wind direction correlations
+
+Returns
+-------
+TimeSeriesData
+    The mast time series with missing values filled where possible
+
 """
-function fill_missing_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
+function fill_missing_data(mast_ts::TimeSeriesData, interpolated_meso_ts::TimeSeriesData,
                          training_time_range::TrainingTimeRange, 
                          ws_results::WindSpeedTrainResults,
                          wd_results::WindDirectionTrainResults)::TimeSeriesData
     
+    # Create a copy of the DataFrame and ensure all timestamps exist
+    result_df = ensure_training_range(copy(mast_ts.df), training_time_range)
+    
     # Fill wind speed and direction sequentially
-    result_df = fill_missing_data_ws(mast_ts.df, meso_ts, ws_results)
-    result_df = fill_missing_data_wd(result_df, meso_ts, wd_results)
+    fill_missing_data_ws!(result_df, interpolated_meso_ts, ws_results)
+    fill_missing_data_wd!(result_df, interpolated_meso_ts, wd_results)
     
     TimeSeriesData(result_df, mast_ts.sensors)
 end
 
-export fill_missing_data, fill_missing_data_ws, fill_missing_data_wd
+export fill_missing_data, fill_missing_data_ws!, fill_missing_data_wd!, ensure_training_range
 
 end 

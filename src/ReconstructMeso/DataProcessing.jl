@@ -6,6 +6,7 @@ using Dates
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
 using ...Types.ReconstructMeso: TrainingTimeRange
 using ...Types.CleanMastConfig: TimeRange
+using ...Types.Sector: degree_diff
 
 """
 Ensure TimeSeriesData has all timestamps in range at specified interval
@@ -40,66 +41,53 @@ end
 Interpolate meso data to specified interval using vector calculation, by default interval is 10 minutes
 """
 function interpolate_meso_data(ts::TimeSeriesData, time_range::TrainingTimeRange; interval::Period=Minute(10))::TimeSeriesData
-    # Ensure data is sorted by timestamp
-    sorted_df = sort(ts.df, :timestamp)
+    # Create target timestamps at specified intervals
+    target_df = DataFrame(timestamp = collect(time_range.min:interval:time_range.max))
     
-    # Create target timestamps at 10-minute intervals
-    target_timestamps = collect(time_range.min:interval:time_range.max)
-    result_df = DataFrame(timestamp = target_timestamps)
+    # Join with existing data, creating missing values for timestamps in between
+    result_df = leftjoin(target_df, ts.df, on = :timestamp)
+    sort!(result_df, :timestamp)
     
     # Interpolate each sensor column
     for sensor in ts.sensors
         col = sensor.columnName
-        values = sorted_df[!, col]
-        timestamps = sorted_df.timestamp
-        
-        # Initialize result column with missing values
-        result_values = Vector{Union{Missing, Float64}}(missing, length(target_timestamps))
+        values = result_df[!, col]
+        timestamps = result_df.timestamp
         
         # Find valid data points
         valid_mask = .!ismissing.(values)
         if !any(valid_mask)
-            result_df[!, col] = result_values
             continue
         end
         
-        valid_times = timestamps[valid_mask]
-        valid_values = values[valid_mask]
-        
-        # For each target timestamp, find surrounding valid points
-        for (i, target_time) in enumerate(target_timestamps)
-            # Find indices of surrounding points
-            before_idx = findlast(t -> t <= target_time, valid_times)
-            after_idx = findfirst(t -> t > target_time, valid_times)
+        # For each missing value, interpolate from surrounding valid points
+        missing_mask = ismissing.(values)
+        for i in findall(missing_mask)
+            # Find surrounding valid points
+            before_idx = findlast(j -> j < i && valid_mask[j], 1:length(values))
+            after_idx = findfirst(j -> j > i && valid_mask[j], 1:length(values))
             
-            if isnothing(before_idx)
-                # Before first valid point
-                result_values[i] = missing
-            elseif isnothing(after_idx)
-                # After last valid point
-                result_values[i] = missing
+            if isnothing(before_idx) || isnothing(after_idx)
+                continue
+            end
+            
+            before_time = timestamps[before_idx]
+            after_time = timestamps[after_idx]
+            before_val = values[before_idx]
+            after_val = values[after_idx]
+            
+            # Calculate interpolation fraction
+            time_frac = (timestamps[i] - before_time) / (after_time - before_time)
+            
+            if sensor.sensorType == "WindDirection"
+                # Handle circular interpolation for wind direction
+                angle_diff = degree_diff(after_val, before_val)
+                result_df[i, col] = mod(before_val + time_frac * angle_diff, 360)
             else
-                # Interpolate between points
-                before_time = valid_times[before_idx]
-                after_time = valid_times[after_idx]
-                before_val = valid_values[before_idx]
-                after_val = valid_values[after_idx]
-                
-                # Calculate interpolation fraction
-                time_frac = (target_time - before_time) / (after_time - before_time)
-                
-                if sensor.sensorType == "WindDirection"
-                    # Handle circular interpolation for wind direction
-                    angle_diff = mod(after_val - before_val + 180, 360) - 180
-                    result_values[i] = mod(before_val + time_frac * angle_diff, 360)
-                else
-                    # Linear interpolation for other values
-                    result_values[i] = before_val + time_frac * (after_val - before_val)
-                end
+                # Linear interpolation for other values
+                result_df[i, col] = before_val + time_frac * (after_val - before_val)
             end
         end
-        
-        result_df[!, col] = result_values
     end
     
     TimeSeriesData(result_df, ts.sensors)
@@ -108,13 +96,17 @@ end
 """
 Prepare mast and meso data for training by ensuring complete timestamps and proper interpolation
 """
-function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData, 
-                             time_range::TrainingTimeRange)::Tuple{TimeSeriesData, TimeSeriesData}
-    # Ensure mast data has complete 10-minute timestamps
-    complete_mast = ensure_complete_timeseries(mast_ts, time_range, Minute(10))
+function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData)::Tuple{TimeSeriesData, TimeSeriesData}
+    # Calculate the mast data range
+    mast_min = minimum(filter(!ismissing, mast_ts.df.timestamp))
+    mast_max = maximum(filter(!ismissing, mast_ts.df.timestamp))
+    time_range = TrainingTimeRange(mast_min, mast_max)
     
-    # Interpolate meso data to 10-minute intervals
+    # Interpolate meso data to 10-minute intervals for the mast data range
     interpolated_meso = interpolate_meso_data(meso_ts, time_range)
+    
+    # Ensure mast data has complete timestamps within its range
+    complete_mast = ensure_complete_timeseries(mast_ts, time_range, Minute(10))
     
     return complete_mast, interpolated_meso
 end

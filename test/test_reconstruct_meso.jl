@@ -14,7 +14,7 @@ using CleanMastProject.Types.Sector: abs_degree_diff
     mast_timestamps = collect(DateTime(2024,1,1):Minute(10):(DateTime(2025,1,1) - Second(1)))
     
     # Create meso test data with hourly timestamps
-    meso_timestamps = collect(DateTime(2024,1,1):Hour(1):(DateTime(2025,1,1) - Second(1)))
+    meso_timestamps = collect(DateTime(2024,1,1):Hour(1):DateTime(2025,1,1))
     
     # Calculate time in years for the sinusoidal pattern
     mast_t_years = [(t - DateTime(2024,1,1)).value/1000/60/60/24/365.25 for t in mast_timestamps]

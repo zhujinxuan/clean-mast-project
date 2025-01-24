@@ -6,10 +6,13 @@ using Dates
 using CleanMastProject.Types.CleanMastConfig: TimeRange
 using Statistics
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
-using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
+using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange, WindSpeedTrainResult, 
+                                            WindDirectionTrainResult, WindSpeedSectorModel
 using CleanMastProject.ReconstructMeso.DataProcessing: 
     calculate_training_timerange, interpolate_meso_data,
     ensure_complete_timeseries, prepare_training_data
+using CleanMastProject.ReconstructMeso.Reconstruction:
+    ensure_training_range, fill_missing_data
 
 @testset "DataProcessing" begin
     # Create test data
@@ -87,31 +90,29 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
     end
 
     @testset "prepare_training_data" begin
-        # Create test meso data with hourly values
-        timestamps = collect(DateTime(2024,1,1,2):Hour(1):DateTime(2024,1,1,22))
-        n_points = length(timestamps)
-        meso_ts = TimeSeriesData(
-            DataFrame(
-                timestamp = timestamps,
-                ws_80m = collect(range(5.0, 25.0, length=n_points)),
-                wd_80m = mod.(collect(range(170.0, 390.0, length=n_points)), 360.0)
-            ),
-            sensors
+        # Create test data
+        df = DataFrame(
+            timestamp = [DateTime(2020,1,1), DateTime(2020,1,2)],
+            speed_120m = [10.0, missing]
         )
+        sensors = [SensorColumn(:speed_120m, "speed_{height}m", "WindSpeed", "N", 120.0, "avg", "m/s", originalColumnName=:speed_120m, multiplier=1.0)]
+        ts = TimeSeriesData(df, sensors)
         
-        # Test preparation of both datasets
-        complete_mast, interpolated_meso = prepare_training_data(ts, meso_ts, time_range)
+        meso_df = DataFrame(
+            timestamp = [DateTime(2020,1,1), DateTime(2020,1,2) - Hour(1), DateTime(2020,1,2)],
+            speed_100m = [12.0, 13.0 , 11.0]
+        )
+        sensors = [SensorColumn(:speed_100m, "speed_{height}m", "WindSpeed", "N", 100.0, "avg", "m/s", originalColumnName=:speed_100m, multiplier=1.0)]
+        meso_ts = TimeSeriesData(meso_df, sensors)
         
-        # Check mast data
-        @test size(complete_mast.df, 1) == 121
-        @test all(diff(complete_mast.df.timestamp) .== Minute(10))
+        # Test data preparation
+        complete_mast, interpolated_meso = prepare_training_data(ts, meso_ts)
         
-        # Check meso data
-        @test size(interpolated_meso.df, 1) == 121
-        @test all(diff(interpolated_meso.df.timestamp) .== Minute(10))
-        
-        # Check alignment of timestamps
-        @test all(complete_mast.df.timestamp .== interpolated_meso.df.timestamp)
+        # Check results
+        @test nrow(complete_mast.df) == 145
+        @test nrow(interpolated_meso.df) == 145
+        @test complete_mast.df[2, :speed_120m] === missing
+        @test interpolated_meso.df[145, :speed_100m] == 11.0
     end
 
     @testset "find_nearest_height_sensor" begin
@@ -137,8 +138,8 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
         input_range = TimeRange(nothing, nothing)
         result = calculate_training_timerange(ts, input_range)
         @test result isa TrainingTimeRange
-        @test result.min == DateTime(2023,1,1)
-        @test result.max == DateTime(2024,1,1) - Second(1)
+        @test result.min == DateTime(2019,1,1)
+        @test result.max == DateTime(2020,1,1) - Second(1)
 
         # Test with specified min
         input_range = TimeRange(DateTime(2024,1,1), nothing)
@@ -215,6 +216,48 @@ using CleanMastProject.ReconstructMeso.DataProcessing:
             @test dir_diff < 1.0
         end
     end
+
+    @testset "ensure_training_range" begin
+        # Create test data with gaps
+        df = DataFrame(
+            timestamp = [DateTime(2020,1,1), DateTime(2020,1,2)],
+            ws_80m = [10.0, 11.0],
+            wd_80m = [180.0, 185.0]
+        )
+        
+        # Create time range that extends beyond data
+        time_range = TrainingTimeRange(
+            DateTime(2019,12,31),
+            DateTime(2020,1,3)
+        )
+        
+        # Test range extension
+        result_df = ensure_training_range(df, time_range)
+        
+        # Check results
+        @test result_df !== df  # Should be a new DataFrame
+        @test nrow(result_df) > nrow(df)  # Should have added rows
+        @test minimum(result_df.timestamp) == time_range.min
+        @test maximum(result_df.timestamp) == time_range.max
+        @test all(diff(result_df.timestamp) .== Minute(10))  # Should have 10-minute intervals
+        
+        # Check original data is preserved
+        for row in eachrow(df)
+            result_row = result_df[result_df.timestamp .== row.timestamp, :]
+            @test !isempty(result_row)
+            @test result_row.ws_80m[1] == row.ws_80m
+            @test result_row.wd_80m[1] == row.wd_80m
+        end
+        
+        # Check new timestamps have missing values
+        new_timestamps = setdiff(result_df.timestamp, df.timestamp)
+        for ts in new_timestamps
+            result_row = result_df[result_df.timestamp .== ts, :]
+            @test ismissing(result_row.ws_80m[1])
+            @test ismissing(result_row.wd_80m[1])
+        end
+    end
+
 end
 
 end 
