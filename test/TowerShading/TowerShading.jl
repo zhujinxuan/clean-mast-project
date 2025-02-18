@@ -1,7 +1,7 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, SensorConfig, MastConfig, MappingRule, MesoConfig
+using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, SensorConfig, MastConfig, MappingRule, MesoConfig
 using CleanMastProject.Types.CleanRules: Rule
 using CleanMastProject.MastTimeSeries
 using CleanMastProject.TowerShading
@@ -29,7 +29,7 @@ function create_test_config()::ProjectConfig
     )
     
     analysis_config = AnalysisConfig(
-        TimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")),
+        ConfigTimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")),
         nothing,  # target_height
         nothing   # ti_target_height
     )

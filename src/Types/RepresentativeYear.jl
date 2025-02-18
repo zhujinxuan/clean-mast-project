@@ -3,7 +3,6 @@ module RepresentativeYear
 using DataFrames
 using Dates
 using ..MastTimeSeries: TimeSeriesData, SensorColumn
-using ..ReconstructMeso: TrainingTimeRange
 
 struct DirectionalCalibration
     direction_center::Float64  # Center of direction sector (0 for N, 22.5 for NNE, etc.)

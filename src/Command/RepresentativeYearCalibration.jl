@@ -1,20 +1,34 @@
 module RepresentativeYearCalibration
 
-using CSV, YAML, DataFrames
+using CSV, YAML, DataFrames, JLD2
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, TimeRange
 using ...RepresentativeYear: calibrate_to_representative_year
-using ...Types.ReconstructMeso: TrainingTimeRange
 using ...MastTimeSeries: read_meso_data
 using ...Types.Utils: from_dict, to_dict
+using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 
 export execute
+
+"""
+    load_model(model_path::String, model_type::Type{T})::T where T
+
+Load a trained model from a JLD2 file.
+"""
+function load_model(model_path::String, model_type::Type{T})::T where T
+    if !isfile(model_path)
+        error("Model file not found: $model_path")
+    end
+    jldopen(model_path, "r") do file
+        file["model"]::model_type
+    end
+end
 
 function execute(dir::String)
     config = parse_config(dir)
     
-    # Read reconstructed mast data file
+    # Read reconstructed mast data from reconstruct_meso
     original_filename = config.mast.data_path
     reconstructed_filename = "reconstruct_meso.$(original_filename).csv"
     reconstructed_filepath = joinpath(dir, reconstructed_filename)
@@ -39,8 +53,13 @@ function execute(dir::String)
     # Read meso data
     meso_ts = read_meso_data(config, dir)
     
+    # Load 16-sector wind speed model
+    println("Loading 16-sector model...")
+    model_16sector_path = joinpath(dir, "models", "windspeed", "16-sector", "_meso_era5.jld2")
+    model_16sector = load_model(model_16sector_path, SectorizedRegressionModel)
+    
     # Get training time range from config
-    time_range = TrainingTimeRange(
+    time_range = TimeRange(
         config.analysis.time_range.min isa Nothing ? minimum(mast_df.timestamp) : config.analysis.time_range.min,
         config.analysis.time_range.max isa Nothing ? maximum(mast_df.timestamp) : config.analysis.time_range.max
     )
@@ -53,7 +72,8 @@ function execute(dir::String)
     calibrated_ts = calibrate_to_representative_year(
         mast_ts, 
         meso_ts, 
-        time_range;
+        time_range,
+        model_16sector;
         target_height=target_height
     )
     
@@ -61,7 +81,7 @@ function execute(dir::String)
     output_filename = "rep_year_calibration.$(original_filename).csv"
     CSV.write(joinpath(dir, output_filename), calibrated_ts.df)
     
-    # Save sensors to YAML (they remain unchanged)
+    # Save sensors to YAML
     sensors_yaml = Dict(
         "sensors" => [
             to_dict(s) for s in calibrated_ts.sensors
@@ -72,7 +92,7 @@ function execute(dir::String)
         YAML.write(io, sensors_yaml)
     end
     
-    println("Representative year calibration completed:")
+    println("\nRepresentative year calibration completed:")
     println("- Saved calibrated data to $(output_filename)")
     println("- Saved sensors to rep_year_calibration-sensors.yaml")
 end

@@ -5,7 +5,7 @@ using CSV
 using YAML
 using ...Types.CleanMastConfig: ProjectConfig
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.Sector: DIRECTION_SECTORS
+using ...Types.Sector: DIRECTION_16_SECTORS
 using ...Types.TurbulenceIntensity: TurbulenceResults
 using ...TurbulenceIntensity: process_turbulence_intensity
 using ...CleanMastConfig: parse_config
@@ -59,7 +59,7 @@ function save_results(
         println(io, length(results.matrix.v_max))
         for row in eachrow(results.matrix)
             values = [row.v_max]
-            append!(values, [row[sector.name] for sector in DIRECTION_SECTORS])
+            append!(values, [row[sector.name] for sector in DIRECTION_16_SECTORS])
             println(io, join(values, "\t"))
         end
     end

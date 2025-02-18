@@ -21,18 +21,17 @@ const TEST_SETS = Dict{String, Vector{String}}(
     "process" => ["process/test_apply_missing.jl"],
     "tower" => ["TowerShading/TowerShading.jl"],
     "sector" => ["test_sector.jl"],
+    "time_series_processing" => ["TimeSeriesProcessing/test_time_series_processing.jl"],
     "single_mast" => [
         "ReconstructSingleMast/test_wind_speed_training.jl",
         "ReconstructSingleMast/test_direction_training.jl"
     ],
-    "meso" => [
-        "ReconstructMeso/test_training.jl",
-        "ReconstructMeso/test_data_processing.jl",
-        "ReconstructMeso/test_reconstruction.jl",
-        "test_reconstruct_meso.jl"
-    ],
     "representative_year" => ["RepresentativeYear/test_analysis.jl"],
-    "turbulence" => ["TurbulenceIntensity/test_turbulence_intensity.jl"]
+    "turbulence" => ["TurbulenceIntensity/test_turbulence_intensity.jl"],
+    "wind_models" => [
+        "WindModels/test_sectorized_regression_training.jl",
+        "WindModels/test_direction_offset_training.jl"
+    ]
 )
 
 # Helper function to list available test sets

@@ -4,7 +4,7 @@ using DataFrames
 using Statistics
 using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
 using ..Types.CleanMastConfig: ProjectConfig
-using ..Types.Sector: DIRECTION_SECTORS, SECTOR_DEGREES, get_direction_sector, DirectionSector
+using ..Types.Sector: DIRECTION_16_SECTORS, get_direction_sector, DirectionSector
 using ..Types.TurbulenceIntensity: TurbulenceSectorStats, TurbulenceResults
 
 const DEFAULT_WIND_SPEED_BINS = collect(0.0:1.0:28.0)
@@ -54,7 +54,7 @@ function calculate_ti_series(
     
     # Add sector for each direction, propagating missing values
     result.sector = map(result.wd) do wd
-        ismissing(wd) ? missing : get_direction_sector(wd).name
+        ismissing(wd) ? missing : get_direction_sector(wd, DIRECTION_16_SECTORS).name
     end
     
     return result
@@ -109,7 +109,7 @@ function calculate_ti_matrix(
     )
     
     # Initialize sector columns with mean TI
-    for sector in DIRECTION_SECTORS
+    for sector in DIRECTION_16_SECTORS
         result[!, sector.name] = fill(mean_ti, length(wind_speed_bins)-1)
     end
     
@@ -119,7 +119,7 @@ function calculate_ti_matrix(
         speed_bin_data = filter(row -> !ismissing(row.ws_avg) && min_speed ≤ row.ws_avg < max_speed, ti_df)
         
         # Calculate TI for each sector with enough data
-        for sector in DIRECTION_SECTORS
+        for sector in DIRECTION_16_SECTORS
             # Filter for this sector, skipping missing sectors
             sector_data = filter(row -> !ismissing(row.sector) && row.sector == sector.name, speed_bin_data)
             

@@ -120,13 +120,13 @@ struct MastConfig
 end
 export MastConfig
 
-struct TimeRange
+struct ConfigTimeRange
     min::Union{Nothing, DateTime}
     max::Union{Nothing, DateTime}
 end
 
 struct AnalysisConfig
-    time_range::TimeRange
+    time_range::ConfigTimeRange
     target_height::Union{Nothing, Float64}
     ti_target_height::Union{Nothing, Float64}
 end
@@ -165,8 +165,8 @@ function parse_datetime(value::String)::Union{DateTime, Nothing}
     end
 end
 
-function from_dict(::Type{TimeRange}, dict::Dict{String, Any})::TimeRange
-    TimeRange(
+function from_dict(::Type{ConfigTimeRange}, dict::Dict{String, Any})::ConfigTimeRange
+    ConfigTimeRange(
         let min_val = get(dict, "min", nothing)
             min_val isa String ? parse_datetime(min_val) : min_val
         end,
@@ -178,7 +178,7 @@ end
 
 function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
     AnalysisConfig(
-        from_dict(TimeRange, Dict{String, Any}(dict["time_range"])),
+        from_dict(ConfigTimeRange, Dict{String, Any}(dict["time_range"])),
         get(dict, "target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
         get(dict, "ti_target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing
     )
@@ -191,7 +191,7 @@ function from_dict(::Type{MesoConfig}, dict::Dict{String, Any})::MesoConfig
     )
 end
 
-function to_dict(tr::TimeRange)::Dict{String, Any}
+function to_dict(tr::ConfigTimeRange)::Dict{String, Any}
     Dict(
         "min" => tr.min,
         "max" => tr.max
@@ -262,6 +262,6 @@ function from_dict(::Type{ProjectConfig}, dict::Dict{String, Any})::ProjectConfi
     )
 end
 
-export TimeRange, AnalysisConfig, MesoConfig
+export ConfigTimeRange, AnalysisConfig, MesoConfig
 
 end # end module

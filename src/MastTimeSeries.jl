@@ -167,7 +167,6 @@ function parse_column_metadata(df::DataFrame, sensor_config::SensorConfig)::Vect
     # Parse each column name
     sensors = SensorColumn[]
     for column_name in data_columns
-        
         sensor = parse_column_name(String(column_name), sensor_config.column_formats, sensor_config.mappings)
         if !isnothing(sensor)
             push!(sensors, sensor)
@@ -178,7 +177,6 @@ function parse_column_metadata(df::DataFrame, sensor_config::SensorConfig)::Vect
     
     return sensors
 end
-export parse_column_metadata
 
 """
     normalize_timestamp!(df::DataFrame, timestamp_column_name::String)
@@ -330,8 +328,8 @@ function read_mast_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     # Export sensors only if we had to parse them
     export_sensors(sensors, project_dir)
     
+    apply_multipliers!(df, sensors)
     ts = TimeSeriesData(df, sensors)
-    apply_multipliers!(ts.df, ts.sensors)
     return ts
 end
 
@@ -340,8 +338,6 @@ Process Meso CSV file and return TimeSeriesData.
 Uses existing sensors.yaml if available, otherwise parses column names.
 """
 function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesData
-    # First try to load existing sensors
-    
     csv_file = joinpath(project_dir, config.meso.data_path)
     
     # Generate CSV options
@@ -349,16 +345,27 @@ function read_meso_data(config::ProjectConfig, project_dir::String)::TimeSeriesD
     
     # Read the CSV with all options
     df = CSV.read(csv_file, DataFrame; csv_opts...)
+    
+    # Check for missing values in timestamp column
+    missing_timestamps = count(ismissing, df[!, config.meso.sensor.timestamp_column])
+    if missing_timestamps > 0
+        @warn "Found $missing_timestamps missing timestamps"
+    end
+    
     normalize_timestamp!(df, config.meso.sensor.timestamp_column)
     
     # Parse column metadata and export to sensors.yaml
     sensors = parse_column_metadata(df, config.meso.sensor)
     
+    # Apply multipliers and rename columns BEFORE creating TimeSeriesData
+    apply_multipliers!(df, sensors)
+    
     # Export sensors only if we had to parse them
     export_meso_sensors(sensors, project_dir)
     
+    # Create TimeSeriesData object AFTER columns are renamed
     ts = TimeSeriesData(df, sensors)
-    apply_multipliers!(ts.df, ts.sensors)
+    
     return ts
 end
 
@@ -390,35 +397,30 @@ Apply multipliers and rename columns in DataFrame based on sensor configurations
 Uses functional programming principles for efficiency.
 """
 function apply_multipliers!(df::DataFrame, sensors::Vector{SensorColumn})::DataFrame
-    # Filter sensors with non-nothing multipliers or different column names
-    transform_sensors = filter(s -> !isnothing(s.multiplier) || s.columnName != s.originalColumnName, sensors)
-    
-    # Create a mapping of original to new column names
-    column_renames = Dict{Symbol, Symbol}()
-    
-    # First collect all the new names
-    for sensor in transform_sensors
+    # First handle column renames
+    for sensor in sensors
         if sensor.columnName != sensor.originalColumnName
-            # Generate new column name using the stored format
-            new_name = generate_column_name(sensor)
-            column_renames[sensor.originalColumnName] = new_name
+            if !hasproperty(df, sensor.originalColumnName)
+                @warn "Original column $(sensor.originalColumnName) not found in DataFrame"
+                continue
+            end
+            rename!(df, sensor.originalColumnName => sensor.columnName)
         end
     end
     
-    # Rename all columns at once
-    rename!(df, collect(column_renames))
-    
-    # Then apply multipliers using broadcasting
-    for sensor in transform_sensors
+    # Then apply multipliers
+    for sensor in sensors
         if !isnothing(sensor.multiplier)
-            target_col = sensor.columnName
-            df[!, target_col] .*= sensor.multiplier
+            if !hasproperty(df, sensor.columnName)
+                @warn "Column $(sensor.columnName) not found in DataFrame"
+                continue
+            end
+            df[!, sensor.columnName] .*= sensor.multiplier
         end
     end
     
     return df
 end
-export apply_multipliers!
 
 # At the end of MastTimeSeries.jl
 export SensorColumn, TimeSeriesData, read_mast_data, read_meso_data,

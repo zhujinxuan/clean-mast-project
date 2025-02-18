@@ -5,9 +5,9 @@ using DataFrames
 using Dates
 using Statistics
 using CSV
-using CleanMastProject.Types.CleanMastConfig: TimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule
+using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, MappingRule, SensorConfig, MastConfig, MesoConfig, Rule
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using CleanMastProject.Types.Sector: DIRECTION_SECTORS
+using CleanMastProject.Types.Sector: DIRECTION_16_SECTORS
 using CleanMastProject.Types.TurbulenceIntensity: TurbulenceSectorStats, TurbulenceResults
 using CleanMastProject.TurbulenceIntensity
 
@@ -17,7 +17,7 @@ function create_test_config(;
     target_height::Union{Nothing, Float64}=nothing,
     data_path::String="data.csv"
 )::ProjectConfig
-    time_range = TimeRange(nothing, nothing)
+    time_range = ConfigTimeRange(nothing, nothing)
     analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
     
     sensor_config = SensorConfig(
@@ -180,7 +180,7 @@ end
         # Check structure
         @test size(result, 2) == 18  # v_min, v_max, and 16 direction sectors
         @test names(result)[1:2] == ["v_min", "v_max"]
-        @test all(sector.name in names(result) for sector in DIRECTION_SECTORS)
+        @test all(sector.name in names(result) for sector in DIRECTION_16_SECTORS)
         
         # Check known TI values
         # Find row for 8-10 m/s bin
@@ -189,7 +189,7 @@ end
         @test isapprox(result[row_80m, "N"], 0.1, atol=0.01)
         
         # Check missing sectors are filled with mean_ti
-        @test all(result[row_80m, sector.name] == sector_stats.mean_ti for sector in DIRECTION_SECTORS if sector.name != "N")
+        @test all(result[row_80m, sector.name] == sector_stats.mean_ti for sector in DIRECTION_16_SECTORS if sector.name != "N")
         
         # Test missing value handling
         ts_missing = create_test_data(with_missing=true)

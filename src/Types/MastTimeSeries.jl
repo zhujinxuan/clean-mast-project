@@ -1,6 +1,7 @@
 module MastTimeSeries
 
 using DataFrames
+using Dates
 import ..Types.Utils: from_dict, to_dict
 
 struct SensorColumn
@@ -46,6 +47,10 @@ end
 struct TimeSeriesData
     df::DataFrame
     sensors::Vector{SensorColumn}
+end
+struct TimeRange
+    min::DateTime
+    max::DateTime
 end
 
 """

@@ -5,9 +5,8 @@ using Statistics
 using Dates
 using GLM
 using ...Types.RepresentativeYear
-using ...Types.Sector: DIRECTION_SECTORS, abs_degree_diff
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.ReconstructMeso: TrainingTimeRange
+using ...Types.Sector: DIRECTION_16_SECTORS, abs_degree_diff
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
 
 """
 Find target wind speed sensor closest to specified height in mast data
@@ -147,47 +146,12 @@ function find_representative_year(
 end
 export find_representative_year
 
-function filter_training_range(ts::TimeSeriesData, training_range::TrainingTimeRange)::TimeSeriesData
+function filter_training_range(ts::TimeSeriesData, training_range::TimeRange)::TimeSeriesData
     df = ts.df[training_range.min .<= ts.df.timestamp .<= training_range.max, :]
     TimeSeriesData(df, ts.sensors)
 end
 export filter_training_range
 
-"""
-Calculate directional calibrations using both mast and meso sensors
-"""
-function calculate_directional_calibrations(
-    mast_ts::TimeSeriesData,
-    meso_ts::TimeSeriesData,
-    training_range::TrainingTimeRange,
-    ref_year_start::DateTime,
-    mast_sensor::SensorColumn,
-    meso_sensor::SensorColumn
-)::Vector{DirectionalCalibration}
-    # Average both to hourly
-    hourly_mast = average_to_hourly(mast_ts)
-    hourly_meso = average_to_hourly(meso_ts)
-    training_range_hourly_mast = filter_training_range(hourly_mast, training_range)
-    training_range_hourly_meso = filter_training_range(hourly_meso, training_range)
-    
-    sector_meso_diff_df = calculate_sector_meso_diff(
-        hourly_meso, 
-        training_range,
-        ref_year_start,
-        meso_sensor
-    )
-    map(DIRECTION_SECTORS) do sector
-        # Filter data for this sector using mast wind speed sensor
-        sector_data = filter_direction_sector(training_range_hourly_mast, training_range_hourly_meso, sector.center, mast_sensor)
-        
-        # Calculate slope for this sector using both sensors
-        slope = calculate_sector_slope(sector_data, mast_sensor, meso_sensor)
-        
-        # Calculate meso speed difference
-        meso_speed_diff = sector_meso_diff_df[sector_meso_diff_df.sector .== sector.name, :meso_speed_diff][1]
-        DirectionalCalibration(sector.center, slope, meso_speed_diff)
-    end
-end
 
 """
 Apply calibration to time series with validation checks
@@ -296,7 +260,7 @@ function calculate_sector_meso_mean(meso_ts::TimeSeriesData, speed_sensor::Senso
     # Map each direction to its sector number and then to sector name
     df.sector = map(eachrow(df)) do row
         sector_idx = find_direction_sector(row[dir_sensor.columnName])
-        DIRECTION_SECTORS[sector_idx].name
+        DIRECTION_16_SECTORS[sector_idx].name
     end
     
     # Group by sector name and calculate mean
@@ -310,12 +274,12 @@ Calculate mean speed difference between training range and reference year for a 
 """
 function calculate_sector_meso_diff(
     meso_ts::TimeSeriesData,
-    training_range::TrainingTimeRange,
+    training_range::TimeRange,
     ref_year_start::DateTime,
     meso_sensor::SensorColumn
 )::DataFrame
     meso_training_ts = filter_training_range(meso_ts, training_range)
-    meso_ref_year_ts = filter_training_range(meso_ts, TrainingTimeRange(ref_year_start, ref_year_start + Year(1) - Second(1)))
+    meso_ref_year_ts = filter_training_range(meso_ts, TimeRange(ref_year_start, ref_year_start + Year(1) - Second(1)))
     
     meso_training_sector_df = calculate_sector_meso_mean(meso_training_ts, meso_sensor)
     meso_ref_year_sector_df = calculate_sector_meso_mean(meso_ref_year_ts, meso_sensor)
@@ -333,6 +297,6 @@ end
 
 
 export calculate_mean_speed, is_calibration_needed, find_representative_year,
-       calculate_directional_calibrations, apply_calibration
+       apply_calibration
 
 end 

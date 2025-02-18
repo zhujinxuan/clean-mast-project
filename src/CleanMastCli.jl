@@ -73,6 +73,7 @@ Comonicon.@cast module Process
     using CleanMastProject.Command.CleanData
     using CleanMastProject.Command.TowerShading
     using CleanMastProject.Command.ReconstructSingleMast
+    using CleanMastProject.Command.TrainMesoModel
     using CleanMastProject.Command.ReconstructMeso
     using CleanMastProject.Command.RepresentativeYearCalibration
 
@@ -113,9 +114,21 @@ Comonicon.@cast module Process
     end
 
     """
+    train-meso
+
+    Train mast and meso linear correlation models.
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+    """
+    Comonicon.@cast function train_meso(dir::String)
+        TrainMesoModel.execute(dir)
+    end
+
+    """
     reconstruct-meso
 
-    Reconstruct missing data using mesoscale data.
+    Reconstruct missing data using trained mesoscale models.
 
     # Arguments
     - `dir`: Project directory containing config.yaml

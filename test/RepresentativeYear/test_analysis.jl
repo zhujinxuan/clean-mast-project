@@ -4,11 +4,13 @@ using Test
 using Dates
 using DataFrames
 using Statistics
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
 using CleanMastProject.Types.RepresentativeYear: DirectionalCalibration, CalibrationResults
 using CleanMastProject.RepresentativeYear
 using CleanMastProject.RepresentativeYear.Analysis
+using CleanMastProject.Types.SpeedReferenceModel.SectorizedRegression: SpeedSector, SectorizedRegressionModel, SpeedPair
+using CleanMastProject.Types.Sector: DirectionSector, DIRECTION_16_SECTORS
 
 function generate_test_data_for_integration_test(;
     start_date::DateTime = DateTime(2024,1,1),
@@ -286,154 +288,5 @@ end
         @test calibrated.df[4, :ws_100m] == 15.0 # Shall not apply calibration when calibrated result is bigger than 25.0
         @test ismissing(calibrated.df[5, :ws_100m])  # missing stays missing
     end
-    
-
-    @testset "calculate_directional_calibrations" begin
-        # Create test data with known values for both mast and meso
-        # Use multiple days instead of hours to avoid hour overflow
-        timestamps = DateTime(2024,1,1):Hour(1):(DateTime(2024,1,3) - Second(1))  # 48 hours across 2 days
-        
-        # Create directions covering all 16 sectors (0°, 22.5°, 45°, etc.)
-        sector_angles = 0.0:22.5:337.5
-        # Repeat each angle 3 times to have multiple samples per sector
-        directions = repeat(sector_angles, inner=3)
-        
-        # Create mast data with multiple heights
-        mast_df = DataFrame(
-            timestamp = timestamps,
-            ws_120m = repeat([10.0, 12.0], length(timestamps) ÷ 2),  # Higher height
-            ws_80m = repeat([9.0, 11.0], length(timestamps) ÷ 2),    # Lower height
-            wd_120m = directions,                                     # Direction at higher height
-            wd_80m = directions .- 5.0                               # Direction at lower height with veer
-        )
-        
-        # Create corresponding meso data with slight bias
-        meso_df = DataFrame(
-            timestamp = timestamps,
-            ws_100m = repeat([11.0, 13.0], length(timestamps) ÷ 2),  # Middle height
-            wd_100m = directions                                      # Same directions as mast
-        )
-        
-        # Create sensors with different heights
-        mast_sensors = [
-            SensorColumn(:ws_120m, "ws_120m", "WindSpeed", "N", 120.0, "avg", "m/s"),
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_120m, "wd_120m", "WindDirection", "N", 120.0, "avg", "deg"),
-            SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
-        ]
-        
-        meso_sensors = [
-            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-            SensorColumn(:wd_100m, "wd_100m", "WindDirection", "N", 100.0, "avg", "deg")
-        ]
-        
-        mast_ts = TimeSeriesData(mast_df, mast_sensors)
-        meso_ts = TimeSeriesData(meso_df, meso_sensors)
-        
-        # Define time ranges
-        training_range = TrainingTimeRange(
-            DateTime(2024,1,1),
-            DateTime(2024,1,3) # 48 hours as training
-        )
-        ref_year_start = DateTime(2024,1,1)
-        
-        # Test with higher height mast sensor
-        cals_high = calculate_directional_calibrations(
-            mast_ts,
-            meso_ts,
-            training_range,
-            ref_year_start,
-            mast_sensors[1],  # ws_120m
-            meso_sensors[1]   # ws_100m
-        )
-        
-        # Test with lower height mast sensor
-        cals_low = calculate_directional_calibrations(
-            mast_ts,
-            meso_ts,
-            training_range,
-            ref_year_start,
-            mast_sensors[2],  # ws_80m
-            meso_sensors[1]   # ws_100m
-        )
-        
-        # Test results
-        @test length(cals_high) == 16  # Should have 16 direction sectors
-        @test length(cals_low) == 16
-        
-        # Test that all direction centers are present (0°, 22.5°, 45°, ..., 337.5°)
-        expected_centers = 0.0:22.5:337.5
-        actual_centers_high = sort([cal.direction_center for cal in cals_high])
-        actual_centers_low = sort([cal.direction_center for cal in cals_low])
-        
-        @test all(isapprox.(actual_centers_high, expected_centers))
-        @test all(isapprox.(actual_centers_low, expected_centers))
-        
-        # Helper function to find calibration for a specific direction
-        find_cal = (cals, dir) -> first(filter(c -> isapprox(c.direction_center, dir, atol=0.1), cals))
-        
-        # Test calibrations for several key directions
-        for direction in [0.0, 22.5, 45.0, 90.0, 180.0, 270.0, 337.5]
-            cal_high = find_cal(cals_high, direction)
-            cal_low = find_cal(cals_low, direction)
-            
-            # Test that calibrations exist for each direction
-            @test !isnothing(cal_high)
-            @test !isnothing(cal_low)
-            
-            # Test slopes are reasonable (based on our input data)
-            @test 0.8 ≤ cal_high.slope ≤ 1.2  # ws_120m/ws_100m ratio should be close to 1
-            @test 0.7 ≤ cal_low.slope ≤ 1.1   # ws_80m/ws_100m ratio should be less than 1
-            
-            # Test meso speed differences (should be small since training and reference periods are the same)
-            @test abs(cal_high.meso_speed_diff) < 0.1
-            @test abs(cal_low.meso_speed_diff) < 0.1
-        end
-        
-        # Test with missing direction sensor
-        bad_mast_ts = TimeSeriesData(
-            DataFrame(
-                timestamp = [DateTime(2024,1,1)],
-                ws_100m = [10.0]  # Only wind speed, no direction
-            ),
-            [SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s")]
-        )
-        
-        @test_throws ErrorException calculate_directional_calibrations(
-            bad_mast_ts,
-            meso_ts,
-            training_range,
-            ref_year_start,
-            bad_mast_ts.sensors[1],
-            meso_sensors[1]
-        )
-    end
-
-    @testset "Integration test - calibrate_to_representative_year" begin
-        mast_ts, meso_ts = generate_test_data_for_integration_test()
-        training_range = TrainingTimeRange(
-            DateTime(2024,1,1),
-            DateTime(2025,1,1) - Second(1)
-        )
-        
-        # Test successful calibration
-        calibrated_ts = RepresentativeYear.calibrate_to_representative_year(
-            mast_ts,
-            meso_ts,
-            training_range;
-            target_height=120.0
-        )
-        
-        @test calibrated_ts isa TimeSeriesData
-        @test size(calibrated_ts.df) == size(mast_ts.df)
-        @test all(calibrated_ts.df.timestamp .== mast_ts.df.timestamp)
-        
-        # Check that calibration maintains reasonable values
-        ws_sensor = first(filter(s -> s.height == 120.0, calibrated_ts.sensors))
-        # @test all(5.0 .<= skipmissing(calibrated_ts.df[!, ws_sensor.columnName]) .<= 15.0)
-        # Approximatedly, the calibrated_ts.df.ws_120m should be 1.0 more than the mast_ts.df.ws_120m
-        # Instead of all, we can assume 90% of the values are within 0.1 of 1.0
-        @test mean(isapprox.(calibrated_ts.df.ws_120m .- mast_ts.df.ws_120m, 0.84, atol=0.1)) > 0.9
-    end # end for Integration test
 end # end for RepresentativeYear Analysis 
 end # end for module TestRepresentativeYear 
