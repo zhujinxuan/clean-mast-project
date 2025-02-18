@@ -106,9 +106,10 @@ module Command
   include("./Command/RepresentativeYearCalibration.jl")
   include("./Command/TurbulenceIntensity.jl")
   include("./Command/QuickStart.jl")
+  include("./Command/ProcessAll.jl")
   export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
-         TurbulenceIntensity, QuickStart
+         TurbulenceIntensity, QuickStart, ProcessAll
 end
 export Command
 include("./CleanMastCli.jl")

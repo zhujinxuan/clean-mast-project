@@ -76,6 +76,7 @@ Comonicon.@cast module Process
     using CleanMastProject.Command.TrainMesoModel
     using CleanMastProject.Command.ReconstructMeso
     using CleanMastProject.Command.RepresentativeYearCalibration
+    using CleanMastProject.Command.ProcessAll
 
     """
     clean
@@ -147,6 +148,24 @@ Comonicon.@cast module Process
     """
     Comonicon.@cast function representative_year(dir::String)
         RepresentativeYearCalibration.execute(dir)
+    end
+
+    """
+    all
+
+    Execute all processing steps in sequence:
+    1. Clean data
+    2. Tower shading
+    3. Reconstruct single mast
+    4. Train meso models
+    5. Reconstruct meso
+    6. Representative year calibration
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+    """
+    Comonicon.@cast function all(dir::String)
+        ProcessAll.execute(dir)
     end
 end
 
