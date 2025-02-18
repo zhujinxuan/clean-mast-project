@@ -94,6 +94,9 @@ export RepresentativeYear
 include("./TurbulenceIntensity.jl")
 export TurbulenceIntensity
 
+include("./AnalyzeTimeSeries.jl")
+export AnalyzeTimeSeries
+
 module Command
   include("./Command/CheckConfig.jl")
   include("./Command/CheckSensors.jl")
@@ -107,9 +110,10 @@ module Command
   include("./Command/TurbulenceIntensity.jl")
   include("./Command/QuickStart.jl")
   include("./Command/ProcessAll.jl")
+  include("./Command/AnalyzeTimeSeriesCommand.jl")
   export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
-         TurbulenceIntensity, QuickStart, ProcessAll
+         TurbulenceIntensity, QuickStart, ProcessAll, AnalyzeTimeSeriesCommand
 end
 export Command
 include("./CleanMastCli.jl")

@@ -177,6 +177,7 @@ Analysis and reporting commands
 Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.TurbulenceIntensity
+    using CleanMastProject.Command.AnalyzeTimeSeriesCommand
 
     """
     turbulence
@@ -188,6 +189,32 @@ Comonicon.@cast module Analyze
     """
     Comonicon.@cast function turbulence(dir::String)
         TurbulenceIntensity.execute(dir)
+    end
+
+    """
+    timeseries
+
+    Analyze all time series data types and generate plots/reports.
+    Processes:
+    1. Tower shading time series
+    2. Single mast reconstruction time series
+    3. Meso reconstruction time series
+    4. Representative year time series
+
+    For each time series type, generates:
+    - Wind rose plots and data
+    - Time series plots
+    - Daily patterns
+    - Vertical profiles
+    - Monthly patterns
+
+    Results are saved in the project's analysis directory.
+
+    # Arguments
+    - `dir`: Project directory containing processed time series data
+    """
+    Comonicon.@cast function timeseries(dir::String)
+        AnalyzeTimeSeriesCommand.execute(dir)
     end
 end
 
