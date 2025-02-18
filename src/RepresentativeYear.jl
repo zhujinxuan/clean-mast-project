@@ -1,12 +1,14 @@
 module RepresentativeYear
 
-using ..Types.MastTimeSeries: TimeSeriesData, TimeRange
-using ..Types.RepresentativeYear: CalibrationResults
-using ..Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using Dates
+using DataFrames
+using ..Types.MastTimeSeries: TimeSeriesData, TimeRange
+using ..Types.RepresentativeYear: CalibrationResults, DirectionalCalibration
+using ..Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
+using ..Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
+using ..TimeSeriesProcessing.Interpolation: interpolate_timeseries
 
 include("./RepresentativeYear/Analysis.jl")
-using ..Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
 using .Analysis
 
 """
@@ -18,7 +20,7 @@ function calibrate_to_representative_year(
     mast_time_range::TimeRange,
     sectorized_regression_model::SectorizedRegressionModel;
     target_height::Float64=120.0  # Default to 120m
-)::TimeSeriesData
+)::Tuple{TimeSeriesData, Union{CalibrationResults, Nothing}}
     # Find target sensors in both mast and meso data
     mast_sensor = find_target_mast_sensor(mast_ts, target_height)
     if isnothing(mast_sensor)
@@ -46,7 +48,7 @@ function calibrate_to_representative_year(
     needs_calibration = is_calibration_needed(meso_full_mean, meso_range_mean)
     
     if !needs_calibration
-        return mast_ts
+        return (mast_ts, Nothing)
     end
     
     # Find representative year start DateTime
@@ -62,25 +64,24 @@ function calibrate_to_representative_year(
     )
 
     # Use the pre-trained model's sectors and coefficients for calibration
-    directional_cals = map(pair.sectors) do sector
-        # Extract slope directly from the sector
-        slope = sector.slope
-        # Calculate meso speed difference for this sector
-        sector_meso_diff = sector_meso_diff_df[sector.name, :meso_speed_diff]
-        
-        DirectionalCalibration(sector.center, slope, sector_meso_diff)
+    calibration_each_ws_sensors = map(sectorized_regression_model.pairs) do pair 
+        calculate_calibration_each_ws_sensor(
+            sector_meso_diff_df,
+            pair
+        )
     end
     
     # Create calibration results
     calibration = CalibrationResults(
+        calibration_each_ws_sensors,
         ref_year_start,
-        mast_sensor,
-        directional_cals,
-        true
     )
+
+    meso_interpolated = interpolate_timeseries(meso_ts, mast_ts.df.timestamp)
     
     # Apply calibration
-    apply_calibration(mast_ts, calibration)
+    ts = apply_calibration(mast_ts, calibration, meso_interpolated)
+    return (ts, calibration)
 end
 
 export calibrate_to_representative_year

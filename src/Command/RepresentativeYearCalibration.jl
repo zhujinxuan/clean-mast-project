@@ -2,6 +2,7 @@ module RepresentativeYearCalibration
 
 using CSV, YAML, DataFrames, JLD2
 using ...Types.CleanMastConfig
+using ...Types.Utils: show_as_dataframe
 using ...CleanMastConfig
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, TimeRange
 using ...RepresentativeYear: calibrate_to_representative_year
@@ -69,7 +70,7 @@ function execute(dir::String)
     
     # Perform calibration
     println("Performing representative year calibration for $(target_height)m wind speed...")
-    calibrated_ts = calibrate_to_representative_year(
+    calibrated_ts, calibration_results = calibrate_to_representative_year(
         mast_ts, 
         meso_ts, 
         time_range,
@@ -90,6 +91,13 @@ function execute(dir::String)
     
     open(joinpath(dir, "rep_year_calibration-sensors.yaml"), "w") do io
         YAML.write(io, sensors_yaml)
+    end
+
+    if (calibration_results !== nothing)
+        df = show_as_dataframe(calibration_results)
+        output_calibration_filename = "synthetic-rep_year_calibration.$(original_filename).csv"
+        CSV.write(joinpath(dir, output_calibration_filename), df)
+        println("- Saved calibration parameters to $(output_calibration_filename)")
     end
     
     println("\nRepresentative year calibration completed:")

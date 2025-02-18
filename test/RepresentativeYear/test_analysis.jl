@@ -4,9 +4,8 @@ using Test
 using Dates
 using DataFrames
 using Statistics
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
-using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
-using CleanMastProject.Types.RepresentativeYear: DirectionalCalibration, CalibrationResults
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.RepresentativeYear: DirectionalCalibration, CalibrationResults, CalibrationEachWSSensor
 using CleanMastProject.RepresentativeYear
 using CleanMastProject.RepresentativeYear.Analysis
 using CleanMastProject.Types.SpeedReferenceModel.SectorizedRegression: SpeedSector, SectorizedRegressionModel, SpeedPair
@@ -256,8 +255,16 @@ end
     end
     
     @testset "apply_calibration" begin
-        # Create test data with known values
+        # Create test data with known values and multiple heights
         test_df = DataFrame(
+            timestamp = [DateTime(2024,1,1, h) for h in 1:5],
+            ws_100m = [10.0, 20.0, 5.0, 15.0, missing],
+            ws_80m = [9.0, 18.0, 4.5, 14.0, missing],
+            ws_60m = [8.0, 16.0, 4.0, 13.0, missing]
+        )
+        
+        # Create meso data with directions
+        meso_df = DataFrame(
             timestamp = [DateTime(2024,1,1, h) for h in 1:5],
             ws_100m = [10.0, 20.0, 5.0, 15.0, missing],
             wd_100m = [0.0, 90.0, 180.0, 270.0, 0.0]
@@ -265,28 +272,47 @@ end
         
         test_sensors = [
             SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
+            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:ws_60m, "ws_60m", "WindSpeed", "N", 60.0, "avg", "m/s")
+        ]
+        
+        meso_sensors = [
+            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
             SensorColumn(:wd_100m, "wd_100m", "WindDirection", "N", 100.0, "avg", "deg")
         ]
         
         test_ts = TimeSeriesData(test_df, test_sensors)
+        meso_ts = TimeSeriesData(meso_df, meso_sensors)
         
-        # Create calibration that would double the wind speed
+        # Create calibrations for each height
+        calibrations = map(test_sensors) do sensor
+            CalibrationEachWSSensor(
+                sensor,  # target sensor
+                meso_sensors[2],  # meso direction sensor
+                map(DIRECTION_16_SECTORS) do sector
+                    DirectionalCalibration(sector, 1.0, sector.center == 270 ? 100 : 0.1 * sector.center/22.5)
+                end
+            )
+        end
+        
         calibration = CalibrationResults(
+            calibrations,
             DateTime(2024,1,1),
-            test_sensors[1],  # ws_100m sensor
-            [DirectionalCalibration(center, 1.0, center/22.5) for center in 0.0:22.5:337.5],  # Will double speed
-            true
         )
         
         # Apply calibration
-        calibrated = apply_calibration(test_ts, calibration)
+        calibrated = apply_calibration(test_ts, calibration, meso_ts)
         
-        # Test that values are calibrated only when result is within bounds
-        @test calibrated.df[1, :ws_100m] == 10.0  
-        @test calibrated.df[2, :ws_100m] == 24.0  
-        @test calibrated.df[3, :ws_100m] == 13.0  
-        @test calibrated.df[4, :ws_100m] == 15.0 # Shall not apply calibration when calibrated result is bigger than 25.0
-        @test ismissing(calibrated.df[5, :ws_100m])  # missing stays missing
+        # Test that values are calibrated at each height
+        for sensor in test_sensors
+            col = sensor.columnName
+            # Test that values are calibrated only when result is within bounds
+            @test calibrated.df[1, col] == test_df[1, col]  
+            @test calibrated.df[2, col] == test_df[2, col] + 0.1 * 90/22.5  # Calibrated with slope 1.0
+            @test calibrated.df[3, col] == test_df[3, col] + 0.1 * 180/22.5  # Calibrated with slope 1.0
+            @test calibrated.df[4, col] == test_df[4, col] # No calibration when result would be too high
+            @test ismissing(calibrated.df[5, col])  # missing stays missing
+        end
     end
 end # end for RepresentativeYear Analysis 
 end # end for module TestRepresentativeYear 

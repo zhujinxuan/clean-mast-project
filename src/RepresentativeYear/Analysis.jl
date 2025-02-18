@@ -4,9 +4,10 @@ using DataFrames
 using Statistics
 using Dates
 using GLM
-using ...Types.RepresentativeYear
+using ...Types.RepresentativeYear: CalibrationResults, CalibrationEachWSSensor, DirectionalCalibration
 using ...Types.Sector: DIRECTION_16_SECTORS, abs_degree_diff
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
+using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel, SpeedPair
 
 """
 Find target wind speed sensor closest to specified height in mast data
@@ -158,34 +159,28 @@ Apply calibration to time series with validation checks
 """
 function apply_calibration(
     ts::TimeSeriesData,
-    calibration::CalibrationResults;
+    calibration::CalibrationResults,
+    meso_ts:: TimeSeriesData;
     min_speed::Float64 = 0.5,
     max_speed::Float64 = 25.0
 )::TimeSeriesData
-    if !calibration.is_calibration_needed
-        return ts
-    end
-    
     result_df = copy(ts.df)
-    target_col = calibration.target_sensor.columnName
-    dir_col = find_matching_direction_sensor(ts, calibration.target_sensor)
-    # Apply calibration for each row
-    for row in eachrow(result_df)
-        # Skip if original value is missing
-        ismissing(row[target_col]) && continue
-        ismissing(row[dir_col.columnName]) && continue
-        
-        # Find direction sector
-        sector = find_direction_sector(row[dir_col.columnName])
-        cal = calibration.directional_calibrations[sector]
-        
-        # Calculate calibrated value
-        original_value = row[target_col]
-        calibrated_value = original_value + cal.meso_speed_diff * cal.slope
-        
-        # Only apply calibration if result is within valid range
-        if min_speed <= calibrated_value <= max_speed
-            row[target_col] = calibrated_value
+    for calibration_each_ws_sensor in calibration.calibrations
+        dir_col = calibration_each_ws_sensor.meso_direction_sensor.columnName
+        target_col = calibration_each_ws_sensor.target_sensor.columnName
+        for (i, row) in enumerate(eachrow(result_df))
+            dir = meso_ts.df[i, dir_col]
+            # Skip if original value is missing
+            ismissing(row[target_col]) && continue
+            ismissing(dir) && continue
+            
+            sector = find_direction_sector(dir)
+            cal = calibration_each_ws_sensor.directional_calibrations[sector]
+            original_value = row[target_col]
+            calibrated_value = original_value + cal.meso_speed_diff * cal.slope
+            if min_speed <= calibrated_value <= max_speed
+                row[target_col] = calibrated_value
+            end
         end
     end
     
@@ -295,8 +290,24 @@ function calculate_sector_meso_diff(
     result_df
 end
 
+function calculate_calibration_each_ws_sensor(
+    sector_meso_diff_df::DataFrame,
+    pair:: SpeedPair
+):: CalibrationEachWSSensor
+   directional_calibrations = map(pair.sectors) do sector
+    meso_speed_diff = first(filter(row -> row.sector == sector.direction_sector.name, sector_meso_diff_df).meso_speed_diff)
+    DirectionalCalibration(sector.direction_sector, sector.slope, meso_speed_diff)
+   end
+
+   return CalibrationEachWSSensor(
+    pair.mast_speed_sensor,
+    pair.meso_direction_sensor,
+    directional_calibrations
+   )
+end
+
 
 export calculate_mean_speed, is_calibration_needed, find_representative_year,
-       apply_calibration
+       apply_calibration, calculate_sector_meso_diff, calculate_calibration_each_ws_sensor
 
 end 
