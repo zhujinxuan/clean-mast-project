@@ -88,7 +88,7 @@ function execute(dir::String)
     
     # Save reconstruction sources to YAML
     sources_df = show_as_dataframe(mast_payload.reconstruction_sources)
-    CSV.write(joinpath(dir, "reconstruct_meso-sources.csv"), sources_df)
+    CSV.write(joinpath(dir, "process-stats", "reconstruct_meso-sources.csv"), sources_df)
     
     println("\nMeso reconstruction completed:")
     println("- Saved reconstructed data to $(output_filename)")

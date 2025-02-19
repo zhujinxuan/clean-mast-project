@@ -16,17 +16,16 @@ Save turbulence intensity results to files
 
 # Arguments
 - `dir::String`: Project directory
-- `config::ProjectConfig`: Project configuration
 - `results::TurbulenceResults`: Complete turbulence intensity analysis results
 """
 function save_results(
-    dir::String,
-    config::ProjectConfig,
+    project_dir::String,
     results::TurbulenceResults
 )::Nothing
     # Create output directory if it doesn't exist
+    dir = joinpath(project_dir, "analysis", "turbulence_intensity")
     mkpath(dir)
-    
+
     # Save main TI results with all required columns
     ti_results = select(
         results.sector_stats.sector_stats,
@@ -37,7 +36,7 @@ function save_results(
         :occurrence
     )
     CSV.write(
-        joinpath(dir, "turbulence_intensity.csv"),
+        joinpath(dir,"turbulence_intensity.csv"),
         ti_results
     )
     
@@ -109,7 +108,7 @@ function execute(project_path::String)::Nothing
     results = process_turbulence_intensity(config, ts)
     
     # Save results
-    save_results(project_path, config, results)
+    save_results(project_path, results)
     
     return nothing
 end

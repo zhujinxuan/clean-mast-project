@@ -57,7 +57,7 @@ function execute(dir::String)
         "successes" => reconstruction_results.successes,
         "failures" => reconstruction_results.failures
     )
-    open(joinpath(dir, "single-reconstruction.yaml"), "w") do io
+    open(joinpath(dir, "process-stats", "single-reconstruction.yaml"), "w") do io
         YAML.write(io, reconstruction_dict)
     end
     

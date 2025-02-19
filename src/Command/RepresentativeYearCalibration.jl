@@ -96,7 +96,7 @@ function execute(dir::String)
     if (calibration_results !== nothing)
         df = show_as_dataframe(calibration_results)
         output_calibration_filename = "synthetic-rep_year_calibration.$(original_filename).csv"
-        CSV.write(joinpath(dir, output_calibration_filename), df)
+        CSV.write(joinpath(dir, "process-stats", output_calibration_filename), df)
         println("- Saved calibration parameters to $(output_calibration_filename)")
     end
     

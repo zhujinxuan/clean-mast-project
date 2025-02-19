@@ -27,7 +27,11 @@ function execute(dir::String)
             "rule_name" => v.rule.name
         ) for v in violations]
     )
-    open(joinpath(dir, "violations.yaml"), "w") do io
+    if !isdir(joinpath(dir, "process-stats"))
+        mkdir(joinpath(dir, "process-stats"))
+    end
+
+    open(joinpath(dir, "process-stats", "violations.yaml"), "w") do io
         YAML.write(io, violations_yaml)
     end
     
