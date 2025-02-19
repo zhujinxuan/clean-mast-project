@@ -10,6 +10,7 @@ using ...Types.MastReferenceModel: ReconstructionPayload
 using ...MergeReconstructMeso: merge_reconstruct_meso
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel
+using ...TimeSeriesProcessing.TimeRangeProcessor: calculate_reconstruction_time_range
 
 export execute
 
@@ -56,10 +57,7 @@ function execute(dir::String)
     meso_ts = read_meso_data(config, dir)
     
     # Get time range from config or use full range
-    time_range = TimeRange(
-        config.analysis.time_range.min isa Nothing ? minimum(mast_df.timestamp) : config.analysis.time_range.min,
-        config.analysis.time_range.max isa Nothing ? maximum(mast_df.timestamp) : config.analysis.time_range.max
-    )
+    time_range = calculate_reconstruction_time_range(mast_ts, config.analysis.time_range)
     
     # Create initial reconstruction payload
     mast_payload = ReconstructionPayload(mast_ts, [])

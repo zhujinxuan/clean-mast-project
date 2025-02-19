@@ -20,7 +20,7 @@ function calibrate_to_representative_year(
     mast_time_range::TimeRange,
     sectorized_regression_model::SectorizedRegressionModel;
     target_height::Float64=120.0  # Default to 120m
-)::Tuple{TimeSeriesData, Union{CalibrationResults, Nothing}}
+)::Tuple{TimeSeriesData, Union{Nothing, CalibrationResults}}
     # Find target sensors in both mast and meso data
     mast_sensor = find_target_mast_sensor(mast_ts, target_height)
     if isnothing(mast_sensor)
@@ -37,18 +37,18 @@ function calibrate_to_representative_year(
     meso_full_mean = calculate_mean_speed(meso_ts, meso_sensor)
     
     # Filter DataFrame and create new TimeSeriesData for training range
-    training_df = filter(
+    meso_training_df = filter(
         row -> mast_time_range.min <= row.timestamp <= mast_time_range.max, 
         meso_ts.df
     )
-    training_ts = TimeSeriesData(training_df, meso_ts.sensors)
-    meso_range_mean = calculate_mean_speed(training_ts, meso_sensor)
+    meso_training_ts = TimeSeriesData(meso_training_df, meso_ts.sensors)
+    meso_range_mean = calculate_mean_speed(meso_training_ts, meso_sensor)
     
     # Check if calibration is needed
     needs_calibration = is_calibration_needed(meso_full_mean, meso_range_mean)
     
     if !needs_calibration
-        return (mast_ts, Nothing)
+        return (mast_ts, nothing)
     end
     
     # Find representative year start DateTime
