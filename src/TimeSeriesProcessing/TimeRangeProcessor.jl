@@ -26,7 +26,7 @@ function calculate_reconstruction_time_range(mast_ts::TimeSeriesData, time_range
     data_max = maximum(valid_times)
     
     # Calculate default range (1 year before max date)
-    default_min = floor(something(time_range.max, data_max) - Year(1), Month(1))
+    default_min = floor(something(time_range.max, data_max) - Month(11), Month(1)) 
     
     # Determine actual min and max
     actual_min = something(time_range.min, default_min)

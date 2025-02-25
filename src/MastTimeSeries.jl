@@ -425,6 +425,6 @@ end
 # At the end of MastTimeSeries.jl
 export SensorColumn, TimeSeriesData, read_mast_data, read_meso_data,
        # Export parsing functions for testing
-       parse_column_name, extract_format_placeholders, create_regex_pattern
+       parse_column_name, extract_format_placeholders, create_regex_pattern, parse_column_metadata, apply_multipliers!
 
 end # module MastTimeSeries
