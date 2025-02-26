@@ -193,6 +193,7 @@ Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.TurbulenceIntensity
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
+    using CleanMastProject.Command.GenerateTimeSeriesReport
 
     """
     turbulence
@@ -224,12 +225,14 @@ Comonicon.@cast module Analyze
     - Monthly patterns
 
     Results are saved in the project's analysis directory.
+    A comprehensive Typst report is also generated and compiled to PDF.
 
     # Arguments
     - `dir`: Project directory containing processed time series data
     """
     Comonicon.@cast function timeseries(dir::String)
         AnalyzeTimeSeriesCommand.execute(dir)
+        GenerateTimeSeriesReport.execute(dir)
     end
 end
 
