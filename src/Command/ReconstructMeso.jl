@@ -62,11 +62,11 @@ function execute(dir::String)
     # Create initial reconstruction payload
     mast_payload = ReconstructionPayload(mast_ts, [])
     
-    # Load and apply 16-sector wind speed model
-    println("Reconstructing wind speeds using 16-sector model...")
-    model_16sector_path = joinpath(dir, "models", "windspeed", "16-sector", "_meso_era5.jld2")
-    model_16sector = load_model(model_16sector_path, SectorizedRegressionModel)
-    mast_payload = merge_reconstruct_meso(mast_payload, meso_ts, model_16sector, time_range)
+    # Load and apply 1-sector wind speed model
+    println("Reconstructing wind speeds using 1-sector model...")
+    model_1sector_path = joinpath(dir, "models", "windspeed", "1-sector", "_meso_era5.jld2")
+    model_1sector = load_model(model_1sector_path, SectorizedRegressionModel)
+    mast_payload = merge_reconstruct_meso(mast_payload, meso_ts, model_1sector, time_range)
     
     # Load and apply direction offset model
     println("Reconstructing wind directions using constant offset model...")
