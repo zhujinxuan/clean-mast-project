@@ -312,6 +312,9 @@ function reconstruct_wind_directions(
 )::Tuple{Vector{ReconstructedSuccess}, Vector{ReconstructedFailure}}
     # Get reconstruction targets
     targets = find_reconstruction_targets(data, "WindDirection", "avg", min_height)
+    if isempty(targets)
+        return ([], [])
+    end
     
     # Get direction sensors
     direction_sensors = filter(s -> 

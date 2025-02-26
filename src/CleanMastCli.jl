@@ -76,6 +76,7 @@ Comonicon.@cast module Process
     using CleanMastProject.Command.TrainMesoModel
     using CleanMastProject.Command.ReconstructMeso
     using CleanMastProject.Command.RepresentativeYearCalibration
+    using CleanMastProject.Command.WtTimeSeries
     using CleanMastProject.Command.ProcessAll
 
     """
@@ -148,6 +149,20 @@ Comonicon.@cast module Process
     """
     Comonicon.@cast function representative_year(dir::String)
         RepresentativeYearCalibration.execute(dir)
+    end
+
+    """
+    wt-timeseries
+
+    Process wind turbine time series data.
+    Extracts wind speed and direction data at target height from representative year data.
+    Saves timestamp, wind speed, and wind direction to a CSV file.
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+    """
+    Comonicon.@cast function wt_timeseries(dir::String)
+        WtTimeSeries.execute(dir)
     end
 
     """

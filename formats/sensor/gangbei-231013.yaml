@@ -1,0 +1,55 @@
+sensor:
+  column_formats:
+    # F1_WS_120_90_NRG-40/40-STDev
+    - "F{channel}_{sensorType}_{height}_{sensorDirection}_{brand}-40/40-{statType}"
+    # F1_WS_120_90_NRG-40/40
+    - "F{channel}_{sensorType}_{height}_{sensorDirection}_{brand}-40/40"
+    # F8_PR_8_0_K611PB
+    - "F{channel}_{sensorType}_{height}_{sensorDirection}_{brand}"
+    # A1_WD_120_0_200M-STDev
+    - "A{channel}_{sensorType}_{height}_{sensorDirection}_{brand}-{statType}"
+    # A1_WD_120_0_200M
+    - "A{channel}_{sensorType}_{height}_{sensorDirection}_{brand}" 
+  timestamp_column: DateTime
+  timestamp_format: "yyyy/mm/dd HH:MM"
+  delim: ","
+  skip_to: 1
+  mappings:
+    - match:
+        sensorType: WS
+      rule:
+        sensorType: WindSpeed
+        unit: m/s
+    - match:
+        statType: null
+      rule:
+        statType: avg
+    - match:
+        sensorType: WD
+      rule:
+        sensorType: WindDirection
+        unit: deg
+    - match:
+        statType: Max
+      rule:
+        statType: max
+    - match:
+        statType: Min
+      rule:
+        statType: min
+    - match:
+        statType: STDev
+      rule:
+        statType: sd
+    - match:
+        sensorType: TEM
+      rule:
+        sensorType: Temperature
+        unit: C
+    - match:
+        sensorType: PR
+        unit: hPa
+      rule:
+        sensorType: Pressure
+        unit: Pa
+        multiplier: 100.0

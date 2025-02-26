@@ -61,14 +61,13 @@ function find_reconstruction_targets(data::TimeSeriesData, sensorType::String, s
                      s.statType == statType && 
                      s.height >= min_height]
     
-    # Find timestamps with missing values
-    targets = ReconstructionTarget[]
-    for row in eachrow(data.df)
-        missing_cols = filter(col -> ismissing(row[col]), sensor_cols)
+    # Functional pipeline with chaining and broadcasting
+    targets = [
+        ReconstructionTarget(row.timestamp, missing_cols)
+        for row in eachrow(data.df)
+        for missing_cols in [filter(col -> ismissing(row[col]), sensor_cols)]
         if !isempty(missing_cols)
-            push!(targets, ReconstructionTarget(row.timestamp, missing_cols))
-        end
-    end
+    ]
     
     return targets
 end

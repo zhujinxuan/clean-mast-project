@@ -8,6 +8,7 @@ using ...Command.ReconstructSingleMast
 using ...Command.TrainMesoModel
 using ...Command.ReconstructMeso
 using ...Command.RepresentativeYearCalibration
+using ...Command.WtTimeSeries
 
 export execute
 
@@ -45,6 +46,9 @@ function execute(dir::String)
     
     println("\n6. Calibrating to representative year...")
     RepresentativeYearCalibration.execute(dir)
+
+    println("\n7. Producing MeteoDyn WT time series data...")
+    WtTimeSeries.execute(dir)
     
     println("\nComplete processing pipeline finished successfully!")
 end
