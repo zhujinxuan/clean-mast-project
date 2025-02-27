@@ -1,5 +1,9 @@
 ﻿Mast:
   data_path: nrg-data.txt  # Path to data file (relative to config.yaml)
+  delim: "\t"
+  skip_to: 
+    - "/^Data/"
+    - "/^Timestamp/"
   sensor: "nrg"
   rules:
     - name: "High Wind Speed Layer Difference"
@@ -65,32 +69,18 @@
       icing:
         time_range: 7200
         max_change: 0.02
+    - name: "Icing WD Detection"
+      sensorType: "WindDirection"
+      height:
+        min: null
+        max: null
+      icing:
+        time_range: 7200
+        max_change: 1
 Meso:
   data_path: era5.txt
-  sensor:
-    format:
-      column_format: "{sensorType}_{height}m [{unit}]"
-      timestamp_column: "Date/time"
-      timestamp_format: "yyyy-mm-dd HH:MM:SS"
-      delim: "\t"
-      skip_to: ["Date/time"]
-    mappings:
-     - match:
-         sensorType: Speed
-       rule:
-         sensorType: WindSpeed
-         unit: m/s
-         statType: avg
-     - match:
-         sensorType: Direction
-       rule:
-         sensorType: WindDirection
-         unit: deg
-         statType: avg
-
+  sensor: "freemeso-meso"
 Analysis:
   time_range:
     min: null
     max: null
-  target_height: null
-  ti_target_height: null
