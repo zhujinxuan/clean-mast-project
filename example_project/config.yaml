@@ -1,9 +1,5 @@
 ﻿Mast:
   data_path: nrg-data.txt  # Path to data file (relative to config.yaml)
-  delim: "\t"
-  skip_to: 
-    - "/^Data/"
-    - "/^Timestamp/"
   sensor: "nrg"
   rules:
     - name: "High Wind Speed Layer Difference"

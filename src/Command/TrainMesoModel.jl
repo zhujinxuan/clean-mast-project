@@ -30,7 +30,6 @@ export execute
 """
     save_model(project_dir::String, 
               model::Union{SectorizedRegressionModel, DirectionOffsetModel}, 
-              mast_id::String, 
               source_type::String, 
               source_id::String)
 
@@ -39,13 +38,11 @@ Save a trained model to both JLD2 and CSV formats following the specified direct
 # Arguments
 - `project_dir::String`: The project directory to save models in
 - `model`: The trained model to save
-- `mast_id`: Identifier for the target mast
 - `source_type`: Type of source data (e.g., "meso")
 - `source_id`: Identifier for the source (e.g., "era5")
 """
 function save_model(project_dir::String,
                    model::Union{SectorizedRegressionModel, DirectionOffsetModel}, 
-                   mast_id::String, 
                    source_type::String, 
                    source_id::String)
     # Determine base directory based on model type
@@ -60,7 +57,7 @@ function save_model(project_dir::String,
     mkpath(model_dir)
     
     # Generate base filename
-    base_filename = "$(mast_id)_$(source_type)_$(source_id)"
+    base_filename = "_$(source_type)_$(source_id)"
     
     # Save JLD2 file
     jld2_path = joinpath(model_dir, "$(base_filename).jld2")
@@ -114,7 +111,6 @@ function execute(dir::String)
     
     
     # Extract mast ID from config or use default
-    mast_id = basename(dir)
     
     # Train models
     println("\nTraining mesoscale reference models...")
@@ -122,17 +118,17 @@ function execute(dir::String)
     # Train 16-sector wind speed model
     println("Training 16-sector wind speed model...")
     model_16sector = train_meso_windspeed_sectorized(mast_ts, meso_ts, "16-sector")
-    save_model(dir, model_16sector, mast_id, "meso", "era5")
+    save_model(dir, model_16sector, "meso", "era5")
     
     # Train 1-sector wind speed model
     println("Training 1-sector wind speed model...")
     model_1sector = train_meso_windspeed_sectorized(mast_ts, meso_ts, "1-sector")
-    save_model(dir,model_1sector, mast_id, "meso", "era5")
+    save_model(dir,model_1sector, "meso", "era5")
     
     # Train direction offset model
     println("Training direction offset model...")
     model_direction = train_meso_winddirection_directionoffset(mast_ts, meso_ts)
-    save_model(dir, model_direction, mast_id, "meso", "era5")
+    save_model(dir, model_direction, "meso", "era5")
     
     println("\nModel training completed:")
     println("- Saved models under models/windspeed/16-sectors/")
