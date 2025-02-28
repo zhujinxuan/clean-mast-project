@@ -156,7 +156,7 @@ export SensorMetadata
 function parse_datetime(value::String)::Union{DateTime, Nothing}
     try
         if length(value) <= 10  # Format: "2024-11-20"
-            DateTime(Date(value))
+            DateTime(value, dateformat"yyyy-mm-dd")
         else  # Format: "2024-11-20 23:59:59"
             DateTime(value, dateformat"yyyy-mm-dd HH:MM:SS")
         end
@@ -193,8 +193,8 @@ end
 
 function to_dict(tr::ConfigTimeRange)::Dict{String, Any}
     Dict(
-        "min" => tr.min,
-        "max" => tr.max
+        "min" => tr.min isa DateTime ? Dates.format(tr.min, "yyyy-mm-dd HH:MM:SS") : tr.min,
+        "max" => tr.max isa DateTime ? Dates.format(tr.max, "yyyy-mm-dd HH:MM:SS") : tr.max
     )
 end
 
