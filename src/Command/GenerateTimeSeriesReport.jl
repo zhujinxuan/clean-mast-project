@@ -71,6 +71,7 @@ function generate_typst_report(project_dir::String)
         - Daily wind speed patterns (24-hour)
         - Vertical wind speed profiles
         - Monthly wind speed patterns
+        - Weibull distribution analysis
         
         The analysis is performed on different data sources:
         
@@ -176,6 +177,99 @@ function generate_typst_report(project_dir::String)
                     The raw data for this analysis is available in the CSV file: `$(csv_file)`
                     
                     """)
+                end
+            end
+            
+            # Add Weibull analysis section if it exists
+            weibull_dir = joinpath(ts_dir, "weibull")
+            if isdir(weibull_dir)
+                write(io, """
+                
+                == Weibull Distribution Analysis
+                
+                The Weibull distribution is commonly used to characterize wind speed distributions.
+                The following analysis shows the fitted Weibull distributions at different heights.
+                
+                === Weibull Parameters
+                
+                The table below shows the Weibull shape (k) and scale (c) parameters at each height:
+                
+                """)
+                
+                # Add Weibull parameters table
+                params_file = joinpath(ts_type, "weibull", "weibull_parameters.csv")
+                if isfile(joinpath(project_dir, "analysis", params_file))
+                    write(io, """
+                    #let data = csv("$(params_file)")
+                    
+                    // Set up table formatting
+                    #set table(inset: 10pt)
+                    
+                    #figure(
+                      table(
+                        columns: data.at(0).len(),
+                        align: center,
+                        // Header row with bold formatting
+                        ..data.at(0).map(cell => [*#cell*]),
+                        
+                        // Data rows with number formatting to 2 decimal places
+                        ..data.slice(1).flatten().map(cell => {
+                          if type(cell) == "string" and cell.match(regex("^-?[0-9]+\\\\.[0-9]+\$")) != none {
+                            // Convert to number and format to 2 decimal places using floor(x*100)/100
+                            let num = float(cell)
+                            let formatted = calc.floor(num * 100) / 100
+                            [#formatted]
+                          } else {
+                            [#cell]
+                          }
+                        })
+                      ),
+                      caption: [Weibull distribution parameters for $(descriptions[ts_type])]
+                    )
+                    
+                    """)
+                end
+                
+                # Add Weibull distribution plots
+                write(io, """
+                
+                === Weibull Distribution Plots
+                
+                The following plots show the wind speed frequency distributions and fitted Weibull curves at each height:
+                
+                """)
+                
+                # Find all Weibull SVG files
+                weibull_svgs = filter(f -> endswith(f, ".svg"), readdir(weibull_dir))
+                
+                # Sort by height (extract height from filename)
+                sort!(weibull_svgs, by = f -> begin
+                    m = match(r"weibull_(\d+)m\.svg", f)
+                    m === nothing ? 0 : parse(Int, m[1])
+                end)
+                
+                # Add each SVG to the document
+                for svg_file in weibull_svgs
+                    # Skip the parameters file
+                    if svg_file == "weibull_parameters.svg"
+                        continue
+                    end
+                    
+                    # Extract height from filename
+                    height_match = match(r"weibull_(\d+)m\.svg", svg_file)
+                    if height_match !== nothing
+                        height = height_match[1]
+                        
+                        # Add the figure
+                        rel_path = joinpath(ts_type, "weibull", svg_file)
+                        write(io, """
+                        #figure(
+                          image("$(rel_path)", width: 80%),
+                          caption: [Weibull distribution at $(height)m for $(descriptions[ts_type])],
+                        )
+                        
+                        """)
+                    end
                 end
             end
         end

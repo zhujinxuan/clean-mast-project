@@ -12,6 +12,10 @@ using StatsBase
 
 import ..Types.MastTimeSeries: TimeSeriesData, SensorColumn
 
+# Include Weibull module
+include("AnalyzeTimeSeries/Weibull.jl")
+import .Weibull: analyze_weibull_distribution
+
 """
 Generate time series plot of wind speeds at all heights
 """
@@ -198,9 +202,11 @@ function analyze_all(data::TimeSeriesData, output_dir::String)
     analyze_daily_pattern(data, output_dir)
     analyze_vertical_profile(data, output_dir)
     analyze_monthly_pattern(data, output_dir)
+    analyze_weibull_distribution(data, joinpath(output_dir, "weibull"))
 end
 
 export analyze_all, analyze_wind_speed_timeseries,
-       analyze_daily_pattern, analyze_vertical_profile, analyze_monthly_pattern
+       analyze_daily_pattern, analyze_vertical_profile, 
+       analyze_monthly_pattern, analyze_weibull_distribution
 
 end # module 
