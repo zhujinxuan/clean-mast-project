@@ -1,0 +1,54 @@
+sensor:
+  column_formats:
+    - "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
+    - "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}" 
+  timestamp_column: TimeStamp
+  timestamp_format: "yyyy/mm/dd HH:MM:SS"
+  delim: "\t"
+  skip_to: 
+    - "/^Data/"
+    - "/^TimeStamp/"
+  mappings:
+    - match:
+        sensorType: Anem
+      rule:
+        sensorType: WindSpeed
+        unit: m/s
+    - match:
+        sensorType: Vane
+      rule:
+        sensorType: WindDirection
+        unit: deg
+    - match:
+        statType: Avg
+      rule:
+        statType: avg
+    - match:
+        statType: Max
+      rule:
+        statType: max
+    - match:
+        statType: Min
+      rule:
+        statType: min
+    - match:
+        statType: SD
+      rule:
+        statType: sd
+    - match:
+        sensorType: Analog
+        unit: C
+      rule:
+        sensorType: Temperature
+    - match:
+        sensorType: Analog
+        unit: C
+      rule:
+        sensorType: Temperature
+    - match:
+        sensorType: Analog
+        unit: hPa
+      rule:
+        sensorType: Pressure
+        unit: Pa
+        multiplier: 100.0

@@ -57,7 +57,7 @@ function generate_typst_report(project_dir::String)
         
         #outline(
           title: [Table of Contents],
-          indent: true,
+          indent: 1em,
         )
         
         #pagebreak()
