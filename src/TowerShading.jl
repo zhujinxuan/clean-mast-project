@@ -59,39 +59,16 @@ function create_merged_sensor(
 )::SensorColumn
     base_sensor = stat_sensors[1]
     
-    # Create input dictionary from sensor fields
-    input = Dict{String, Any}(
-        "sensorType" => base_sensor.sensorType,
-        "height" => preferred_height,
-        "statType" => base_sensor.statType,
-        "unit" => base_sensor.unit,
-        "sensorDirection" => "N/A"
-    )
-    
-    # Extract channel from original name
-    m = match(r"Ch(\d+)", String(base_sensor.columnName))
-    if !isnothing(m)
-        input["channel"] = m.captures[1]
-    end
-    
-    # Generate new name using format
-    new_name = base_sensor.columnFormat
-    for (key, value) in input
-        new_name = replace(new_name, "{$key}" => (key == "height" && floor(value) == value) ? Int64(value) : value)
-    end
-    
-    # Replace any remaining placeholders with "TS"
-    new_name = replace(new_name, r"\{[^}]+\}" => "TS")
-    
+    # Generate new name using the new format {sensorType}_{height}m_{statType}_{unit}
+    new_name = "$(base_sensor.sensorType)_$(Int(preferred_height))m_$(base_sensor.statType)_$(base_sensor.unit)"
+
     return SensorColumn(
         Symbol(new_name),            # columnName
-        base_sensor.columnFormat,    # columnFormat
         base_sensor.sensorType,      # sensorType
         "N/A",                       # sensorDirection
         preferred_height,            # height
         base_sensor.statType,        # statType
-        base_sensor.unit,            # unit
-        originalColumnName=base_sensor.columnName  # originalColumnName from first sensor
+        base_sensor.unit             # unit
     )
 end
 

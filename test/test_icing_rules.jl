@@ -22,8 +22,8 @@ using CleanMastProject.CleanMastRules.ProcessIcing
             )
         ),
         [
-            SensorColumn(:speed_100m, "speed_100m", "WindSpeed", "", 100.0, "avg", "m/s"),
-            SensorColumn(:speed_80m, "speed_80m", "WindSpeed", "", 80.0, "avg", "m/s")
+            SensorColumn(:speed_100m, "WindSpeed", "", 100.0, "avg", "m/s"),
+            SensorColumn(:speed_80m, "WindSpeed", "", 80.0, "avg", "m/s")
         ]
     )
 

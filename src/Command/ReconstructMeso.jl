@@ -1,32 +1,18 @@
 module ReconstructMeso
 
-using CSV, YAML, DataFrames, JLD2
+using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, TimeRange
-using ...MastTimeSeries: read_meso_data
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...Types.Utils: from_dict, to_dict, show_as_dataframe
 using ...Types.MastReferenceModel: ReconstructionPayload
-using ...MergeReconstructMeso: merge_reconstruct_meso
+using ...ReconstructMeso: merge_reconstruct_meso
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel
 using ...TimeSeriesProcessing.TimeRangeProcessor: calculate_reconstruction_time_range
+using ..TrainMesoModel: load_model
 
 export execute
-
-"""
-    load_model(model_path::String, model_type::Type{T})::T where T
-
-Load a trained model from a JLD2 file.
-"""
-function load_model(model_path::String, model_type::Type{T})::T where T
-    if !isfile(model_path)
-        error("Model file not found: $model_path")
-    end
-    jldopen(model_path, "r") do file
-        file["model"]::model_type
-    end
-end
 
 function execute(dir::String)
     # Parse config
@@ -53,8 +39,24 @@ function execute(dir::String)
     mast_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_yaml["sensors"]]
     mast_ts = TimeSeriesData(mast_df, mast_sensors)
     
-    # Read meso data
-    meso_ts = read_meso_data(config, dir)
+    # Read meso data from raw files
+    meso_filename = "raw.$(config.meso.data_path).csv"
+    meso_filepath = joinpath(dir, meso_filename)
+    if !isfile(meso_filepath)
+        error("Raw meso data file not found: $meso_filepath. Please run process-sensors first.")
+    end
+    
+    # Read meso sensors from raw.{data_path}.sensors.yaml
+    meso_sensors_filepath = joinpath(dir, "raw.$(config.meso.data_path).sensors.yaml")
+    if !isfile(meso_sensors_filepath)
+        error("Raw meso sensors file not found: $meso_sensors_filepath. Please run process-sensors first.")
+    end
+    
+    # Read meso data and sensors
+    meso_df = CSV.read(meso_filepath, DataFrame)
+    meso_sensors_yaml = YAML.load_file(meso_sensors_filepath)
+    meso_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in meso_sensors_yaml["sensors"]]
+    meso_ts = TimeSeriesData(meso_df, meso_sensors)
     
     # Get time range from config or use full range
     time_range = calculate_reconstruction_time_range(mast_ts, config.analysis.time_range)
@@ -64,14 +66,12 @@ function execute(dir::String)
     
     # Load and apply 1-sector wind speed model
     println("Reconstructing wind speeds using 1-sector model...")
-    model_1sector_path = joinpath(dir, "models", "windspeed", "1-sector", "_meso_era5.jld2")
-    model_1sector = load_model(model_1sector_path, SectorizedRegressionModel)
+    model_1sector = load_model(dir, SectorizedRegressionModel, "1-sector", "meso", "era5")
     mast_payload = merge_reconstruct_meso(mast_payload, meso_ts, model_1sector, time_range)
     
     # Load and apply direction offset model
     println("Reconstructing wind directions using constant offset model...")
-    model_direction_path = joinpath(dir, "models", "winddirection", "constant-direction-offset", "_meso_era5.jld2")
-    model_direction = load_model(model_direction_path, DirectionOffsetModel)
+    model_direction = load_model(dir, DirectionOffsetModel, "constant-direction-offset", "meso", "era5")
     mast_payload = merge_reconstruct_meso(mast_payload, meso_ts, model_direction, time_range)
     
     # Save reconstructed data

@@ -15,14 +15,14 @@ using CleanMastProject.WindDirectionModels.DirectionOffsetTraining: train
     
     # Create mast sensors
     mast_sensors = [
-        SensorColumn(Symbol("dir_40m"), "test_format", "WindDirection", "none", 40.0, "avg", "deg"),
-        SensorColumn(Symbol("dir_30m"), "test_format", "WindDirection", "none", 30.0, "avg", "deg")
+        SensorColumn(Symbol("dir_40m"), "WindDirection", "none", 40.0, "avg", "deg"),
+        SensorColumn(Symbol("dir_30m"), "WindDirection", "none", 30.0, "avg", "deg")
     ]
     
     # Create meso sensors
     meso_sensors = [
-        SensorColumn(Symbol("dir_50m"), "test_format", "WindDirection", "none", 50.0, "avg", "deg"),
-        SensorColumn(Symbol("dir_35m"), "test_format", "WindDirection", "none", 35.0, "avg", "deg")
+        SensorColumn(Symbol("dir_50m"), "WindDirection", "none", 50.0, "avg", "deg"),
+        SensorColumn(Symbol("dir_35m"), "WindDirection", "none", 35.0, "avg", "deg")
     ]
     
     @testset "Basic Training" begin

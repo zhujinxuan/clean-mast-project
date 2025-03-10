@@ -25,8 +25,8 @@ function runtests()
         )
         
         sensors = [
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
         ]
         
         ts = TimeSeriesData(df, sensors)

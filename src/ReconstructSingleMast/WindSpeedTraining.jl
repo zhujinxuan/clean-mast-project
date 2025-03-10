@@ -4,6 +4,7 @@ using DataFrames
 using Statistics
 using Dates
 using ...Types.ReconstructSingleMast
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...MastTimeSeries
 using ...Types.CleanMastConfig
 

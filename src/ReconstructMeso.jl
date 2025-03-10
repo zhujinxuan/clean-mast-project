@@ -1,10 +1,10 @@
 """
-    MergeReconstructMeso.jl
+    ReconstructMeso.jl
 
 Module for merging reconstructed mesoscale data with mast data, handling both wind speed
 and direction reconstructions.
 """
-module MergeReconstructMeso
+module ReconstructMeso
 
 using DataFrames
 using Dates

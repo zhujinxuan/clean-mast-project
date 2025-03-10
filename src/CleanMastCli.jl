@@ -11,8 +11,8 @@ Comonicon.@cast module Project
     using Comonicon
     using CleanMastProject.Command.QuickStart
     using CleanMastProject.Command.CheckConfig
-    using CleanMastProject.Command.CheckSensors
     using CleanMastProject.Command.CleanFiles
+    using CleanMastProject.Command.ParseSensors
 
     """
     init
@@ -39,18 +39,6 @@ Comonicon.@cast module Project
     end
 
     """
-    check-sensors
-
-    List detected sensors and metadata.
-
-    # Arguments
-    - `dir`: Project directory containing config.yaml
-    """
-    Comonicon.@cast function check_sensors(dir::String)
-        CheckSensors.execute(dir)
-    end
-
-    """
     clean-files
 
     Archive non-essential files.
@@ -60,6 +48,19 @@ Comonicon.@cast module Project
     """
     Comonicon.@cast function clean_files(dir::String)
         CleanFiles.execute(dir)
+    end
+
+    """
+    parse-sensors
+
+    Process sensors for both mast and meso data.
+    Creates raw data files and sensor metadata files.
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+    """
+    Comonicon.@cast function parse_sensors(dir::String)
+        ParseSensors.execute(dir)
     end
 end
 

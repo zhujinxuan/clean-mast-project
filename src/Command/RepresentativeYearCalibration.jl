@@ -1,30 +1,15 @@
 module RepresentativeYearCalibration
 
-using CSV, YAML, DataFrames, JLD2
+using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
-using ...Types.Utils: show_as_dataframe
 using ...CleanMastConfig
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, TimeRange
-using ...RepresentativeYear: calibrate_to_representative_year
-using ...MastTimeSeries: read_meso_data
 using ...Types.Utils: from_dict, to_dict
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
+using ...RepresentativeYear: calibrate_to_representative_year
+using ..TrainMesoModel: load_model
 
 export execute
-
-"""
-    load_model(model_path::String, model_type::Type{T})::T where T
-
-Load a trained model from a JLD2 file.
-"""
-function load_model(model_path::String, model_type::Type{T})::T where T
-    if !isfile(model_path)
-        error("Model file not found: $model_path")
-    end
-    jldopen(model_path, "r") do file
-        file["model"]::model_type
-    end
-end
 
 function execute(dir::String)
     config = parse_config(dir)
@@ -51,13 +36,28 @@ function execute(dir::String)
                       sensors_yaml["sensors"])
     mast_ts = TimeSeriesData(mast_df, mast_sensors)
     
-    # Read meso data
-    meso_ts = read_meso_data(config, dir)
+    # Read meso data from raw files
+    meso_filename = "raw.$(config.meso.data_path).csv"
+    meso_filepath = joinpath(dir, meso_filename)
+    if !isfile(meso_filepath)
+        error("Raw meso data file not found: $meso_filepath. Please run process-sensors first.")
+    end
+    
+    # Read meso sensors from raw.{data_path}.sensors.yaml
+    meso_sensors_filepath = joinpath(dir, "raw.$(config.meso.data_path).sensors.yaml")
+    if !isfile(meso_sensors_filepath)
+        error("Raw meso sensors file not found: $meso_sensors_filepath. Please run process-sensors first.")
+    end
+    
+    # Read meso data and sensors
+    meso_df = CSV.read(meso_filepath, DataFrame)
+    meso_sensors_yaml = YAML.load_file(meso_sensors_filepath)
+    meso_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in meso_sensors_yaml["sensors"]]
+    meso_ts = TimeSeriesData(meso_df, meso_sensors)
     
     # Load 16-sector wind speed model
     println("Loading 16-sector model...")
-    model_16sector_path = joinpath(dir, "models", "windspeed", "16-sector", "_meso_era5.jld2")
-    model_16sector = load_model(model_16sector_path, SectorizedRegressionModel)
+    model_16sector = load_model(dir, SectorizedRegressionModel, "16-sector", "meso", "era5")
     
     # Get training time range from config
     time_range = TimeRange(
@@ -70,39 +70,23 @@ function execute(dir::String)
     
     # Perform calibration
     println("Performing representative year calibration for $(target_height)m wind speed...")
-    calibrated_ts, calibration_results = calibrate_to_representative_year(
-        mast_ts, 
-        meso_ts, 
-        time_range,
-        model_16sector;
-        target_height=target_height
-    )
+    result, _ = calibrate_to_representative_year(mast_ts, meso_ts, time_range, model_16sector, target_height=target_height)
     
     # Save calibrated data
     output_filename = "rep_year_calibration.$(original_filename).csv"
-    CSV.write(joinpath(dir, output_filename), calibrated_ts.df)
+    CSV.write(joinpath(dir, output_filename), result.df)
     
-    # Save sensors to YAML
+    # Save updated sensors to YAML
     sensors_yaml = Dict(
-        "sensors" => [
-            to_dict(s) for s in calibrated_ts.sensors
-        ]
+        "sensors" => map(to_dict, result.sensors)
     )
-    
     open(joinpath(dir, "rep_year_calibration-sensors.yaml"), "w") do io
         YAML.write(io, sensors_yaml)
-    end
-
-    if (calibration_results !== nothing)
-        df = show_as_dataframe(calibration_results)
-        output_calibration_filename = "synthetic-rep_year_calibration.$(original_filename).csv"
-        CSV.write(joinpath(dir, "process-stats", output_calibration_filename), df)
-        println("- Saved calibration parameters to $(output_calibration_filename)")
     end
     
     println("\nRepresentative year calibration completed:")
     println("- Saved calibrated data to $(output_filename)")
-    println("- Saved sensors to rep_year_calibration-sensors.yaml")
+    println("- Saved updated sensors to rep_year_calibration-sensors.yaml")
 end
 
 end 

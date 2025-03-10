@@ -34,6 +34,9 @@ export Types
 include("./SensorFormats.jl")
 export SensorFormats
 
+include("./SensorParser.jl")
+export SensorParser
+
 include("./CleanMastConfig.jl");
 export CleanMastConfig
 
@@ -85,8 +88,8 @@ export WindDirectionModels
 
 include("./TrainMeso.jl")
 export TrainMeso
-include("./MergeReconstructMeso.jl")
-export MergeReconstructMeso
+include("./ReconstructMeso.jl")
+export ReconstructMeso
 
 include("./RepresentativeYear.jl")
 export RepresentativeYear
@@ -99,7 +102,7 @@ export AnalyzeTimeSeries
 
 module Command
   include("./Command/CheckConfig.jl")
-  include("./Command/CheckSensors.jl")
+  include("./Command/ParseSensors.jl")
   include("./Command/CleanData.jl")
   include("./Command/CleanFiles.jl")
   include("./Command/TowerShading.jl")
@@ -113,7 +116,7 @@ module Command
   include("./Command/WtTimeSeries.jl")
   include("./Command/ProcessAll.jl")
   include("./Command/GenerateTimeSeriesReport.jl")
-  export CheckConfig, CheckSensors, CleanData, CleanFiles, TowerShading, 
+  export CheckConfig, ParseSensors, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
          TurbulenceIntensity, QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
          GenerateTimeSeriesReport

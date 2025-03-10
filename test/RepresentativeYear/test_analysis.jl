@@ -41,10 +41,10 @@ function generate_test_data_for_integration_test(;
 
     # Create sensors
     mast_sensors = [
-        SensorColumn(:ws_120m, "ws_120m", "WindSpeed", "N", 120.0, "avg", "m/s"),
-        SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-        SensorColumn(:wd_120m, "wd_120m", "WindDirection", "N", 120.0, "avg", "deg"),
-        SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
+        SensorColumn(:ws_120m, "WindSpeed", "N", 120.0, "avg", "m/s"),
+        SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(:wd_120m, "WindDirection", "N", 120.0, "avg", "deg"),
+        SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
     ]
     mast_ts = TimeSeriesData(mast_df, mast_sensors)
 
@@ -59,8 +59,8 @@ function generate_test_data_for_integration_test(;
     meso_ws[year.(meso_timestamp) .== 2023] .+= 2.0
 
     meso_sensors = [
-        SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-        SensorColumn(:wd_100m, "wd_100m", "WindDirection", "N", 100.0, "avg", "deg")
+        SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+        SensorColumn(:wd_100m, "WindDirection", "N", 100.0, "avg", "deg")
     ]
     meso_df = DataFrame(
         timestamp = meso_timestamp,
@@ -112,15 +112,15 @@ function generate_test_data(;
     
     # Create sensors
     mast_sensors = [
-        SensorColumn(:ws_120m, "ws_120m", "WindSpeed", "N", 120.0, "avg", "m/s"),
-        SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-        SensorColumn(:wd_120m, "wd_120m", "WindDirection", "N", 120.0, "avg", "deg"),
-        SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
+        SensorColumn(:ws_120m, "WindSpeed", "N", 120.0, "avg", "m/s"),
+        SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(:wd_120m, "WindDirection", "N", 120.0, "avg", "deg"),
+        SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
     ]
     
     meso_sensors = [
-        SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-        SensorColumn(:wd_100m, "wd_100m", "WindDirection", "N", 100.0, "avg", "deg")
+        SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+        SensorColumn(:wd_100m, "WindDirection", "N", 100.0, "avg", "deg")
     ]
     
     return TimeSeriesData(mast_df, mast_sensors), TimeSeriesData(meso_df, meso_sensors)
@@ -137,7 +137,7 @@ end
         # Test with no matching sensors
         temp_only_ts = TimeSeriesData(
             DataFrame(timestamp = [DateTime(2024,1,1)], temp = [20.0]),
-            [SensorColumn(:temp, "temp", "Temperature", "N", 80.0, "avg", "C")]
+            [SensorColumn(:temp, "Temperature", "N", 80.0, "avg", "C")]
         )
         @test isnothing(find_target_mast_sensor(temp_only_ts, 80.0))
     end
@@ -180,8 +180,8 @@ end
             wd_80m = fill(180.0, length(timestamps_10min))
         )
         sensors = [
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
         ]
         ts_10min = TimeSeriesData(df_10min, sensors)
         
@@ -208,8 +208,8 @@ end
         )
         
         test_sensors = [
-            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s")
+            SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s")
         ]
         
         test_ts = TimeSeriesData(test_df, test_sensors)
@@ -238,9 +238,9 @@ end
                 ws_120m = [12.0]
             ),
             [
-                SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-                SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-                SensorColumn(:ws_120m, "ws_120m", "WindSpeed", "N", 120.0, "avg", "m/s")
+                SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+                SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+                SensorColumn(:ws_120m, "WindSpeed", "N", 120.0, "avg", "m/s")
             ]
         )
         @test find_target_meso_sensor(multi_sensor_meso, 120.0).height == 120.0
@@ -249,7 +249,7 @@ end
         # Test with no matching sensors
         temp_only_ts = TimeSeriesData(
             DataFrame(timestamp = [DateTime(2024,1,1)], temp = [20.0]),
-            [SensorColumn(:temp, "temp", "Temperature", "N", 80.0, "avg", "C")]
+            [SensorColumn(:temp, "Temperature", "N", 80.0, "avg", "C")]
         )
         @test isnothing(find_target_meso_sensor(temp_only_ts, 80.0))
     end
@@ -271,14 +271,14 @@ end
         )
         
         test_sensors = [
-            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:ws_60m, "ws_60m", "WindSpeed", "N", 60.0, "avg", "m/s")
+            SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:ws_60m, "WindSpeed", "N", 60.0, "avg", "m/s")
         ]
         
         meso_sensors = [
-            SensorColumn(:ws_100m, "ws_100m", "WindSpeed", "N", 100.0, "avg", "m/s"),
-            SensorColumn(:wd_100m, "wd_100m", "WindDirection", "N", 100.0, "avg", "deg")
+            SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+            SensorColumn(:wd_100m, "WindDirection", "N", 100.0, "avg", "deg")
         ]
         
         test_ts = TimeSeriesData(test_df, test_sensors)

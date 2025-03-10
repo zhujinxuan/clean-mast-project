@@ -15,6 +15,7 @@ using Dates
 using ...Types.CleanRules
 using ...Types.Sector: abs_degree_diff
 using ..ProcessTypes
+using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...MastTimeSeries
 
 struct LayerComparison

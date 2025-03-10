@@ -39,12 +39,12 @@ end
 
 function create_test_sensors()::Vector{SensorColumn}
     return [
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "avg", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_60m_270_avg_m/s")),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "avg", "m/s", originalColumnName=Symbol("Ch2_WindSpeed_60m_90_avg_m/s")),
-        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 60.0, "sd", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_60m_270_sd_m/s")),
-        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "90", 60.0, "sd", "m/s", originalColumnName=Symbol("Ch2_WindSpeed_60m_90_sd_m/s")),
-        SensorColumn(Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "WindSpeed", "270", 40.0, "avg", "m/s", originalColumnName=Symbol("Ch1_WindSpeed_40m_270_avg_m/s")),
-        SensorColumn(Symbol("Ch1_Temperature_60m_N/A_avg_C"), "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}", "Temperature", "N/A", 60.0, "avg", "C", originalColumnName=Symbol("Ch1_Temperature_60m_N/A_avg_C"))
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "WindSpeed", "270", 60.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_avg_m/s"), "WindSpeed", "90", 60.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch1_WindSpeed_60m_270_sd_m/s"), "WindSpeed", "270", 60.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch2_WindSpeed_60m_90_sd_m/s"), "WindSpeed", "90", 60.0, "sd", "m/s"),
+        SensorColumn(Symbol("Ch1_WindSpeed_40m_270_avg_m/s"), "WindSpeed", "270", 40.0, "avg", "m/s"),
+        SensorColumn(Symbol("Ch1_Temperature_60m_N/A_avg_C"), "Temperature", "N/A", 60.0, "avg", "C")
     ]
 end
 
@@ -129,9 +129,7 @@ end
             stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg", sensors)
             new_sensor = TowerShading.create_merged_sensor(stat_sensors, 60.0)
             
-            @test new_sensor.columnName == Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")
-            @test new_sensor.originalColumnName == stat_sensors[1].columnName
-            @test new_sensor.columnFormat == stat_sensors[1].columnFormat
+            @test new_sensor.columnName == Symbol("WindSpeed_60m_avg_m/s")
             @test new_sensor.sensorType == "WindSpeed"
             @test new_sensor.sensorDirection == "N/A"
             @test new_sensor.height == 60.0
@@ -157,15 +155,15 @@ end
             # Check that new columns were created
             merged_avg = filter(s -> s.statType == "avg" && s.height == 60.0 && s.sensorType == "WindSpeed", result.sensors)
             @test length(merged_avg) == 1
-            @test merged_avg[1].columnName == Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")
+            @test merged_avg[1].columnName == Symbol("WindSpeed_60m_avg_m/s")
             
             # Check that old columns were removed
             @test !(Symbol("Ch1_WindSpeed_60m_270_avg_m/s") in propertynames(result.df))
             @test !(Symbol("Ch2_WindSpeed_60m_90_avg_m/s") in propertynames(result.df))
             
             # Check that merged values are maximum of originals
-            @test result.df[1, Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")] == max(5.0, 4.5)
-            @test result.df[2, Symbol("Ch1_WindSpeed_60m_N/A_avg_m/s")] == max(6.0, 7.0)
+            @test result.df[1, Symbol("WindSpeed_60m_avg_m/s")] == max(5.0, 4.5)
+            @test result.df[2, Symbol("WindSpeed_60m_avg_m/s")] == max(6.0, 7.0)
         end
         
         @testset "sensor metadata" begin

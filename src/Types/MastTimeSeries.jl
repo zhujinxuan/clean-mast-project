@@ -4,7 +4,7 @@ using DataFrames
 using Dates
 import ..Types.Utils: from_dict, to_dict
 
-struct SensorColumn
+struct ParsedSensor
     columnName::Symbol
     originalColumnName::Symbol  # Track the original column name before unit transformation
     columnFormat::String       # Store the format used to create this column
@@ -15,7 +15,7 @@ struct SensorColumn
     unit::String
     multiplier::Union{Float64, Nothing}
     
-    function SensorColumn(columnName::Symbol, 
+    function ParsedSensor(columnName::Symbol, 
                          columnFormat::String,
                          sensorType::String, 
                          sensorDirection::String, 
@@ -27,12 +27,31 @@ struct SensorColumn
         new(columnName, originalColumnName, columnFormat, sensorType, sensorDirection, height, statType, unit, multiplier)
     end
 end
+struct SensorColumn
+    columnName::Symbol
+    sensorType::String
+    sensorDirection::String
+    height::Float64
+    statType::String
+    unit::String
+end
+
+function to_SensorColumn(parsed_sensor::ParsedSensor)::SensorColumn
+    return SensorColumn(
+        parsed_sensor.columnName,
+        parsed_sensor.sensorType,
+        parsed_sensor.sensorDirection,
+        parsed_sensor.height,
+        parsed_sensor.statType,
+        parsed_sensor.unit
+    )
+end
 
 """
 Find nearest height sensor of specified type in sensors list
 """
 function find_nearest_height_sensor(target_height::Float64, sensors::Vector{SensorColumn}, 
-                                  sensor_type::String, stat_type::String="avg")::Union{SensorColumn, Nothing}
+                                  sensor_type::String, stat_type::String="avg")::Union{SensorColumn, Nothing} 
     matching_sensors = filter(s -> s.sensorType == sensor_type && s.statType == stat_type, sensors)
     isempty(matching_sensors) && return nothing
     
@@ -56,11 +75,11 @@ end
 """
 Convert a dictionary to a SensorColumn
 """
-function from_dict(::Type{SensorColumn}, d::Dict{String, Any})::SensorColumn
+function from_dict(::Type{ParsedSensor}, d::Dict{String, Any})::ParsedSensor
     columnName = Symbol(d["columnName"])
     originalColumnName = get(d, "originalColumnName", columnName)
     columnFormat = get(d, "columnFormat", "")  # Default to empty string if not provided
-    SensorColumn(
+    ParsedSensor(
         columnName,
         columnFormat,
         d["sensorType"],
@@ -72,11 +91,21 @@ function from_dict(::Type{SensorColumn}, d::Dict{String, Any})::SensorColumn
         multiplier=get(d, "multiplier", nothing)
     )
 end
+function from_dict(::Type{SensorColumn}, d::Dict{String, Any})::SensorColumn
+    SensorColumn(
+        Symbol(d["columnName"]),
+        d["sensorType"],
+        d["sensorDirection"],
+        d["height"],
+        d["statType"],
+        d["unit"]
+    )
+end
 
 """
 Convert a SensorColumn to a dictionary
 """
-function to_dict(s::SensorColumn)::Dict{String, Any}
+function to_dict(s::ParsedSensor)::Dict{String, Any}
     Dict{String, Any}(
         "columnName" => String(s.columnName),
         "originalColumnName" => String(s.originalColumnName),
@@ -90,6 +119,17 @@ function to_dict(s::SensorColumn)::Dict{String, Any}
     )
 end
 
-export SensorColumn, TimeSeriesData
+function to_dict(s::SensorColumn)::Dict{String, Any}
+    Dict{String, Any}(
+        "columnName" => String(s.columnName),
+        "sensorType" => s.sensorType,
+        "sensorDirection" => s.sensorDirection,
+        "height" => s.height,
+        "statType" => s.statType,
+        "unit" => s.unit
+    )
+end
+
+export SensorColumn, TimeSeriesData, ParsedSensor
 
 end # module 

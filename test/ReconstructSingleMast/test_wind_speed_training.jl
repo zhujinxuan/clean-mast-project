@@ -66,8 +66,8 @@ function create_test_data()::TimeSeriesData
     df = generate_synthetic_wind_data()
 
     sensors = [
-      SensorColumn(Symbol("ws_$(Int(h))m"), "ws_$(Int(h))m", "WindSpeed", "N", h, "avg", "m/s")
-      for h in [50.0, 80.0, 100.0, 120.0, 160.0]
+        SensorColumn(Symbol("ws_$(Int(h))m"), "WindSpeed", "N", h, "avg", "m/s")
+        for h in [50.0, 80.0, 100.0, 120.0, 160.0]
     ]
 
     TimeSeriesData(df, sensors)

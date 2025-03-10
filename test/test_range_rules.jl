@@ -17,10 +17,10 @@ import CleanMastProject.CleanMastRules.ProcessRange
             dir_100m = [-10.0, 45.0, 180.0, 270.0, 370.0, missing]
         ),
         [
-            SensorColumn(:speed_100m, "speed_100m", "WindSpeed", "", 100.0, "avg", "m/s"),
-            SensorColumn(:speed_80m, "speed_80m", "WindSpeed", "", 80.0, "avg", "m/s"),
-            SensorColumn(:temp_80m, "temp_80m", "Temperature", "", 80.0, "avg", "C"),
-            SensorColumn(:dir_100m, "dir_100m", "WindDirection", "", 100.0, "avg", "deg")
+            SensorColumn(:speed_100m, "WindSpeed", "", 100.0, "avg", "m/s"),
+            SensorColumn(:speed_80m, "WindSpeed", "", 80.0, "avg", "m/s"),
+            SensorColumn(:temp_80m, "Temperature", "", 80.0, "avg", "C"),
+            SensorColumn(:dir_100m, "WindDirection", "", 100.0, "avg", "deg")
         ]
     )
 

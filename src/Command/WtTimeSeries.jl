@@ -5,7 +5,6 @@ using ...Types.CleanMastConfig
 using ...Types.Utils: from_dict
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, find_nearest_height_sensor
 using ...CleanMastConfig
-using ...MastTimeSeries: read_mast_data
 
 export execute
 

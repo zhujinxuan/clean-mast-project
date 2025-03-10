@@ -24,8 +24,8 @@ function runtests()
         )
         
         sensors = [
-            SensorColumn(:ws_80m, "ws_80m", "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_80m, "wd_80m", "WindDirection", "N", 80.0, "avg", "deg")
+            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
+            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
         ]
         
         ts = TimeSeriesData(df, sensors)
@@ -47,7 +47,9 @@ function runtests()
             timestamp = [DateTime(2024,1,1), DateTime(2024,1,1,1)],
             wd_test = [350.0, 10.0]
         )
-        wd_test_sensors = [SensorColumn(:wd_test, "wd_test", "WindDirection", "N", 80.0, "avg", "deg")]
+        wd_test_sensors = [
+            SensorColumn(:wd_test, "WindDirection", "N", 80.0, "avg", "deg")
+        ]
         wd_test_ts = TimeSeriesData(wd_test_df, wd_test_sensors)
         
         mid_timestamps = [DateTime(2024,1,1) + Minute(30)]
