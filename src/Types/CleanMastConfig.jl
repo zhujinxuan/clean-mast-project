@@ -106,9 +106,9 @@ end
 struct SensorConfig
     column_formats::Vector{String}  # Multiple format patterns
     timestamp_column::String
-    timestamp_format::String
-    delim::Union{Nothing, String}
-    skip_to::Union{Int, Vector{String}}
+    timestamp_format::Union{String, Nothing}
+    delim::Union{String, Nothing}
+    skip_to::Union{Int64, Nothing}    # Modified to only accept Int or Nothing
     mappings::Vector{MappingRule}
 end
 export SensorConfig
@@ -239,9 +239,9 @@ function from_dict(::Type{SensorConfig}, d::Dict{String, Any})::SensorConfig
     SensorConfig(
         formats,
         d["timestamp_column"],
-        d["timestamp_format"],
+        get(d, "timestamp_format", nothing),
         get(d, "delim", nothing),
-        get(d, "skip_to", 1),
+        get(d, "skip_to", nothing),
         mappings
     )
 end

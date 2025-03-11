@@ -4,8 +4,6 @@ sensor:
   timestamp_column: "Date/time"
   timestamp_format: "yyyy-mm-dd HH:MM:SS"
   delim: "\t"
-  skip_to: 
-  - "Date/time"
   mappings:
     - match:
         sensorType: Speed

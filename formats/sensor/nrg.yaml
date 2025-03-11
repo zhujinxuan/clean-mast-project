@@ -3,11 +3,8 @@ sensor:
     - "Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"
     - "Ch{channel}_{sensorType}_{height}m_{statType}_{unit}" 
   timestamp_column: Timestamp
-  timestamp_format: "yyyy-mm-dd HH:MM:SS"
-  delim: "\t"
-  skip_to: 
-    - "/^Data/"
-    - "/^Timestamp/"
+  # timestamp_format: "yyyy-mm-dd HH:MM:SS"
+  # delim: "\t"
   mappings:
     - match:
         sensorType: Anem
