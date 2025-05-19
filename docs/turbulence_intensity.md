@@ -37,17 +37,27 @@ Turbulence intensity analysis is performed using both wind speed average and sta
 
 ## Output Files
 
-The analysis produces three output files:
+The analysis produces four output files:
 
 1. `turbulence_intensity.csv`
    - Contains sector-wise statistics
    - Columns: sector, mean speed, TI, standard deviation, occurrence
 
-2. `turbulence_intensity_report.csv`
-   - Summary statistics
-   - Contains: mast name, mean TI, representative TI, TI standard deviation
+2. `turbulence_intensity_by_wind_speed.csv`
+   - Contains TI statistics for each wind speed bin (1 m/s increments)
+   - Columns: wind_speed_min, wind_speed_max, mean_ti, std_ti, occurrence, representative_ti
+   - Useful for analyzing how TI varies with wind speed
 
-3. `meteodyn_ti.txt`
+3. `turbulence_intensity_report.csv`
+   - Summary statistics
+   - Contains: mast name, wind speed range, mean TI, representative TI, TI standard deviation
+   - Includes statistics for different wind speed ranges:
+     - All wind speeds
+     - Wind speeds > 3 m/s
+     - Wind speeds between 14.5 and 16.5 m/s
+     - Wind speeds between 9.5 and 10.5 m/s
+
+4. `meteodyn_ti.txt`
    - Formatted for Meteodyn WT input
    - Matrix of TI values by wind speed and direction sector
 

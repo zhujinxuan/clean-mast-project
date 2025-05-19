@@ -133,28 +133,115 @@ function calculate_ti_matrix(
 end
 
 """
+Calculate sector statistics for turbulence intensity with optional wind speed filtering
+
+# Arguments
+- `ti_df::DataFrame`: DataFrame with turbulence intensity time series
+- `min_ws::Union{Nothing, Float64}`: Minimum wind speed for filtering (optional)
+- `max_ws::Union{Nothing, Float64}`: Maximum wind speed for filtering (optional)
+
+# Returns
+- `TurbulenceSectorStats`: Statistics for the filtered data
+"""
+function calculate_filtered_sector_stats(
+    ti_df::DataFrame;
+    min_ws::Union{Nothing, Float64} = nothing,
+    max_ws::Union{Nothing, Float64} = nothing
+)::TurbulenceSectorStats
+    # Apply wind speed filtering if requested
+    filtered_df = ti_df
+    if !isnothing(min_ws) || !isnothing(max_ws)
+        filtered_df = filter(row -> begin
+            # Skip missing wind speeds
+            ismissing(row.ws_avg) && return false
+            
+            # Apply min filter if specified
+            if !isnothing(min_ws) && row.ws_avg < min_ws
+                return false
+            end
+            
+            # Apply max filter if specified
+            if !isnothing(max_ws) && row.ws_avg > max_ws
+                return false
+            end
+            
+            return true
+        end, ti_df)
+    end
+    
+    # Now use the standard sector stats calculation on filtered data
+    return calculate_sector_stats(filtered_df)
+end
+
+"""
+Calculate turbulence intensity statistics by wind speed bin
+
+# Arguments
+- `ti_df::DataFrame`: DataFrame with turbulence intensity time series
+- `wind_speed_bins::Vector{Float64}`: Wind speed bins for grouping
+
+# Returns
+- `DataFrame`: DataFrame with TI statistics for each wind speed bin
+"""
+function calculate_ti_by_wind_speed(
+    ti_df::DataFrame,
+    wind_speed_bins::Vector{Float64}
+)::DataFrame
+    # Create empty result DataFrame
+    result = DataFrame(
+        wind_speed_min = Float64[],
+        wind_speed_max = Float64[],
+        mean_ti = Float64[],
+        std_ti = Float64[],
+        occurrence = Int[],
+        representative_ti = Float64[]
+    )
+    
+    # Calculate stats for each wind speed bin
+    for (i, (min_speed, max_speed)) in enumerate(zip(wind_speed_bins[1:end-1], wind_speed_bins[2:end]))
+        # Filter data for this wind speed bin
+        bin_data = filter(row -> !ismissing(row.ws_avg) && min_speed ≤ row.ws_avg < max_speed, ti_df)
+        
+        # Skip bins with no data
+        if nrow(bin_data) == 0
+            continue
+        end
+        
+        # Calculate statistics
+        bin_mean_ti = mean(skipmissing(bin_data.ti))
+        bin_std_ti = nrow(bin_data) > 1 ? std(skipmissing(bin_data.ti)) : 0.0
+        bin_representative_ti = bin_mean_ti + bin_std_ti
+        
+        # Add row to results
+        push!(result, (
+            min_speed,
+            max_speed,
+            bin_mean_ti,
+            bin_std_ti,
+            nrow(bin_data),
+            bin_representative_ti
+        ))
+    end
+    
+    return result
+end
+
+"""
 Process turbulence intensity analysis
 
 # Arguments
-- `config::ProjectConfig`: Project configuration
 - `ts::TimeSeriesData`: Time series data
-- `wind_speed_bins::Vector{Float64}=DEFAULT_WIND_SPEED_BINS`: Optional wind speed bins
+- `target_height::Float64`: Target height to process
+- `wind_speed_bins::Vector{Float64}`: Optional wind speed bins
 
 # Returns
 - `TurbulenceResults`: Complete turbulence intensity analysis results
 """
 function process_turbulence_intensity(
-    config::ProjectConfig,
     ts::TimeSeriesData,
-    wind_speed_bins::Vector{Float64}=DEFAULT_WIND_SPEED_BINS
+    target_height::Float64,
+    wind_speed_bins::Vector{Float64}
 )::TurbulenceResults
-    # Determine target height
-    target_height = something(
-        config.analysis.ti_target_height,
-        config.analysis.target_height,
-        120.0
-    )
-    
     # Find required sensors
     ws_avg, ws_sd, wd = find_ti_sensors(ts, target_height)
     
@@ -175,7 +262,7 @@ function process_turbulence_intensity(
 end
 
 # Export all public functions
-export find_ti_sensors, calculate_ti_series, calculate_sector_stats, calculate_ti_matrix, 
-       process_turbulence_intensity, DEFAULT_WIND_SPEED_BINS
+export find_ti_sensors, calculate_ti_series, calculate_sector_stats, calculate_filtered_sector_stats, calculate_ti_matrix, 
+       calculate_ti_by_wind_speed, process_turbulence_intensity, DEFAULT_WIND_SPEED_BINS
 
 end

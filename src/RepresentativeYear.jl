@@ -2,7 +2,7 @@ module RepresentativeYear
 
 using Dates
 using DataFrames
-using ..Types.MastTimeSeries: TimeSeriesData, TimeRange
+using ..Types.MastTimeSeries: TimeSeriesData, TimeRange, SensorColumn
 using ..Types.RepresentativeYear: CalibrationResults, DirectionalCalibration
 using ..Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ..Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
@@ -11,6 +11,21 @@ using ..TimeSeriesProcessing.Interpolation: interpolate_timeseries
 include("./RepresentativeYear/Analysis.jl")
 using .Analysis
 
+function find_heighest_meso_sensor(meso_ts::TimeSeriesData)::Union{SensorColumn, Nothing}
+    # Filter sensors with statType = "avg" and sensorType = "WindSpeed"
+    avg_wind_speed_sensors = filter(sensor -> sensor.statType == "avg" && sensor.sensorType == "WindSpeed", meso_ts.sensors)
+    if isempty(avg_wind_speed_sensors)
+        return nothing
+    end
+    foldl(avg_wind_speed_sensors, init=first(avg_wind_speed_sensors)) do max_sensor, sensor
+        if (sensor.height > max_sensor.height)
+            sensor
+        else
+            max_sensor
+        end
+    end
+end
+
 """
 Main function to perform representative year calibration
 """
@@ -18,20 +33,12 @@ function calibrate_to_representative_year(
     mast_ts::TimeSeriesData,
     meso_ts::TimeSeriesData,
     mast_time_range::TimeRange,
-    sectorized_regression_model::SectorizedRegressionModel;
-    target_height::Float64=120.0  # Default to 120m
+    sectorized_regression_model::SectorizedRegressionModel
 )::Tuple{TimeSeriesData, Union{Nothing, CalibrationResults}}
-    # Find target sensors in both mast and meso data
-    mast_sensor = find_target_mast_sensor(mast_ts, target_height)
-    if isnothing(mast_sensor)
-        error("No suitable wind speed sensor found in mast data near height $(target_height)m")
+    meso_sensor = find_heighest_meso_sensor(meso_ts)
+    if (isnothing(meso_sensor))
+        error("No suitable meso wind speed sensor found")
     end
-
-    pair = find_pair_from_mast_sensor(sectorized_regression_model, mast_sensor)
-    if (isnothing(pair))
-        error("No suitable meso wind speed sensor found from pre-trained model")
-    end
-    meso_sensor = pair.meso_speed_sensor
 
     # Calculate mean speeds for meso sensor
     meso_full_mean = calculate_mean_speed(meso_ts, meso_sensor)

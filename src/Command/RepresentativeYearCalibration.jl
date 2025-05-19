@@ -65,12 +65,9 @@ function execute(dir::String)
         config.analysis.time_range.max isa Nothing ? maximum(mast_df.timestamp) : config.analysis.time_range.max
     )
     
-    # Get target height from config or use default
-    target_height = something(config.analysis.target_height, 120.0)
-    
     # Perform calibration
-    println("Performing representative year calibration for $(target_height)m wind speed...")
-    result, _ = calibrate_to_representative_year(mast_ts, meso_ts, time_range, model_16sector, target_height=target_height)
+    println("Performing representative year calibration for wind speed...")
+    result, _ = calibrate_to_representative_year(mast_ts, meso_ts, time_range, model_16sector)
     
     # Save calibrated data
     output_filename = "rep_year_calibration.$(original_filename).csv"

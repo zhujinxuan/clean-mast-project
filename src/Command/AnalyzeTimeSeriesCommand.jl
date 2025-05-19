@@ -1,7 +1,7 @@
 module AnalyzeTimeSeriesCommand
 
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.CleanMastConfig: ProjectConfig
+using ...Types.CleanMastConfig: ProjectConfig, AirDensityConfig
 using ...CleanMastConfig: parse_config
 using ...AnalyzeTimeSeries: analyze_all
 using CSV
@@ -67,7 +67,7 @@ function process_timeseries(project_dir::String, config::ProjectConfig, timeseri
     
     # Analyze data
     @info "Analyzing $timeseries_type"
-    analyze_all(time_series, output_dir)
+    analyze_all(time_series, output_dir, config.analysis.air_density)
     @info "Completed analysis for $timeseries_type"
 end
 

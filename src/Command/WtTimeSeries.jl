@@ -25,10 +25,24 @@ function execute(dir::String)
     # Parse the project configuration
     config = parse_config(dir)
     
-    # Get target height from config
-    target_height = something(config.analysis.target_height, 120.0)
-    println("Using target height: $(target_height)m")
+    # Determine which heights to process
+    target_heights = if !isempty(config.analysis.target_heights)
+        config.analysis.target_heights
+    else
+        error("No target_heights is given in config")
+    end
     
+    println("Processing WT time series for $(length(target_heights)) height(s):")
+    for height in target_heights
+        println("\nProcessing height: $(height)m")
+        process_single_height(dir, config, height)
+    end
+end
+
+"""
+Process WT time series for a single height
+"""
+function process_single_height(dir::String, config::ProjectConfig, target_height::Float64)
     # Read representative year data
     original_filename = config.mast.data_path
     rep_year_filename = "rep_year_calibration.$(original_filename).csv"
@@ -62,9 +76,9 @@ function execute(dir::String)
         error("No suitable WindDirection sensor found near height $(target_height)m")
     end
     
-    println("Selected sensors:")
-    println("- Wind Speed: $(wind_speed_sensor.columnName) ($(wind_speed_sensor.height)m)")
-    println("- Wind Direction: $(wind_dir_sensor.columnName) ($(wind_dir_sensor.height)m)")
+    println("- Selected sensors:")
+    println("  Wind Speed: $(wind_speed_sensor.columnName) ($(wind_speed_sensor.height)m)")
+    println("  Wind Direction: $(wind_dir_sensor.columnName) ($(wind_dir_sensor.height)m)")
     
     # Create a new DataFrame with only the required columns
     wt_df = DataFrame(
@@ -76,11 +90,11 @@ function execute(dir::String)
     # Format timestamp to yyyy-mm-dd HH:MM:ss
     wt_df.timestamp = Dates.format.(wt_df.timestamp, "yyyy-mm-dd HH:MM:ss")
     
-    # Save to CSV
-    output_filename = "wt-timeseries.$(original_filename).csv"
+    # Save to CSV with height included in filename
+    height_str = replace(string(target_height), "." => "_")  # Convert 120.0 to "120_0" for filename
+    output_filename = "wt-timeseries-$(height_str)m.$(original_filename).csv"
     CSV.write(joinpath(dir, output_filename), wt_df)
     
-    println("\nWind turbine time series processing completed:")
     println("- Saved wind turbine time series data to $(output_filename)")
 end
 

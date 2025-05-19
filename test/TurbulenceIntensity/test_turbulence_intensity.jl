@@ -18,7 +18,12 @@ function create_test_config(;
     data_path::String="data.csv"
 )::ProjectConfig
     time_range = ConfigTimeRange(nothing, nothing)
-    analysis_config = AnalysisConfig(time_range, target_height, ti_target_height)
+    
+    # Convert single values to vectors for the new AnalysisConfig structure
+    target_heights = isnothing(target_height) ? Float64[] : [target_height]
+    ti_target_heights = isnothing(ti_target_height) ? Float64[] : [ti_target_height]
+    
+    analysis_config = AnalysisConfig(time_range, target_heights, ti_target_heights)
     
     sensor_config = SensorConfig(
         ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"],

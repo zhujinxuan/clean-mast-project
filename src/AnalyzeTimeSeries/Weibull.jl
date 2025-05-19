@@ -148,8 +148,11 @@ function analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
         push!(results_df, (sensor.height, k, c, mean_speed))
         
         # Create histogram and fitted distribution
-        hist_data = fit(Histogram, valid_speeds, nbins=20)
-        bin_edges = hist_data.edges[1]
+        # Use 1 m/s bins instead of fixed number of bins
+        min_speed = floor(minimum(valid_speeds))
+        max_speed = ceil(maximum(valid_speeds))
+        bin_edges = min_speed:1.0:max_speed
+        hist_data = fit(Histogram, valid_speeds, bin_edges)
         bin_centers = [(bin_edges[i] + bin_edges[i+1])/2 for i in 1:length(bin_edges)-1]
         bin_widths = [bin_edges[i+1] - bin_edges[i] for i in 1:length(bin_edges)-1]
         

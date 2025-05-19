@@ -125,12 +125,18 @@ struct ConfigTimeRange
     max::Union{Nothing, DateTime}
 end
 
+struct AirDensityConfig
+    density :: Float64
+    reference_height :: Float64
+end
+export AirDensityConfig
+
 struct AnalysisConfig
     time_range::ConfigTimeRange
-    target_height::Union{Nothing, Float64}
-    ti_target_height::Union{Nothing, Float64}
+    target_heights::Vector{Float64}
+    ti_target_heights::Vector{Float64}
+    air_density :: AirDensityConfig
 end
-
 struct MesoConfig
     data_path::String
     sensor::SensorConfig
@@ -176,11 +182,69 @@ function from_dict(::Type{ConfigTimeRange}, dict::Dict{String, Any})::ConfigTime
     )
 end
 
+function from_dict(::Type{AirDensityConfig}, dict::Dict{String, Any})::AirDensityConfig
+    AirDensityConfig(
+        convert(Float64, get(dict, "density", 1.225)),  # Default to standard air density at sea level
+        convert(Float64, get(dict, "reference_height", 0.0))  # Default to sea level
+    )
+end
+
+function to_dict(adc::AirDensityConfig)::Dict{String, Any}
+    Dict{String, Any}(
+        "density" => adc.density,
+        "reference_height" => adc.reference_height
+    )
+end
+
 function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
+    # Extract target heights with fallback to singular field for backward compatibility
+    target_heights_value = if haskey(dict, "target_heights")
+        dict["target_heights"]
+    elseif haskey(dict, "target_height")
+        [dict["target_height"]]
+    else
+        nothing
+    end
+    
+    # Extract TI target heights with fallback to singular field for backward compatibility
+    ti_target_heights_value = if haskey(dict, "ti_target_heights")
+        dict["ti_target_heights"]
+    elseif haskey(dict, "ti_target_height")
+        [dict["ti_target_height"]]
+    else
+        nothing
+    end
+    
+    # Convert to Vector{Float64} or default to empty vector
+    target_heights = if target_heights_value isa Vector
+        [h isa Number ? convert(Float64, h) : h for h in target_heights_value if h !== nothing]
+    elseif target_heights_value isa Number
+        [convert(Float64, target_heights_value)]
+    else
+        Float64[]
+    end
+    
+    ti_target_heights = if ti_target_heights_value isa Vector
+        [h isa Number ? convert(Float64, h) : h for h in ti_target_heights_value if h !== nothing]
+    elseif ti_target_heights_value isa Number
+        [convert(Float64, ti_target_heights_value)]
+    else
+        Float64[]
+    end
+    
+    # Get air_density configuration
+    air_density_config = if haskey(dict, "air_density")
+        from_dict(AirDensityConfig, Dict{String, Any}(dict["air_density"]))
+    else
+        # Default values if not specified
+        AirDensityConfig(1.225, 0.0)
+    end
+    
     AnalysisConfig(
         from_dict(ConfigTimeRange, Dict{String, Any}(dict["time_range"])),
-        get(dict, "target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
-        get(dict, "ti_target_height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing
+        target_heights,
+        ti_target_heights,
+        air_density_config
     )
 end
 
@@ -201,8 +265,9 @@ end
 function to_dict(ac::AnalysisConfig)::Dict{String, Any}
     Dict(
         "time_range" => to_dict(ac.time_range),
-        "target_height" => ac.target_height,
-        "ti_target_height" => ac.ti_target_height
+        "target_heights" => ac.target_heights,
+        "ti_target_heights" => ac.ti_target_heights,
+        "air_density" => to_dict(ac.air_density)
     )
 end
 

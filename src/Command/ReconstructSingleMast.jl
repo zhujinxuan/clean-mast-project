@@ -57,7 +57,12 @@ function execute(dir::String)
         "successes" => reconstruction_results.successes,
         "failures" => reconstruction_results.failures
     )
-    open(joinpath(dir, "process-stats", "single-reconstruction.yaml"), "w") do io
+
+    # Ensure the process-stats directory exists
+    process_stats_dir = joinpath(dir, "process-stats")
+    mkpath(process_stats_dir)
+
+    open(joinpath(process_stats_dir, "single-reconstruction.yaml"), "w") do io
         YAML.write(io, reconstruction_dict)
     end
     
