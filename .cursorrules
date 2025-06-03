@@ -77,31 +77,23 @@
   ;; Visualization
   (visualization
     (rules
-      (gadfly-usage
-        "Use Gadfly.jl for grammar of graphics based plotting"
+      (aog-usage
+        "Use AlgebraOfGraphics.jl for grammar of graphics based plotting"
         "Leverage layered plotting approach"
         "Use statistical transformations within plots")
+      (makie-notes
+        "When AlgebraOfGraphics.jl cannot solve the problem, use Makie.jl/CarioMakie instead for plotting."
+        "Legend: Keyword argument `bgcolor` is deprecated, use `backgroundcolor` instead."
+        "PolarAxis: axislegend is not supported, use Legend instead."
+        )
       (plot-elements
         "Include clear titles, labels, and legends"
-        "Use colorblind-friendly scales from ColorSchemes.jl"
-        "Set appropriate figure dimensions with cm/inch units"
+        "Use colorblind-friendly scales"
         "Use themes for consistent styling")
       (composable-plots
         "Create reusable plot components"
         "Use plot composition operators: hstack, vstack"
         "Implement custom Geom types for specialized visualizations")))
-
-  ;; Jupyter (Pluto) Notebook Practices
-  (notebook-practices
-    (rules
-      (organization
-        "Structure notebooks with clear markdown sections"
-        "Keep code cells focused and modular"
-        "Document analysis steps comprehensively")
-      (reproducibility
-        "Use environment management (Project.toml)"
-        "Include data loading and preprocessing steps"
-        "Consider Pluto.jl for reactivity")))
 
   ;; Performance Optimization
   (performance

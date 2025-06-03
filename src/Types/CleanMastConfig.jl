@@ -125,18 +125,12 @@ struct ConfigTimeRange
     max::Union{Nothing, DateTime}
 end
 
-struct AirDensityConfig
-    density :: Float64
-    reference_height :: Float64
-end
-export AirDensityConfig
-
 struct AnalysisConfig
     time_range::ConfigTimeRange
     target_heights::Vector{Float64}
     ti_target_heights::Vector{Float64}
-    air_density :: AirDensityConfig
 end
+
 struct MesoConfig
     data_path::String
     sensor::SensorConfig
@@ -182,20 +176,6 @@ function from_dict(::Type{ConfigTimeRange}, dict::Dict{String, Any})::ConfigTime
     )
 end
 
-function from_dict(::Type{AirDensityConfig}, dict::Dict{String, Any})::AirDensityConfig
-    AirDensityConfig(
-        convert(Float64, get(dict, "density", 1.225)),  # Default to standard air density at sea level
-        convert(Float64, get(dict, "reference_height", 0.0))  # Default to sea level
-    )
-end
-
-function to_dict(adc::AirDensityConfig)::Dict{String, Any}
-    Dict{String, Any}(
-        "density" => adc.density,
-        "reference_height" => adc.reference_height
-    )
-end
-
 function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisConfig
     # Extract target heights with fallback to singular field for backward compatibility
     target_heights_value = if haskey(dict, "target_heights")
@@ -232,19 +212,10 @@ function from_dict(::Type{AnalysisConfig}, dict::Dict{String, Any})::AnalysisCon
         Float64[]
     end
     
-    # Get air_density configuration
-    air_density_config = if haskey(dict, "air_density")
-        from_dict(AirDensityConfig, Dict{String, Any}(dict["air_density"]))
-    else
-        # Default values if not specified
-        AirDensityConfig(1.225, 0.0)
-    end
-    
     AnalysisConfig(
         from_dict(ConfigTimeRange, Dict{String, Any}(dict["time_range"])),
         target_heights,
-        ti_target_heights,
-        air_density_config
+        ti_target_heights
     )
 end
 
@@ -266,8 +237,7 @@ function to_dict(ac::AnalysisConfig)::Dict{String, Any}
     Dict(
         "time_range" => to_dict(ac.time_range),
         "target_heights" => ac.target_heights,
-        "ti_target_heights" => ac.ti_target_heights,
-        "air_density" => to_dict(ac.air_density)
+        "ti_target_heights" => ac.ti_target_heights
     )
 end
 

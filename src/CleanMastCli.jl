@@ -194,7 +194,6 @@ Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.TurbulenceIntensity
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
-    using CleanMastProject.Command.GenerateTimeSeriesReport
 
     """
     turbulence
@@ -211,29 +210,32 @@ Comonicon.@cast module Analyze
     """
     timeseries
 
-    Analyze all time series data types and generate plots/reports.
-    Processes:
-    1. Tower shading time series
-    2. Single mast reconstruction time series
-    3. Meso reconstruction time series
-    4. Representative year time series
-
-    For each time series type, generates:
-    - Wind rose plots and data
-    - Time series plots
-    - Daily patterns
-    - Vertical profiles
-    - Monthly patterns
-
-    Results are saved in the project's analysis directory.
-    A comprehensive Typst report is also generated and compiled to PDF.
+    Analyze time series data using an analyze configuration file.
 
     # Arguments
-    - `dir`: Project directory containing processed time series data
+    - `config_path`: Path to analyze.yaml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl analyze timeseries path/to/analyze.yaml
+    ```
+
+    The analyze.yaml file should specify:
+    - Multiple masts with their data files and sensor configurations
+    - Air density settings for each mast
+    - Output directory for results
+    - Optional DOCX report settings
+
+    For each mast, generates:
+    - Wind temporal analysis (time series, daily/monthly patterns)
+    - Vertical profile analysis
+    - Wind direction frequency and power distribution
+    - Wind rose plots (frequency and power)
+    - Turbulence intensity analysis (with meteodyn_ti.txt)
+    - Weibull distribution analysis
     """
-    Comonicon.@cast function timeseries(dir::String)
-        AnalyzeTimeSeriesCommand.execute(dir)
-        GenerateTimeSeriesReport.execute(dir)
+    Comonicon.@cast function timeseries(config_path::String)
+        AnalyzeTimeSeriesCommand.execute(config_path)
     end
 end
 

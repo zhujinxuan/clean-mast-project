@@ -13,6 +13,7 @@ using Dates
 using SpecialFunctions: gamma
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
+import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
 
 """
     fit_weibull(data::Vector{Union{Missing, Float64}})::Union{Tuple{Float64, Float64}, Nothing}
@@ -203,6 +204,35 @@ function analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
     end
     
     return results_df
+end
+
+"""
+    analyze_weibull_distribution(config::AnalyzeConfig)
+
+Analyze wind speed distributions by fitting Weibull distributions for all masts.
+
+# Arguments
+- `config::AnalyzeConfig`: Analysis configuration with multiple masts
+
+# Returns
+- `Dict{String, DataFrame}`: Dictionary mapping mast names to their Weibull parameters
+"""
+function analyze_weibull_distribution(config::AnalyzeConfig)
+    results = Dict{String, Any}()
+    
+    for mast in config.masts
+        output_dir = get_output_path(config, mast.name, "weibull")
+        
+        # Call the original function with the mast's data
+        mast_results = analyze_weibull_distribution(mast.timeSeriesData, output_dir)
+        
+        if !isnothing(mast_results)
+            results[mast.name] = mast_results
+            @info "Generated Weibull distribution analysis for mast $(mast.name)"
+        end
+    end
+    
+    return results
 end
 
 export analyze_weibull_distribution

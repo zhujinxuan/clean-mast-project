@@ -4,7 +4,7 @@ Functions to calculate air density at different heights.
 """
 module AirDensity
 
-using ...Types.CleanMastConfig: AirDensityConfig
+using ...Types.AnalyzeConfiguration: AirDensityConfig
 
 # Constants
 const STANDARD_AIR_DENSITY = 1.225  # kg/m³, at sea level, 15°C
