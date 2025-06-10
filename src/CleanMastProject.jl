@@ -32,6 +32,7 @@ module Types
   include("./Types/AnalyzeConfiguration.jl")
   export AnalyzeConfiguration
 end
+
 export Types
 include("./SensorFormats.jl")
 export SensorFormats

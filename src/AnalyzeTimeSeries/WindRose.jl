@@ -8,7 +8,7 @@ using Dates
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, to_air_density_config, get_output_path
+import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
 import ..AirDensity: calculate_air_density, calculate_wind_power_density
 
 """
@@ -54,12 +54,13 @@ end
 
 """
     calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::Symbol, 
-                              air_density::Float64, num_sectors::Int=16)
+                              air_density::Union{Float64, Nothing}=nothing, num_sectors::Int=16)
 
 Calculate wind direction frequency and power statistics for each sector using functional programming approach.
+If air_density is nothing, only frequency statistics are calculated (no power calculations).
 """
 function calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::Symbol, 
-                                   air_density::Float64, num_sectors::Int=16)
+                                   air_density::Union{Float64, Nothing}=nothing, num_sectors::Int=16)
     # Create a copy of the dataframe for processing
     df_work = copy(df)
     
@@ -69,19 +70,31 @@ function calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::
                            !ismissing(row[dir_col]) && 
                            row[speed_col] >= 0, df)
     
-    # Add sector and power columns using map operations
+    # Add sector column using map operations
     df_clean[!,:sector] = map(dir -> get_wind_sector(dir, num_sectors), df_clean[!, dir_col])
-    df_clean[!,:power] = map(speed -> calculate_wind_power_density(speed, air_density), df_clean[!, speed_col])
     
-    # Group by sector and calculate statistics using DataFrames aggregation
-    sector_stats = df_clean |>
-        df -> groupby(df, :sector) |>
-        gdf -> combine(gdf,
-            nrow => :count,
-            speed_col => mean => :avg_speed,
-            :power => mean => :avg_power,
-            :power => sum => :total_power,  # Add total power for power frequency calculation
-        )
+    # Add power column only if air density is provided
+    if !isnothing(air_density)
+        df_clean[!,:power] = map(speed -> calculate_wind_power_density(speed, air_density), df_clean[!, speed_col])
+        
+        # Group by sector and calculate statistics including power
+        sector_stats = df_clean |>
+            df -> groupby(df, :sector) |>
+            gdf -> combine(gdf,
+                nrow => :count,
+                speed_col => mean => :avg_speed,
+                :power => mean => :avg_power,
+                :power => sum => :total_power,  # Add total power for power frequency calculation
+            )
+    else
+        # Group by sector and calculate statistics without power
+        sector_stats = df_clean |>
+            df -> groupby(df, :sector) |>
+            gdf -> combine(gdf,
+                nrow => :count,
+                speed_col => mean => :avg_speed,
+            )
+    end
     
     # Get sector labels and angles
     sector_labels, sector_angles = get_sector_info(num_sectors)
@@ -99,17 +112,26 @@ function calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::
     # Replace missing values with appropriate defaults using broadcasting
     result.count = coalesce.(result.count, 0)
     result.avg_speed = coalesce.(result.avg_speed, 0.0)
-    result.avg_power = coalesce.(result.avg_power, 0.0)
-    result.total_power = coalesce.(result.total_power, 0.0)
     
     # Calculate frequencies using broadcasting
     result.frequency = result.count ./ sum(result.count)
     
-    # Calculate power frequency (power contribution proportion)
-    total_power_all = sum(result.total_power)
-    if total_power_all > 0
-        result.power_frequency = result.total_power ./ total_power_all
+    # Add power-related columns only if air density was provided
+    if !isnothing(air_density)
+        result.avg_power = coalesce.(result.avg_power, 0.0)
+        result.total_power = coalesce.(result.total_power, 0.0)
+        
+        # Calculate power frequency (power contribution proportion)
+        total_power_all = sum(result.total_power)
+        if total_power_all > 0
+            result.power_frequency = result.total_power ./ total_power_all
+        else
+            result.power_frequency = zeros(nrow(result))
+        end
     else
+        # Add placeholder columns with zeros when no air density
+        result.avg_power = zeros(nrow(result))
+        result.total_power = zeros(nrow(result))
         result.power_frequency = zeros(nrow(result))
     end
     
@@ -321,7 +343,12 @@ function analyze_wind_rose(config::AnalyzeConfig)
     
     for mast in config.masts
         output_dir = get_output_path(config, mast.name, "wind-rose")
-        air_density_config = to_air_density_config(mast.airDensity)
+        
+        # Check if air density is configured for power analysis
+        has_air_density = !isnothing(mast.airDensity)
+        if !has_air_density
+            @info "Wind rose power analysis unavailable for mast $(mast.name) - no air density configured. Performing frequency analysis only."
+        end
         ts = mast.timeSeriesData
         
         # Find wind speed and direction sensors
@@ -338,8 +365,8 @@ function analyze_wind_rose(config::AnalyzeConfig)
             # Find closest direction sensor by height from below
             (df, dir_columnName) = get_direction_data_for_speed_sensor(speed_sensor, ts)
             
-            # Calculate air density at sensor height
-            air_density = calculate_air_density(speed_sensor.height, air_density_config)
+            # Calculate air density at sensor height (if available)
+            air_density = has_air_density ? calculate_air_density(speed_sensor.height, mast.airDensity) : nothing
             
             # Overall wind rose analysis
             overall_stats = calculate_sector_statistics(
@@ -361,13 +388,16 @@ function analyze_wind_rose(config::AnalyzeConfig)
                 "Wind Direction Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :frequency)
             save(joinpath(output_dir, "direction_frequency_rose_$(speed_sensor.height)m.svg"), freq_plot)
             
-            power_plot = create_wind_rose_plot(overall_stats, 
-                "Wind Power Rose - $(mast.name) ($(speed_sensor.height)m)", :avg_power)
-            save(joinpath(output_dir, "wind_power_rose_$(speed_sensor.height)m.svg"), power_plot)
-            
-            power_freq_plot = create_wind_rose_plot(overall_stats, 
-                "Wind Power Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :power_frequency)
-            save(joinpath(output_dir, "wind_power_frequency_rose_$(speed_sensor.height)m.svg"), power_freq_plot)
+            # Create power-related plots only if air density is available
+            if has_air_density
+                power_plot = create_wind_rose_plot(overall_stats, 
+                    "Wind Power Rose - $(mast.name) ($(speed_sensor.height)m)", :avg_power)
+                save(joinpath(output_dir, "wind_power_rose_$(speed_sensor.height)m.svg"), power_plot)
+                
+                power_freq_plot = create_wind_rose_plot(overall_stats, 
+                    "Wind Power Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :power_frequency)
+                save(joinpath(output_dir, "wind_power_frequency_rose_$(speed_sensor.height)m.svg"), power_freq_plot)
+            end
             
             mast_results["$(speed_sensor.height)m"] = Dict(
                 "overall" => overall_stats
@@ -385,19 +415,22 @@ function analyze_wind_rose(config::AnalyzeConfig)
             )
             save(joinpath(output_dir, "direction_frequency_rose_height_gt100m.svg"), freq_multi_plot)
             
-            power_multi_plot = create_multi_height_wind_rose(
-                stats_by_height_power, 
-                "Wind Power Rose - $(mast.name) (Heights ≥ 100m)", 
-                :avg_power
-            )
-            save(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"), power_multi_plot)
-            
-            power_freq_multi_plot = create_multi_height_wind_rose(
-                stats_by_height_power, 
-                "Wind Power Frequency Rose - $(mast.name) (Heights ≥ 100m)", 
-                :power_frequency
-            )
-            save(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"), power_freq_multi_plot)
+            # Create power-related multi-height plots only if air density is available
+            if has_air_density
+                power_multi_plot = create_multi_height_wind_rose(
+                    stats_by_height_power, 
+                    "Wind Power Rose - $(mast.name) (Heights ≥ 100m)", 
+                    :avg_power
+                )
+                save(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"), power_multi_plot)
+                
+                power_freq_multi_plot = create_multi_height_wind_rose(
+                    stats_by_height_power, 
+                    "Wind Power Frequency Rose - $(mast.name) (Heights ≥ 100m)", 
+                    :power_frequency
+                )
+                save(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"), power_freq_multi_plot)
+            end
             
             @info "Generated combined multi-height wind rose plots for mast $(mast.name)"
         end
@@ -410,19 +443,20 @@ function analyze_wind_rose(config::AnalyzeConfig)
         open(typst_file, "w") do f
             println(f, "// Wind Rose Analysis Tables for $(mast.name)")
             println(f, "// Generated by WindRose.jl")
-            println(f, "#set heading(offset=$(config.output.docx.sectionLevel-1))")
             println(f, "= 风向风能频率分析")
         end
-        
-        # Export summary tables for heights >= 100m
-        export_wind_direction_summary_tables(stats_by_height_freq, stats_by_height_power, 
-                                           output_dir, mast.name, typst_file)
         
         # Monthly analysis for all heights >= 100m
         monthly_stats = analyze_monthly_wind_rose_multi_height(
             mast,
-            output_dir
+            output_dir,
+            has_air_density
         )
+
+        # Export summary tables for heights >= 100m
+        export_wind_direction_summary_tables(stats_by_height_freq, stats_by_height_power, 
+                                           output_dir, mast.name, typst_file, has_air_density)
+        
         
         mast_results["monthly_multi_height"] = monthly_stats
         
@@ -433,21 +467,23 @@ function analyze_wind_rose(config::AnalyzeConfig)
 end
 
 """
-    analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+    analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String, has_air_density::Bool)
 
 Analyze wind rose patterns for each month with all heights >= 100m in one plot.
+Power-related analyses are only performed when has_air_density is true.
 """
-function analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+function analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String, has_air_density::Bool)
     # Generate frequency roses
     freq_results = analyze_monthly_frequency_wind_rose_multi_height(mast, output_dir)
     
-    # Generate power roses  
-    power_results = analyze_monthly_power_wind_rose_multi_height(mast, output_dir)
-    
-    # Generate power frequency roses
-    power_freq_results = analyze_monthly_power_frequency_wind_rose_multi_height(mast, output_dir)
-    
-    return Dict("frequency" => freq_results, "power" => power_results, "power_frequency" => power_freq_results)
+    # Generate power roses only if air density is available
+    if has_air_density
+        power_results = analyze_monthly_power_wind_rose_multi_height(mast, output_dir)
+        power_freq_results = analyze_monthly_power_frequency_wind_rose_multi_height(mast, output_dir)
+        return Dict("frequency" => freq_results, "power" => power_results, "power_frequency" => power_freq_results)
+    else
+        return Dict("frequency" => freq_results)
+    end
 end
 
 """
@@ -456,7 +492,6 @@ end
 Analyze monthly wind direction frequency patterns for all heights >= 100m.
 """
 function analyze_monthly_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
-    air_density_config = to_air_density_config(mast.airDensity)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -514,8 +549,8 @@ function analyze_monthly_frequency_wind_rose_multi_height(mast::MastAnalyzeConfi
             
             has_data = true
             
-            # Calculate air density and statistics
-            air_density = calculate_air_density(speed_sensor.height, air_density_config)
+            # Calculate air density and statistics (air density may be nothing)
+            air_density = isnothing(mast.airDensity) ? nothing : calculate_air_density(speed_sensor.height, mast.airDensity)
             month_stats = calculate_sector_statistics(month_data, speed_sensor.columnName, dir_columnName, air_density)
             
             stats_by_height[speed_sensor.height] = month_stats
@@ -595,7 +630,6 @@ end
 Analyze monthly wind power patterns for all heights >= 100m.
 """
 function analyze_monthly_power_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
-    air_density_config = to_air_density_config(mast.airDensity)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -653,8 +687,8 @@ function analyze_monthly_power_wind_rose_multi_height(mast::MastAnalyzeConfig, o
             
             has_data = true
             
-            # Calculate air density and statistics
-            air_density = calculate_air_density(speed_sensor.height, air_density_config)
+            # Calculate air density and statistics (air density may be nothing)
+            air_density = isnothing(mast.airDensity) ? nothing : calculate_air_density(speed_sensor.height, mast.airDensity)
             month_stats = calculate_sector_statistics(month_data, speed_sensor.columnName, dir_columnName, air_density)
             
             stats_by_height[speed_sensor.height] = month_stats
@@ -734,7 +768,6 @@ end
 Analyze monthly wind power frequency patterns for all heights >= 100m.
 """
 function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
-    air_density_config = to_air_density_config(mast.airDensity)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -792,8 +825,8 @@ function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastAnalyz
             
             has_data = true
             
-            # Calculate air density and statistics
-            air_density = calculate_air_density(speed_sensor.height, air_density_config)
+            # Calculate air density and statistics (air density may be nothing)
+            air_density = isnothing(mast.airDensity) ? nothing : calculate_air_density(speed_sensor.height, mast.airDensity)
             month_stats = calculate_sector_statistics(month_data, speed_sensor.columnName, dir_columnName, air_density)
             
             stats_by_height[speed_sensor.height] = month_stats
@@ -916,12 +949,13 @@ end
 
 """
     export_wind_direction_summary_tables(stats_by_height_freq::Dict, stats_by_height_power::Dict, 
-                                        output_dir::String, mast_name::String, typst_file::String)
+                                        output_dir::String, mast_name::String, typst_file::String, has_air_density::Bool)
 
-Export wind direction frequency and power frequency summary tables to CSV and typst formats.
+Export wind direction frequency and power frequency summary tables and figures to CSV and typst formats.
+Power frequency table and figures are only generated when has_air_density is true.
 """
 function export_wind_direction_summary_tables(stats_by_height_freq::Dict, stats_by_height_power::Dict, 
-                                            output_dir::String, mast_name::String, typst_file::String)
+                                            output_dir::String, mast_name::String, typst_file::String, has_air_density::Bool)
     
     # Create frequency summary table
     freq_summary = create_wind_direction_summary_table(stats_by_height_freq, :frequency)
@@ -936,32 +970,104 @@ function export_wind_direction_summary_tables(stats_by_height_freq::Dict, stats_
         open(typst_file, "a") do f
             # Add section header
             println(f, "")
+            println(f, "== 风向频率分析")
+            println(f, "")
             println(f, " 表: [测风塔$(mast_name)代表年风向频率(%) - 高度≥100m],")
             show(f, MIME"text/typst"(), freq_table)
             println(f, "")
+            
+            # Add frequency wind rose figure
+            if isfile(joinpath(output_dir, "direction_frequency_rose_height_gt100m.svg"))
+                println(f, " 图: [测风塔$(mast_name)代表年风向频率玫瑰图 - 高度≥100m]")
+                println(f, "")
+                println(f, "#figure(")
+                println(f, "  image(\"direction_frequency_rose_height_gt100m.svg\", width: 80%),")
+                println(f, "  caption: [测风塔$(mast_name)代表年风向频率玫瑰图 - 高度≥100m]")
+                println(f, ")")
+                println(f, "")
+            end
+            
+            # Add monthly frequency wind rose figure
+            if isfile(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.svg"))
+                println(f, " 图: [测风塔$(mast_name)各月风向频率玫瑰图 - 高度≥100m]")
+                println(f, "")
+                println(f, "#figure(")
+                println(f, "  image(\"monthly_direction_frequency_roses_height_gt100m.svg\", width: 100%),")
+                println(f, "  caption: [测风塔$(mast_name)各月风向频率玫瑰图 - 高度≥100m]")
+                println(f, ")")
+                println(f, "")
+            end
         end
     end
     
-    # Create power frequency summary table  
-    power_freq_summary = create_wind_direction_summary_table(stats_by_height_power, :power_frequency)
-    if !isempty(power_freq_summary)
-        # Export to CSV (keep English for encoding compatibility)
-        CSV.write(joinpath(output_dir, "wind_power_frequency_summary_height_gt100m.csv"), power_freq_summary)
-        
-        # Create typst table using SummaryTables with Chinese column names
-        power_freq_table = create_summarytables_wind_table(power_freq_summary, "风向", "风能频率")
-        
-        # Write typst file using show method
-        open(typst_file, "a") do f
-            # Add section header
-            println(f, "")
-            println(f, " 表: [测风塔$(mast_name)代表年风能频率(%) - 高度≥100m],")
-            show(f, MIME"text/typst"(), power_freq_table)
-            println(f, "")
+    # Create power frequency summary table only if air density is available
+    if has_air_density
+        power_freq_summary = create_wind_direction_summary_table(stats_by_height_power, :power_frequency)
+        if !isempty(power_freq_summary)
+            # Export to CSV (keep English for encoding compatibility)
+            CSV.write(joinpath(output_dir, "wind_power_frequency_summary_height_gt100m.csv"), power_freq_summary)
+            
+            # Create typst table using SummaryTables with Chinese column names
+            power_freq_table = create_summarytables_wind_table(power_freq_summary, "风向", "风能频率")
+            
+            # Write typst file using show method
+            open(typst_file, "a") do f
+                # Add section header
+                println(f, "")
+                println(f, "== 风能频率分析")
+                println(f, "")
+                println(f, " 表: [测风塔$(mast_name)代表年风能频率(%) - 高度≥100m],")
+                show(f, MIME"text/typst"(), power_freq_table)
+                println(f, "")
+                
+                # Add power wind rose figure
+                if isfile(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"))
+                    println(f, " 图: [测风塔$(mast_name)代表年风功率玫瑰图 - 高度≥100m]")
+                    println(f, "")
+                    println(f, "#figure(")
+                    println(f, "  image(\"wind_power_rose_height_gt100m.svg\", width: 80%),")
+                    println(f, "  caption: [测风塔$(mast_name)代表年风功率玫瑰图 - 高度≥100m]")
+                    println(f, ")")
+                    println(f, "")
+                end
+                
+                # Add power frequency wind rose figure
+                if isfile(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"))
+                    println(f, " 图: [测风塔$(mast_name)代表年风能频率玫瑰图 - 高度≥100m]")
+                    println(f, "")
+                    println(f, "#figure(")
+                    println(f, "  image(\"wind_power_frequency_rose_height_gt100m.svg\", width: 80%),")
+                    println(f, "  caption: [测风塔$(mast_name)代表年风能频率玫瑰图 - 高度≥100m]")
+                    println(f, ")")
+                    println(f, "")
+                end
+                
+                # Add monthly power wind rose figure
+                if isfile(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.svg"))
+                    println(f, " 图: [测风塔$(mast_name)各月风功率玫瑰图 - 高度≥100m]")
+                    println(f, "")
+                    println(f, "#figure(")
+                    println(f, "  image(\"monthly_wind_power_roses_height_gt100m.svg\", width: 100%),")
+                    println(f, "  caption: [测风塔$(mast_name)各月风功率玫瑰图 - 高度≥100m]")
+                    println(f, ")")
+                    println(f, "")
+                end
+                
+                # Add monthly power frequency wind rose figure
+                if isfile(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.svg"))
+                    println(f, " 图: [测风塔$(mast_name)各月风能频率玫瑰图 - 高度≥100m]")
+                    println(f, "")
+                    println(f, "#figure(")
+                    println(f, "  image(\"monthly_wind_power_frequency_roses_height_gt100m.svg\", width: 100%),")
+                    println(f, "  caption: [测风塔$(mast_name)各月风能频率玫瑰图 - 高度≥100m]")
+                    println(f, ")")
+                    println(f, "")
+                end
+            end
         end
     end
     
-    @info "Generated wind direction summary tables for mast $mast_name"
+    @info "Generated wind direction summary tables and figures for mast $mast_name"
 end
 
 """

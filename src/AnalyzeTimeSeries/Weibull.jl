@@ -11,6 +11,7 @@ using StatsBase
 using DataFramesMeta
 using Dates
 using SpecialFunctions: gamma
+using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
@@ -228,6 +229,10 @@ function analyze_weibull_distribution(config::AnalyzeConfig)
         
         if !isnothing(mast_results)
             results[mast.name] = mast_results
+            
+            # Generate additional formatted outputs with proper mast name
+            generate_weibull_report(mast_results, mast.name, output_dir, config)
+            
             @info "Generated Weibull distribution analysis for mast $(mast.name)"
         end
     end
@@ -235,6 +240,73 @@ function analyze_weibull_distribution(config::AnalyzeConfig)
     return results
 end
 
-export analyze_weibull_distribution
+"""
+    eenerate_weibull_parameters_table(results_df::DataFrame, mast_name::String="", output_dir::String="")
+
+Generate a publication-ready table of Weibull distribution parameters using SummaryTables.jl.
+
+# Arguments
+- `results_df::DataFrame`: DataFrame containing Weibull parameters (height, shape_k, scale_c, mean_speed)
+- `mast_name::String`: Optional name of the mast for the table title
+- `output_dir::String`: Optional directory to save the table files
+
+# Returns
+- `SummaryTables.Table`: Formatted table object that can be rendered to various formats
+"""
+function generate_weibull_parameters_table(results_df::DataFrame)
+    if isempty(results_df)
+        @warn "No Weibull parameters data provided"
+        return nothing
+    end
+    
+    # Sort by height for better presentation
+    display_df = copy(results_df)
+    sort!(display_df, :height, rev=true)
+    select!(display_df, :height, :shape_k, :scale_c)
+    rename!(display_df, :height => "高度(m)", :shape_k => "形状参数(k)", :scale_c => "尺度参数(c)")
+    
+    # Create the table using simple_table
+    table = simple_table(
+        display_df
+    )
+    
+    
+    return table
+end
+
+"""
+    generate_weibull_report(results_df::DataFrame, mast_name::String, output_dir::String)
+
+Generate a comprehensive Weibull analysis report including both the parameters table and SVG plots.
+
+# Arguments
+- `results_df::DataFrame`: DataFrame containing Weibull parameters
+- `mast_name::String`: Name of the mast
+- `output_dir::String`: Directory containing the SVG plots and where report will be saved
+
+# Returns
+- `String`: Path to the generated report file
+"""
+function generate_weibull_report(results_df::DataFrame, mast_name::String, output_dir::String, config::AnalyzeConfig)
+    if isempty(results_df)
+        @warn "No Weibull parameters data provided"
+        return nothing
+    end
+    
+    typst_path = joinpath(output_dir, "weibull.typ")
+    if (isfile(typst_path))
+        rm(typst_path)
+    end
+    table = generate_weibull_parameters_table(results_df)
+
+    open(typst_path, "w") do io
+        println(io, "#set heading(offset: $(config.output.docx.sectionLevel))")
+        println(io, "= Weibull 拟合结果")
+        println(io, "表格：测风塔$mast_name 拟合结果")
+        show(io, MIME"text/typst"(), table)
+    end
+end
+
+export analyze_weibull_distribution, generate_weibull_parameters_table, generate_weibull_report
 
 end # module 

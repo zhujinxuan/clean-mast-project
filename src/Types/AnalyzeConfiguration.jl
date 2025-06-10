@@ -16,21 +16,13 @@ struct AirDensityConfig
 end
 
 """
-Air density configuration for a specific mast
-"""
-struct MastAirDensityConfig
-    value::Float64          # Air density value in kg/m³
-    height::Float64         # Reference height for the air density
-end
-
-"""
 Configuration for a single mast in the analyze.yaml (raw format)
 """
 struct MastAnalyzeConfigYAML
     name::String
     csv::String                     # Path to CSV file (relative or absolute)
     sensorConfig::String            # Path to sensor config YAML (relative or absolute)
-    airDensity::MastAirDensityConfig
+    airDensity::Union{AirDensityConfig, Nothing}
 end
 
 """
@@ -39,7 +31,7 @@ Processed configuration for a single mast with loaded data
 struct MastAnalyzeConfig
     name::String
     timeSeriesData::TimeSeriesData
-    airDensity::MastAirDensityConfig
+    airDensity::Union{AirDensityConfig, Nothing}
 end
 
 """
@@ -75,28 +67,34 @@ struct AnalyzeConfig
     configDir::String          # Directory containing the analyze.yaml (for path resolution)
 end
 
-# Conversion functions for MastAirDensityConfig
-function from_dict(::Type{MastAirDensityConfig}, dict::Dict{String, Any})::MastAirDensityConfig
-    MastAirDensityConfig(
-        convert(Float64, dict["value"]),
-        convert(Float64, dict["height"])
+# Conversion functions for AirDensityConfig
+function from_dict(::Type{AirDensityConfig}, dict::Dict{String, Any})::AirDensityConfig
+    AirDensityConfig(
+        convert(Float64, dict["density"]),
+        convert(Float64, dict["reference_height"])
     )
 end
 
-function to_dict(config::MastAirDensityConfig)::Dict{String, Any}
+function to_dict(config::AirDensityConfig)::Dict{String, Any}
     Dict{String, Any}(
-        "value" => config.value,
-        "height" => config.height
+        "density" => config.density,
+        "reference_height" => config.reference_height
     )
 end
 
 # Conversion functions for MastAnalyzeConfigYAML
 function from_dict(::Type{MastAnalyzeConfigYAML}, dict::Dict{String, Any})::MastAnalyzeConfigYAML
+    air_density = if haskey(dict, "airDensity") && !isnothing(dict["airDensity"])
+        from_dict(AirDensityConfig, Dict{String, Any}(dict["airDensity"]))
+    else
+        nothing
+    end
+    
     MastAnalyzeConfigYAML(
         dict["name"],
         dict["csv"],
         dict["sensorConfig"],
-        from_dict(MastAirDensityConfig, Dict{String, Any}(dict["airDensity"]))
+        air_density
     )
 end
 
@@ -155,32 +153,10 @@ function to_dict(config::AnalyzeConfigYAML)::Dict{String, Any}
     )
 end
 
-"""
-Convert MastAirDensityConfig to AirDensityConfig
-"""
-function to_air_density_config(mast_air_density::MastAirDensityConfig)::AirDensityConfig
-    AirDensityConfig(mast_air_density.value, mast_air_density.height)
-end
-
-# Conversion functions for AirDensityConfig
-function from_dict(::Type{AirDensityConfig}, dict::Dict{String, Any})::AirDensityConfig
-    AirDensityConfig(
-        convert(Float64, get(dict, "density", 1.225)),  # Default to standard air density at sea level
-        convert(Float64, get(dict, "reference_height", 0.0))  # Default to sea level
-    )
-end
-
-function to_dict(adc::AirDensityConfig)::Dict{String, Any}
-    Dict{String, Any}(
-        "density" => adc.density,
-        "reference_height" => adc.reference_height
-    )
-end
-
 # Export all types and conversion functions
-export MastAirDensityConfig, MastAnalyzeConfigYAML, MastAnalyzeConfig, 
+export MastAnalyzeConfigYAML, MastAnalyzeConfig, 
        DocxConfig, OutputConfig, AnalyzeConfigYAML, AnalyzeConfig,
-       AirDensityConfig, from_dict, to_dict, to_air_density_config
+       AirDensityConfig, from_dict, to_dict
 
 """
     get_output_path(config::AnalyzeConfig, mast_name::String, analysis_type::String) -> String

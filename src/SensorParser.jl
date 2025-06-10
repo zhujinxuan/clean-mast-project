@@ -34,9 +34,10 @@ function create_regex_pattern(format::String, placeholders::Vector{String})::Reg
     end
     
     # Escape special regex characters in the rest of the string
-    regex_str = replace(regex_str, "." => "\\.")
+    regex_str = replace(regex_str, "." => "\\.", " " => "\\s")
     regex_str = "^" * regex_str * "\$"
     
+    # println(regex_str)
     return Regex(regex_str)
 end
 
@@ -63,7 +64,7 @@ function parse_column_name(
         pattern = create_regex_pattern(format, placeholders)
         
         # Try to match column name against pattern
-        m = match(pattern, column_name)
+        m = match(pattern, strip(column_name))
         isnothing(m) && continue
         
         # Extract captured values

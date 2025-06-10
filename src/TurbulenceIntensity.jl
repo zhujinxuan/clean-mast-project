@@ -2,6 +2,8 @@ module TurbulenceIntensity
 
 using DataFrames
 using Statistics
+using SummaryTables
+using CSV
 using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
 using ..Types.CleanMastConfig: ProjectConfig
 using ..Types.Sector: DIRECTION_16_SECTORS, get_direction_sector, DirectionSector
@@ -261,8 +263,203 @@ function process_turbulence_intensity(
     return TurbulenceResults(ti_df, sector_stats, ti_matrix)
 end
 
+"""
+Generate a Typst report with turbulence intensity analysis results
+
+# Arguments
+- `output_dir::String`: Directory containing CSV files and where to save the .typ report
+- `height::Float64`: Target height for analysis
+- `mast_name::String`: Name of the mast (optional, defaults to "测风塔")
+
+# Description
+Generates a comprehensive Typst report including:
+- Sector statistics table
+- TI by wind speed table  
+- Summary report with different wind speed ranges
+- All content in Chinese
+"""
+function generate_turbulence_typst_report(
+    output_dir::String,
+    height::Float64,
+    mast_name::String = "测风塔"
+)::Nothing
+    typst_path = joinpath(output_dir, "turbulence_intensity_$(height)m.typ")
+    
+    # Load CSV files
+    sector_stats_path = joinpath(output_dir, "turbulence_intensity_$(height)m.csv")
+    ti_by_ws_path = joinpath(output_dir, "ti_by_wind_speed_$(height)m.csv")
+    report_path = joinpath(output_dir, "turbulence_intensity_report_$(height)m.csv")
+    
+    # Check if files exist
+    if !isfile(sector_stats_path)
+        @warn "Sector statistics CSV file not found: $sector_stats_path"
+        return nothing
+    end
+    
+    if !isfile(ti_by_ws_path)
+        @warn "TI by wind speed CSV file not found: $ti_by_ws_path"
+        return nothing
+    end
+    
+    if !isfile(report_path)
+        @warn "Report CSV file not found: $report_path"
+        return nothing
+    end
+    
+    # Load data
+    sector_stats_df = CSV.read(sector_stats_path, DataFrame)
+    ti_by_ws_df = CSV.read(ti_by_ws_path, DataFrame)
+    report_df = CSV.read(report_path, DataFrame)
+    
+    # Prepare sector statistics table
+    sector_table_df = copy(sector_stats_df)
+    # Translate sector names to Chinese
+    sector_names_chinese = Dict(
+        "N" => "北", "NNE" => "北北东", "NE" => "东北", "ENE" => "东北东",
+        "E" => "东", "ESE" => "东南东", "SE" => "东南", "SSE" => "南南东",
+        "S" => "南", "SSW" => "南南西", "SW" => "西南", "WSW" => "西南西",
+        "W" => "西", "WNW" => "西北西", "NW" => "西北", "NNW" => "北北西"
+    )
+    
+    sector_table_df[!, :sector] = map(sector_table_df[!, :sector]) do sector
+        get(sector_names_chinese, sector, sector)
+    end
+    
+    # Format numeric columns to appropriate decimal places
+    for col in names(sector_table_df)
+        if col == "occurrence"
+            continue  # Keep occurrence as integer
+        elseif col in ["mean_speed", "mean_ti", "ti_std"]
+            # Format to 3 decimal places
+            formatted_values = [ismissing(v) ? "-" : string(round(v, digits=3)) 
+                              for v in sector_table_df[!, col]]
+            sector_table_df[!, col] = formatted_values
+        end
+    end
+    
+    # Create sector statistics table
+    sector_cols = [
+        :sector => "风向扇区",
+        :mean_speed => "平均风速 (m/s)",
+        :mean_ti => "平均湍流强度",
+        :ti_std => "湍流强度标准差",
+        :occurrence => "数据点数"
+    ]
+    rename!(sector_table_df, sector_cols...)
+    sector_table = simple_table(sector_table_df, round_digits=3)
+    
+    # Prepare TI by wind speed table
+    ti_ws_table_df = copy(ti_by_ws_df)
+    # Format wind speed range as string
+    ti_ws_table_df[!, :wind_speed_range] = map(eachrow(ti_ws_table_df)) do row
+        "$(Int(row.wind_speed_min))-$(Int(row.wind_speed_max))"
+    end
+    
+    # Format numeric columns
+    for col in names(ti_ws_table_df)
+        if col in ["occurrence", "wind_speed_range"]
+            continue
+        elseif col in ["mean_ti", "std_ti", "representative_ti"]
+            formatted_values = [ismissing(v) ? "-" : string(round(v, digits=3)) 
+                              for v in ti_ws_table_df[!, col]]
+            ti_ws_table_df[!, col] = formatted_values
+        end
+    end
+    
+    # Select and reorder columns for TI by wind speed table
+    ti_ws_display_df = select(ti_ws_table_df, 
+        :wind_speed_range, :mean_ti, :std_ti, :representative_ti, :occurrence)
+    
+    ti_ws_cols = [
+        :wind_speed_range => "风速区间 (m/s)",
+        :mean_ti => "平均湍流强度",
+        :std_ti => "湍流强度标准差", 
+        :representative_ti => "代表湍流强度",
+        :occurrence => "数据点数"
+    ]
+    rename!(ti_ws_display_df, ti_ws_cols...)
+    ti_ws_table = simple_table(ti_ws_display_df, round_digits=3)
+    
+    # Prepare summary report table
+    report_table_df = copy(report_df)
+    # Translate wind speed ranges to Chinese
+    wind_speed_ranges_chinese = Dict(
+        "all" => "全风速",
+        ">3 m/s" => ">3 m/s",
+        "14.5-16.5 m/s" => "14.5-16.5 m/s",
+        "9.5-10.5 m/s" => "9.5-10.5 m/s"
+    )
+    
+    report_table_df[!, :wind_speed_range] = map(report_table_df[!, :wind_speed_range]) do range
+        get(wind_speed_ranges_chinese, range, range)
+    end
+    
+    # Format numeric columns
+    for col in names(report_table_df)
+        if col in ["mast", "height", "wind_speed_range"]
+            continue
+        elseif col in ["mean_ti", "representative_ti", "ti_std"]
+            formatted_values = [ismissing(v) ? "-" : string(round(v, digits=3)) 
+                              for v in report_table_df[!, col]]
+            report_table_df[!, col] = formatted_values
+        end
+    end
+    
+    # Select columns for summary table (exclude mast and height since they're in the title)
+    summary_display_df = select(report_table_df, :wind_speed_range, :mean_ti, :representative_ti, :ti_std)
+    
+    summary_cols = [
+        :wind_speed_range => "风速范围",
+        :mean_ti => "平均湍流强度",
+        :representative_ti => "代表湍流强度", 
+        :ti_std => "湍流强度标准差"
+    ]
+    rename!(summary_display_df, summary_cols...)
+    summary_table = simple_table(summary_display_df, round_digits=3)
+    
+    # Write Typst report
+    open(typst_path, "w") do io
+        println(io, "= 湍流强度分析报告")
+        println(io)
+        println(io, "== 基本信息")
+        println(io, "- 测风塔：$(mast_name)")
+        println(io, "- 分析高度：$(height)m")
+        println(io)
+        
+        println(io, "== 各风向扇区湍流强度统计")
+        println(io, "表格：各风向扇区的湍流强度统计结果")
+        println(io)
+        show(io, MIME"text/typst"(), sector_table)
+        println(io)
+        println(io)
+        
+        println(io, "== 各风速区间湍流强度统计")
+        println(io, "表格：不同风速区间的湍流强度统计结果")
+        println(io)
+        show(io, MIME"text/typst"(), ti_ws_table)
+        println(io)
+        println(io)
+        
+        println(io, "== 不同风速范围湍流强度汇总")
+        println(io, "表格：不同风速范围的湍流强度汇总统计")
+        println(io)
+        show(io, MIME"text/typst"(), summary_table)
+        println(io)
+        
+        println(io, "== 分析说明")
+        println(io, "- 湍流强度计算公式：TI = 风速标准差 / max(平均风速, 1.0)")
+        println(io, "- 代表湍流强度：平均湍流强度 + 湍流强度标准差")
+        println(io, "- 分析采用16个风向扇区，每个扇区22.5度")
+        println(io, "- 风速区间统计采用1m/s间隔，从0-28m/s")
+        println(io, "- 各风速范围统计用于不同工程应用需求")
+    end
+    
+    @info "Generated turbulence intensity Typst report: $typst_path"
+    return nothing
+end
+
 # Export all public functions
 export find_ti_sensors, calculate_ti_series, calculate_sector_stats, calculate_filtered_sector_stats, calculate_ti_matrix, 
-       calculate_ti_by_wind_speed, process_turbulence_intensity, DEFAULT_WIND_SPEED_BINS
+       calculate_ti_by_wind_speed, process_turbulence_intensity, generate_turbulence_typst_report, DEFAULT_WIND_SPEED_BINS
 
 end

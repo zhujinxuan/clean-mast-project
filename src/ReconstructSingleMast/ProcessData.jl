@@ -34,10 +34,12 @@ function process_data!(
 )::ReconstructionResults
     # Apply reconstruction
     successes, failures = reconstruct_measurements(config, data)
+    # TODO fix this quick patch later
+    successes = filter(s -> !ismissing(s.value) && !isnan(s.value), successes)
 
     # Group reconstructed values by column
     by_column = Dict{Symbol, Vector{Tuple{DateTime, Float64}}}()
-    for success in successes
+    for success in successes 
         push!(get!(by_column, success.columnName, Tuple{DateTime, Float64}[]), 
               (success.timestamp, success.value))
     end
