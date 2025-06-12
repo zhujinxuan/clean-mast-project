@@ -194,6 +194,7 @@ Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.TurbulenceIntensity
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
+    using CleanMastProject.Command.AnalyzeEN
 
     """
     turbulence
@@ -236,6 +237,37 @@ Comonicon.@cast module Analyze
     """
     Comonicon.@cast function timeseries(config_path::String)
         AnalyzeTimeSeriesCommand.execute(config_path)
+    end
+
+    """
+    en
+
+    Analyze wind data for EN standard (civil engineering load calculations).
+
+    # Arguments
+    - `config_path`: Path to analyze-en.yaml configuration file
+
+    # Options
+    - `--output, -o`: Output directory for results
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl analyze en path/to/analyze-en.yaml
+    julia bin/CleanMast.jl analyze en path/to/analyze-en.yaml --output results/
+    ```
+
+    The analyze-en.yaml file should specify:
+    - Multiple masts with their coordinates and measurement height
+    - Input data and sensor configuration paths
+    - Optional GeoHash for location encoding
+
+    Generates a single WindSpeedMatrix.txt file containing all masts with:
+    - Mean wind speed (Vmean)
+    - Mean wind speed by direction sectors (15-degree bins)
+    - Frequency distribution by direction and wind speed
+    """
+    Comonicon.@cast function en(config_path::String; output::Union{String, Nothing}=nothing)
+        AnalyzeEN.execute(config_path, output)
     end
 end
 

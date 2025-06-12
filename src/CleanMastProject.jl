@@ -31,6 +31,8 @@ module Types
   export TurbulenceIntensity
   include("./Types/AnalyzeConfiguration.jl")
   export AnalyzeConfiguration
+  include("./Types/AnalyzeENConfiguration.jl")
+  export AnalyzeENConfiguration
 end
 
 export Types
@@ -103,6 +105,14 @@ export TurbulenceIntensity
 include("./AnalyzeTimeSeries.jl")
 export AnalyzeTimeSeries
 
+module AnalyzeEN
+  include("./AnalyzeEN/WindSpeed.jl")
+  include("./AnalyzeEN/CalculateAnalyzeEN.jl")
+  include("./AnalyzeEN/WindSpeedMatrixSerialization.jl")
+  export WindSpeedMatrixSerialization, WindSpeed, CalculateAnalyzeEN
+end
+export AnalyzeEN
+
 module Command
   include("./Command/CheckConfig.jl")
   include("./Command/ParseSensors.jl")
@@ -119,10 +129,11 @@ module Command
   include("./Command/WtTimeSeries.jl")
   include("./Command/ProcessAll.jl")
   include("./Command/GenerateTimeSeriesReport.jl")
+  include("./Command/AnalyzeEN.jl")
   export CheckConfig, ParseSensors, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
          TurbulenceIntensity, QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
-         GenerateTimeSeriesReport
+         GenerateTimeSeriesReport, AnalyzeEN
 end
 export Command
 include("./CleanMastCli.jl")
