@@ -192,21 +192,8 @@ Analysis and reporting commands
 """
 Comonicon.@cast module Analyze
     using Comonicon
-    using CleanMastProject.Command.TurbulenceIntensity
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
     using CleanMastProject.Command.AnalyzeEN
-
-    """
-    turbulence
-
-    Calculate turbulence intensity metrics.
-
-    # Arguments
-    - `dir`: Project directory containing config.yaml
-    """
-    Comonicon.@cast function turbulence(dir::String)
-        TurbulenceIntensity.execute(dir)
-    end
 
     """
     timeseries

@@ -9,7 +9,7 @@ struct TurbulenceSectorStats
     sector_stats::DataFrame  # Statistics for each sector
     mean_ti::Float64        # Overall mean turbulence intensity
     std_ti::Float64         # Overall standard deviation of turbulence intensity
-    representative_ti::Float64  # Representative turbulence intensity (mean + std)
+    representative_ti::Float64  # Representative turbulence intensity (P90: mean + 1.28*std)
 end
 
 """

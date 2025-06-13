@@ -99,9 +99,6 @@ export ReconstructMeso
 include("./RepresentativeYear.jl")
 export RepresentativeYear
 
-include("./TurbulenceIntensity.jl")
-export TurbulenceIntensity
-
 include("./AnalyzeTimeSeries.jl")
 export AnalyzeTimeSeries
 
@@ -123,7 +120,6 @@ module Command
   include("./Command/TrainMesoModel.jl")
   include("./Command/ReconstructMeso.jl")
   include("./Command/RepresentativeYearCalibration.jl")
-  include("./Command/TurbulenceIntensity.jl")
   include("./Command/QuickStart.jl")
   include("./Command/AnalyzeTimeSeriesCommand.jl")
   include("./Command/WtTimeSeries.jl")
@@ -132,7 +128,7 @@ module Command
   include("./Command/AnalyzeEN.jl")
   export CheckConfig, ParseSensors, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
-         TurbulenceIntensity, QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
+         QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
          GenerateTimeSeriesReport, AnalyzeEN
 end
 export Command

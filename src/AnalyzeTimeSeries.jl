@@ -236,7 +236,7 @@ function generate_comprehensive_report(config::AnalyzeConfig)
             typst_files = [
                 ("wind-temporal", "wind-temporal.typ"),
                 ("wind-rose", "wind-rose.typ"),
-                ("vertical-profile", "wind_shear_exponent_table.typ"),
+                ("vertical-profile", "wind_shear_exponent.typ"),
                 ("wind-power-frequency", "wind-frequency.typ"),
                 ("weibull", "weibull.typ"),
                 ("turbulence", "turbulence.typ")

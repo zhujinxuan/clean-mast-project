@@ -27,7 +27,6 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "ReconstructSingleMast/test_direction_training.jl"
     ],
     "representative_year" => ["RepresentativeYear/test_analysis.jl"],
-    "turbulence" => ["TurbulenceIntensity/test_turbulence_intensity.jl"],
     "wind_models" => [
         "WindModels/test_sectorized_regression_training.jl",
         "WindModels/test_direction_offset_training.jl"

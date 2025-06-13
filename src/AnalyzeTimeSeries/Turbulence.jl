@@ -2,7 +2,8 @@ module Turbulence
 
 using DataFrames
 using CSV
-using Gadfly
+using AlgebraOfGraphics
+using CairoMakie
 using Statistics
 using Dates
 using SummaryTables
@@ -13,6 +14,58 @@ import ...Types.Sector: DIRECTION_16_SECTORS, get_direction_sector
 import ...Types.TurbulenceIntensity: TurbulenceSectorStats, TurbulenceResults
 
 const DEFAULT_WIND_SPEED_BINS = collect(0.0:1.0:28.0)
+
+# IEC 61400-1 turbulence intensity reference values
+const IEC_TURBULENCE_CATEGORIES = Dict(
+    "A" => 0.16,  # High turbulence
+    "B" => 0.14,  # Medium turbulence  
+    "C" => 0.12   # Low turbulence
+)
+
+"""
+Calculate IEC turbulence intensity for a given wind speed and category
+
+# Arguments
+- `wind_speed::Float64`: Wind speed in m/s
+- `i_ref::Float64`: Reference turbulence intensity for the IEC category
+
+# Returns
+- `Float64`: IEC turbulence intensity at the given wind speed
+"""
+function calculate_iec_ti(wind_speed::Float64, i_ref::Float64)::Float64
+    # IEC 61400-1 formula: TI = I_ref * (0.75 + 5.6/V)
+    # where V is wind speed in m/s
+    wind_speed <= 0.0 && return 0.0
+    return i_ref * (0.75 + 5.6 / wind_speed)
+end
+
+"""
+Determine IEC turbulence category based on representative TI (P90)
+
+# Arguments
+- `representative_ti::Float64`: Representative turbulence intensity (P90: mean + 1.28*std)
+- `wind_speed::Float64`: Wind speed in m/s
+
+# Returns
+- `String`: IEC category ("A+", "A", "B", "C")
+"""
+function get_iec_category(representative_ti::Float64, wind_speed::Float64)::String
+    # Calculate IEC TI for each category at this wind speed
+    ti_a = calculate_iec_ti(wind_speed, IEC_TURBULENCE_CATEGORIES["A"])
+    ti_b = calculate_iec_ti(wind_speed, IEC_TURBULENCE_CATEGORIES["B"])
+    ti_c = calculate_iec_ti(wind_speed, IEC_TURBULENCE_CATEGORIES["C"])
+    
+    # Determine category based on representative TI
+    if representative_ti > ti_a
+        return "A+"
+    elseif representative_ti > ti_b
+        return "A"
+    elseif representative_ti > ti_c
+        return "B"
+    else
+        return "C"
+    end
+end
 
 """
 Find wind speed (avg, std) and direction sensors at the target height
@@ -131,7 +184,8 @@ function calculate_ti_by_wind_speed(
         mean_ti = Float64[],
         std_ti = Float64[],
         occurrence = Int[],
-        representative_ti = Float64[]
+        representative_ti = Float64[],
+        iec_category = String[]
     )
     
     # Calculate stats for each wind speed bin
@@ -147,7 +201,11 @@ function calculate_ti_by_wind_speed(
         # Calculate statistics
         bin_mean_ti = mean(skipmissing(bin_data.ti))
         bin_std_ti = nrow(bin_data) > 1 ? std(skipmissing(bin_data.ti)) : 0.0
-        bin_representative_ti = bin_mean_ti + bin_std_ti
+        bin_representative_ti = bin_mean_ti + 1.28 * bin_std_ti
+        
+        # Determine IEC category using bin center wind speed
+        bin_center_speed = (min_speed + max_speed) / 2.0
+        iec_category = get_iec_category(bin_representative_ti, bin_center_speed)
         
         # Add row to results
         push!(result, (
@@ -156,7 +214,8 @@ function calculate_ti_by_wind_speed(
             bin_mean_ti,
             bin_std_ti,
             nrow(bin_data),
-            bin_representative_ti
+            bin_representative_ti,
+            iec_category
         ))
     end
     
@@ -239,6 +298,130 @@ function save_meteodyn_ti(output_dir::String, ti_matrix::DataFrame, height::Floa
     end
     
     @info "Saved Meteodyn WT file: $meteodyn_path"
+end
+
+"""
+Create combined turbulence intensity comparison plot for multiple heights
+
+# Arguments
+- `mast_name::String`: Name of the mast
+- `heights::Vector{Float64}`: Heights to include (only >= 120m)
+- `output_dir::String`: Directory containing CSV files and where to save the plot
+
+# Description
+Creates a single plot showing:
+- Representative TI values from all heights >= 120m as lines
+- IEC Category A, B, C standard curves as filled bands
+- Only includes wind speeds >= 1 m/s
+"""
+function create_combined_ti_comparison_plot(
+    mast_name::String,
+    heights::Vector{Float64},
+    output_dir::String
+)::Nothing
+    # Filter heights >= 120m
+    plot_heights = filter(h -> h >= 120, heights)
+    sort!(plot_heights, rev=true)
+    
+    if isempty(plot_heights)
+        @warn "No heights >= 120m found for plotting"
+        return nothing
+    end
+    
+    all_meas_datas = map(plot_heights) do height
+        ti_by_ws_path = joinpath(output_dir, "ti_by_wind_speed_$(height)m.csv")
+        
+        if !isfile(ti_by_ws_path)
+            @warn "TI by wind speed file not found for height $(height)m"
+            return DataFrame(wind_speed = Float64[], ti = Float64[], category = String[])
+        end
+        
+        # Read data
+        ti_by_ws_df = CSV.read(ti_by_ws_path, DataFrame)
+        
+        # Filter for wind speeds >= 1 m/s
+        plot_data = filter(row -> row.wind_speed_min >= 1.0, ti_by_ws_df)
+        
+        # Calculate wind speed centers
+        plot_data.wind_speed_center = (plot_data.wind_speed_min .+ plot_data.wind_speed_max) ./ 2.0
+        
+        # Add to combined data
+        return DataFrame(
+            wind_speed = plot_data.wind_speed_center,
+            ti = plot_data.representative_ti,
+            category = "Spd $(Int(height))m"
+        )
+    end
+
+    
+    if isempty(all_meas_datas)
+        @warn "No measurement data found for heights >= 120m"
+        return nothing
+    end
+
+    all_meas_data = vcat(all_meas_datas...)
+    
+    # Create IEC standard curves for bands
+    wind_speeds = collect(1.0:0.1:30.0)
+    ti_a = [calculate_iec_ti(ws, IEC_TURBULENCE_CATEGORIES["A"]) for ws in wind_speeds]
+    ti_b = [calculate_iec_ti(ws, IEC_TURBULENCE_CATEGORIES["B"]) for ws in wind_speeds]
+    ti_c = [calculate_iec_ti(ws, IEC_TURBULENCE_CATEGORIES["C"]) for ws in wind_speeds]
+    
+    # Create IEC band data for linesfill
+    iec_band_data = vcat(
+    # IEC Category A (between A and B)
+    DataFrame(
+        wind_speed = wind_speeds,
+        lower = ti_b,
+        upper = ti_a,
+        category = "IEC Category A"
+    ),
+    # IEC Category B (between B and C)
+    DataFrame(
+        wind_speed = wind_speeds,
+        lower = ti_c,
+        upper = ti_b,
+        category = "IEC Category B"
+    ),
+    # IEC Category C (below Category C)
+    DataFrame(
+        wind_speed = wind_speeds,
+        lower = 0.0,
+        upper = ti_c,
+        category = "IEC Category C"
+    ))
+
+    # Create IEC bands using linesfill with their own color scale
+    iec_bands = data(iec_band_data) * 
+        mapping(:wind_speed, :upper, lower=:lower, color=:category => presorted => "IEC Categories") * 
+        visual(LinesFill, fillalpha=0.4, linewidth=0)
+    
+    # Create measurement lines with their own color scale
+    meas_lines = data(all_meas_data) * 
+        mapping(:wind_speed, :ti, color=:category => presorted => "Measurement Heights") *
+        visual(Lines, linewidth=2) 
+    
+    # Combine layers
+    combined_plot = iec_bands + meas_lines
+    
+    # Draw the combined plot
+    fig = draw(combined_plot,
+        axis=(
+            title="Turbulence Intensity, $mast_name",
+            xlabel="Wind Speed (m/s)",
+            ylabel="Turbulence Intensity", 
+            limits=(0, 30, 0, 1.0),
+            yticks=0:0.2:1.0
+        ),
+        figure=(size=(800, 600),)
+    )
+    
+    # Save the plot
+    plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
+    save(plot_path, fig, px_per_unit=2)
+    
+    @info "Saved combined TI comparison plot: $plot_path"
+    return nothing
 end
 
 """
@@ -342,6 +525,9 @@ function analyze_turbulence_intensity(config::AnalyzeConfig)
             mast_results["$(height)m"] = ti_results
 
         end
+        
+        # Create combined TI comparison plot for this mast
+        create_combined_ti_comparison_plot(mast.name, valid_heights, output_dir)
 
         results[mast.name] = mast_results
     end
@@ -387,7 +573,7 @@ function generate_turbulence_typst_reports(config::AnalyzeConfig)
         avg_heights = Set([s.height for s in ws_avg_sensors])
         sd_heights = Set([s.height for s in ws_sd_sensors])
         valid_heights = sort(collect(intersect(avg_heights, sd_heights)))
-        valid_heights = filter(h -> h > 100, valid_heights)
+        valid_heights = filter(h -> h >= 120, valid_heights)
         
         if isempty(valid_heights)
             continue
@@ -452,7 +638,7 @@ function generate_consolidated_turbulence_typst_report(
             
             # Format numeric columns
             for col in names(formatted_df)
-                if col in ["occurrence", "wind_speed_range"]
+                if col in ["occurrence", "wind_speed_range", "iec_category"]
                     continue
                 elseif col in ["mean_ti", "std_ti", "representative_ti"]
                     formatted_values = [ismissing(v) ? "-" : string(round(v, digits=3)) 
@@ -461,17 +647,29 @@ function generate_consolidated_turbulence_typst_report(
                 end
             end
             
-            # Select and reorder columns
-            formatted_df = select(formatted_df, 
-                :wind_speed_range, :mean_ti, :std_ti, :representative_ti, :occurrence)
+            # Select and reorder columns (include IEC category if it exists)
+            if "iec_category" in names(formatted_df)
+                formatted_df = select(formatted_df, 
+                    :wind_speed_range, :mean_ti, :std_ti, :representative_ti, :iec_category, :occurrence)
+            else
+                formatted_df = select(formatted_df, 
+                    :wind_speed_range, :mean_ti, :std_ti, :representative_ti, :occurrence)
+            end
             
             ti_ws_cols = [
                 :wind_speed_range => "风速区间 (m/s)",
                 :mean_ti => "平均湍流强度",
                 :std_ti => "湍流强度标准差", 
-                :representative_ti => "代表湍流强度",
-                :occurrence => "数据点数"
+                :representative_ti => "代表湍流强度(P90)"
             ]
+            
+            # Add IEC category column name if it exists
+            if "iec_category" in names(formatted_df)
+                push!(ti_ws_cols, :iec_category => "IEC类别")
+            end
+            
+            push!(ti_ws_cols, :occurrence => "数据点数")
+            
             rename!(formatted_df, ti_ws_cols...)
             
         elseif table_type == "summary"
@@ -505,7 +703,7 @@ function generate_consolidated_turbulence_typst_report(
                 :height => "高度 (m)",
                 :wind_speed_range => "风速范围",
                 :mean_ti => "平均湍流强度",
-                :representative_ti => "代表湍流强度", 
+                :representative_ti => "代表湍流强度(P90)", 
                 :ti_std => "湍流强度标准差"
             ]
             rename!(formatted_df, summary_cols...)
@@ -592,12 +790,33 @@ function generate_consolidated_turbulence_typst_report(
             end
         end
         
+        println(io, "== 湍流强度与IEC标准对比")
+        println(io)
+        
+        # Check if combined plot exists
+        combined_plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
+        if isfile(combined_plot_path)
+            println(io, "#figure(")
+            println(io, "  image(\"iec_comparison_combined.svg\", width: 100%),")
+            println(io, "  caption: [测风塔湍流强度与IEC 61400-1标准对比 (高度 ≥ 120m)]")
+            println(io, ")")
+            println(io)
+        end
+        
+        println(io, "== IEC标准说明")
+        println(io, "- IEC Category A: 高湍流强度 (I_ref = 0.16)")
+        println(io, "- IEC Category B: 中等湍流强度 (I_ref = 0.14)")
+        println(io, "- IEC Category C: 低湍流强度 (I_ref = 0.12)")
+        println(io, "- IEC湍流强度计算公式：TI = I_ref × (0.75 + 5.6/V)")
+        println(io)
+        
         println(io, "== 分析说明")
         println(io, "- 湍流强度计算公式：TI = 风速标准差 / max(平均风速, 1.0)")
-        println(io, "- 代表湍流强度：平均湍流强度 + 1.28 × 湍流强度标准差")
+        println(io, "- 代表湍流强度（P90）：平均湍流强度 + 1.28 × 湍流强度标准差")
         println(io, "- 分析采用16个风向扇区，每个扇区22.5度")
         println(io, "- 风速区间统计采用1m/s间隔，从0-28m/s")
         println(io, "- 各风速范围统计用于不同工程应用需求")
+        println(io, "- IEC类别判定基于代表湍流强度与IEC标准曲线的比较")
     end
     
     @info "Generated consolidated turbulence intensity Typst report: $typst_path"
