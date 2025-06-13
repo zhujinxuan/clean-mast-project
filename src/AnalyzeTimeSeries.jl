@@ -23,6 +23,7 @@ include("AnalyzeTimeSeries/WindFrequency.jl")
 include("AnalyzeTimeSeries/WindRose.jl")
 include("AnalyzeTimeSeries/Turbulence.jl")
 include("AnalyzeTimeSeries/Weibull.jl")
+include("AnalyzeTimeSeries/FiftyYearsExtremeWind.jl")
 
 # Import specific functions from sub-modules
 import .WindTemporal: analyze_wind_speed_timeseries, analyze_daily_pattern, 
@@ -33,6 +34,7 @@ import .WindFrequency: analyze_all_frequency
 import .WindRose: analyze_wind_rose, analyze_all_wind_rose
 import .Turbulence: analyze_turbulence_intensity, analyze_all_turbulence
 import .Weibull: analyze_weibull_distribution
+import .FiftyYearsExtremeWind: analyze_fifty_years_extreme_wind
 
 """
     analyze_all(config::AnalyzeConfig)
@@ -73,6 +75,10 @@ function analyze_all(config::AnalyzeConfig)
     # Weibull distribution analysis
     @info "Running Weibull distribution analysis..."
     results["weibull"] = analyze_weibull_distribution(config)
+    
+    # 50-year extreme wind analysis
+    @info "Running 50-year extreme wind analysis..."
+    results["fifty_years_extreme"] = analyze_fifty_years_extreme_wind(config)
     
     # Generate comprehensive Typst report
     @info "Generating comprehensive Typst report..."
@@ -239,7 +245,8 @@ function generate_comprehensive_report(config::AnalyzeConfig)
                 ("vertical-profile", "wind_shear_exponent.typ"),
                 ("wind-power-frequency", "wind-frequency.typ"),
                 ("weibull", "weibull.typ"),
-                ("turbulence", "turbulence.typ")
+                ("turbulence", "turbulence.typ"),
+                ("fifty-years", "fifty-years.typ")
             ]
             
             # Include each Typst file if it exists
