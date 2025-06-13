@@ -277,7 +277,7 @@ end
     analyze_method3_ewm(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
 
 Analyze extreme wind speed using Method 3: Extreme Wind Model (EWM) method based on GB/T 18451.1-2022.
-This method calculates 50-year return period wind speed as 1.25 times the 1-year return period wind speed.
+This method calculates 50-year return period wind speed as 1.25 times the observed maximum wind speed.
 
 # Arguments
 - `mast::MastAnalyzeConfig`: Mast configuration with time series data
@@ -285,57 +285,37 @@ This method calculates 50-year return period wind speed as 1.25 times the 1-year
 - `air_density::Float64`: Air density at sensor height
 
 # Returns
-- `NamedTuple`: Results containing extreme wind speeds and Gumbel parameters, or Nothing if analysis fails
+- `NamedTuple`: Results containing extreme wind speeds, or Nothing if analysis fails
 """
 function analyze_method3_ewm(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
-    # Extract wind speed data
-    wind_speeds = mast.timeSeriesData.df[:, sensor.columnName]
-    timestamps = mast.timeSeriesData.df[:, :timestamp]
+    # Extract and process maximum wind speed data using functional pipeline
+    result = mast.timeSeriesData.df[:, sensor.columnName] |>
+        speeds -> filter(x -> !ismissing(x) && !isnan(x) && x > 0, speeds) |>
+        valid_speeds -> begin
+            if isempty(valid_speeds)
+                @warn "No valid maximum wind speed data found at $(sensor.height)m for Method 3 (EWM)"
+                nothing
+            else
+                # Calculate Method 3 (EWM) results
+                observed_max = maximum(valid_speeds)
+                extreme_speed = 1.25 * observed_max  # V_e50 = 1.25 * V_max
+                extreme_speed_1225 = convert_to_standard_air_density(extreme_speed, air_density)
+                
+                @info "Method 3 (EWM) for $(sensor.height)m: Max observed = $(round(observed_max, digits=2)) m/s, 50-year = $(round(extreme_speed, digits=2)) m/s"
+                
+                (
+                    height = sensor.height,
+                    method = "极端风速模型法",
+                    extreme_wind_speed = extreme_speed,
+                    extreme_wind_speed_1225_density = extreme_speed_1225,
+                    air_density = air_density,
+                    observed_max = observed_max,
+                    sample_count = length(valid_speeds)
+                )
+            end
+        end
     
-    # Extract 5-day maxima
-    five_day_maxima = extract_five_day_maxima(wind_speeds, timestamps)
-    
-    if length(five_day_maxima) < 5
-        @warn "Insufficient 5-day maximum samples ($(length(five_day_maxima))) for $(sensor.height)m"
-        return nothing
-    end
-    
-    @info "Found $(length(five_day_maxima)) five-day maximum samples for $(sensor.height)m (EWM method)"
-    
-    # Fit Gumbel distribution
-    gumbel_params = fit_gumbel_distribution(five_day_maxima)
-    
-    if isnothing(gumbel_params)
-        @warn "Failed to fit Gumbel distribution for $(sensor.height)m (EWM method)"
-        return nothing
-    end
-    
-    μ, β = gumbel_params
-    
-    # Calculate 1-year return period wind speed
-    one_year_extreme = calculate_gumbel_return_period_wind_speed(μ, β, 1.0)
-    
-    # Calculate 50-year return period wind speed using EWM method: V_e50 = 1.25 * V_e1
-    extreme_speed = 1.25 * one_year_extreme
-    extreme_speed_1225 = convert_to_standard_air_density(extreme_speed, air_density)
-    
-    # Calculate sample statistics
-    sample_mean = mean(five_day_maxima)
-    sample_std = std(five_day_maxima)
-    
-    return (
-        height = sensor.height,
-        method = "极端风速模型法",
-        extreme_wind_speed = extreme_speed,
-        extreme_wind_speed_1225_density = extreme_speed_1225,
-        air_density = air_density,
-        gumbel_location = μ,
-        gumbel_scale = β,
-        one_year_extreme = one_year_extreme,
-        sample_count = length(five_day_maxima),
-        sample_mean = sample_mean,
-        sample_std = sample_std
-    )
+    return result
 end
 
 """
@@ -408,12 +388,8 @@ function analyze_fifty_years_extreme_wind(config::AnalyzeConfig)
             extreme_wind_speed = Float64[],
             extreme_wind_speed_1225_density = Float64[],
             air_density = Float64[],
-            gumbel_location = Float64[],
-            gumbel_scale = Float64[],
-            one_year_extreme = Float64[],
-            sample_count = Int[],
-            sample_mean = Float64[],
-            sample_std = Float64[]
+            observed_max = Float64[],
+            sample_count = Int[]
         )
         
         # Process Method 1: 5 times average wind speed using functional approach
@@ -691,14 +667,14 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_resu
             println(io, "风电场50年一遇最大（极大）风速可按一年一遇最大（极大）风速的1.25倍计算。")
             println(io, "")
             println(io, "计算公式：")
-            println(io, raw"$V_{\"e50\"} = 1.25 times V_{\"e1\"}$")
+            println(io, raw"$V_{\"e50\"} = 1.25 times V_{\"max\"}$")
             println(io, "")
             println(io, "其中：")
             println(io, raw"- $V_{\"e50\"}$：50年一遇最大风速")
-            println(io, raw"- $V_{\"e1\"}$：1年一遇最大风速")
+            println(io, raw"- $V_{\"max\"}$：观测期内最大风速")
             println(io, "")
-            println(io, "本方法基于五日最大风速法的Gumbel分布拟合，先计算1年重现期风速，")
-            println(io, "再乘以1.25系数得到50年重现期风速。")
+            println(io, "本方法直接采用观测期间的最大风速作为代表值，")
+            println(io, "乘以1.25系数得到50年重现期风速。")
             println(io, "")
             
             # Create Method 3 table
@@ -708,7 +684,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_resu
                 if nrow(method3_data) > 0
                     push!(method3_table_df, (
                         height = height,
-                        one_year_extreme = round(method3_data[1, :one_year_extreme], digits=2),
+                        observed_max = round(method3_data[1, :observed_max], digits=2),
                         extreme_wind_speed = round(method3_data[1, :extreme_wind_speed], digits=2),
                         extreme_wind_speed_1225 = round(method3_data[1, :extreme_wind_speed_1225_density], digits=2)
                     ))
@@ -717,7 +693,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_resu
             
             rename!(method3_table_df,
                 :height => "高度(m)",
-                :one_year_extreme => "1年重现期风速(m/s)",
+                :observed_max => "观测最大风速(m/s)",
                 :extreme_wind_speed => "50年重现期风速(m/s)",
                 :extreme_wind_speed_1225 => "标准密度风速(m/s)"
             )
