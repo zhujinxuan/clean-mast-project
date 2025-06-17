@@ -30,7 +30,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
     "wind_models" => [
         "WindModels/test_sectorized_regression_training.jl",
         "WindModels/test_direction_offset_training.jl"
-    ]
+    ],
+    "analyze_reconstruct_single" => ["AnalyzeReconstructSingle/test_analyze_reconstruct_single.jl"]
 )
 
 # Helper function to list available test sets

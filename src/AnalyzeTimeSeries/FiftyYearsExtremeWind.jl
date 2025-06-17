@@ -1233,10 +1233,10 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
         println(io, "= 50年一遇最大风速")
         println(io, "")
         println(io, "根据IEC 61400-1标准，50年重现期风速分为两类：")
-        println(io, "- 50年最大持续风速（Ve50）：50年重现期10分钟平均风速")
-        println(io, "- 50年极大极端风速（Vgust）：50年重现期10分钟最大风速")
+        println(io, raw"- 50年最大持续风速 $ V_{\"ref\"} $ ：50年重现期10分钟平均风速")
+        println(io, raw"- 50年极大极端风速 $ V_{\"e50\"} $ ：50年重现期10分钟最大风速")
         println(io, "")
-        println(io, "两者之间的关系为：Vgust = 1.4 × Ve50")
+        println(io, raw"两者之间的关系为：$ V_{\"e50\"} = 1.4 times V_{\"ref\"} $")
         println(io, "")
         
         # Method 1 Section
@@ -1247,12 +1247,12 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             println(io, "50年极大极端风速则在此基础上乘以1.4系数。")
             println(io, "")
             println(io, "计算公式：")
-            println(io, raw"$V_{\"sustained\"} = 5 times V_{\"avg\"}$")
-            println(io, raw"$V_{\"extreme\"} = 1.4 times V_{\"sustained\"} = 7 times V_{\"avg\"}$")
+            println(io, raw"$V_{\"ref\"} = 5 times V_{\"avg\"}$")
+            println(io, raw"$V_{\"e50\"} = 1.4 times V_{\"ref\"} = 7 times V_{\"avg\"}$")
             println(io, "")
             println(io, "其中：")
-            println(io, raw"- $V_{\"sustained\"}$：50年最大持续风速")
-            println(io, raw"- $V_{\"extreme\"}$：50年极大极端风速")
+            println(io, raw"- $V_{\"ref\"}$：50年最大持续风速")
+            println(io, raw"- $V_{\"e50\"}$：50年极大极端风速")
             println(io, raw"- $V_{\"avg\"}$：观测期间平均风速")
             println(io, "")
             
@@ -1379,8 +1379,8 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             # Q-Q plots section
             println(io, "=== Gumbel分布拟合检验（Q-Q图网格）")
             println(io, "")
-            println(io, "Q-Q图（分位数-分位数图）用于检验数据是否符合理论分布。图中包含95%置信带，")
-            println(io, "通过Monte Carlo模拟生成，用于评估拟合优度。如果数据点位于置信带内，")
+            println(io, "Q-Q图（分位数-分位数图）用于检验数据是否符合理论分布。图中包含通过蒙特卡洛模拟生成的95%置信带，")
+            println(io, "用于评估拟合优度。如果数据点位于置信带内，")
             println(io, "说明数据与Gumbel分布拟合良好；如果数据点显著偏离置信带，则表明分布假设可能不合适。")
             println(io, "")
             println(io, "*95%置信带检验指标*：")
@@ -1393,11 +1393,10 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             
             # Include grid plot for sustained analysis
             if !isnothing(method2_sustained_grid_plot_path)
-                println(io, "==== 持续风速Q-Q图网格")
                 println(io, "")
                 println(io, "#figure(")
                 println(io, "  image(\"./gumbel_qq_detailed_grid_sustained.svg\", width: 100%),")
-                println(io, "  caption: [测风塔$(mast_name) 持续风速Gumbel分布Q-Q图网格检验（95%置信带）]")
+                println(io, "  caption: [测风塔$(mast_name) 最大持续风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")
             end
@@ -1408,7 +1407,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
                 println(io, "")
                 println(io, "#figure(")
                 println(io, "  image(\"./gumbel_qq_detailed_grid_extreme.svg\", width: 100%),")
-                println(io, "  caption: [测风塔$(mast_name) 极端风速Gumbel分布Q-Q图网格检验（95%置信带）]")
+                println(io, "  caption: [测风塔$(mast_name) 极大极端风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")
             end
@@ -1421,15 +1420,15 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             println(io, "根据《风力发电机组设计要求》（GB/T 18451.1-2022）推荐的方法，对于稳态极端风速模型，")
             println(io, "风电场50年重现期风速可按观测期最大风速的1.25倍计算。")
             println(io, "")
-            println(io, "- 50年最大持续风速：V_sustained = 1.25 × V_max_avg")
-            println(io, "- 50年极大极端风速：V_extreme = 1.25 × V_max_max")
+            println(io, raw"- 50年最大持续风速：$ V_{\"ref\"} = 1.25 times V_{\"max avg\"} $")
+            println(io, raw"- 50年极大极端风速：$ V_{\"e50\"} = 1.25 times V_{\"max max\"} $")
             println(io, "")
             println(io, "计算公式：")
-            println(io, raw"$V_{\"50\"} = 1.25 times V_{\"max\"}$")
+            println(io, raw"$V_{\"50\"} = 1.25 times V_{\"annual max\"}$")
             println(io, "")
             println(io, "其中：")
             println(io, raw"- $V_{\"50\"}$：50年重现期风速")
-            println(io, raw"- $V_{\"max\"}$：观测期内相应类型的最大风速")
+            println(io, raw"- $V_{\"annual max\"}$：观测期内相应类型的最大风速")
             println(io, "")
             println(io, "本方法分别对平均风速和最大风速的观测期最大值")
             println(io, "乘以1.25系数得到对应的50年重现期风速。")
@@ -1601,19 +1600,12 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             wind_class = ["I类风区", "II类风区", "III类风区", "S类风区"],
             vref = [50.0, 42.5, 37.5, "场址专用"],
             ve50 = [70.0, 59.5, 52.5, "场址专用"],
-            description = [
-                "高风速区域",
-                "中等风速区域", 
-                "低风速区域",
-                "特殊场址条件"
-            ]
         )
         
         rename!(iec_reference_df,
             :wind_class => "风区等级",
-            :vref => "参考风速Vref(m/s)",
-            :ve50 => "50年极端风速Ve50(m/s)",
-            :description => "适用区域"
+            :vref => "最大持续风速Vref(m/s)",
+            :ve50 => "极大极端风速Ve50(m/s)",
         )
         
         iec_table = simple_table(iec_reference_df)

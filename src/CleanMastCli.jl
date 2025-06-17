@@ -194,6 +194,7 @@ Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
     using CleanMastProject.Command.AnalyzeEN
+    using CleanMastProject.Command.AnalyzeReconstructSingle
 
     """
     timeseries
@@ -255,6 +256,34 @@ Comonicon.@cast module Analyze
     """
     Comonicon.@cast function en(config_path::String; output::Union{String, Nothing}=nothing)
         AnalyzeEN.execute(config_path, output)
+    end
+
+    """
+    reconstruct-single
+
+    Compare time series data before and after single mast reconstruction.
+
+    # Arguments
+    - `config_path`: Path to analyze-reconstruct-single.yaml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl analyze reconstruct-single path/to/analyze-reconstruct-single.yaml
+    ```
+
+    The YAML configuration file should specify:
+    - Multiple masts with before/after reconstruction data files and sensor configurations
+    - Output directory for results (default: ./analyze-reconstruct-single)
+
+    For each mast, generates:
+    - Missing data points count before/after reconstruction
+    - Reconstruction rate and data coverage ratio
+    - R² matrix of wind speed correlations between heights
+    - Mean and standard deviation of wind direction differences between heights
+    - Comprehensive Typst report in Chinese
+    """
+    Comonicon.@cast function reconstruct_single(config_path::String)
+        AnalyzeReconstructSingle.execute(config_path)
     end
 end
 
