@@ -3,7 +3,8 @@ module TestTraining
 using Test
 using Dates
 using DataFrames
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange, WindSpeedSectorModel
 using CleanMastProject.ReconstructMeso.Training
 

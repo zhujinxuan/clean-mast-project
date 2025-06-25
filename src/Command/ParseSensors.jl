@@ -3,9 +3,9 @@ module ParseSensors
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, ParsedSensor
+using ...Types.SensorColumns: SensorColumn, ParsedSensor
 using ...SensorParser: parse_column_metadata, normalize_timestamp!, generate_csv_opts, rename_and_apply_multipliers!
-using ...Types.Utils: to_dict
+using ...Types.Utils: from_dict, to_dict
 
 export execute
 

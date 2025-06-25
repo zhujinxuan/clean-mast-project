@@ -13,7 +13,7 @@ using DataFrames
 using Dates
 using ...Types.CleanRules
 using ..ProcessTypes
-using ...MastTimeSeries
+using ...Types.MastTimeSeries: TimeSeriesData
 
 function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa IcingCriteria

@@ -2,6 +2,8 @@
 using Test
 using DataFrames
 using Dates
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.CleanMastRules.ProcessIcing
 
 @testset "Icing Rule Tests" begin

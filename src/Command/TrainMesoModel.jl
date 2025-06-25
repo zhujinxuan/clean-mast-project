@@ -17,9 +17,10 @@ using YAML
 
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.MastReferenceModel: getModelName, AbstractSpeedReferenceModel, AbstractDirectionReferenceModel, AbstractMastReferenceModel
-using ...Types.Utils: from_dict, show_as_dataframe
+using ...Types.Utils: from_dict
+using ...Types.SensorColumns: SensorColumn
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel
 using ...TrainMeso: train_meso_windspeed_sectorized, train_meso_winddirection_directionoffset

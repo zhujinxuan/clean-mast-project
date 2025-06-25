@@ -7,7 +7,8 @@ using YAML
 using CSV
 using Dates
 using ..Types.Utils: from_dict, to_dict
-using ..Types.MastTimeSeries: SensorColumn, TimeSeriesData, ParsedSensor
+using ..Types.MastTimeSeries: TimeSeriesData
+using ..Types.SensorColumns: SensorColumn, ParsedSensor
 using ..SensorParser: normalize_timestamp!, apply_multipliers!, parse_column_metadata
 import ..Types.CleanMastConfig: MappingRule, RuleOutcome, SensorConfig, MastConfig, MesoConfig
 

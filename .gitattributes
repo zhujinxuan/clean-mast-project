@@ -1,0 +1,5 @@
+# enforce LF for all text files
+* text eol=lf
+
+# (or, if you only care about .jl files:)
+# *.jl text eol=lf

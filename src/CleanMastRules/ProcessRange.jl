@@ -12,9 +12,9 @@ Missing values are ignored.
 module ProcessRange
 
 using DataFrames
-using ...Types.CleanRules
-using ..ProcessTypes
-using ...MastTimeSeries
+using ...Types.CleanRules: Rule, RuleViolation, RangeCriteria
+using ..ProcessTypes: filter_applicable_columns
+using ...Types.MastTimeSeries: TimeSeriesData
 
 function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa RangeCriteria

@@ -1,9 +1,9 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.ReconstructSingleMast.WindSpeedTraining
-using CleanMastProject.MastTimeSeries
 using CleanMastProject.Types.ReconstructSingleMast
 
 function generate_synthetic_wind_data(;

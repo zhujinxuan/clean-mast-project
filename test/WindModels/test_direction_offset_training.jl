@@ -5,7 +5,8 @@ using Statistics
 using CleanMastProject
 
 # Import specific types and modules
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel, DirectionPair, DirectionOffsetParams
 using CleanMastProject.WindDirectionModels.DirectionOffsetTraining: train
 

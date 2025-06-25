@@ -3,7 +3,8 @@ module TestTimeRangeProcessor
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, TimeRange
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange
 using CleanMastProject.TimeSeriesProcessing.TimeRangeProcessor: calculate_reconstruction_time_range
 

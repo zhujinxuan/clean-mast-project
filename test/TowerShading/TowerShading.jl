@@ -3,7 +3,8 @@ using DataFrames
 using Dates
 using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, SensorConfig, MastConfig, MappingRule, MesoConfig
 using CleanMastProject.Types.CleanRules: Rule
-using CleanMastProject.MastTimeSeries
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.TowerShading
 
 """Helper functions for creating test data"""
@@ -30,8 +31,8 @@ function create_test_config()::ProjectConfig
     
     analysis_config = AnalysisConfig(
         ConfigTimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")),
-        nothing,  # target_height
-        nothing   # ti_target_height
+        [60.0],  # target_height
+        [60.0]   # ti_target_height
     )
     
     return ProjectConfig(mast_config, meso_config, analysis_config)

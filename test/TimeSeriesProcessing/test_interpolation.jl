@@ -3,7 +3,8 @@ module TestInterpolation
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, TimeRange
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.TimeSeriesProcessing.Interpolation: interpolate_timeseries, interpolate_to_interval
 
 function runtests()

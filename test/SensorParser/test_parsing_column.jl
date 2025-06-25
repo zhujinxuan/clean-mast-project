@@ -6,7 +6,7 @@ using CleanMastProject.Types.Utils
 using CleanMastProject.SensorParser
 using CleanMastProject.CleanMastConfig
 using CleanMastProject.Types.CleanMastConfig
-using CleanMastProject.Types.MastTimeSeries
+using CleanMastProject.Types.SensorColumns: SensorColumn
 
 @testset "SensorParser Tests" begin
     @testset "Extract Format Placeholders" begin

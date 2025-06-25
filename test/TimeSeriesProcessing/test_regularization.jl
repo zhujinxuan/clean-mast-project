@@ -3,7 +3,8 @@ module TestRegularization
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, TimeRange
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.TimeSeriesProcessing.Regularization: ensure_regular_intervals, find_gaps, validate_intervals
 
 function runtests()

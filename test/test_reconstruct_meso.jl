@@ -3,7 +3,8 @@ module TestReconstructMeso
 using Test
 using Dates
 using DataFrames
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange
 using CleanMastProject.Types.CleanMastConfig: TimeRange
 using CleanMastProject.ReconstructMeso

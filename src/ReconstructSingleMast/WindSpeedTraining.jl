@@ -4,8 +4,8 @@ using DataFrames
 using Statistics
 using Dates
 using ...Types.ReconstructSingleMast
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
-using ...MastTimeSeries
+using ...Types.SensorColumns: SensorColumn
+using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.CleanMastConfig
 
 const DEFAULT_REFERENCE_HEIGHT = 50.0

@@ -5,7 +5,8 @@ using DataFrames
 using Dates
 using CleanMastProject.Types.CleanMastConfig: TimeRange
 using Statistics
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn, find_nearest_height_sensor
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange, WindSpeedTrainResult, 
                                             WindDirectionTrainResult, WindSpeedSectorModel
 using CleanMastProject.ReconstructMeso.DataProcessing: 

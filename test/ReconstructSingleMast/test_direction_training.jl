@@ -6,7 +6,7 @@ using CleanMastProject.ReconstructSingleMast.DirectionTraining
 using CleanMastProject.MastTimeSeries
 using CleanMastProject.Types.ReconstructSingleMast
 using CleanMastProject.Types.Sector: abs_degree_diff
-using CleanMastProject.Types.MastTimeSeries: SensorColumn
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.ReconstructSingleMast.DirectionTraining: get_speeds_for_averaging
 
 function create_test_data_for_vector_average()::TimeSeriesData

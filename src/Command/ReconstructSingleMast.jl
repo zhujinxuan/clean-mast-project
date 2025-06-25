@@ -3,7 +3,9 @@ module ReconstructSingleMast
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, from_dict, to_dict
+using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.SensorColumns: SensorColumn
+using ...Types.Utils: from_dict, to_dict
 using ...ReconstructSingleMast.ProcessData: process_data!
 
 export execute

@@ -3,7 +3,8 @@ module RepresentativeYearCalibration
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, TimeRange
+using ...Types.MastTimeSeries: TimeSeriesData, TimeRange
+using ...Types.SensorColumns: SensorColumn
 using ...Types.Utils: from_dict, to_dict
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ...RepresentativeYear: calibrate_to_representative_year

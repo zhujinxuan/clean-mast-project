@@ -3,7 +3,8 @@ module CleanData
 using CSV, YAML, DataFrames, Dates
 using ...Types.CleanMastConfig: ProjectConfig, MastConfig
 using ...CleanMastConfig: parse_config
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.SensorColumns: SensorColumn
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastRules.Process: apply_rules!
 

@@ -3,7 +3,8 @@ module AnalyzeConfiguration
 using DataFrames
 using Dates
 import ..Utils: from_dict, to_dict
-import ..MastTimeSeries: TimeSeriesData, SensorColumn
+import ..MastTimeSeries: TimeSeriesData
+using ..SensorColumns: SensorColumn
 using YAML
 using CSV
 

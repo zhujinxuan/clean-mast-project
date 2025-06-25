@@ -6,7 +6,8 @@ This implementation uses linear regression within defined wind direction sectors
 """
 module SectorizedRegression
 
-using ...MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.SensorColumns: SensorColumn
 import ...Utils: show_as_dataframe
 using ...Sector: DirectionSector
 import ...MastReferenceModel: AbstractSpeedReferenceModel,getModelName

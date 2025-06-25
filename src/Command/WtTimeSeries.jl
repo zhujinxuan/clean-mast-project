@@ -3,7 +3,8 @@ module WtTimeSeries
 using CSV, YAML, DataFrames, Dates
 using ...Types.CleanMastConfig
 using ...Types.Utils: from_dict
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData, find_nearest_height_sensor
+using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.SensorColumns: SensorColumn, find_nearest_height_sensor
 using ...CleanMastConfig
 
 export execute

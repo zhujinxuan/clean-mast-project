@@ -3,7 +3,8 @@ module TestReconstruction
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.ReconstructMeso: WindSpeedTrainResult, WindDirectionTrainResult, 
                                             WindSpeedSectorModel, TrainingTimeRange
 using CleanMastProject.ReconstructMeso.Reconstruction: get_sector_model, fill_missing_data

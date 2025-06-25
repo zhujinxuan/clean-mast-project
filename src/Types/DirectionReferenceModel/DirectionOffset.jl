@@ -7,7 +7,7 @@ This implementation calculates constant direction offsets between meso and mast 
 module DirectionOffset
 
 import ...MastReferenceModel: AbstractDirectionReferenceModel, getModelName
-using ...MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.SensorColumns: SensorColumn
 import ...Utils: show_as_dataframe
 using DataFrames
 using Statistics

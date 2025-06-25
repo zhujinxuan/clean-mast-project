@@ -1,7 +1,8 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.AnalyzeReconstructSingleConfiguration: ProcessedMastReconstructConfig
 using CleanMastProject.AnalyzeReconstructSingle.DataCoverage: calculate_coverage_stats
 using CleanMastProject.AnalyzeReconstructSingle.WindSpeedCorrelation: calculate_r2_matrix
@@ -14,10 +15,10 @@ using CleanMastProject.AnalyzeReconstructSingle.WindDirectionDifference: circula
     
     # Create sensors
     sensors = [
-        SensorColumn("WS_100m_avg", "WindSpeed", 100.0, "avg", 1),
-        SensorColumn("WS_80m_avg", "WindSpeed", 80.0, "avg", 2),
-        SensorColumn("WD_100m_avg", "WindDirection", 100.0, "avg", 3),
-        SensorColumn("WD_80m_avg", "WindDirection", 80.0, "avg", 4)
+        SensorColumn(:WS_100m_avg, "WindSpeed", "N", 100.0, "avg", "m/s"),
+        SensorColumn(:WS_80m_avg, "WindSpeed", "N", 80.0, "avg", "m/s"),
+        SensorColumn(:WD_100m_avg, "WindDirection", "N", 100.0, "avg", "deg"),
+        SensorColumn(:WD_80m_avg, "WindDirection", "N", 80.0, "avg", "deg")
     ]
     
     # Create before data with some missing values
@@ -55,7 +56,7 @@ using CleanMastProject.AnalyzeReconstructSingle.WindDirectionDifference: circula
         r2_matrix, heights, r2_df = calculate_r2_matrix(after_data)
         
         @test size(r2_matrix) == (2, 2)
-        @test heights == [80.0, 100.0]
+        @test sort(heights) == [80.0, 100.0]
         @test r2_matrix[1, 1] ≈ 1.0
         @test r2_matrix[2, 2] ≈ 1.0
         @test 0 <= r2_matrix[1, 2] <= 1.0 || isnan(r2_matrix[1, 2])

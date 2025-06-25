@@ -3,8 +3,9 @@ module ReconstructMeso
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.Utils: from_dict, to_dict, show_as_dataframe
+using ...Types.SensorColumns: SensorColumn
 using ...Types.MastReferenceModel: ReconstructionPayload
 using ...ReconstructMeso: merge_reconstruct_meso
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel

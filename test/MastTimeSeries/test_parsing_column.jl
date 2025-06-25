@@ -5,10 +5,9 @@ using YAML
 using DataFrames
 using Dates
 using CleanMastProject.Types.Utils
-using CleanMastProject.MastTimeSeries
 using CleanMastProject.CleanMastConfig
 using CleanMastProject.Types.CleanMastConfig
-using CleanMastProject.Types.MastTimeSeries
+using CleanMastProject.Types.SensorColumns: ParsedSensor
 using CleanMastProject.SensorParser
 
 @testset "MastTimeSeries Tests" begin

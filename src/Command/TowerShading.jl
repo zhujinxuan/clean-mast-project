@@ -3,8 +3,9 @@ module TowerShading
 using CSV, YAML, DataFrames
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ...Types.MastTimeSeries: TimeSeriesData
 using ...TowerShading: process_tower_shading!
+using ...Types.SensorColumns: SensorColumn
 using ...Types.Utils: from_dict, to_dict
 
 export execute

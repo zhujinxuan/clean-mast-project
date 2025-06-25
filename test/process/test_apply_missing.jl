@@ -3,7 +3,8 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.MastTimeSeries
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.CleanRules
 using CleanMastProject.CleanMastRules.Process
 using CleanMastProject.CleanMastRules.ProcessTypes

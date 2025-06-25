@@ -12,11 +12,11 @@ module ProcessLayerDiff
 
 using DataFrames
 using Dates
-using ...Types.CleanRules
+using ...Types.CleanRules: Rule, RuleViolation, LayerDifferenceCriteria, RangeCriteria
 using ...Types.Sector: abs_degree_diff
-using ..ProcessTypes
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
-using ...MastTimeSeries
+using ..ProcessTypes: filter_applicable_columns
+using ...Types.MastTimeSeries: TimeSeriesData
+using ...Types.SensorColumns: SensorColumn
 
 struct LayerComparison
   lower_col::Symbol

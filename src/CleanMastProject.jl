@@ -3,6 +3,8 @@ module CleanMastProject
 module Types
   include("./Types/Utils.jl")
   export Utils
+  include("./Types/SensorColumns.jl")
+  export SensorColumns
   include("./Types/MastTimeSeries.jl")
   export MastTimeSeries
   include("./Types/CleanRules.jl")
