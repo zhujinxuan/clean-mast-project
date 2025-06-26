@@ -1,5 +1,8 @@
 module CleanMastProject
 
+include("./CleanMastUtils.jl")
+export CleanMastUtils
+
 module Types
   include("./Types/Utils.jl")
   export Utils
@@ -9,6 +12,8 @@ module Types
   export MastTimeSeries
   include("./Types/CleanRules.jl")
   export CleanRules
+  include("./Types/ParseSensorsConfig.jl")
+  export ParseSensorsConfig
   include("./Types/CleanMastConfig.jl")
   export CleanMastConfig
   include("./Types/Sector.jl")
@@ -40,17 +45,18 @@ module Types
 end
 
 export Types
-include("./SensorFormats.jl")
-export SensorFormats
 
-include("./SensorParser.jl")
-export SensorParser
+module ParseSensors
+  include("./ParseSensors/ColumnParser.jl")
+  include("./ParseSensors/FileProcessor.jl")
+  include("./ParseSensors/DataFrameProcessor.jl")
+  include("./ParseSensors/CommandParseSensors.jl")
+  export ColumnParser, FileProcessor, DataFrameProcessor, CommandParseSensors
+end
+export ParseSensors
 
 include("./CleanMastConfig.jl");
 export CleanMastConfig
-
-include("./MastTimeSeries.jl")
-export MastTimeSeries
 
 module CleanMastRules
   include("./CleanMastRules/ProcessTypes.jl")
@@ -119,7 +125,6 @@ export AnalyzeEN
 
 module Command
   include("./Command/CheckConfig.jl")
-  include("./Command/ParseSensors.jl")
   include("./Command/CleanData.jl")
   include("./Command/CleanFiles.jl")
   include("./Command/TowerShading.jl")
@@ -134,7 +139,7 @@ module Command
   include("./Command/GenerateTimeSeriesReport.jl")
   include("./Command/AnalyzeEN.jl")
   include("./Command/AnalyzeReconstructSingle.jl")
-  export CheckConfig, ParseSensors, CleanData, CleanFiles, TowerShading, 
+  export CheckConfig, CleanData, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
          QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
          GenerateTimeSeriesReport, AnalyzeEN, AnalyzeReconstructSingle

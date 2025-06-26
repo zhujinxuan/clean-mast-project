@@ -12,17 +12,27 @@ function execute(dir::String)
         println("Created directory: $dir")
     end
 
-    # Get example config path relative to package root
+    # Get example file paths relative to package root
     package_root = dirname(dirname(dirname(@__FILE__)))
-    example_config = joinpath(package_root, "example_project", "config.yaml")
+    example_project_dir = joinpath(package_root, "example_project")
     
-    # Copy config file
-    target_config = joinpath(dir, "config.yaml")
-    if !isfile(target_config)
-        cp(example_config, target_config)
-        println("Copied example config to: $target_config")
-    else
-        println("Config file already exists: $target_config")
+    # Files and directories to copy
+    items_to_copy = [
+        "config.yaml",
+        "parse-sensors.toml",
+        "formats"
+    ]
+
+    for item in items_to_copy
+        source_path = joinpath(example_project_dir, item)
+        target_path = joinpath(dir, item)
+
+        if !isfile(target_path) && !isdir(target_path)
+            cp(source_path, target_path)
+            println("Copied example $item to: $target_path")
+        else
+            println("$item already exists: $target_path")
+        end
     end
 end
 

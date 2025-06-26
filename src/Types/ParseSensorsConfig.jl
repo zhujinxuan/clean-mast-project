@@ -1,0 +1,333 @@
+#src/Types/ParseSensorsConfig.jl
+"""
+Types for parse-sensors configuration, corresponding to {project}/parse-sensors.toml
+"""
+module ParseSensorsConfig
+
+import ..Utils: from_dict, to_dict
+
+struct RuleOutcome
+    sensorType::Union{String, Nothing}
+    sensorDirection::Union{String, Nothing}
+    height::Union{Float64, Nothing}
+    statType::Union{String, Nothing}
+    unit::Union{String, Nothing}
+    multiplier::Union{Float64, Nothing}
+end
+
+# Constructor for RuleOutcome with optional fields
+function RuleOutcome(;
+    sensorType::Union{String, Nothing}=nothing,
+    sensorDirection::Union{String, Nothing}=nothing,
+    height::Union{Float64, Nothing}=nothing,
+    statType::Union{String, Nothing}=nothing,
+    unit::Union{String, Nothing}=nothing,
+    multiplier::Union{Float64, Nothing}=nothing
+)
+    RuleOutcome(sensorType, sensorDirection, height, statType, unit, multiplier)
+end
+
+function to_dict(r::RuleOutcome)::Dict{String, Any}
+    Dict{String, Any}(
+        "sensorType" => r.sensorType,
+        "sensorDirection" => r.sensorDirection,
+        "height" => r.height,
+        "statType" => r.statType,
+        "unit" => r.unit,
+        "multiplier" => r.multiplier
+    )
+end
+
+function from_dict(::Type{RuleOutcome}, dict::Dict{String, Any})::RuleOutcome
+    RuleOutcome(
+        get(dict, "sensorType", nothing),
+        get(dict, "sensorDirection", nothing),
+        get(dict, "height", nothing) |> h -> h isa Number ? convert(Float64, h) : nothing,
+        get(dict, "statType", nothing),
+        get(dict, "unit", nothing),
+        get(dict, "multiplier", nothing) |> m -> m isa Number ? convert(Float64, m) : nothing
+    )
+end
+
+# Define a single mapping rule
+struct MappingRule
+    match::Dict{String, Union{Nothing, Float64, String}}
+    rule::RuleOutcome
+end
+
+# Constructor from dictionary for MappingRule
+function from_dict(::Type{MappingRule}, dict::Dict{String, Any})::MappingRule
+    match_dict = Dict{String, Union{Nothing, Float64, String}}(
+        k => v isa Number ? convert(Float64, v) : v 
+        for (k, v) in dict["match"]
+    )
+    
+    MappingRule(match_dict, from_dict(RuleOutcome, Dict{String, Any}(dict["rule"])))
+end
+
+function to_dict(mr::MappingRule)::Dict{String, Any}
+    Dict{String, Any}(
+        "match" => mr.match,
+        "rule" => to_dict(mr.rule)
+    )
+end
+
+# Safe version of something that returns nothing if all args are nothing
+safe_something(args...) = all(isnothing, args) ? nothing : something(args...)
+
+# Functional merge for RuleOutcome
+merge_outcomes(a::RuleOutcome, b::RuleOutcome)::RuleOutcome =
+RuleOutcome(
+            safe_something(b.sensorType, a.sensorType, nothing),
+            safe_something(b.sensorDirection, a.sensorDirection, nothing),
+            safe_something(b.height, a.height, nothing),
+            safe_something(b.statType, a.statType, nothing),
+            safe_something(b.unit, a.unit, nothing),
+            safe_something(b.multiplier, a.multiplier, nothing)
+           )
+
+# Functional rule matching
+function matches_rule(rule::MappingRule, input::Dict{String, Any})::Bool
+    all(((k,v),) -> get(input, k, nothing) == v, pairs(rule.match))
+end
+
+# Functional apply_mapping
+function apply_mapping(rules::Vector{MappingRule}, input::Dict{String, Any})::RuleOutcome
+  matching_rules = filter(rule -> matches_rule(rule, input), rules)
+  isempty(matching_rules) && return RuleOutcome(nothing, nothing, nothing, nothing, nothing, nothing)
+
+  reduce(merge_outcomes, map(rule -> rule.rule, matching_rules))
+end
+
+"""
+Configuration for regex patterns in sensor column matching
+"""
+struct PatternConfig
+    patterns::Dict{String, String}  # placeholder_name => regex_pattern
+end
+
+function from_dict(::Type{PatternConfig}, dict::Dict{String, Any})::PatternConfig
+    PatternConfig(Dict{String, String}(dict))
+end
+
+function to_dict(pc::PatternConfig)::Dict{String, Any}
+    Dict{String, Any}(pc.patterns)
+end
+
+"""
+Enhanced sensor column configuration with separate match and format patterns
+"""
+struct SensorColumnConfig
+    match::String                           # Pattern for extracting data from column names
+    format::String                          # Pattern for normalizing column names
+    patterns::Union{PatternConfig, Nothing} # Optional regex patterns for placeholders
+end
+
+function from_dict(::Type{SensorColumnConfig}, dict::Dict{String, Any})::SensorColumnConfig
+    patterns = if haskey(dict, "patterns")
+        from_dict(PatternConfig, Dict{String, Any}(dict["patterns"]))
+    else
+        nothing
+    end
+    
+    SensorColumnConfig(
+        dict["match"],
+        dict["format"],
+        patterns
+    )
+end
+
+function to_dict(scc::SensorColumnConfig)::Dict{String, Any}
+    result = Dict{String, Any}(
+        "match" => scc.match,
+        "format" => scc.format
+    )
+    
+    if !isnothing(scc.patterns)
+        result["patterns"] = to_dict(scc.patterns)
+    end
+    
+    result
+end
+
+
+
+"""
+Enhanced sensor format configuration for TOML-based sensor definitions
+"""
+struct SensorFormatConfig
+    columns::Vector{SensorColumnConfig}     # Column parsing configurations
+    timestamp_column::String                # Name of timestamp column
+    timestamp_format::Union{String, Nothing} # Optional timestamp format
+    delim::Union{String, Nothing}           # Optional delimiter
+    skip_to::Union{Int64, Nothing}          # Optional lines to skip
+    mappings::Vector{MappingRule}           # Mapping rules for transformation
+end
+
+function from_dict(::Type{SensorFormatConfig}, dict::Dict{String, Any})::SensorFormatConfig
+    columns = if haskey(dict, "columns")
+        [from_dict(SensorColumnConfig, Dict{String, Any}(col)) for col in dict["columns"]]
+    else
+        SensorColumnConfig[]
+    end
+    
+    mappings = if haskey(dict, "mappings")
+        [from_dict(MappingRule, Dict{String, Any}(mapping)) for mapping in dict["mappings"]]
+    else
+        MappingRule[]
+    end
+    
+    SensorFormatConfig(
+        columns,
+        dict["timestamp_column"],
+        get(dict, "timestamp_format", nothing),
+        get(dict, "delim", nothing),
+        get(dict, "skip_to", nothing),
+        mappings
+    )
+end
+
+function to_dict(sfc::SensorFormatConfig)::Dict{String, Any}
+    result = Dict{String, Any}(
+        "columns" => [to_dict(col) for col in sfc.columns],
+        "timestamp_column" => sfc.timestamp_column,
+        "mappings" => [to_dict(mapping) for mapping in sfc.mappings]
+    )
+    
+    if !isnothing(sfc.timestamp_format)
+        result["timestamp_format"] = sfc.timestamp_format
+    end
+    if !isnothing(sfc.delim)
+        result["delim"] = sfc.delim
+    end
+    if !isnothing(sfc.skip_to)
+        result["skip_to"] = sfc.skip_to
+    end
+    
+    result
+end
+
+"""
+Output configuration for parse-sensors processing
+"""
+struct ParseSensorsOutputConfig
+    output_data::Union{String, Nothing}    # Optional output data file path
+    output_sensor::Union{String, Nothing}  # Optional output sensor file path
+end
+
+function from_dict(::Type{ParseSensorsOutputConfig}, dict::Dict{String, Any})::ParseSensorsOutputConfig
+    ParseSensorsOutputConfig(
+        get(dict, "output_data", nothing),
+        get(dict, "output_sensor", nothing)
+    )
+end
+
+function to_dict(psoc::ParseSensorsOutputConfig)::Dict{String, Any}
+    result = Dict{String, Any}()
+    
+    if !isnothing(psoc.output_data)
+        result["output_data"] = psoc.output_data
+    end
+    if !isnothing(psoc.output_sensor)
+        result["output_sensor"] = psoc.output_sensor
+    end
+    
+    result
+end
+
+"""
+Configuration for a single file in parse-sensors processing
+"""
+struct ParseSensorsFileConfig
+    input::String                                    # Input file path
+    name::Union{String, Nothing}                     # Optional name (defaults to basename)
+    sensor::Union{String, SensorFormatConfig}        # Sensor config (file path or embedded)
+    output::ParseSensorsOutputConfig                 # Output configuration
+end
+
+function from_dict(::Type{ParseSensorsFileConfig}, dict::Dict{String, Any})::ParseSensorsFileConfig
+    # Handle sensor as either string (file path) or embedded config
+    sensor = if dict["sensor"] isa String
+        dict["sensor"]
+    else
+        from_dict(SensorFormatConfig, Dict{String, Any}(dict["sensor"]))
+    end
+    
+    # Handle output config
+    output = if haskey(dict, "output")
+        from_dict(ParseSensorsOutputConfig, Dict{String, Any}(dict["output"]))
+    else
+        ParseSensorsOutputConfig(nothing, nothing)
+    end
+    
+    ParseSensorsFileConfig(
+        dict["input"],
+        get(dict, "name", nothing),
+        sensor,
+        output
+    )
+end
+
+function to_dict(psfc::ParseSensorsFileConfig)::Dict{String, Any}
+    result = Dict{String, Any}(
+        "input" => psfc.input,
+        "output" => to_dict(psfc.output)
+    )
+    
+    if !isnothing(psfc.name)
+        result["name"] = psfc.name
+    end
+    
+    if psfc.sensor isa String
+        result["sensor"] = psfc.sensor
+    else
+        result["sensor"] = to_dict(psfc.sensor)
+    end
+    
+    result
+end
+
+"""
+Main configuration for parse-sensors.toml
+"""
+struct ParseSensorsConfiguration
+    files::Vector{ParseSensorsFileConfig}
+end
+
+function from_dict(::Type{ParseSensorsConfiguration}, dict::Dict{String, Any})::ParseSensorsConfiguration
+    files = [from_dict(ParseSensorsFileConfig, Dict{String, Any}(file)) for file in dict["files"]]
+    ParseSensorsConfiguration(files)
+end
+
+function to_dict(psc::ParseSensorsConfiguration)::Dict{String, Any}
+    Dict{String, Any}(
+        "files" => [to_dict(file) for file in psc.files]
+    )
+end
+
+export RuleOutcome, MappingRule, PatternConfig, SensorColumnConfig, SensorFormatConfig,
+       ParseSensorsOutputConfig, ParseSensorsFileConfig, ParseSensorsConfiguration,
+       apply_mapping, matches_rule, merge_outcomes, safe_something
+
+# --- Normalized Configuration Structs ---
+# These structs hold the fully resolved and absolute-pathed configuration after loading.
+
+struct ParseSensorsOutputConfigNormalized
+    output_data::String
+    output_sensor::String
+end
+
+struct ParseSensorsFileConfigNormalized
+    input::String
+    name::String
+    sensor::SensorFormatConfig
+    output::ParseSensorsOutputConfigNormalized
+end
+
+struct ParseSensorsConfigurationNormalized
+    files::Vector{ParseSensorsFileConfigNormalized}
+end
+
+export ParseSensorsOutputConfigNormalized, ParseSensorsFileConfigNormalized, ParseSensorsConfigurationNormalized
+       
+end # end module 

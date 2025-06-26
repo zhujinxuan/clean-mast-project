@@ -3,7 +3,7 @@ using DataFrames
 using Dates
 using StatsBase: countmap
 using CleanMastProject.ReconstructSingleMast.DirectionTraining
-using CleanMastProject.MastTimeSeries
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.ReconstructSingleMast
 using CleanMastProject.Types.Sector: abs_degree_diff
 using CleanMastProject.Types.SensorColumns: SensorColumn

@@ -1,11 +1,12 @@
 module CleanData
 
-using CSV, YAML, DataFrames, Dates
+using CSV, YAML, DataFrames, Dates, TOML
 using ...Types.CleanMastConfig: ProjectConfig, MastConfig
 using ...CleanMastConfig: parse_config
 using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.SensorColumns: SensorColumn
 using ...Types.Utils: from_dict, to_dict
+using ...CleanMastUtils: load_dict
 using ...CleanMastRules.Process: apply_rules!
 
 export execute, process_clean_data!
@@ -36,26 +37,25 @@ end
 function execute(dir::String)
     config = parse_config(dir)
     
-    # Read raw data file
-    original_filename = config.mast.data_path
-    raw_filename = "raw.$(original_filename).csv"
+    # Construct paths using the logical name
+    name = config.mast.name
+    raw_filename = "raw/$(name).csv"
     raw_filepath = joinpath(dir, raw_filename)
     
     if !isfile(raw_filepath)
-        error("Raw data file not found: $raw_filepath. Please run process-sensors first.")
+        error("Raw data file not found: $raw_filepath. Please run 'project parse-sensors' first.")
     end
     
-    # Read sensors from raw.{data_path}.sensors.yaml
-    sensors_filepath = joinpath(dir, "raw.$(original_filename).sensors.yaml")
+    # Read sensors from the new TOML format
+    sensors_filepath = joinpath(dir, "raw/$(name).sensors.toml")
     if !isfile(sensors_filepath)
-        error("Raw sensors file not found: $sensors_filepath. Please run process-sensors first.")
+        error("Raw sensors file not found: $sensors_filepath. Please run 'project parse-sensors' first.")
     end
     
-
-    sensors_yaml = YAML.load_file(sensors_filepath)
+    sensors_dict = load_dict(sensors_filepath)
     
-    # Convert YAML sensors to SensorColumn objects
-    sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_yaml["sensors"]]
+    # Convert TOML sensors to SensorColumn objects
+    sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_dict["sensors"]]
 
     # Read raw data and sensors
     df = CSV.read(
@@ -76,21 +76,23 @@ function execute(dir::String)
     result = process_clean_data!(config.mast, time_series)
     
     # Save processed data
-    output_filename = "clean_data.$(original_filename).csv"
+    output_filename = "clean/$(name).csv"
+    output_dir = dirname(joinpath(dir, output_filename))
+    mkpath(output_dir)
     CSV.write(joinpath(dir, output_filename), result.df)
     
-    # Save updated sensors to YAML
+    # Save updated sensors to YAML in the same directory
+    sensors_output_path = joinpath(dir, "clean/$(name).sensors.yaml")
     sensors_yaml = Dict(
         "sensors" => [to_dict(s) for s in result.sensors]
     )
-    
-    open(joinpath(dir, "sensors.yaml"), "w") do io
+    open(sensors_output_path, "w") do io
         YAML.write(io, sensors_yaml)
     end
     
     println("Clean data processing completed:")
     println("- Saved processed data to $(output_filename)")
-    println("- Saved updated sensors to sensors.yaml")
+    println("- Saved updated sensors to $(sensors_output_path)")
 end
 
 end 

@@ -1,6 +1,6 @@
 ﻿Mast:
-  data_path: nrg-data.txt  # Path to data file (relative to config.yaml)
-  sensor: "nrg"
+  name: "nrg-mast"
+  # data_path field removed - now referenced by name from parse-sensors.toml
   rules:
     - name: "High Wind Speed Layer Difference"
       sensorType: "WindSpeed"
@@ -74,8 +74,8 @@
         time_range: 7200
         max_change: 1
 Meso:
-  data_path: era5.txt
-  sensor: "freemeso-meso"
+  name: "era5"
+  # data_path field removed - now referenced by name from parse-sensors.toml
 Analysis:
   time_range:
     min: null

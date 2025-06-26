@@ -1,0 +1,41 @@
+# Parse Sensors Configuration
+# This file defines which data files to process and their sensor formats
+
+# Process NRG mast data
+[[files]]
+input = "nrg-data.txt"
+# Optional: defaults to input filename without extension
+name = "nrg-mast"  
+sensor = "formats/sensor/nrg.toml"  # Path to sensor format definition
+[files.output]
+# Optional: specify custom output paths
+# If not specified, defaults to:
+# - output_data: "raw/{name}.csv"
+# - output_sensor: "raw/{name}.sensors.toml"
+output_data = "raw/nrg-mast.csv"
+output_sensor = "raw/nrg-mast.sensors.toml"
+
+# Process ERA5 meso data  
+[[files]]
+input = "era5.txt"
+# Optional: defaults to input filename without extension
+name = "era5-meso"
+sensor = "formats/sensor/freemeso-meso.toml"
+# Output paths will use defaults: raw/era5.csv and raw/era5.sensors.toml
+
+# Example with embedded sensor configuration (alternative to file reference)
+# [[files]]
+# input = "custom-data.txt"
+# name = "custom-data" # Optional: defaults to input filename without extension
+# [files.sensor]
+# timestamp_column = "Time"
+# timestamp_format = "yyyy-mm-dd HH:MM:SS"
+# [[files.sensor.columns]]
+# match = "{sensorType}_{height}m_{statType}"
+# format = "{sensorType}_{height}m_{statType} [{unit}]"
+# [[files.sensor.mappings]]
+# [files.sensor.mappings.match]
+# sensorType = "WS"
+# [files.sensor.mappings.rule]
+# sensorType = "WindSpeed"
+# unit = "m/s" 

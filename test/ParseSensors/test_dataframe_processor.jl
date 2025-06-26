@@ -1,16 +1,12 @@
 # 文件：./test/MastTimeSeries/test_parsing_column.jl
 
 using Test
-using YAML
 using DataFrames
 using Dates
-using CleanMastProject.Types.Utils
-using CleanMastProject.CleanMastConfig
-using CleanMastProject.Types.CleanMastConfig
 using CleanMastProject.Types.SensorColumns: ParsedSensor
-using CleanMastProject.SensorParser
+using CleanMastProject.ParseSensors.DataFrameProcessor
 
-@testset "MastTimeSeries Tests" begin
+@testset "DataFrameProcessor Tests" begin
     @testset "Apply Multipliers and Rename" begin
         df = DataFrame(
             "timestamp" => [DateTime(2024,1,1)],
@@ -94,6 +90,6 @@ using CleanMastProject.SensorParser
         ]
 
         # Should issue a warning but not error
-        @test_logs (:warn, "Original column missing_col not found in DataFrame") rename_and_apply_multipliers!(df, sensors)
+        @test_logs (:warn, "Original column missing_col not found for renaming.") rename_and_apply_multipliers!(df, sensors)
     end
 end

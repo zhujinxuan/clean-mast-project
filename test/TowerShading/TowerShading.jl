@@ -1,7 +1,7 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, SensorConfig, MastConfig, MappingRule, MesoConfig
+using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, MastConfig, MesoConfig
 using CleanMastProject.Types.CleanRules: Rule
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
@@ -9,30 +9,17 @@ using CleanMastProject.TowerShading
 
 """Helper functions for creating test data"""
 function create_test_config()::ProjectConfig
-    sensor_config = SensorConfig(
-        ["Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}"],
-        "Timestamp",
-        "yyyy-mm-dd HH:MM:SS",
-        nothing,
-        1,
-        MappingRule[]
-    )
-    
     mast_config = MastConfig(
-        "data.csv",
-        sensor_config,
+        "test-mast",
         Rule[]
     )
     
     meso_config = MesoConfig(
-        "meso.csv",
-        sensor_config
+        "test-meso"
     )
     
     analysis_config = AnalysisConfig(
-        ConfigTimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00")),
-        [60.0],  # target_height
-        [60.0]   # ti_target_height
+        ConfigTimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00"))
     )
     
     return ProjectConfig(mast_config, meso_config, analysis_config)

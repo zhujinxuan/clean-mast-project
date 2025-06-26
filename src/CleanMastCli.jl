@@ -12,7 +12,7 @@ Comonicon.@cast module Project
     using CleanMastProject.Command.QuickStart
     using CleanMastProject.Command.CheckConfig
     using CleanMastProject.Command.CleanFiles
-    using CleanMastProject.Command.ParseSensors
+    using CleanMastProject.ParseSensors.CommandParseSensors
 
     """
     init
@@ -53,14 +53,19 @@ Comonicon.@cast module Project
     """
     parse-sensors
 
-    Process sensors for both mast and meso data.
+    Process sensor data based on a TOML configuration file.
     Creates raw data files and sensor metadata files.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to the parse-sensors.toml configuration file.
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl project parse-sensors path/to/project/parse-sensors.toml
+    ```
     """
-    Comonicon.@cast function parse_sensors(dir::String)
-        ParseSensors.execute(dir)
+    Comonicon.@cast function parse_sensors(config_path::String)
+        CommandParseSensors.execute(config_path)
     end
 end
 

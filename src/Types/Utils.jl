@@ -35,6 +35,27 @@ function to_disk(paths:: Vector{String}, obj::T) where T
     error("to_disk not implemented for type $T")
 end
 
-export from_dict, to_dict, show_as_dataframe, from_disk, to_disk
+"""
+    strip_nothing_values(d::Dict)
+
+Recursively remove key-value pairs from a dictionary where the value is `nothing`.
+This is useful for preparing data to be saved in formats like TOML that do not support null types.
+"""
+function strip_nothing_values(d::Dict{String, Any}) :: Dict{String, Any}
+    clean_dict = Dict{String, Any}()
+    for (k, v) in d
+        if v isa Dict
+            clean_dict[k] = strip_nothing_values(v)
+        elseif v isa Vector
+            # Process each item in the vector, stripping nothing from nested dicts
+            clean_dict[k] = [item isa Dict ? strip_nothing_values(Dict{String, Any}(item)) : item for item in v]
+        elseif !isnothing(v)
+            clean_dict[k] = v
+        end
+    end
+    return clean_dict
+end
+
+export from_dict, to_dict, show_as_dataframe, from_disk, to_disk, strip_nothing_values
 
 end 

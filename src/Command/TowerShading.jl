@@ -14,8 +14,8 @@ function execute(dir::String)
     config = parse_config(dir)
     
     # Read clean data file
-    original_filename = config.mast.data_path
-    clean_filename = "clean_data.$(original_filename).csv"
+    name = config.mast.name
+    clean_filename = "clean/$(name).csv"
     clean_filepath = joinpath(dir, clean_filename)
     
     if !isfile(clean_filepath)
@@ -23,7 +23,7 @@ function execute(dir::String)
     end
     
     # Read sensors from YAML
-    sensors_filepath = joinpath(dir, "sensors.yaml")
+    sensors_filepath = joinpath(dir, "clean/$(name).sensors.yaml")
     if !isfile(sensors_filepath)
         error("Sensors file not found: $sensors_filepath")
     end
@@ -42,21 +42,22 @@ function execute(dir::String)
     result = process_tower_shading!(config, time_series)
     
     # Save processed data
-    output_filename = "tower_shading.$(original_filename).csv"
+    output_filename = "tower_shading/$(name).csv"
+    mkpath(dirname(joinpath(dir, output_filename)))
     CSV.write(joinpath(dir, output_filename), result.df)
     
     # Save updated sensors to YAML
+    sensors_output_path = "tower_shading/$(name).sensors.yaml"
     sensors_yaml = Dict(
         "sensors" => [to_dict(s) for s in result.sensors]
     )
-    
-    open(joinpath(dir, "tower-shading-sensors.yaml"), "w") do io
+    open(joinpath(dir, sensors_output_path), "w") do io
         YAML.write(io, sensors_yaml)
     end
     
     println("Tower shading processing completed:")
     println("- Saved processed data to $(output_filename)")
-    println("- Saved updated sensors to tower-shading-sensors.yaml")
+    println("- Saved updated sensors to $(sensors_output_path)")
 end
 
 end 

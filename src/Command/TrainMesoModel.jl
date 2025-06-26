@@ -14,12 +14,14 @@ using Dates
 using JLD2
 using CSV
 using YAML
+using TOML
 
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
 using ...Types.MastTimeSeries: TimeSeriesData
 using ...Types.MastReferenceModel: getModelName, AbstractSpeedReferenceModel, AbstractDirectionReferenceModel, AbstractMastReferenceModel
 using ...Types.Utils: from_dict
+using ...CleanMastUtils: load_dict
 using ...Types.SensorColumns: SensorColumn
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
 using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel
@@ -144,8 +146,8 @@ function execute(dir::String)
     config = parse_config(dir)
     
     # Read reconstructed mast data
-    original_filename = config.mast.data_path
-    reconstructed_filename = "reconstruct_single_mast.$(original_filename).csv"
+    mast_name = config.mast.name
+    reconstructed_filename = "reconstruct_single_mast/$(mast_name).csv"
     reconstructed_filepath = joinpath(dir, reconstructed_filename)
     
     if !isfile(reconstructed_filepath)
@@ -153,34 +155,35 @@ function execute(dir::String)
     end
     
     # Read sensors from reconstruct_single_mast-sensors.yaml
-    sensors_filepath = joinpath(dir, "reconstruct_single_mast-sensors.yaml")
+    sensors_filepath = joinpath(dir, "reconstruct_single_mast/$(mast_name).sensors.yaml")
     if !isfile(sensors_filepath)
         error("Reconstructed mast sensors file not found: $sensors_filepath")
     end
     
     # Read mast data and sensors
     mast_df = CSV.read(reconstructed_filepath, DataFrame)
-    sensors_yaml = YAML.load_file(sensors_filepath)
-    mast_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_yaml["sensors"]]
+    sensors_dict = load_dict(sensors_filepath)
+    mast_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in sensors_dict["sensors"]]
     mast_ts = TimeSeriesData(mast_df, mast_sensors)
     
     # Read meso data from raw files
-    meso_filename = "raw.$(config.meso.data_path).csv"
+    meso_name = config.meso.name
+    meso_filename = "raw/$(meso_name).csv"
     meso_filepath = joinpath(dir, meso_filename)
     if !isfile(meso_filepath)
-        error("Raw meso data file not found: $meso_filepath. Please run process-sensors first.")
+        error("Raw meso data file not found: $meso_filepath. Please run 'project parse-sensors' first.")
     end
     
-    # Read meso sensors from raw.{data_path}.sensors.yaml
-    meso_sensors_filepath = joinpath(dir, "raw.$(config.meso.data_path).sensors.yaml")
+    # Read meso sensors from raw TOML file
+    meso_sensors_filepath = joinpath(dir, "raw/$(meso_name).sensors.toml")
     if !isfile(meso_sensors_filepath)
-        error("Raw meso sensors file not found: $meso_sensors_filepath. Please run process-sensors first.")
+        error("Raw meso sensors file not found: $meso_sensors_filepath. Please run 'project parse-sensors' first.")
     end
     
     # Read meso data and sensors
     meso_df = CSV.read(meso_filepath, DataFrame)
-    meso_sensors_yaml = YAML.load_file(meso_sensors_filepath)
-    meso_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in meso_sensors_yaml["sensors"]]
+    meso_sensors_dict = load_dict(meso_sensors_filepath)
+    meso_sensors = [from_dict(SensorColumn, Dict{String,Any}(s)) for s in meso_sensors_dict["sensors"]]
     meso_ts = TimeSeriesData(meso_df, meso_sensors)
     
     # Train models

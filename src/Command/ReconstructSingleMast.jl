@@ -14,8 +14,8 @@ function execute(dir::String)
     config = parse_config(dir)
     
     # Read tower shading data file
-    original_filename = config.mast.data_path
-    tower_shading_filename = "tower_shading.$(original_filename).csv"
+    name = config.mast.name
+    tower_shading_filename = "tower_shading/$(name).csv"
     tower_shading_filepath = joinpath(dir, tower_shading_filename)
     
     if !isfile(tower_shading_filepath)
@@ -23,7 +23,7 @@ function execute(dir::String)
     end
     
     # Read sensors from tower-shading-sensors.yaml
-    sensors_filepath = joinpath(dir, "tower-shading-sensors.yaml")
+    sensors_filepath = joinpath(dir, "tower_shading/$(name).sensors.yaml")
     if !isfile(sensors_filepath)
         error("Tower shading sensors file not found: $sensors_filepath")
     end
@@ -42,15 +42,16 @@ function execute(dir::String)
     reconstruction_results = process_data!(config, time_series)
     
     # Save processed data
-    output_filename = "reconstruct_single_mast.$(original_filename).csv"
+    output_filename = "reconstruct_single_mast/$(name).csv"
+    mkpath(dirname(joinpath(dir, output_filename)))
     CSV.write(joinpath(dir, output_filename), time_series.df)
     
     # Save updated sensors to YAML
+    sensors_output_path = "reconstruct_single_mast/$(name).sensors.yaml"
     sensors_yaml = Dict(
         "sensors" => map(to_dict, time_series.sensors)
     )
-    
-    open(joinpath(dir, "reconstruct_single_mast-sensors.yaml"), "w") do io
+    open(joinpath(dir, sensors_output_path), "w") do io
         YAML.write(io, sensors_yaml)
     end
 
@@ -97,7 +98,7 @@ function execute(dir::String)
     
     println("\nSingle mast reconstruction completed:")
     println("- Saved processed data to $(output_filename)")
-    println("- Saved updated sensors to reconstruct_single_mast-sensors.yaml")
+    println("- Saved updated sensors to $(sensors_output_path)")
     println("- Saved reconstruction details to single-reconstruction.yaml")
 end
 

@@ -12,7 +12,12 @@ Pkg.activate(project_dir)
 
 # Define test sets and their corresponding files
 const TEST_SETS = Dict{String, Vector{String}}(
-    "parsing" => ["MastTimeSeries/test_parsing_column.jl"],
+    "parse_sensors" => [
+        "ParseSensors/test_column_parser.jl",
+        "ParseSensors/test_dataframe_processor.jl",
+        "ParseSensors/test_file_processor.jl",
+        "ParseSensors/test_command_parse_sensors.jl"
+    ],
     "rules" => [
         "test_range_rules.jl",
         "test_icing_rules.jl",

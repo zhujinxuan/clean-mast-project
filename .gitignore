@@ -9,7 +9,14 @@
 logs/
 *.csv
 !example_project/config.yaml
-example_project/*
+!example_project/formats/*
+!example_project/formats/*.toml
+!example_project/parse-sensors.toml
+example_project/*.txt
+example_project/*.yaml
+example_project/*.toml
+!example_project/parse-sensors.toml
+example_project/*.csv
 projects/*
 Manifest.toml
 
@@ -17,3 +24,5 @@ Manifest.toml
 *.log
 .DS_Store
 .ipynb_checkpoints/
+
+tmp/

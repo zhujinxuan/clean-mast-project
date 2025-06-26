@@ -1,7 +1,9 @@
 module CleanFiles
 
 using ...Types.CleanMastConfig
+using ...Types.ParseSensorsConfig
 using ...CleanMastConfig
+using ...CleanMastUtils
 using Dates
 
 """
@@ -11,13 +13,24 @@ function execute(dir::String)
     # Check if directory exists
     !isdir(dir) && error("Directory does not exist: $dir")
     
-    # Parse config to get data file paths
-    config = parse_config(dir)
+    # Essential files are the main configs
     essential_paths = [
         joinpath(dir, "config.yaml"),
-        joinpath(dir, config.mast.data_path),
-        joinpath(dir, config.meso.data_path)
+        joinpath(dir, "parse-sensors.toml")
     ]
+    
+    # Also treat the raw data inputs as essential
+    parse_sensors_config_path = joinpath(dir, "parse-sensors.toml")
+    if isfile(parse_sensors_config_path)
+        try
+            parse_config = from_dict(ParseSensorsConfiguration, load_dict(parse_sensors_config_path))
+            for file_config in parse_config.files
+                push!(essential_paths, joinpath(dir, file_config.input))
+            end
+        catch e
+            @warn "Could not parse 'parse-sensors.toml' to determine essential data files. Only config.yaml will be preserved."
+        end
+    end
     
     # Check essential files exist
     for path in essential_paths
