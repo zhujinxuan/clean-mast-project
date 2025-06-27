@@ -2,7 +2,9 @@ module ProcessAll
 
 using ...Types.CleanMastConfig
 using ...CleanMastConfig
-using ...Command.CleanData
+using ...Command.CheckConfig
+using ...DataClean.ProcessCleanCommand
+using ...DataClean.RecommendProcessCleanCommand
 using ...Command.TowerShading
 using ...Command.ReconstructSingleMast
 using ...Command.TrainMesoModel
@@ -27,10 +29,14 @@ Execute all processing steps in sequence:
 - `dir::String`: Project directory containing config.yaml
 """
 function execute(dir::String)
-    println("\nStarting complete processing pipeline...")
+
+    println("Processing all steps for project: $dir")
     
+    println("\n0. Recommending clean data config...")
+    RecommendProcessCleanCommand.execute(dir)
+
     println("\n1. Cleaning data...")
-    CleanData.execute(dir)
+    ProcessCleanCommand.execute(joinpath(dir, "process-clean.toml"))
     
     println("\n2. Processing tower shading...")
     TowerShading.execute(dir)

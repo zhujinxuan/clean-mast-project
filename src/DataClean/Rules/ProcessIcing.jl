@@ -1,4 +1,4 @@
-﻿# src/CleanMastRules/ProcessIcing.jl
+﻿# src/DataClean/Rules/ProcessIcing.jl
 """
 Icing Rule Processing:
 Detects potential icing conditions by identifying periods of minimal variation:
@@ -11,9 +11,9 @@ module ProcessIcing
 
 using DataFrames
 using Dates
-using ...Types.CleanRules
+using ....Types.CleanRules
 using ..ProcessTypes
-using ...Types.MastTimeSeries: TimeSeriesData
+using ....Types.MastTimeSeries: TimeSeriesData
 
 function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa IcingCriteria

@@ -76,7 +76,10 @@ Data processing and reconstruction commands
 """
 Comonicon.@cast module Process
     using Comonicon
-    using CleanMastProject.Command.CleanData
+    using CleanMastProject.Command.CheckConfig
+    using CleanMastProject.DataClean.ProcessCleanCommand
+    using CleanMastProject.DataClean.RecommendProcessCleanCommand
+    using CleanMastProject.Command.CleanFiles
     using CleanMastProject.Command.TowerShading
     using CleanMastProject.Command.ReconstructSingleMast
     using CleanMastProject.Command.TrainMesoModel
@@ -93,8 +96,8 @@ Comonicon.@cast module Process
     # Arguments
     - `dir`: Project directory containing config.yaml
     """
-    Comonicon.@cast function clean(dir::String)
-        CleanData.execute(dir)
+    Comonicon.@cast function clean(config_path::String)
+        ProcessCleanCommand.execute(config_path)
     end
 
     """
@@ -187,6 +190,24 @@ Comonicon.@cast module Process
     """
     Comonicon.@cast function all(dir::String)
         ProcessAll.execute(dir)
+    end
+end
+
+@cast module Recommend
+    using Comonicon
+    using CleanMastProject.DataClean.RecommendProcessCleanCommand
+
+    """
+    recommend process-clean <dir>
+
+    Recommend a process-clean.toml file for the project
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+    """
+    @cast function process_clean(dir::String)
+        "Recommend a process-clean.toml file for the project"
+        RecommendProcessCleanCommand.execute(dir)
     end
 end
 

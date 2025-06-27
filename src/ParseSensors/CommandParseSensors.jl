@@ -7,8 +7,8 @@ module CommandParseSensors
 using DataFrames, CSV
 using ...Types.Utils: to_dict, from_dict, strip_nothing_values
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, SensorFormatConfig, ParseSensorsFileConfig,
-                                  ParseSensorsConfigurationNormalized, ParseSensorsFileConfigNormalized,
-                                  ParseSensorsOutputConfigNormalized
+                                  ParseSensorsConfigurationNormalized, ParseSensorsFileConfigNormalized
+using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.SensorColumns: ParsedSensor
 using ...CleanMastUtils: load_dict
 using ..ColumnParser: parse_column_name
@@ -31,40 +31,30 @@ function load_and_normalize_config(config_path::String)::ParseSensorsConfigurati
     config = from_dict(ParseSensorsConfiguration, config_dict)
     project_dir = dirname(config_path)
 
-    normalized_files = ParseSensorsFileConfigNormalized[]
-
-    for file_config in config.files
-        # Normalize paths
+    function normalize(file_config::ParseSensorsFileConfig)::ParseSensorsFileConfigNormalized
         input_path = abspath(joinpath(project_dir, file_config.input))
-
-        # Calculate default name
         name = something(file_config.name, splitext(basename(input_path))[1])
 
-        # Load sensor format
         sensor_format = if file_config.sensor isa String
             sensor_path = abspath(joinpath(project_dir, file_config.sensor))
-            sensor_dict = load_dict(sensor_path)
-            # The config is at the top level of the sensor format file
-            from_dict(SensorFormatConfig, sensor_dict)
+            from_dict(SensorFormatConfig, load_dict(sensor_path))
         else
             file_config.sensor
         end
 
-        # Normalize output paths
-        output_data = abspath(joinpath(project_dir, something(file_config.output.output_data, "raw/$(name).csv")))
-        output_sensor = abspath(joinpath(project_dir, something(file_config.output.output_sensor, "raw/$(name).sensors.toml")))
-        
-        normalized_output = ParseSensorsOutputConfigNormalized(output_data, output_sensor)
+        normalized_output = if file_config.output isa TimeSeriesSource
+            file_config.output
+        else
+            TimeSeriesSource("./raw/$(name).csv", "./raw/$(name).sensors.toml")
+        end
 
-        push!(normalized_files, ParseSensorsFileConfigNormalized(
-            input_path,
-            name,
-            sensor_format,
-            normalized_output
-        ))
+        return ParseSensorsFileConfigNormalized(input_path, name, sensor_format, normalized_output)
     end
 
-    return ParseSensorsConfigurationNormalized(normalized_files)
+    normalized_masts = map(normalize, config.masts)
+    normalized_meso = isnothing(config.meso) ? nothing : normalize(config.meso)
+
+    return ParseSensorsConfigurationNormalized(normalized_masts, normalized_meso)
 end
 
 """
@@ -78,9 +68,14 @@ function execute(config_path::String)
     
     config = load_and_normalize_config(config_path)
 
-    for file_config in config.files
-        println("Processing input file: $(file_config.input)...")
-        process_single_file(file_config)
+    for file_config in config.masts
+        println("Processing mast file: $(file_config.input)...")
+        process_single_file(file_config, config_path)
+    end
+
+    if !isnothing(config.meso)
+        println("Processing meso file: $(config.meso.input)...")
+        process_single_file(config.meso, config_path)
     end
     
     println("\nSensor processing completed successfully.")
@@ -91,7 +86,7 @@ end
 
 Processes a single data file according to its normalized configuration.
 """
-function process_single_file(file_config::ParseSensorsFileConfigNormalized)
+function process_single_file(file_config::ParseSensorsFileConfigNormalized, config_path::String)
     try
         # 1. Generate CSV options
         csv_opts = generate_csv_opts(file_config.sensor, file_config.input)
@@ -112,7 +107,7 @@ function process_single_file(file_config::ParseSensorsFileConfigNormalized)
         df_transformed = rename_and_apply_multipliers!(df, sensors)
         
         # 6. Save outputs
-        save_outputs(df_transformed, sensors, file_config)
+        save_outputs(df_transformed, sensors, file_config, config_path)
 
     catch e
         @error "Failed to process file $(file_config.input):" exception=(e, catch_backtrace())
@@ -124,22 +119,26 @@ end
 
 Saves the processed DataFrame and sensor metadata to their destination files.
 """
-function save_outputs(df::DataFrame, sensors::Vector{ParsedSensor}, file_config::ParseSensorsFileConfigNormalized)
+function save_outputs(df::DataFrame, sensors::Vector{ParsedSensor}, file_config::ParseSensorsFileConfigNormalized, config_path::String)
+    project_dir = dirname(config_path)
+    output_data_path = joinpath(project_dir, file_config.output.data)
+    output_sensor_path = joinpath(project_dir, file_config.output.sensors)
+    
     # Ensure output directories exist
-    mkpath(dirname(file_config.output.output_data))
-    mkpath(dirname(file_config.output.output_sensor))
+    mkpath(dirname(output_data_path))
+    mkpath(dirname(output_sensor_path))
     
     # Save data
-    CSV.write(file_config.output.output_data, df)
-    println("✓ Saved processed data to: $(file_config.output.output_data)")
+    CSV.write(output_data_path, df)
+    println("✓ Saved processed data to: $output_data_path")
     
     # Save sensor metadata, stripping nothing values for TOML compatibility
     # TOML does not support null values, so we must remove them before writing.
-    open(file_config.output.output_sensor, "w") do io
+    open(output_sensor_path, "w") do io
         cleaned_sensors = map(s -> strip_nothing_values(to_dict(s)), sensors)
         TOML.print(io, Dict("sensors" => cleaned_sensors))
     end
-    println("✓ Saved sensor metadata to: $(file_config.output.output_sensor)")
+    println("✓ Saved sensor metadata to: $output_sensor_path")
 end
 
 end # end module 

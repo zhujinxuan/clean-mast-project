@@ -5,6 +5,7 @@ Types for parse-sensors configuration, corresponding to {project}/parse-sensors.
 module ParseSensorsConfig
 
 import ..Utils: from_dict, to_dict
+using ..MastTimeSeries: TimeSeriesSource
 
 struct RuleOutcome
     sensorType::Union{String, Nothing}
@@ -208,41 +209,13 @@ function to_dict(sfc::SensorFormatConfig)::Dict{String, Any}
 end
 
 """
-Output configuration for parse-sensors processing
-"""
-struct ParseSensorsOutputConfig
-    output_data::Union{String, Nothing}    # Optional output data file path
-    output_sensor::Union{String, Nothing}  # Optional output sensor file path
-end
-
-function from_dict(::Type{ParseSensorsOutputConfig}, dict::Dict{String, Any})::ParseSensorsOutputConfig
-    ParseSensorsOutputConfig(
-        get(dict, "output_data", nothing),
-        get(dict, "output_sensor", nothing)
-    )
-end
-
-function to_dict(psoc::ParseSensorsOutputConfig)::Dict{String, Any}
-    result = Dict{String, Any}()
-    
-    if !isnothing(psoc.output_data)
-        result["output_data"] = psoc.output_data
-    end
-    if !isnothing(psoc.output_sensor)
-        result["output_sensor"] = psoc.output_sensor
-    end
-    
-    result
-end
-
-"""
 Configuration for a single file in parse-sensors processing
 """
 struct ParseSensorsFileConfig
     input::String                                    # Input file path
     name::Union{String, Nothing}                     # Optional name (defaults to basename)
     sensor::Union{String, SensorFormatConfig}        # Sensor config (file path or embedded)
-    output::ParseSensorsOutputConfig                 # Output configuration
+    output::Union{TimeSeriesSource, Nothing}         # Output configuration
 end
 
 function from_dict(::Type{ParseSensorsFileConfig}, dict::Dict{String, Any})::ParseSensorsFileConfig
@@ -253,11 +226,10 @@ function from_dict(::Type{ParseSensorsFileConfig}, dict::Dict{String, Any})::Par
         from_dict(SensorFormatConfig, Dict{String, Any}(dict["sensor"]))
     end
     
-    # Handle output config
-    output = if haskey(dict, "output")
-        from_dict(ParseSensorsOutputConfig, Dict{String, Any}(dict["output"]))
+    output :: Union{TimeSeriesSource, Nothing} = if haskey(dict, "output")
+        from_dict(TimeSeriesSource, dict["output"])
     else
-        ParseSensorsOutputConfig(nothing, nothing)
+        nothing
     end
     
     ParseSensorsFileConfig(
@@ -271,7 +243,7 @@ end
 function to_dict(psfc::ParseSensorsFileConfig)::Dict{String, Any}
     result = Dict{String, Any}(
         "input" => psfc.input,
-        "output" => to_dict(psfc.output)
+        "output" => psfc.output isa TimeSeriesSource ? to_dict(psfc.output) : nothing
     )
     
     if !isnothing(psfc.name)
@@ -291,43 +263,45 @@ end
 Main configuration for parse-sensors.toml
 """
 struct ParseSensorsConfiguration
-    files::Vector{ParseSensorsFileConfig}
+    masts::Vector{ParseSensorsFileConfig}
+    meso::Union{ParseSensorsFileConfig, Nothing}
 end
 
 function from_dict(::Type{ParseSensorsConfiguration}, dict::Dict{String, Any})::ParseSensorsConfiguration
-    files = [from_dict(ParseSensorsFileConfig, Dict{String, Any}(file)) for file in dict["files"]]
-    ParseSensorsConfiguration(files)
+    masts = haskey(dict, "masts") ? [from_dict(ParseSensorsFileConfig, Dict{String, Any}(m)) for m in dict["masts"]] : []
+    meso = haskey(dict, "meso") ? from_dict(ParseSensorsFileConfig, Dict{String, Any}(dict["meso"])) : nothing
+    ParseSensorsConfiguration(masts, meso)
 end
 
 function to_dict(psc::ParseSensorsConfiguration)::Dict{String, Any}
-    Dict{String, Any}(
-        "files" => [to_dict(file) for file in psc.files]
+    result = Dict{String, Any}(
+        "masts" => [to_dict(m) for m in psc.masts]
     )
+    if !isnothing(psc.meso)
+        result["meso"] = to_dict(psc.meso)
+    end
+    result
 end
 
 export RuleOutcome, MappingRule, PatternConfig, SensorColumnConfig, SensorFormatConfig,
-       ParseSensorsOutputConfig, ParseSensorsFileConfig, ParseSensorsConfiguration,
+       ParseSensorsFileConfig, ParseSensorsConfiguration,
        apply_mapping, matches_rule, merge_outcomes, safe_something
 
 # --- Normalized Configuration Structs ---
 # These structs hold the fully resolved and absolute-pathed configuration after loading.
 
-struct ParseSensorsOutputConfigNormalized
-    output_data::String
-    output_sensor::String
-end
-
 struct ParseSensorsFileConfigNormalized
     input::String
     name::String
     sensor::SensorFormatConfig
-    output::ParseSensorsOutputConfigNormalized
+    output::TimeSeriesSource
 end
 
 struct ParseSensorsConfigurationNormalized
-    files::Vector{ParseSensorsFileConfigNormalized}
+    masts::Vector{ParseSensorsFileConfigNormalized}
+    meso::Union{ParseSensorsFileConfigNormalized, Nothing}
 end
 
-export ParseSensorsOutputConfigNormalized, ParseSensorsFileConfigNormalized, ParseSensorsConfigurationNormalized
+export ParseSensorsFileConfigNormalized, ParseSensorsConfigurationNormalized
        
 end # end module 

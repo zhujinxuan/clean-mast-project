@@ -14,6 +14,8 @@ module Types
   export CleanRules
   include("./Types/ParseSensorsConfig.jl")
   export ParseSensorsConfig
+  include("./Types/ProcessCleanConfig.jl")
+  export ProcessCleanConfig
   include("./Types/CleanMastConfig.jl")
   export CleanMastConfig
   include("./Types/Sector.jl")
@@ -58,16 +60,22 @@ export ParseSensors
 include("./CleanMastConfig.jl");
 export CleanMastConfig
 
-module CleanMastRules
-  include("./CleanMastRules/ProcessTypes.jl")
-  include("./CleanMastRules/ProcessRange.jl")
-  include("./CleanMastRules/ProcessIcing.jl")
-  include("./CleanMastRules/ProcessLayerDiff.jl")
-  include("./CleanMastRules/Process.jl")
-  export Process,ProcessTypes, ProcessIcing, ProcessRange, ProcessLayerDiff
+module DataClean
+  module Rules
+    include("./DataClean/Rules/ProcessTypes.jl")
+    include("./DataClean/Rules/ProcessRange.jl")
+    include("./DataClean/Rules/ProcessIcing.jl")
+    include("./DataClean/Rules/ProcessLayerDiff.jl")
+    include("./DataClean/Rules/Process.jl")
+    export Process, ProcessTypes, ProcessIcing, ProcessRange, ProcessLayerDiff
+  end
+  export Rules
+  
+  include("./DataClean/ProcessCleanCommand.jl")
+  include("./DataClean/RecommendProcessCleanCommand.jl")
+  export ProcessCleanCommand, RecommendProcessCleanCommand
 end
-export CleanMastRules
-
+export DataClean
 
 include("./TowerShading.jl")
 export TowerShading
@@ -125,7 +133,6 @@ export AnalyzeEN
 
 module Command
   include("./Command/CheckConfig.jl")
-  include("./Command/CleanData.jl")
   include("./Command/CleanFiles.jl")
   include("./Command/TowerShading.jl")
   include("./Command/ReconstructSingleMast.jl")
@@ -139,7 +146,7 @@ module Command
   include("./Command/GenerateTimeSeriesReport.jl")
   include("./Command/AnalyzeEN.jl")
   include("./Command/AnalyzeReconstructSingle.jl")
-  export CheckConfig, CleanData, CleanFiles, TowerShading, 
+  export CheckConfig, CleanFiles, TowerShading, 
          ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
          QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
          GenerateTimeSeriesReport, AnalyzeEN, AnalyzeReconstructSingle

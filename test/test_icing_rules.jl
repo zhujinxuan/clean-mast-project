@@ -4,7 +4,9 @@ using DataFrames
 using Dates
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
-using CleanMastProject.CleanMastRules.ProcessIcing
+using CleanMastProject.Types.CleanRules
+using CleanMastProject.DataClean.Rules.ProcessIcing
+using CleanMastProject.DataClean.Rules.ProcessTypes
 
 @testset "Icing Rule Tests" begin
     base_time = DateTime(2024,1,1)

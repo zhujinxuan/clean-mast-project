@@ -1,14 +1,14 @@
-﻿# src/CleanMastRules/Process.jl
+﻿# src/DataClean/Rules/Process.jl
 module Process
 
 using DataFrames
 using Dates
-using ...Types.CleanRules
+using ....Types.CleanRules
 using ..ProcessTypes
 using ..ProcessRange
 using ..ProcessLayerDiff
 using ..ProcessIcing
-using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
+using ....Types.MastTimeSeries: SensorColumn, TimeSeriesData
 
 function apply_rule(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     if rule.criteria isa RangeCriteria

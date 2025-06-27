@@ -40,7 +40,7 @@ struct Rule
     criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria}
 end
 
-function from_dict(::Type{Rule}, config::Dict)::Rule
+function from_dict(::Type{Rule}, config::Dict{String, Any})::Rule
     # Validate one and only one criteria type exists
     criteria_keys = ["out_of_range", "layer_difference", "icing"]
     present_keys = filter(k -> haskey(config, k), criteria_keys)

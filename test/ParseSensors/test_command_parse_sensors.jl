@@ -55,7 +55,7 @@ using CSV, TOML, DataFrames
             # 3. Create dummy parse-sensors.toml
             config_path = joinpath(temp_dir, "parse-sensors.toml")
             write(config_path, """
-                [[files]]
+                [[masts]]
                 input = "test_data.txt"
                 sensor = "./test_format.toml"
             """)

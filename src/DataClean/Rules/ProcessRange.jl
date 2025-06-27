@@ -1,4 +1,4 @@
-﻿# src/CleanMastRules/ProcessRange.jl
+﻿# src/DataClean/Rules/ProcessRange.jl
 """
 Range Rule Processing:
 Validates if values fall within specified ranges. Each rule specifies:
@@ -12,9 +12,9 @@ Missing values are ignored.
 module ProcessRange
 
 using DataFrames
-using ...Types.CleanRules: Rule, RuleViolation, RangeCriteria
+using ....Types.CleanRules: Rule, RuleViolation, RangeCriteria
 using ..ProcessTypes: filter_applicable_columns
-using ...Types.MastTimeSeries: TimeSeriesData
+using ....Types.MastTimeSeries: TimeSeriesData
 
 function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa RangeCriteria

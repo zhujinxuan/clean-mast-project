@@ -10,7 +10,6 @@ using ..ParseSensorsConfig: RuleOutcome, MappingRule, apply_mapping, matches_rul
 
 struct MastConfig
   name::String
-  rules::Vector{Rule}  
 end
 export MastConfig
 
@@ -100,8 +99,7 @@ end
 
 function from_dict(::Type{MastConfig}, dict::Dict{String, Any})::MastConfig
     MastConfig(
-        dict["name"],
-        haskey(dict, "rules") ? [from_dict(Rule, rule) for rule in dict["rules"]] : []
+        dict["name"]
     )
 end
 

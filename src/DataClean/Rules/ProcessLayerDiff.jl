@@ -1,4 +1,4 @@
-﻿# src/CleanMastRules/ProcessLayerDiff.jl
+﻿# src/DataClean/Rules/ProcessLayerDiff.jl
 """
 Layer Difference Rule Processing:
 Compares measurements between different heights:
@@ -12,11 +12,11 @@ module ProcessLayerDiff
 
 using DataFrames
 using Dates
-using ...Types.CleanRules: Rule, RuleViolation, LayerDifferenceCriteria, RangeCriteria
-using ...Types.Sector: abs_degree_diff
+using ....Types.CleanRules: Rule, RuleViolation, LayerDifferenceCriteria, RangeCriteria
+using ....Types.Sector: abs_degree_diff
 using ..ProcessTypes: filter_applicable_columns
-using ...Types.MastTimeSeries: TimeSeriesData
-using ...Types.SensorColumns: SensorColumn
+using ....Types.MastTimeSeries: TimeSeriesData
+using ....Types.SensorColumns: SensorColumn
 
 struct LayerComparison
   lower_col::Symbol

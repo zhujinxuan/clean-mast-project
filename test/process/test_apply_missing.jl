@@ -6,8 +6,8 @@ using Dates
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.CleanRules
-using CleanMastProject.CleanMastRules.Process
-using CleanMastProject.CleanMastRules.ProcessTypes
+using CleanMastProject.DataClean.Rules.Process
+using CleanMastProject.DataClean.Rules.ProcessTypes
 
 function mk_time_series()
   df = DataFrame(

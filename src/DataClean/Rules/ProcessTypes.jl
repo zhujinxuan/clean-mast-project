@@ -1,10 +1,10 @@
-﻿# src/CleanMastRules/ProcessTypes.jl
+﻿# src/DataClean/Rules/ProcessTypes.jl
 module ProcessTypes
 
 using DataFrames
 using Dates
-using ...Types.CleanRules: Rule
-using ...Types.SensorColumns: SensorColumn
+using ....Types.CleanRules: Rule
+using ....Types.SensorColumns: SensorColumn
 
 
 function filter_applicable_columns(rule::Rule, sensors::Vector{SensorColumn})::Vector{Symbol}

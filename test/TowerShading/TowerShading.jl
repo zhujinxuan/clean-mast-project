@@ -2,7 +2,6 @@ using Test
 using DataFrames
 using Dates
 using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, MastConfig, MesoConfig
-using CleanMastProject.Types.CleanRules: Rule
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.TowerShading
@@ -11,7 +10,6 @@ using CleanMastProject.TowerShading
 function create_test_config()::ProjectConfig
     mast_config = MastConfig(
         "test-mast",
-        Rule[]
     )
     
     meso_config = MesoConfig(

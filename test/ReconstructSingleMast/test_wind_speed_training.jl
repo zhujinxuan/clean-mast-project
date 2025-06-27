@@ -3,9 +3,8 @@ using DataFrames
 using Dates
 using CleanMastProject.ReconstructSingleMast.WindSpeedTraining
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
-using CleanMastProject.Types.ReconstructSingleMast: WindSpeedReconstructionResult, WindSpeedProfile
+using CleanMastProject.Types.ReconstructSingleMast: WindSpeedProfile
 using CleanMastProject.Types.SensorColumns: SensorColumn
-using CleanMastProject.Types.Sector: SectorModel, fit!, predict
 
 function generate_synthetic_wind_data(;
     start_date::DateTime = DateTime(2024,1,1),
