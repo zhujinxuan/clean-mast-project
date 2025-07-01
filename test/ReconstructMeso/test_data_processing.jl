@@ -3,9 +3,8 @@ module TestDataProcessing
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.CleanMastConfig: TimeRange
 using Statistics
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
+using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, TimeRange
 using CleanMastProject.Types.SensorColumns: SensorColumn, find_nearest_height_sensor
 using CleanMastProject.Types.ReconstructMeso: TrainingTimeRange, WindSpeedTrainResult, 
                                             WindDirectionTrainResult, WindSpeedSectorModel
@@ -132,33 +131,6 @@ using CleanMastProject.ReconstructMeso.Reconstruction:
         
         # Test no match
         @test isnothing(find_nearest_height_sensor(80.0, sensors_multi, "Temperature"))
-    end
-
-    @testset "calculate_training_timerange" begin
-        # Test with no time range specified
-        input_range = TimeRange(nothing, nothing)
-        result = calculate_training_timerange(ts, input_range)
-        @test result isa TrainingTimeRange
-        @test result.min == DateTime(2019,1,1)
-        @test result.max == DateTime(2020,1,1) - Second(1)
-
-        # Test with specified min
-        input_range = TimeRange(DateTime(2024,1,1), nothing)
-        result = calculate_training_timerange(ts, input_range)
-        @test result.min == DateTime(2024,1,1)
-        @test result.max == DateTime(2025,1,1) - Second(1)
-
-        # Test with specified max
-        input_range = TimeRange(nothing, DateTime(2024,1,2))
-        result = calculate_training_timerange(ts, input_range)
-        @test result.max == DateTime(2024,1,2) - Second(1)
-        @test result.min == DateTime(2023,1,1)
-
-        # Test with both specified
-        input_range = TimeRange(DateTime(2024,1,1), DateTime(2024,1,2))
-        result = calculate_training_timerange(ts, input_range)
-        @test result.min == DateTime(2024,1,1)
-        @test result.max == DateTime(2024,1,2) - Second(1)
     end
 
     @testset "interpolate_meso_data with specific pattern" begin

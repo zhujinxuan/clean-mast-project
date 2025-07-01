@@ -6,7 +6,6 @@ using Dates
 
 using CleanMastProject.Types.ReconstructSingleMast: ReconstructedSuccess, ReconstructedFailure, ReconstructionResults
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
-using CleanMastProject.Types.CleanMastConfig: ProjectConfig
 
 using ..WindSpeedTraining
 using ..DirectionTraining
@@ -15,7 +14,6 @@ using ..DirectionTraining
 Reconstruct missing wind measurements in mast data
 """
 function reconstruct_measurements(
-    config::ProjectConfig,
     data::TimeSeriesData
 )::Tuple{Vector{ReconstructedSuccess}, Vector{ReconstructedFailure}}
     speed_successes, speed_failures = reconstruct_wind_speeds(data)
@@ -29,11 +27,10 @@ end
 Apply reconstruction to data.df and return reconstruction results
 """
 function process_data!(
-    config::ProjectConfig,
     data::TimeSeriesData
 )::ReconstructionResults
     # Apply reconstruction
-    successes, failures = reconstruct_measurements(config, data)
+    successes, failures = reconstruct_measurements(data)
     # TODO fix this quick patch later
     successes = filter(s -> !ismissing(s.value) && !isnan(s.value), successes)
 

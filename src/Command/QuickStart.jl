@@ -1,7 +1,5 @@
 module QuickStart
 
-using ...Types.CleanMastConfig
-
 """
 Create a new project directory and initialize it with example config
 """
@@ -18,7 +16,6 @@ function execute(dir::String)
     
     # Files and directories to copy
     items_to_copy = [
-        "config.yaml",
         "parse-sensors.toml",
         "formats"
     ]

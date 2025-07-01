@@ -1,28 +1,14 @@
 using Test
 using DataFrames
 using Dates
-using CleanMastProject.Types.CleanMastConfig: ConfigTimeRange, ProjectConfig, AnalysisConfig, MastConfig, MesoConfig
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
-using CleanMastProject.TowerShading
+# Import the specific functions we need to avoid Core module name collision
+using CleanMastProject.TowerShading.Core: find_nearby_sensors, get_preferred_height, 
+                                          create_merged_sensor, merge_wind_speeds!, 
+                                          calculate_max_between_columns
 
 """Helper functions for creating test data"""
-function create_test_config()::ProjectConfig
-    mast_config = MastConfig(
-        "test-mast",
-    )
-    
-    meso_config = MesoConfig(
-        "test-meso"
-    )
-    
-    analysis_config = AnalysisConfig(
-        ConfigTimeRange(DateTime("2024-01-01T00:00:00"), DateTime("2024-01-01T00:20:00"))
-    )
-    
-    return ProjectConfig(mast_config, meso_config, analysis_config)
-end
-
 function create_test_sensors()::Vector{SensorColumn}
     return [
         SensorColumn(Symbol("Ch1_WindSpeed_60m_270_avg_m/s"), "WindSpeed", "270", 60.0, "avg", "m/s"),
@@ -75,18 +61,18 @@ end
         sensors = create_test_sensors()
         
         @testset "exact height match" begin
-            nearby = TowerShading.find_nearby_sensors("WindSpeed", sensors, 60.0)
+            nearby = find_nearby_sensors("WindSpeed", sensors, 60.0)
             @test length(nearby) == 4  # Should find all 60m sensors
             @test all(sensors[i].height == 60.0 for i in nearby)
         end
         
         @testset "within tolerance" begin
-            nearby = TowerShading.find_nearby_sensors("WindSpeed", sensors, 61.0, 2.0)
+            nearby = find_nearby_sensors("WindSpeed", sensors, 61.0, 2.0)
             @test length(nearby) == 4  # Should still find 60m sensors
         end
         
         @testset "outside tolerance" begin
-            nearby = TowerShading.find_nearby_sensors("WindSpeed", sensors, 65.0, 2.0)
+            nearby = find_nearby_sensors("WindSpeed", sensors, 65.0, 2.0)
             @test isempty(nearby)  # Should find no sensors
         end
     end
@@ -94,17 +80,17 @@ end
     @testset "get_preferred_height" begin
         @testset "multiple of 10" begin
             heights = [59.5, 60.2]
-            @test TowerShading.get_preferred_height(heights) == 60.0
+            @test get_preferred_height(heights) == 60.0
         end
         
         @testset "not multiple of 10" begin
             heights = [58.3, 59.1]
-            @test TowerShading.get_preferred_height(heights) == 59.0
+            @test get_preferred_height(heights) == 59.0
         end
         
         @testset "single height" begin
             heights = [45.0]
-            @test TowerShading.get_preferred_height(heights) == 45.0
+            @test get_preferred_height(heights) == 45.0
         end
     end
 
@@ -112,8 +98,8 @@ end
         sensors = create_test_sensors()
         
         @testset "basic merging" begin
-            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg", sensors)
-            new_sensor = TowerShading.create_merged_sensor(stat_sensors, 60.0)
+            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg" && s.sensorType == "WindSpeed", sensors)
+            new_sensor = create_merged_sensor(stat_sensors, 60.0)
             
             @test new_sensor.columnName == Symbol("WindSpeed_60m_avg_m/s")
             @test new_sensor.sensorType == "WindSpeed"
@@ -124,8 +110,8 @@ end
         end
         
         @testset "height rounding" begin
-            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg", sensors)
-            new_sensor = TowerShading.create_merged_sensor(stat_sensors, 60.0)
+            stat_sensors = filter(s -> s.height == 60.0 && s.statType == "avg" && s.sensorType == "WindSpeed", sensors)
+            new_sensor = create_merged_sensor(stat_sensors, 60.0)
             
             @test occursin("60m", String(new_sensor.columnName))
             @test new_sensor.height == 60.0
@@ -134,9 +120,8 @@ end
 
     @testset "merge_wind_speeds!" begin
         @testset "basic merging" begin
-            config = create_test_config()
             data = create_test_data()
-            result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
+            result = merge_wind_speeds!(data)
             
             # Check that new columns were created
             merged_avg = filter(s -> s.statType == "avg" && s.height == 60.0 && s.sensorType == "WindSpeed", result.sensors)
@@ -153,9 +138,8 @@ end
         end
         
         @testset "sensor metadata" begin
-            config = create_test_config()
             data = create_test_data()
-            result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
+            result = merge_wind_speeds!(data)
             
             # Check that new sensors were added
             merged_sensors = filter(s -> s.sensorDirection == "N/A" && 
@@ -173,9 +157,8 @@ end
         end
         
         @testset "non-wind speed columns preserved" begin
-            config = create_test_config()
             data = create_test_data()
-            result = TowerShading.merge_wind_speeds!(data, data.sensors, config)
+            result = merge_wind_speeds!(data)
             
             # Temperature column should remain unchanged
             @test Symbol("Ch1_Temperature_60m_N/A_avg_C") in propertynames(result.df)
@@ -192,17 +175,17 @@ end
         )
         
         @testset "basic functionality" begin
-            result = TowerShading.calculate_max_between_columns(df, [:col1, :col2, :col3])
+            result = calculate_max_between_columns(df, [:col1, :col2, :col3])
             @test isequal(result, [2.0, 2.0, 5.0, missing])
         end
         
         @testset "subset of columns" begin
-            result = TowerShading.calculate_max_between_columns(df, [:col1, :col2])
+            result = calculate_max_between_columns(df, [:col1, :col2])
             @test isequal(result, [1.0, 2.0, 5.0, missing])
         end
         
         @testset "single column" begin
-            result = TowerShading.calculate_max_between_columns(df, [:col1])
+            result = calculate_max_between_columns(df, [:col1])
             @test isequal(result, [1.0, missing, 3.0, missing])
         end
         
@@ -211,7 +194,7 @@ end
                 col1 = [1.0, missing],
                 col2 = [2.0, missing]
             )
-            result = TowerShading.calculate_max_between_columns(df_with_missing, [:col1, :col2])
+            result = calculate_max_between_columns(df_with_missing, [:col1, :col2])
             @test isequal(result, [2.0, missing])
         end
     end

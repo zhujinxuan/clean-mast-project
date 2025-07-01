@@ -264,23 +264,20 @@ Main configuration for parse-sensors.toml
 """
 struct ParseSensorsConfiguration
     masts::Vector{ParseSensorsFileConfig}
-    meso::Union{ParseSensorsFileConfig, Nothing}
+    mesos::Vector{ParseSensorsFileConfig}
 end
 
 function from_dict(::Type{ParseSensorsConfiguration}, dict::Dict{String, Any})::ParseSensorsConfiguration
     masts = haskey(dict, "masts") ? [from_dict(ParseSensorsFileConfig, Dict{String, Any}(m)) for m in dict["masts"]] : []
-    meso = haskey(dict, "meso") ? from_dict(ParseSensorsFileConfig, Dict{String, Any}(dict["meso"])) : nothing
-    ParseSensorsConfiguration(masts, meso)
+    mesos = haskey(dict, "mesos") ? [from_dict(ParseSensorsFileConfig, Dict{String, Any}(m)) for m in dict["mesos"]] : []
+    ParseSensorsConfiguration(masts, mesos)
 end
 
 function to_dict(psc::ParseSensorsConfiguration)::Dict{String, Any}
-    result = Dict{String, Any}(
-        "masts" => [to_dict(m) for m in psc.masts]
+    Dict{String, Any}(
+        "masts" => [to_dict(m) for m in psc.masts],
+        "mesos" => [to_dict(m) for m in psc.mesos]
     )
-    if !isnothing(psc.meso)
-        result["meso"] = to_dict(psc.meso)
-    end
-    result
 end
 
 export RuleOutcome, MappingRule, PatternConfig, SensorColumnConfig, SensorFormatConfig,
@@ -299,7 +296,7 @@ end
 
 struct ParseSensorsConfigurationNormalized
     masts::Vector{ParseSensorsFileConfigNormalized}
-    meso::Union{ParseSensorsFileConfigNormalized, Nothing}
+    mesos::Vector{ParseSensorsFileConfigNormalized}
 end
 
 export ParseSensorsFileConfigNormalized, ParseSensorsConfigurationNormalized

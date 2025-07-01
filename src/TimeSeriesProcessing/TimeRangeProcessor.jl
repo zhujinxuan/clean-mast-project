@@ -1,41 +1,33 @@
 module TimeRangeProcessor
 using ...Types.MastTimeSeries: TimeSeriesData, TimeRange
-using ...Types.CleanMastConfig: ConfigTimeRange
 using Dates
 
 """
-    calculate_reconstruction_time_range(ts::TimeSeriesData, time_range::Union{ConfigTimeRange,Nothing})::TimeRange
+    calculate_measurement_year_time_range(mast_ts::TimeSeriesData)::TimeRange
 
-Calculate the time range for reconstruction of a time series for later analysis.
-If no time range is provided, uses default of 1 year before the latest data point.
+Calculate the time range for representative year calibration.
+Uses the last year of available data.
+TODO: I need to add test in future.
 
 # Arguments
-- `ts::TimeSeriesData`: Input time series data
-- `time_range::Union{ConfigTimeRange,Nothing}`: Optional time range constraints
+- `mast_ts::TimeSeriesData`: Input time series data
 
 # Returns
-- `TimeRange`: Calculated effective time range
+- `TimeRange`: Calculated time range for representative year (last year of data)
 """
-function calculate_reconstruction_time_range(mast_ts::TimeSeriesData, time_range::Union{ConfigTimeRange,Nothing})::TimeRange
-    if isnothing(time_range)
-        time_range = ConfigTimeRange(nothing, nothing)
-    end
-    
+function calculate_measurement_year_time_range(mast_ts::TimeSeriesData)::TimeRange
     # Get data bounds
     valid_times = filter(!ismissing, mast_ts.df.timestamp)
+    data_min = minimum(valid_times)
     data_max = maximum(valid_times)
     
     # Calculate default range (1 year before max date)
-    default_min = floor(something(time_range.max, data_max) - Month(11), Month(1)) 
+    from_max_min = floor(data_max - Month(11), Month(1))
+    min1 = ceil(data_min, Month(1))
     
-    # Determine actual min and max
-    actual_min = something(time_range.min, default_min)
-    actual_max = something(time_range.max, actual_min + Year(1))
-    
-    # If actual_max is at start of day, reduce by 1 second to avoid partial day
-    if is_start_of_day(actual_max)
-        actual_max -= Second(1)
-    end
+    # Ensure we don't go before data_min
+    actual_min = min(from_max_min, min1)
+    actual_max = actual_min + Year(1) - Second(1)
     
     TimeRange(actual_min, actual_max)
 end
@@ -55,5 +47,5 @@ function is_start_of_day(dt::DateTime)::Bool
     hour(dt) == 0 && minute(dt) == 0 && second(dt) == 0
 end
 
-export calculate_time_range
+export calculate_measurement_year_time_range
 end

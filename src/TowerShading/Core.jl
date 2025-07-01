@@ -1,8 +1,7 @@
-module TowerShading
+module Core
 
 using DataFrames
-using ..Types.CleanMastConfig: ProjectConfig
-using ..Types.MastTimeSeries: TimeSeriesData, SensorColumn
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using Statistics
 
 """
@@ -93,26 +92,18 @@ function calculate_max_between_columns(df::DataFrame, cols::Vector{Symbol})::Vec
 end
 
 """
-    merge_wind_speeds!(
-        data::TimeSeriesData,
-        sensors::Vector{SensorColumn},
-        config::ProjectConfig
-    )::Tuple{DataFrame, Vector{SensorColumn}}
+    merge_wind_speeds!(data::TimeSeriesData)::TimeSeriesData
 
 Merge wind speed measurements from nearby sensors to handle tower shading.
-Returns modified DataFrame and sensors list.
+Returns modified TimeSeriesData with merged sensors.
 """
-function merge_wind_speeds!(
-    data::TimeSeriesData,
-    sensors::Vector{SensorColumn},
-    config::ProjectConfig
-)::TimeSeriesData
+function merge_wind_speeds!(data::TimeSeriesData)::TimeSeriesData
     # Get all unique heights for wind speed sensors
-    wind_speed_sensors = filter(s -> s.sensorType == "WindSpeed", sensors)
+    wind_speed_sensors = filter(s -> s.sensorType == "WindSpeed", data.sensors)
     heights = unique(s.height for s in wind_speed_sensors)
     
     # Track columns to drop and new sensors to add
-    new_sensors = copy(sensors)
+    new_sensors = copy(data.sensors)
     columns_to_drop = Symbol[]
     
     # Process each height
@@ -160,15 +151,12 @@ function merge_wind_speeds!(
 end
 
 """
-    process_tower_shading(config::ProjectConfig, data::TimeSeriesData)::TimeSeriesData
+    process_tower_shading!(data::TimeSeriesData)::TimeSeriesData
 
 Process tower shading effects in mast data by merging nearby wind speed sensors.
 """
-function process_tower_shading!(
-    config::ProjectConfig, 
-    data::TimeSeriesData
-)::TimeSeriesData
-    return merge_wind_speeds!(data, data.sensors, config)
+function process_tower_shading!(data::TimeSeriesData)::TimeSeriesData
+    return merge_wind_speeds!(data)
 end
 
 export process_tower_shading!

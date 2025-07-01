@@ -78,45 +78,6 @@ end
 export find_direction_sector
 
 """
-Average time series to hourly resolution
-"""
-function average_to_hourly(ts::TimeSeriesData)::TimeSeriesData
-    # Create a copy of the DataFrame with hour floor column
-    df = copy(ts.df)
-    df.hour_floor = floor.(df.timestamp, Hour)
-    
-    # Group by hour floor and calculate means
-    hourly_df = combine(
-        groupby(df, :hour_floor),
-        [
-            sensor.columnName => 
-                sensor.sensorType == "WindDirection" ? 
-                    (x -> circular_mean(collect(skipmissing(x)))) => sensor.columnName :
-                    mean∘skipmissing => sensor.columnName
-            for sensor in ts.sensors
-        ]...
-    )
-    
-    # Rename hour_floor back to timestamp and sort
-    rename!(hourly_df, :hour_floor => :timestamp)
-    sort!(hourly_df, :timestamp)
-    
-    TimeSeriesData(hourly_df, ts.sensors)
-end
-export average_to_hourly
-
-"""
-Calculate circular mean for wind directions
-"""
-function circular_mean(angles::Vector{Float64})::Float64
-    rad = deg2rad.(angles)
-    mean_sin = mean(sin.(rad))
-    mean_cos = mean(cos.(rad))
-    mod(rad2deg(atan(mean_sin, mean_cos)), 360.0)
-end
-export circular_mean
-
-"""
 Find the latest representative year, the return value is the year start date
 """
 function find_representative_year(

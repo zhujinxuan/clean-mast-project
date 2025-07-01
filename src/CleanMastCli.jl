@@ -10,8 +10,6 @@ Project setup and management commands
 Comonicon.@cast module Project
     using Comonicon
     using CleanMastProject.Command.QuickStart
-    using CleanMastProject.Command.CheckConfig
-    using CleanMastProject.Command.CleanFiles
     using CleanMastProject.ParseSensors.CommandParseSensors
 
     """
@@ -24,30 +22,6 @@ Comonicon.@cast module Project
     """
     Comonicon.@cast function init(dir::String)
         QuickStart.execute(dir)
-    end
-
-    """
-    check-config
-
-    Validate configuration files.
-
-    # Arguments
-    - `dir`: Project directory containing config.yaml
-    """
-    Comonicon.@cast function check_config(dir::String)
-        CheckConfig.execute(dir)
-    end
-
-    """
-    clean-files
-
-    Archive non-essential files.
-
-    # Arguments
-    - `dir`: Project directory containing config.yaml
-    """
-    Comonicon.@cast function clean_files(dir::String)
-        CleanFiles.execute(dir)
     end
 
     """
@@ -76,16 +50,13 @@ Data processing and reconstruction commands
 """
 Comonicon.@cast module Process
     using Comonicon
-    using CleanMastProject.Command.CheckConfig
     using CleanMastProject.DataClean.ProcessCleanCommand
-    using CleanMastProject.DataClean.RecommendProcessCleanCommand
-    using CleanMastProject.Command.CleanFiles
-    using CleanMastProject.Command.TowerShading
-    using CleanMastProject.Command.ReconstructSingleMast
-    using CleanMastProject.Command.TrainMesoModel
-    using CleanMastProject.Command.ReconstructMeso
-    using CleanMastProject.Command.RepresentativeYearCalibration
-    using CleanMastProject.Command.WtTimeSeries
+    using CleanMastProject.TowerShading.CommandTowerShading
+    using CleanMastProject.ReconstructSingleMast.CommandReconstructSingle
+    using CleanMastProject.TrainMeso.CommandTrainMeso
+    using CleanMastProject.ReconstructMeso.CommandReconstructMeso
+    using CleanMastProject.RepresentativeYear.CommandRepresentativeYear
+    using CleanMastProject.WTTimeSeries.CommandWtTimeSeries
     using CleanMastProject.Command.ProcessAll
 
     """
@@ -107,10 +78,10 @@ Comonicon.@cast module Process
 
     # Arguments
     - `dir`: Project directory containing config.yaml
-    """
-    Comonicon.@cast function tower_shading(dir::String)
-        TowerShading.execute(dir)
-    end
+          """
+      Comonicon.@cast function tower_shading(config_path::String)
+                     CommandTowerShading.execute(config_path)
+      end
 
     """
     reconstruct-single
@@ -118,10 +89,10 @@ Comonicon.@cast module Process
     Reconstruct missing data using single mast data.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to reconstruct-single.toml configuration file
     """
-    Comonicon.@cast function reconstruct_single(dir::String)
-        ReconstructSingleMast.execute(dir)
+    Comonicon.@cast function reconstruct_single(config_path::String)
+        CommandReconstructSingle.execute(config_path)
     end
 
     """
@@ -130,10 +101,10 @@ Comonicon.@cast module Process
     Train mast and meso linear correlation models.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to train-meso.toml configuration file
     """
-    Comonicon.@cast function train_meso(dir::String)
-        TrainMesoModel.execute(dir)
+    Comonicon.@cast function train_meso(config_path::String)
+        CommandTrainMeso.execute(config_path)
     end
 
     """
@@ -142,10 +113,10 @@ Comonicon.@cast module Process
     Reconstruct missing data using trained mesoscale models.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to reconstruct-meso.toml configuration file
     """
-    Comonicon.@cast function reconstruct_meso(dir::String)
-        ReconstructMeso.execute(dir)
+    Comonicon.@cast function reconstruct_meso(config_path::String)
+        CommandReconstructMeso.execute(config_path)
     end
 
     """
@@ -154,24 +125,24 @@ Comonicon.@cast module Process
     Calibrate data to a representative year.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to representative-year.toml configuration file
     """
-    Comonicon.@cast function representative_year(dir::String)
-        RepresentativeYearCalibration.execute(dir)
+    Comonicon.@cast function representative_year(config_path::String)
+        CommandRepresentativeYear.execute(config_path)
     end
 
     """
     wt-timeseries
 
     Process wind turbine time series data.
-    Extracts wind speed and direction data at target height from representative year data.
-    Saves timestamp, wind speed, and wind direction to a CSV file.
+    Extracts wind speed and direction data at target heights from representative year data.
+    Saves timestamp, wind speed, and wind direction to CSV files.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `config_path`: Path to wt-timeseries.toml configuration file
     """
-    Comonicon.@cast function wt_timeseries(dir::String)
-        WtTimeSeries.execute(dir)
+    Comonicon.@cast function wt_timeseries(config_path::String)
+        CommandWtTimeSeries.execute(config_path)
     end
 
     """
@@ -196,6 +167,12 @@ end
 @cast module Recommend
     using Comonicon
     using CleanMastProject.DataClean.RecommendProcessCleanCommand
+    using CleanMastProject.TowerShading.RecommendTowerShadingCommand
+    using CleanMastProject.ReconstructSingleMast.RecommendReconstructSingleCommand
+    using CleanMastProject.TrainMeso.RecommendTrainMesoCommand
+    using CleanMastProject.ReconstructMeso.RecommendReconstructMesoCommand
+    using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
+    using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
 
     """
     recommend process-clean <dir>
@@ -208,6 +185,36 @@ end
     @cast function process_clean(dir::String)
         "Recommend a process-clean.toml file for the project"
         RecommendProcessCleanCommand.execute(dir)
+    end
+    
+    @cast function tower_shading(dir::String)
+        "Recommend a tower-shading.toml file for the project"
+        RecommendTowerShadingCommand.execute(dir)
+    end
+    
+    @cast function reconstruct_single(dir::String)
+        "Recommend a reconstruct-single.toml file for the project"
+        RecommendReconstructSingleCommand.execute(dir)
+    end
+    
+    @cast function train_meso(dir::String)
+        "Recommend a train-meso.toml file for the project"
+        RecommendTrainMesoCommand.execute(dir)
+    end
+    
+    @cast function reconstruct_meso(dir::String)
+        "Recommend a reconstruct-meso.toml file for the project"
+        RecommendReconstructMesoCommand.execute(dir)
+    end
+    
+    @cast function representative_year(dir::String)
+        "Recommend a representative-year.toml file for the project"
+        RecommendRepresentativeYearCommand.execute(dir)
+    end
+    
+    @cast function wt_timeseries(dir::String)
+        "Recommend a wt-timeseries.toml file for the project"
+        RecommendWtTimeSeriesCommand.execute(dir)
     end
 end
 

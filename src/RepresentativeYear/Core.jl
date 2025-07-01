@@ -1,15 +1,13 @@
-module RepresentativeYear
+module Core
 
 using Dates
 using DataFrames
-using ..Types.MastTimeSeries: TimeSeriesData, TimeRange, SensorColumn
-using ..Types.RepresentativeYear: CalibrationResults, DirectionalCalibration
-using ..Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
-using ..Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
-using ..TimeSeriesProcessing.Interpolation: interpolate_timeseries
-
-include("./RepresentativeYear/Analysis.jl")
-using .Analysis
+using ...Types.MastTimeSeries: TimeSeriesData, TimeRange, SensorColumn
+using ...Types.RepresentativeYear: CalibrationResults, DirectionalCalibration
+using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel
+using ...Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
+using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
+using ..Analysis
 
 function find_heighest_meso_sensor(meso_ts::TimeSeriesData)::Union{SensorColumn, Nothing}
     # Filter sensors with statType = "avg" and sensorType = "WindSpeed"

@@ -18,6 +18,7 @@ Place your raw data files directly inside your project directory. It's also a go
 projects/windfarm-170/
 ├── nrg-17005.txt
 ├── era5.txt
+├── merra2.txt
 └── formats/
     └── sensor/
         ├── nrg.toml
@@ -28,7 +29,7 @@ projects/windfarm-170/
 
 The behavior of the `parse-sensors` command is controlled by a single file in your project's root directory: `parse-sensors.toml`.
 
-This file explicitly distinguishes between mast data (in a `[[masts]]` array) and meso-scale data (in an optional `[meso]` table).
+This file explicitly distinguishes between mast data (in a `[[masts]]` array) and meso-scale data (in an optional `[[mesos]]` array).
 
 ### Configuration Fields
 
@@ -48,10 +49,15 @@ input = "nrg-17005.txt"
 name = "nrg-17005"
 sensor = "formats/sensor/nrg.toml"
 
-# Entry for the meso-scale data
-[meso]
+# Entries for the meso-scale data
+[[mesos]]
 input = "era5.txt"
 name = "era5"
+sensor = "formats/sensor/freemeso-meso.toml"
+
+[[mesos]]
+input = "merra2.txt"
+name = "merra2"
 sensor = "formats/sensor/freemeso-meso.toml"
 ```
 
@@ -65,7 +71,7 @@ To run the command, execute the following from outside your project directory, u
 
 The command will:
 1.  Read the `parse-sensors.toml` in your project directory.
-2.  Iterate through each `[[masts]]` and `[meso]` entry.
+2.  Iterate through each `[[masts]]` and `[[mesos]]` entry.
 3.  Read the specified `input` file.
 4.  Apply the parsing and normalization rules defined in the corresponding `sensor` format file.
 5.  Write the processed data and sensor metadata to the specified `output` paths.
@@ -80,6 +86,7 @@ After the command successfully completes, your project directory will contain a 
 projects/windfarm-170/
 ├── nrg-17005.txt
 ├── era5.txt
+├── merra2.txt
 ├── parse-sensors.toml
 ├── formats/
 │   └── sensor/
@@ -89,5 +96,7 @@ projects/windfarm-170/
     ├── nrg-17005.csv
     ├── nrg-17005.sensors.toml
     ├── era5.csv
-    └── era5.sensors.toml
+    ├── era5.sensors.toml
+    ├── merra2.csv
+    └── merra2.sensors.toml
 ``` 

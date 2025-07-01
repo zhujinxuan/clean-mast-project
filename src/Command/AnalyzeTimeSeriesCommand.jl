@@ -43,7 +43,7 @@ function execute(config_path::String)
     
     @info "Analysis complete. Results saved to: $(config.output.path)"
     
-    return 0
+    return results
 end
 
 end # module 

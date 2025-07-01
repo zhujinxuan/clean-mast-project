@@ -3,11 +3,7 @@ using YAML
 using DataFrames
 using Dates
 using CleanMastProject.Types.Utils
-using CleanMastProject.SensorParser
-using CleanMastProject.CleanMastConfig
-using CleanMastProject.Types.CleanMastConfig
-using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
-using CleanMastProject.Types.SensorColumns: SensorColumn
+using CleanMastProject.ParseSensors
 
 @testset "Sensor Processing Integration Tests" begin
     @testset "Full Sensor Processing Pipeline" begin

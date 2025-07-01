@@ -6,7 +6,6 @@ using LinearAlgebra
 using Dates
 using ...Types.ReconstructSingleMast
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
-using ...Types.CleanMastConfig
 using ...Types.Sector: degree_diff
 
 const DEFAULT_REFERENCE_HEIGHT = 50.0

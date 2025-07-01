@@ -15,6 +15,19 @@ struct TimeRange
     max::DateTime
 end
 
+function to_dict(range::TimeRange) :: Dict{String, Any}
+    return Dict{String, Any}(
+        "min" => range.min,
+        "max" => range.max
+    )
+end
+
+function from_dict(::Type{TimeRange}, dict::Dict{String, Any}) :: TimeRange
+    min_time = DateTime(dict["min"])
+    max_time = DateTime(dict["max"])
+    return TimeRange(min_time, max_time)
+end
+
 struct TimeSeriesSource
     data::String
     sensors::String

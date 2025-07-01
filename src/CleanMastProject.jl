@@ -16,8 +16,18 @@ module Types
   export ParseSensorsConfig
   include("./Types/ProcessCleanConfig.jl")
   export ProcessCleanConfig
-  include("./Types/CleanMastConfig.jl")
-  export CleanMastConfig
+  include("./Types/TowerShadingConfig.jl")
+  export TowerShadingConfig
+  include("./Types/ReconstructSingleConfig.jl")
+  export ReconstructSingleConfig
+  include("./Types/TrainMesoConfig.jl")
+  export TrainMesoConfig
+  include("./Types/ReconstructMesoConfig.jl")
+  export ReconstructMesoConfig
+  include("./Types/RepresentativeYearConfig.jl")
+  export RepresentativeYearConfig
+  include("./Types/WtTimeSeriesConfig.jl")
+  export WtTimeSeriesConfig
   include("./Types/Sector.jl")
   export Sector
   include("./Types/MastReferenceModel.jl")
@@ -57,9 +67,6 @@ module ParseSensors
 end
 export ParseSensors
 
-include("./CleanMastConfig.jl");
-export CleanMastConfig
-
 module DataClean
   module Rules
     include("./DataClean/Rules/ProcessTypes.jl")
@@ -77,7 +84,13 @@ module DataClean
 end
 export DataClean
 
-include("./TowerShading.jl")
+module TowerShading
+  include("./TowerShading/Core.jl")
+  include("./TowerShading/CommandTowerShading.jl")
+  include("./TowerShading/RecommendTowerShadingCommand.jl")
+  # Export command modules
+  export CommandTowerShading, RecommendTowerShadingCommand, Core
+end
 export TowerShading
 
 module TimeSeriesProcessing
@@ -92,7 +105,10 @@ module ReconstructSingleMast
   include("./ReconstructSingleMast/WindSpeedTraining.jl")
   include("./ReconstructSingleMast/DirectionTraining.jl")
   include("./ReconstructSingleMast/ProcessData.jl")
+  include("./ReconstructSingleMast/CommandReconstructSingle.jl")
+  include("./ReconstructSingleMast/RecommendReconstructSingleCommand.jl")
   export ProcessData, WindSpeedTraining, DirectionTraining
+  export CommandReconstructSingle, RecommendReconstructSingleCommand
 end
 export ReconstructSingleMast
 
@@ -109,13 +125,38 @@ module WindDirectionModels
 end
 export WindDirectionModels
 
-include("./TrainMeso.jl")
+module TrainMeso
+  include("./TrainMeso/Core.jl")
+  include("./TrainMeso/CommandTrainMeso.jl")
+  include("./TrainMeso/RecommendTrainMesoCommand.jl")
+  export CommandTrainMeso, RecommendTrainMesoCommand, Core
+end
 export TrainMeso
-include("./ReconstructMeso.jl")
+module ReconstructMeso
+  include("./ReconstructMeso/Core.jl")
+  include("./ReconstructMeso/CommandReconstructMeso.jl")
+  include("./ReconstructMeso/RecommendReconstructMesoCommand.jl")
+  export CommandReconstructMeso, RecommendReconstructMesoCommand, Core
+end
 export ReconstructMeso
 
-include("./RepresentativeYear.jl")
+module RepresentativeYear
+  include("./RepresentativeYear/Analysis.jl")
+  include("./RepresentativeYear/Core.jl")
+  include("./RepresentativeYear/CommandRepresentativeYear.jl")
+  include("./RepresentativeYear/RecommendRepresentativeYearCommand.jl")
+  export calibrate_to_representative_year
+  export CommandRepresentativeYear, RecommendRepresentativeYearCommand
+  export Analysis
+end
 export RepresentativeYear
+module WTTimeSeries
+  include("./WTTimeSeries/Core.jl")
+  include("./WTTimeSeries/CommandWtTimeSeries.jl")
+  include("./WTTimeSeries/RecommendWtTimeSeriesCommand.jl")
+  export CommandWtTimeSeries, RecommendWtTimeSeriesCommand, Core
+end
+export WTTimeSeries
 
 include("./AnalyzeTimeSeries.jl")
 export AnalyzeTimeSeries
@@ -132,24 +173,13 @@ end
 export AnalyzeEN
 
 module Command
-  include("./Command/CheckConfig.jl")
-  include("./Command/CleanFiles.jl")
-  include("./Command/TowerShading.jl")
-  include("./Command/ReconstructSingleMast.jl")
-  include("./Command/TrainMesoModel.jl")
-  include("./Command/ReconstructMeso.jl")
-  include("./Command/RepresentativeYearCalibration.jl")
   include("./Command/QuickStart.jl")
   include("./Command/AnalyzeTimeSeriesCommand.jl")
-  include("./Command/WtTimeSeries.jl")
   include("./Command/ProcessAll.jl")
-  include("./Command/GenerateTimeSeriesReport.jl")
   include("./Command/AnalyzeEN.jl")
   include("./Command/AnalyzeReconstructSingle.jl")
-  export CheckConfig, CleanFiles, TowerShading, 
-         ReconstructSingleMast, TrainMesoModel, ReconstructMeso, RepresentativeYearCalibration, 
-         QuickStart, ProcessAll, AnalyzeTimeSeriesCommand, WtTimeSeries,
-         GenerateTimeSeriesReport, AnalyzeEN, AnalyzeReconstructSingle
+  export  QuickStart, ProcessAll, AnalyzeTimeSeriesCommand,
+         AnalyzeEN, AnalyzeReconstructSingle
 end
 export Command
 include("./CleanMastCli.jl")

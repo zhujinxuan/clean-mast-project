@@ -9,7 +9,7 @@ name = "nrg-mast"
 sensor = "formats/sensor/nrg.toml"  # Path to sensor format definition
 
 # Process ERA5 meso data  
-[meso]
+[[mesos]]
 input = "era5.txt"
 # Optional: defaults to input filename without extension
 name = "era5"

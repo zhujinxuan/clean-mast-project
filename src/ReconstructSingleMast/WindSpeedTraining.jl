@@ -6,7 +6,6 @@ using Dates
 using ...Types.ReconstructSingleMast
 using ...Types.SensorColumns: SensorColumn
 using ...Types.MastTimeSeries: TimeSeriesData
-using ...Types.CleanMastConfig
 
 const DEFAULT_REFERENCE_HEIGHT = 50.0
 export DEFAULT_REFERENCE_HEIGHT

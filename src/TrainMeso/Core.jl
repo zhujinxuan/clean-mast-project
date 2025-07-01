@@ -3,17 +3,17 @@
 
 Module for training mesoscale reference models for wind speed and direction.
 """
-module TrainMeso
+module Core
 
 using DataFrames
 using Dates
-using ..Types.MastTimeSeries: TimeSeriesData, TimeRange
-using ..Types.Sector: DirectionSector, DIRECTION_16_SECTORS
-using ..Types.MastReferenceModel: train
-using ..Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel, SectorizedRegressionParams
-using ..Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel, DirectionOffsetParams
-using ..TimeSeriesProcessing.Regularization: ensure_regular_intervals, validate_intervals
-using ..TimeSeriesProcessing.Interpolation: interpolate_timeseries
+using ...Types.MastTimeSeries: TimeSeriesData, TimeRange
+using ...Types.Sector: DirectionSector, DIRECTION_16_SECTORS
+using ...Types.MastReferenceModel: train
+using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel, SectorizedRegressionParams
+using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel, DirectionOffsetParams
+using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals, validate_intervals
+using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
 
 export train_meso_windspeed_sectorized, train_meso_winddirection_directionoffset
 

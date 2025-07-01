@@ -1,8 +1,0 @@
-﻿Mast:
-  name: "nrg-mast"
-Meso:
-  name: "era5"
-Analysis:
-  time_range:
-    min: null
-    max: null

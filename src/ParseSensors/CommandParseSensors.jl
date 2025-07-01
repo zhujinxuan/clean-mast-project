@@ -52,9 +52,9 @@ function load_and_normalize_config(config_path::String)::ParseSensorsConfigurati
     end
 
     normalized_masts = map(normalize, config.masts)
-    normalized_meso = isnothing(config.meso) ? nothing : normalize(config.meso)
+    normalized_mesos = map(normalize, config.mesos)
 
-    return ParseSensorsConfigurationNormalized(normalized_masts, normalized_meso)
+    return ParseSensorsConfigurationNormalized(normalized_masts, normalized_mesos)
 end
 
 """
@@ -73,9 +73,9 @@ function execute(config_path::String)
         process_single_file(file_config, config_path)
     end
 
-    if !isnothing(config.meso)
-        println("Processing meso file: $(config.meso.input)...")
-        process_single_file(config.meso, config_path)
+    for file_config in config.mesos
+        println("Processing meso file: $(file_config.input)...")
+        process_single_file(file_config, config_path)
     end
     
     println("\nSensor processing completed successfully.")

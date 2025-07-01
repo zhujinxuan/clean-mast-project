@@ -7,7 +7,6 @@ using Statistics
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
 using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.Types.RepresentativeYear: DirectionalCalibration, CalibrationResults, CalibrationEachWSSensor
-using CleanMastProject.RepresentativeYear
 using CleanMastProject.RepresentativeYear.Analysis
 using CleanMastProject.Types.SpeedReferenceModel.SectorizedRegression: SpeedSector, SectorizedRegressionModel, SpeedPair
 using CleanMastProject.Types.Sector: DirectionSector, DIRECTION_16_SECTORS
@@ -170,34 +169,6 @@ end
         @test find_direction_sector(270.0) == 13 # W
         @test find_direction_sector(360.0) == 1  # N again
         @test find_direction_sector(-45.0) == 15 # NW
-    end
-    
-    @testset "average_to_hourly" begin
-        # Create test data with 10-minute resolution
-        timestamps_10min = DateTime(2024,1,1):Minute(10):(DateTime(2024,1,2) - Second(1))
-        df_10min = DataFrame(
-            timestamp = timestamps_10min,
-            ws_80m = fill(10.0, length(timestamps_10min)),
-            wd_80m = fill(180.0, length(timestamps_10min))
-        )
-        sensors = [
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-            SensorColumn(:wd_80m, "WindDirection", "N", 80.0, "avg", "deg")
-        ]
-        ts_10min = TimeSeriesData(df_10min, sensors)
-        
-        hourly_ts = average_to_hourly(ts_10min)
-        @test size(hourly_ts.df, 1) == 24  # One day of hourly data
-        @test all(diff(hour.(hourly_ts.df.timestamp)) .== 1)
-        @test all(isapprox.(hourly_ts.df.ws_80m, 10.0, atol=0.1))
-        @test all(isapprox.(hourly_ts.df.wd_80m, 180.0, atol=0.1))
-    end
-    
-    @testset "circular_mean" begin
-        @test circular_mean([2.0, 360.0]) ≈ 1.0
-        @test circular_mean([5.0, 350.0]) ≈ (360 - 2.5)
-        @test circular_mean([350.0, 15.0]) ≈ 2.5
-        @test circular_mean([45.0, 45.0, 45.0]) ≈ 45.0
     end
     
     @testset "find_representative_year" begin
