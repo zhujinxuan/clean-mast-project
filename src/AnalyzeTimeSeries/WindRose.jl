@@ -277,7 +277,10 @@ end
 
 Calculate the mean of two angles in degrees.
 """
-function degreeMean(a::Float64, b::Float64, weight1::Float64)
+function degreeMean(a::Union{Float64, Missing}, b::Union{Float64, Missing}, weight1::Union{Float64, Missing}) :: Union{Float64, Missing}
+    if ismissing(a) || ismissing(b) || ismissing(weight1)
+        return missing
+    end
     diff = mod(180.0 + b - a, 360.0) - 180.0
     return mod(a + diff*(1-weight1) + 360.0, 360.0)
 end
