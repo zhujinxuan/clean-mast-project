@@ -5,15 +5,18 @@ Standalone command for parsing sensor data based on a TOML configuration file.
 module CommandParseSensors
 
 using DataFrames, CSV
+using Dates
 using ...Types.Utils: to_dict, from_dict, strip_nothing_values
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, SensorFormatConfig, ParseSensorsFileConfig,
-                                  ParseSensorsConfigurationNormalized, ParseSensorsFileConfigNormalized
-using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.SensorColumns: ParsedSensor
+                                  ParseSensorsConfigurationNormalized, ParseSensorsFileConfigNormalized, InterpolationConfig
+using ...Types.MastTimeSeries: TimeSeriesSource, TimeSeriesData, TimeRange
+using ...Types.SensorColumns: ParsedSensor, SensorColumn
 using ...CleanMastUtils: load_dict
 using ..ColumnParser: parse_column_name
 using ..FileProcessor: generate_csv_opts
 using ..DataFrameProcessor: normalize_timestamp!, rename_and_apply_multipliers!
+using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals
+using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
 using TOML
 
 export execute
@@ -31,6 +34,7 @@ function load_and_normalize_config(config_path::String)::ParseSensorsConfigurati
     config = from_dict(ParseSensorsConfiguration, config_dict)
     project_dir = dirname(config_path)
 
+    # TODO (don't do it unless i tell you to do) Move this function out of current scope and make it testable;
     function normalize(file_config::ParseSensorsFileConfig)::ParseSensorsFileConfigNormalized
         input_path = abspath(joinpath(project_dir, file_config.input))
         name = something(file_config.name, splitext(basename(input_path))[1])
@@ -48,7 +52,19 @@ function load_and_normalize_config(config_path::String)::ParseSensorsConfigurati
             TimeSeriesSource("./raw/$(name).csv", "./raw/$(name).sensors.toml")
         end
 
-        return ParseSensorsFileConfigNormalized(input_path, name, sensor_format, normalized_output)
+        # Create normalized config using from_dict for consistency
+        normalized_dict = Dict{String, Any}(
+            "input" => input_path,
+            "name" => name,
+            "sensor" => to_dict(sensor_format),
+            "output" => to_dict(normalized_output)
+        )
+
+        if !isnothing(file_config.interpolate)
+            normalized_dict["interpolate"] = to_dict(file_config.interpolate)
+        end
+
+        return from_dict(ParseSensorsFileConfigNormalized, normalized_dict)
     end
 
     normalized_masts = map(normalize, config.masts)
@@ -105,13 +121,63 @@ function process_single_file(file_config::ParseSensorsFileConfigNormalized, conf
         
         # 5. Transform DataFrame
         df_transformed = rename_and_apply_multipliers!(df, sensors)
-        
-        # 6. Save outputs
+
+        # 6. Apply interpolation if configured
+        if !isnothing(file_config.interpolate)
+            df_transformed = apply_interpolation(df_transformed, sensors, file_config.interpolate)
+        end
+
+        # 7. Save outputs
         save_outputs(df_transformed, sensors, file_config, config_path)
 
     catch e
         @error "Failed to process file $(file_config.input):" exception=(e, catch_backtrace())
     end
+end
+
+"""
+    apply_interpolation(df::DataFrame, sensors::Vector{ParsedSensor}, interpolate_config::InterpolationConfig)::DataFrame
+
+Applies interpolation to the DataFrame based on the interpolation configuration.
+First ensures regular intervals at from_minutes, then interpolates to to_minutes.
+"""
+function apply_interpolation(df::DataFrame, sensors::Vector{ParsedSensor}, interpolate_config::InterpolationConfig)::DataFrame
+    println("Applying interpolation: $(interpolate_config.from_minutes) min → $(interpolate_config.to_minutes) min")
+
+    # Convert ParsedSensor to SensorColumn for TimeSeriesData
+    sensor_columns = [
+        SensorColumn(
+            Symbol(sensor.columnName),
+            sensor.sensorType,
+            sensor.sensorDirection,
+            sensor.height,
+            sensor.statType,
+            sensor.unit
+        ) for sensor in sensors
+    ]
+
+    # Create TimeSeriesData
+    ts = TimeSeriesData(df, sensor_columns)
+
+    # Get time range from data
+    timestamps = sort(unique(df.timestamp))
+    time_range = TimeRange(minimum(timestamps), maximum(timestamps))
+
+    # Step 1: Ensure regular intervals at from_minutes
+    from_interval = Minute(interpolate_config.from_minutes)
+    ts_regular = ensure_regular_intervals(ts, time_range, from_interval)
+    println("✓ Ensured regular $(interpolate_config.from_minutes)-minute intervals")
+
+    # Step 2: Interpolate to to_minutes intervals
+    to_interval = Minute(interpolate_config.to_minutes)
+    start_time = minimum(timestamps)
+    end_time = maximum(timestamps)
+    target_timestamps = collect(start_time:to_interval:end_time)
+
+    ts_interpolated = interpolate_timeseries(ts_regular, target_timestamps)
+    println("✓ Interpolated to $(interpolate_config.to_minutes)-minute intervals")
+
+    return ts_interpolated.df
 end
 
 """

@@ -58,6 +58,14 @@ end
 
 export Types
 
+module TimeSeriesProcessing
+  include("./TimeSeriesProcessing/Interpolation.jl")
+  include("./TimeSeriesProcessing/Regularization.jl")
+  include("./TimeSeriesProcessing/TimeRangeProcessor.jl")
+  export Interpolation, Regularization, TimeRangeProcessor
+end
+export TimeSeriesProcessing
+
 module ParseSensors
   include("./ParseSensors/ColumnParser.jl")
   include("./ParseSensors/FileProcessor.jl")
@@ -93,13 +101,6 @@ module TowerShading
 end
 export TowerShading
 
-module TimeSeriesProcessing
-  include("./TimeSeriesProcessing/Interpolation.jl")
-  include("./TimeSeriesProcessing/Regularization.jl")
-  include("./TimeSeriesProcessing/TimeRangeProcessor.jl")
-  export Interpolation, Regularization, TimeRangeProcessor
-end
-export TimeSeriesProcessing
 
 module ReconstructSingleMast
   include("./ReconstructSingleMast/WindSpeedTraining.jl")

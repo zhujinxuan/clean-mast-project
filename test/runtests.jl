@@ -16,7 +16,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "ParseSensors/test_column_parser.jl",
         "ParseSensors/test_dataframe_processor.jl",
         "ParseSensors/test_file_processor.jl",
-        "ParseSensors/test_command_parse_sensors.jl"
+        "ParseSensors/test_command_parse_sensors.jl",
+        "ParseSensors/test_interpolation_config.jl"
     ],
     "rules" => [
         "test_range_rules.jl",

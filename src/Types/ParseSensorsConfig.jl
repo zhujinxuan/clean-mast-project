@@ -209,6 +209,28 @@ function to_dict(sfc::SensorFormatConfig)::Dict{String, Any}
 end
 
 """
+Configuration for time series interpolation
+"""
+struct InterpolationConfig
+    from_minutes::Int                                # Source interval in minutes
+    to_minutes::Int                                  # Target interval in minutes
+end
+
+function from_dict(::Type{InterpolationConfig}, dict::Dict{String, Any})::InterpolationConfig
+    InterpolationConfig(
+        dict["from_minutes"],
+        dict["to_minutes"]
+    )
+end
+
+function to_dict(ic::InterpolationConfig)::Dict{String, Any}
+    Dict{String, Any}(
+        "from_minutes" => ic.from_minutes,
+        "to_minutes" => ic.to_minutes
+    )
+end
+
+"""
 Configuration for a single file in parse-sensors processing
 """
 struct ParseSensorsFileConfig
@@ -216,6 +238,7 @@ struct ParseSensorsFileConfig
     name::Union{String, Nothing}                     # Optional name (defaults to basename)
     sensor::Union{String, SensorFormatConfig}        # Sensor config (file path or embedded)
     output::Union{TimeSeriesSource, Nothing}         # Output configuration
+    interpolate::Union{InterpolationConfig, Nothing} # Optional interpolation configuration
 end
 
 function from_dict(::Type{ParseSensorsFileConfig}, dict::Dict{String, Any})::ParseSensorsFileConfig
@@ -225,18 +248,25 @@ function from_dict(::Type{ParseSensorsFileConfig}, dict::Dict{String, Any})::Par
     else
         from_dict(SensorFormatConfig, Dict{String, Any}(dict["sensor"]))
     end
-    
-    output :: Union{TimeSeriesSource, Nothing} = if haskey(dict, "output")
+
+    output :: Union{TimeSeriesSource, Nothing} = if haskey(dict, "output") && !isnothing(dict["output"])
         from_dict(TimeSeriesSource, dict["output"])
     else
         nothing
     end
-    
+
+    interpolate :: Union{InterpolationConfig, Nothing} = if haskey(dict, "interpolate") && !isnothing(dict["interpolate"])
+        from_dict(InterpolationConfig, Dict{String, Any}(dict["interpolate"]))
+    else
+        nothing
+    end
+
     ParseSensorsFileConfig(
         dict["input"],
         get(dict, "name", nothing),
         sensor,
-        output
+        output,
+        interpolate
     )
 end
 
@@ -245,17 +275,21 @@ function to_dict(psfc::ParseSensorsFileConfig)::Dict{String, Any}
         "input" => psfc.input,
         "output" => psfc.output isa TimeSeriesSource ? to_dict(psfc.output) : nothing
     )
-    
+
     if !isnothing(psfc.name)
         result["name"] = psfc.name
     end
-    
+
     if psfc.sensor isa String
         result["sensor"] = psfc.sensor
     else
         result["sensor"] = to_dict(psfc.sensor)
     end
-    
+
+    if !isnothing(psfc.interpolate)
+        result["interpolate"] = to_dict(psfc.interpolate)
+    end
+
     result
 end
 
@@ -281,7 +315,7 @@ function to_dict(psc::ParseSensorsConfiguration)::Dict{String, Any}
 end
 
 export RuleOutcome, MappingRule, PatternConfig, SensorColumnConfig, SensorFormatConfig,
-       ParseSensorsFileConfig, ParseSensorsConfiguration,
+       ParseSensorsFileConfig, ParseSensorsConfiguration, InterpolationConfig,
        apply_mapping, matches_rule, merge_outcomes, safe_something
 
 # --- Normalized Configuration Structs ---
@@ -292,6 +326,26 @@ struct ParseSensorsFileConfigNormalized
     name::String
     sensor::SensorFormatConfig
     output::TimeSeriesSource
+    interpolate::Union{InterpolationConfig, Nothing}
+end
+
+function from_dict(::Type{ParseSensorsFileConfigNormalized}, dict::Dict{String, Any})::ParseSensorsFileConfigNormalized
+    sensor = from_dict(SensorFormatConfig, Dict{String, Any}(dict["sensor"]))
+    output = from_dict(TimeSeriesSource, Dict{String, Any}(dict["output"]))
+
+    interpolate = if haskey(dict, "interpolate") && !isnothing(dict["interpolate"])
+        from_dict(InterpolationConfig, Dict{String, Any}(dict["interpolate"]))
+    else
+        nothing
+    end
+
+    ParseSensorsFileConfigNormalized(
+        dict["input"],
+        dict["name"],
+        sensor,
+        output,
+        interpolate
+    )
 end
 
 struct ParseSensorsConfigurationNormalized
