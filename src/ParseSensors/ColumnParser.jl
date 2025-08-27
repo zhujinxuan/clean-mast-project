@@ -39,7 +39,7 @@ function create_regex_from_match(
     for placeholder in placeholders
         full_placeholder = "{$placeholder}"
         # Use custom pattern if available, otherwise use a generic one that disallows underscores
-        pattern = get(patterns, placeholder, "[^_]+")
+        pattern = get(patterns, placeholder, placeholder == "height" ? "[0-9]+\\.?[0-9]*" : "[^_]+")
         regex_str = replace(regex_str, full_placeholder => "(?<$placeholder>$pattern)")
     end
     

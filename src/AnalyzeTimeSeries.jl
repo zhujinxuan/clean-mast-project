@@ -261,10 +261,8 @@ function generate_comprehensive_report(config::AnalyzeConfig)
                     
 
                     write(io, """
-                     #set heading(offset: $(config.output.docx.sectionLevel-1))
-                    
                     #include "$(rel_path)"
-                    
+
                     """)
                 else
                     @warn "Typst file not found: $file_path"

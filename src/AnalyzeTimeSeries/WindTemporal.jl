@@ -575,7 +575,7 @@ function generate_typst_monthly_report(config::AnalyzeConfig)
         
         # Write Typst report
         open(typst_path, "w") do io
-            println(io, "= 风速时序分析报告")
+            println(io, "== 风速时序分析报告")
             
             # Include all available SVG figures
             println(io, "== 图表分析")

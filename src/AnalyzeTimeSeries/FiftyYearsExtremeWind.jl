@@ -1230,7 +1230,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
     end
     
     open(typst_path, "w") do io
-        println(io, "= 50年一遇最大风速")
+        println(io, "== 50年一遇最大风速")
         println(io, "")
         println(io, "根据IEC 61400-1标准，50年重现期风速分为两类：")
         println(io, raw"- 50年最大持续风速 $ V_{\"ref\"} $ ：50年重现期10分钟平均风速")

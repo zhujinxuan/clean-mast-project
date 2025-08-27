@@ -9,22 +9,24 @@ using ...AnalyzeTimeSeries: analyze_all
 Execute time series analysis using the provided analyze configuration file.
 
 # Arguments
-- `config_path::String`: Path to the analyze.yaml configuration file
+- `config_path::String`: Path to the analyze configuration file (supports .yaml, .toml, .json)
 
-# Example
+# Examples
 ```
 julia bin/CleanMast.jl analyze timeseries path/to/analyze.yaml
+julia bin/CleanMast.jl analyze timeseries path/to/analyze.toml
+julia bin/CleanMast.jl analyze timeseries path/to/analyze.json
 ```
 
-The analyze.yaml file should specify:
-- Multiple masts with their data files and sensor configurations  
+The configuration file should specify:
+- Multiple masts with their data files and sensor configurations
 - Air density settings for each mast
 - Output directory for results
 - Optional DOCX report settings
 
 For each mast, the analysis includes:
 - Wind temporal analysis (time series, daily/monthly patterns)
-- Vertical profile analysis  
+- Vertical profile analysis
 - Wind direction frequency and power distribution
 - Wind rose plots (frequency and power)
 - Turbulence intensity analysis (with meteodyn_ti.txt files)

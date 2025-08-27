@@ -62,8 +62,8 @@ Train a mast reference model using the provided parameters, mast data, and mesos
 # Returns
 - `T`: Trained mast reference model
 """
-function train(::Type{T}, params::P, mast::TimeSeriesData, meso::TimeSeriesData)::T where {T<:AbstractMastReferenceModel, P}
-    error("train not implemented for model type $(T)")
+function train(::Type{T}, params::P, target::TimeSeriesData, source::TimeSeriesData)::T where {T<:AbstractMastReferenceModel, P}
+    error("train not implemented for model type $(T), $(typeof(params))")
 end
 
 """
@@ -85,7 +85,7 @@ Reconstruct mast-level time series using a trained model and mesoscale data.
 # Note
 This is an interface declaration. Concrete subtypes must implement this method.
 """
-function reconstruct(model::T, meso::TimeSeriesData)::TimeSeriesData where {T<:AbstractMastReferenceModel}
+function reconstruct(model::T, source::TimeSeriesData)::TimeSeriesData where {T<:AbstractMastReferenceModel}
     error("reconstruct not implemented for model type $(T)")
 end
 

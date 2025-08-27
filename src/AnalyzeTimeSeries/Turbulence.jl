@@ -714,7 +714,7 @@ function generate_consolidated_turbulence_typst_report(
     
     # Write consolidated Typst report
     open(typst_path, "w") do io
-        println(io, "= 湍流强度分析报告")
+        println(io, "== 湍流强度分析报告")
         println(io)
         println(io, "== 基本信息")
         println(io, "- 测风塔：$(mast_name)")

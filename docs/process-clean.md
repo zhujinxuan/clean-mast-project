@@ -25,7 +25,7 @@ This command will:
 2.  Identify which of those datasets are **mast data** (by checking if their time range is less than 5 years).
 3.  For each mast dataset, it will create an entry in a new configuration file.
 4.  It automatically sets the **input** for the cleaning step to be the **output** from the `parse-sensors` step.
-5.  It sets up a default output path (`clean/`) and assigns a default set of cleaning rules (`formats/clean/nrg-strict.toml`).
+5.  It sets up a default output path (`clean/`) and assigns a default set of cleaning rules (`formats/clean/default.toml`).
 
 ### Expected Result
 
@@ -44,7 +44,7 @@ This command will create a new file in your project directory: `process-clean.to
     data = "./clean/MyMast.csv"
     sensors = "./clean/MyMast.sensors.toml"
     
-  rules = "formats/clean/nrg-strict.toml"
+  rules = "formats/clean/default.toml"
 ```
 
 You can review and edit this file if you need to apply different cleaning rules or change the output paths.

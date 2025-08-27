@@ -351,4 +351,102 @@ end
 
 export reconstruct_wind_directions
 
+"""
+Reconstruct a single target column at a specific timestamp - REQUIRES 10-MINUTE INTERVALS
+"""
+function reconstruct_single_target(
+    data::TimeSeriesData,
+    target_col::Symbol,
+    timestamp::DateTime,
+    min_height::Float64=DEFAULT_REFERENCE_HEIGHT
+)::Union{ReconstructedSuccess, ReconstructedFailure}
+    # Get direction sensors
+    direction_sensors = filter(s -> 
+        s.sensorType == "WindDirection" && 
+        s.statType == "avg" && 
+        s.height >= min_height, 
+        data.sensors)
+    
+    isempty(direction_sensors) && return ReconstructedFailure(
+        timestamp,
+        target_col,
+        "No valid wind direction sensors found"
+    )
+    
+    # Create correlation for this target
+    correlation = create_correlation_for_target(
+        data, 
+        target_col, 
+        direction_sensors,
+        timestamp
+    )
+    
+    if isnothing(correlation)
+        return ReconstructedFailure(
+            timestamp,
+            target_col,
+            "Failed to calculate valid direction correlation"
+        )
+    end
+    
+    # Validate time series format and require 10-minute intervals
+    timestamps = data.df.timestamp
+    if isempty(timestamps)
+        return ReconstructedFailure(
+            timestamp,
+            target_col,
+            "No timestamp data available"
+        )
+    end
+    
+    # Require 10-minute intervals
+    if length(timestamps) > 1
+        interval = timestamps[2] - timestamps[1]
+        if interval != Minute(10)
+            error("Time series must have 10-minute intervals. Found interval: $interval. Use regularization first.")
+        end
+    end
+    
+    # Fast arithmetic-based timestamp lookup for 10-minute intervals
+    start_time = timestamps[1]
+    minutes_elapsed = Dates.value(timestamp - start_time) ÷ (1000 * 60)
+    target_row_idx = (minutes_elapsed ÷ 10) + 1
+    
+    if target_row_idx < 1 || target_row_idx > length(timestamps) || timestamps[target_row_idx] != timestamp
+        return ReconstructedFailure(
+            timestamp,
+            target_col,
+            "Timestamp not found in regular 10-minute time series"
+        )
+    end
+    
+    target_row = data.df[target_row_idx, :]
+    
+    # Find reference sensor and reconstruct
+    reference_sensor = begin
+        idx = findfirst(s -> s.statType == "avg" && s.sensorType == "WindDirection" && s.height == correlation.source_height, data.sensors)
+        isnothing(idx) ? nothing : data.sensors[idx]
+    end
+
+    # Find reference value
+    reference_val = target_row[reference_sensor.columnName]
+    if ismissing(reference_val)
+        return ReconstructedFailure(
+            timestamp,
+            target_col,
+            "Reference measurement not available"
+        )
+    end
+    
+    reconstructed_direction = mod(reference_val + correlation.mean_difference, 360)
+    
+    return ReconstructedSuccess(
+        timestamp,
+        target_col,
+        reconstructed_direction
+    )
+end
+
+export reconstruct_single_target
+
 end # module 

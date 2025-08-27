@@ -114,8 +114,8 @@ function process_single_file(file_config::ParseSensorsFileConfigNormalized, conf
         normalize_timestamp!(df, file_config.sensor.timestamp_column)
         
         # 4. Parse column metadata
-        sensors = [
-            s for s in (parse_column_name(String(col), file_config.sensor.columns, file_config.sensor.mappings) for col in names(df)) 
+        sensors = ParsedSensor[
+            s for s in (parse_column_name(String(col), file_config.sensor.columns, file_config.sensor.mappings) for col in names(df))
             if !isnothing(s)
         ]
         

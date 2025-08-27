@@ -19,7 +19,7 @@ Execute single mast reconstruction based on configuration file.
 - `config_path::String`: Path to reconstruct-single.toml configuration file
 """
 function execute(config_path::String)
-    println("Processing single mast reconstruction...")
+    println("🔄 Processing single mast reconstruction...")
     
     # Load configuration
     config_dict = load_dict(config_path)
@@ -27,17 +27,21 @@ function execute(config_path::String)
     project_dir = dirname(config_path)
     
     # Process each mast
-    for mast_config in config.masts
-        println("Processing mast: $(mast_config.name)")
+    for (i, mast_config) in enumerate(config.masts)
+        println("\n📊 Processing mast $(i)/$(length(config.masts)): $(mast_config.name)")
         
         # Load time series data
+        print("  Loading time series data... ")
         time_series = load_timeseries(mast_config.input, project_dir)
+        println("✓ $(nrow(time_series.df)) rows, $(length(time_series.sensors)) sensors")
         
         # Process reconstruction and get results
         reconstruction_results = process_data!(time_series)
         
         # Save results
+        print("  Saving results... ")
         save_timeseries(mast_config.output, project_dir, time_series)
+        println("✓")
         
         # Write reconstruction results to YAML
         reconstruction_dict = Dict(
@@ -54,40 +58,13 @@ function execute(config_path::String)
             YAML.write(io, reconstruction_dict)
         end
         
-        # Display reconstruction statistics
-        total_reconstructed = length(reconstruction_results.successes)
-        total_failures = length(reconstruction_results.failures)
-        total_attempts = total_reconstructed + total_failures
-        success_rate = total_attempts > 0 ? round(total_reconstructed / total_attempts * 100, digits=1) : 0.0
-        
-        println("\nReconstruction Statistics for $(mast_config.name):")
-        println("==========================")
-        println("Total points attempted: $total_attempts")
-        println("Successfully reconstructed: $total_reconstructed")
-        println("Failed to reconstruct: $total_failures")
-        println("Success rate: $(success_rate)%")
-        
-        # Group successes by column to show per-sensor statistics
-        successes_by_column = Dict{Symbol, Int}()
-        for success in reconstruction_results.successes
-            col = success["columnName"]
-            successes_by_column[col] = get(successes_by_column, col, 0) + 1
-        end
-        
-        if !isempty(successes_by_column)
-            println("\nReconstructions by sensor:")
-            for (col, count) in sort(collect(successes_by_column))
-                println("  $col: $count points")
-            end
-        end
-        
-        println("\nSingle mast reconstruction completed for $(mast_config.name):")
-        println("- Saved processed data to $(mast_config.output.data)")
-        println("- Saved updated sensors to $(mast_config.output.sensors)")
-        println("- Saved reconstruction details to process-stats/$(stats_filename)")
+        println("  📁 Results saved:")
+        println("    • Data: $(mast_config.output.data)")
+        println("    • Sensors: $(mast_config.output.sensors)")
+        println("    • Statistics: process-stats/$(stats_filename)")
     end
     
-    println("\nSingle mast reconstruction completed successfully.")
+    println("\n🎉 Single mast reconstruction completed successfully!")
 end
 
 end # module 

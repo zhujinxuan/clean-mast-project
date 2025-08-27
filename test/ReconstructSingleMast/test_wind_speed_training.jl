@@ -3,7 +3,7 @@ using DataFrames
 using Dates
 using CleanMastProject.ReconstructSingleMast.WindSpeedTraining
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
-using CleanMastProject.Types.ReconstructSingleMast: WindSpeedProfile
+using CleanMastProject.Types.ReconstructSingleMast: WindSpeedProfile, ReconstructedSuccess, ReconstructedFailure
 using CleanMastProject.Types.SensorColumns: SensorColumn
 
 function generate_synthetic_wind_data(;
@@ -128,6 +128,77 @@ end
         @test result > reference_speed  # Higher height should give higher speed
     end
 
+    @testset "10-minute interval requirement" begin
+        # Test that functions error with non-10-minute intervals
+        df_5min = generate_synthetic_wind_data(time_step=Minute(5))
+        sensors = [
+            SensorColumn(Symbol("ws_$(Int(h))m"), "WindSpeed", "N", h, "avg", "m/s")
+            for h in [50.0, 80.0, 100.0, 120.0, 160.0]
+        ]
+        data_5min = TimeSeriesData(df_5min, sensors)
+        
+        @test_throws ErrorException calculate_hourly_averages(
+            data_5min.df, 
+            DateTime(2024,1,1), 
+            sensors
+        )
+        
+        @test_throws ErrorException create_profile_for_target(
+            data_5min.df, 
+            DateTime(2024,1,1), 
+            sensors
+        )
+    end
+
+    @testset "reconstruct_single_target" begin
+        # Test with proper 10-minute interval data
+        data = create_test_data()
+        
+        # Create masked data for testing
+        masked_data = create_masked_test_data(data, 10)
+        
+        # Find a timestamp with missing data
+        missing_rows = filter(row -> ismissing(row.ws_80m), eachrow(masked_data.df))
+        @test !isempty(missing_rows)
+        
+        test_timestamp = missing_rows[1].timestamp
+        
+        # Test successful reconstruction
+        result = reconstruct_single_target(
+            masked_data,
+            :ws_80m,
+            test_timestamp
+        )
+        
+        @test result isa ReconstructedSuccess
+        @test result.timestamp == test_timestamp
+        @test result.columnName == :ws_80m
+        @test result.value > 0
+        
+        # Test error with non-10-minute intervals
+        df_5min = generate_synthetic_wind_data(time_step=Minute(5))
+        sensors = [
+            SensorColumn(Symbol("ws_$(Int(h))m"), "WindSpeed", "N", h, "avg", "m/s")
+            for h in [50.0, 80.0, 100.0, 120.0, 160.0]
+        ]
+        data_5min = TimeSeriesData(df_5min, sensors)
+        
+        @test_throws ErrorException reconstruct_single_target(
+            data_5min,
+            :ws_80m,
+            DateTime(2024,1,1)
+        )
+        
+        # Test error with invalid timestamp
+        result_invalid = reconstruct_single_target(
+            data,
+            :ws_80m,
+            DateTime(2025,1,1)  # Future timestamp not in data
+        )
+        @test result_invalid isa ReconstructedFailure
+        @test contains(result_invalid.reason, "Timestamp not found")
+    end
+
     @testset "reconstruct_wind_speeds with masked data" begin
         # Create original and masked data
         original_data = create_test_data()
@@ -154,5 +225,36 @@ end
             # Test that error is less than 10%
             @test relative_error < 0.10
         end
+    end
+    
+    @testset "Performance with fast lookups" begin
+        # Create larger dataset to test performance
+        large_data = generate_synthetic_wind_data(
+            duration_days=7,  # One week of data
+            time_step=Minute(10)
+        )
+        
+        sensors = [
+            SensorColumn(Symbol("ws_$(Int(h))m"), "WindSpeed", "N", h, "avg", "m/s")
+            for h in [50.0, 80.0, 100.0, 120.0, 160.0]
+        ]
+        
+        large_timeseries = TimeSeriesData(large_data, sensors)
+        
+        # Test single target reconstruction on large dataset
+        test_timestamp = large_data.timestamp[100]  # Pick a middle timestamp
+        
+        # Time the reconstruction (should be fast with O(1) lookups)
+        start_time = time()
+        result = reconstruct_single_target(
+            large_timeseries,
+            :ws_80m,
+            test_timestamp
+        )
+        end_time = time()
+        
+        # Should complete in less than 0.1 seconds
+        @test (end_time - start_time) < 0.1
+        @test result isa ReconstructedSuccess || result isa ReconstructedFailure
     end
 end 

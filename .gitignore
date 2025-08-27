@@ -17,7 +17,7 @@ example_project/*.yaml
 example_project/*.toml
 !example_project/parse-sensors.toml
 example_project/*.csv
-projects/*
+projects
 Manifest.toml
 
 # General ignores

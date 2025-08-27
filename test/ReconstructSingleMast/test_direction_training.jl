@@ -4,7 +4,7 @@ using Dates
 using StatsBase: countmap
 using CleanMastProject.ReconstructSingleMast.DirectionTraining
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData
-using CleanMastProject.Types.ReconstructSingleMast
+using CleanMastProject.Types.ReconstructSingleMast: ReconstructedSuccess, ReconstructedFailure
 using CleanMastProject.Types.Sector: abs_degree_diff
 using CleanMastProject.Types.SensorColumns: SensorColumn
 using CleanMastProject.ReconstructSingleMast.DirectionTraining: get_speeds_for_averaging
@@ -61,6 +61,75 @@ end
         # Test if the average direction is approximately 45 degrees
         @test average_direction ≈ 45.0 atol=1e-6
         @test speed ≈ 4.0 atol=2
+    end
+    
+    @testset "10-minute interval requirement" begin
+        # Test that functions work with 10-minute intervals
+        data = create_test_layered_data()
+        
+        # Verify our test data uses 10-minute intervals
+        @test length(data.df.timestamp) > 1
+        @test data.df.timestamp[2] - data.df.timestamp[1] == Minute(10)
+        
+        # Test that functions error with non-10-minute intervals
+        df_5min = DataFrame(
+            :timestamp => DateTime(2024,1,1):Minute(5):DateTime(2024,1,1,1),
+            :direction_98m => rand(13) .* 360,
+            :direction_118m => rand(13) .* 360,
+            :speed_100m => rand(13) .* 2 .+ 3,
+            :speed_120m => rand(13) .* 2 .+ 3
+        )
+        
+        sensors = [
+            SensorColumn(:direction_98m, "WindDirection", "N", 98.0, "avg", "deg"),
+            SensorColumn(:direction_118m, "WindDirection", "N", 118.0, "avg", "deg"),
+            SensorColumn(:speed_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
+            SensorColumn(:speed_120m, "WindSpeed", "N", 120.0, "avg", "m/s")
+        ]
+        
+        data_5min = TimeSeriesData(df_5min, sensors)
+        
+        @test_throws ErrorException reconstruct_single_target(
+            data_5min,
+            :direction_118m,
+            DateTime(2024,1,1)
+        )
+    end
+    
+    @testset "reconstruct_single_target" begin
+        # Test with proper 10-minute interval data
+        data = create_test_layered_data()
+        masked_data = create_masked_layered_data(data, direction_mask_fraction=0.1)
+        
+        # Find a timestamp with missing direction data
+        missing_rows = filter(row -> ismissing(row.direction_118m), eachrow(masked_data.df))
+        @test !isempty(missing_rows)
+        
+        test_timestamp = missing_rows[1].timestamp
+        
+        # Test successful reconstruction
+        result = reconstruct_single_target(
+            masked_data,
+            :direction_118m,
+            test_timestamp
+        )
+        
+        @test result isa ReconstructedSuccess || result isa ReconstructedFailure
+        
+        if result isa ReconstructedSuccess
+            @test result.timestamp == test_timestamp
+            @test result.columnName == :direction_118m
+            @test 0 <= result.value <= 360
+        end
+        
+        # Test error with invalid timestamp
+        result_invalid = reconstruct_single_target(
+            data,
+            :direction_118m,
+            DateTime(2025,1,1)  # Future timestamp not in data
+        )
+        @test result_invalid isa ReconstructedFailure
+        @test contains(result_invalid.reason, "Timestamp not found")
     end
 end 
 

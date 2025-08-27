@@ -3,8 +3,9 @@ module AnalyzeConfiguration
 using DataFrames
 using Dates
 import ..Utils: from_dict, to_dict
-import ..MastTimeSeries: TimeSeriesData
+import ..MastTimeSeries: TimeSeriesData, TimeSeriesSource
 using ..SensorColumns: SensorColumn
+using ...CleanMastUtils: load_dict
 using YAML
 using CSV
 
@@ -17,12 +18,11 @@ struct AirDensityConfig
 end
 
 """
-Configuration for a single mast in the analyze.yaml (raw format)
+Configuration for a single mast in the analyze configuration (raw format)
 """
 struct MastAnalyzeConfigYAML
     name::String
-    csv::String                     # Path to CSV file (relative or absolute)
-    sensorConfig::String            # Path to sensor config YAML (relative or absolute)
+    input::TimeSeriesSource         # Input data and sensors paths (consistent with TimeSeriesSource)
     airDensity::Union{AirDensityConfig, Nothing}
 end
 
@@ -36,19 +36,10 @@ struct MastAnalyzeConfig
 end
 
 """
-Configuration for DOCX report output
-"""
-struct DocxConfig
-    sectionIndex::String        # Section index in the report (e.g., "3.2")
-    sectionLevel::Int          # Section level (default: 2)
-end
-
-"""
 Output configuration for analysis results
 """
 struct OutputConfig
-    path::String               # Output directory path (relative to analyze.yaml)
-    docx::Union{DocxConfig, Nothing}
+    path::String               # Output directory path (relative to analyze configuration)
 end
 
 """
@@ -90,11 +81,12 @@ function from_dict(::Type{MastAnalyzeConfigYAML}, dict::Dict{String, Any})::Mast
     else
         nothing
     end
-    
+
+    input_source = from_dict(TimeSeriesSource, Dict{String, Any}(dict["input"]))
+
     MastAnalyzeConfigYAML(
         dict["name"],
-        dict["csv"],
-        dict["sensorConfig"],
+        input_source,
         air_density
     )
 end
@@ -102,42 +94,18 @@ end
 function to_dict(config::MastAnalyzeConfigYAML)::Dict{String, Any}
     Dict{String, Any}(
         "name" => config.name,
-        "csv" => config.csv,
-        "sensorConfig" => config.sensorConfig,
+        "input" => to_dict(config.input),
         "airDensity" => to_dict(config.airDensity)
-    )
-end
-
-# Conversion functions for DocxConfig
-function from_dict(::Type{DocxConfig}, dict::Dict{String, Any})::DocxConfig
-    DocxConfig(
-        dict["sectionIndex"],
-        get(dict, "sectionLevel", 2)  # Default to level 2
-    )
-end
-
-function to_dict(config::DocxConfig)::Dict{String, Any}
-    Dict{String, Any}(
-        "sectionIndex" => config.sectionIndex,
-        "sectionLevel" => config.sectionLevel
     )
 end
 
 # Conversion functions for OutputConfig
 function from_dict(::Type{OutputConfig}, dict::Dict{String, Any})::OutputConfig
-    docx_config = haskey(dict, "docx") ? from_dict(DocxConfig, Dict{String, Any}(dict["docx"])) : nothing
-    OutputConfig(
-        dict["path"],
-        docx_config
-    )
+    OutputConfig(dict["path"])
 end
 
 function to_dict(config::OutputConfig)::Dict{String, Any}
-    result = Dict{String, Any}("path" => config.path)
-    if !isnothing(config.docx)
-        result["docx"] = to_dict(config.docx)
-    end
-    result
+    Dict{String, Any}("path" => config.path)
 end
 
 # Conversion functions for AnalyzeConfigYAML
@@ -155,8 +123,8 @@ function to_dict(config::AnalyzeConfigYAML)::Dict{String, Any}
 end
 
 # Export all types and conversion functions
-export MastAnalyzeConfigYAML, MastAnalyzeConfig, 
-       DocxConfig, OutputConfig, AnalyzeConfigYAML, AnalyzeConfig,
+export MastAnalyzeConfigYAML, MastAnalyzeConfig,
+       OutputConfig, AnalyzeConfigYAML, AnalyzeConfig,
        AirDensityConfig, from_dict, to_dict
 
 """
@@ -239,12 +207,12 @@ Process a single mast configuration by resolving paths and loading data.
 """
 function process_mast_config(mast_yaml::MastAnalyzeConfigYAML, config_dir::String)::MastAnalyzeConfig
     # Resolve paths relative to config directory
-    csv_path = resolve_path(mast_yaml.csv, config_dir)
-    sensor_config_path = resolve_path(mast_yaml.sensorConfig, config_dir)
-    
+    csv_path = resolve_path(mast_yaml.input.data, config_dir)
+    sensor_config_path = resolve_path(mast_yaml.input.sensors, config_dir)
+
     # Load time series data
     timeseries_data = load_timeseries_data(csv_path, sensor_config_path)
-    
+
     return MastAnalyzeConfig(
         mast_yaml.name,
         timeseries_data,
@@ -255,20 +223,20 @@ end
 """
     load_analyze_config(config_path::String) -> AnalyzeConfig
 
-Load and process analyze configuration from a YAML file.
-Resolves all paths relative to the YAML file location and loads time series data.
+Load and process analyze configuration from a YAML, TOML, or JSON file.
+Resolves all paths relative to the configuration file location and loads time series data.
 """
 function load_analyze_config(config_path::String)::AnalyzeConfig
     if !isfile(config_path)
         error("Configuration file not found: $config_path")
     end
-    
+
     # Get the directory containing the config file
     config_dir = dirname(abspath(config_path))
-    
-    # Load YAML configuration
-    yaml_dict = Dict{String, Any}(YAML.load_file(config_path))
-    config_yaml = from_dict(AnalyzeConfigYAML, yaml_dict)
+
+    # Load configuration using load_dict (supports YAML, TOML, JSON)
+    config_dict = load_dict(config_path)
+    config_yaml = from_dict(AnalyzeConfigYAML, config_dict)
     
     # Process each mast configuration
     processed_masts = MastAnalyzeConfig[]
@@ -284,8 +252,7 @@ function load_analyze_config(config_path::String)::AnalyzeConfig
     
     # Create output config with resolved path
     output_config = OutputConfig(
-        resolve_path(config_yaml.output.path, config_dir),
-        config_yaml.output.docx
+        resolve_path(config_yaml.output.path, config_dir)
     )
     
     return AnalyzeConfig(

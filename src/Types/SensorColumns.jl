@@ -2,6 +2,7 @@ module SensorColumns
 
 using DataFrames
 import ..Utils: from_dict, to_dict
+using Parameters
 
 struct ParsedSensor
     columnName::Symbol
@@ -27,7 +28,7 @@ struct ParsedSensor
     end
 end
 
-struct SensorColumn
+@with_kw struct SensorColumn
     columnName::Symbol
     sensorType::String
     sensorDirection::String

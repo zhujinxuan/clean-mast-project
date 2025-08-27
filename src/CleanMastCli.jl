@@ -58,6 +58,7 @@ Comonicon.@cast module Process
     using CleanMastProject.RepresentativeYear.CommandRepresentativeYear
     using CleanMastProject.WTTimeSeries.CommandWtTimeSeries
     using CleanMastProject.Command.ProcessAll
+    using CleanMastProject.ReconstructCross.ProcessReconstructCrossCommand
 
     """
     clean
@@ -146,6 +147,41 @@ Comonicon.@cast module Process
     end
 
     """
+    reconstruct-cross
+
+    Execute cross-mast reconstruction using trained models.
+
+    # Arguments
+    - `config_path`: Path to reconstruct-cross.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl process reconstruct-cross reconstruct-cross.toml
+    ```
+
+    The TOML configuration file should specify:
+    - Masts with input data sources and output paths
+    - Reconstruction jobs with trained model paths
+    - Priority levels for reconstruction order
+    - Settings for reconstruction execution
+
+    For each reconstruction job:
+    - Loads trained cross-mast models from JLD2 files
+    - Applies reconstruction to fill missing data points only
+    - Preserves existing measurements (configurable)
+    - Generates quality metrics and validation reports
+    - Saves reconstructed time series files
+
+    Reconstruction is executed in priority order:
+    - Priority 1: Excellent correlations (≥0.9)
+    - Priority 2: Good correlations (≥0.8)
+    - Priority 3: Acceptable correlations (≥0.7)
+    """
+    Comonicon.@cast function reconstruct_cross(config_path::String)
+        ProcessReconstructCrossCommand.execute(config_path)
+    end
+
+    """
     all
 
     Execute all processing steps in sequence:
@@ -164,6 +200,49 @@ Comonicon.@cast module Process
     end
 end
 
+"""
+train
+
+Model training commands
+"""
+Comonicon.@cast module Train
+    using Comonicon
+    using CleanMastProject.TrainReconstructCross.TrainReconstructCrossCommand
+
+    """
+    reconstruct-cross
+
+    Train cross-mast relationships and reconstruction models.
+
+    # Arguments
+    - `config_path`: Path to train-reconstruct-cross.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl train reconstruct-cross path/to/train-reconstruct-cross.toml
+    ```
+
+    The TOML configuration file should specify:
+    - Multiple masts with reconstructed time series data files and sensor configurations
+    - Training settings including model parameters
+    - Output directory for results (default: ./train-reconstruct-cross)
+
+    For each mast pair, trains:
+    - Data coverage and overlap duration analysis
+    - Wind speed correlations between high-elevation sensors (≥120m)
+    - Wind direction differences and standard deviations
+    - Cross-mast reconstruction models saved as .jld2 files
+    - Machine-readable results for the recommend command
+
+    Selection criteria for qualified pairs:
+    - Speed reconstruction: ≥120 days overlap, ≥0.7 correlation (high-elevation sensors)
+    - Direction reconstruction: ≥120 days overlap, ≤12.5° std deviation (high-elevation sensors)
+    """
+    Comonicon.@cast function reconstruct_cross(config_path::String)
+        TrainReconstructCrossCommand.execute(config_path)
+    end
+end
+
 @cast module Recommend
     using Comonicon
     using CleanMastProject.DataClean.RecommendProcessCleanCommand
@@ -171,6 +250,9 @@ end
     using CleanMastProject.ReconstructSingleMast.RecommendReconstructSingleCommand
     using CleanMastProject.TrainMeso.RecommendTrainMesoCommand
     using CleanMastProject.ReconstructMeso.RecommendReconstructMesoCommand
+    using CleanMastProject.TrainReconstructCross.RecommendTrainReconstructCrossCommand
+    using CleanMastProject.AnalyzeReconstructCross.RecommendAnalyzeReconstructCrossCommand
+    using CleanMastProject.ReconstructCross.RecommendReconstructCrossCommand
     using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
 
@@ -207,6 +289,21 @@ end
         RecommendReconstructMesoCommand.execute(dir)
     end
     
+    @cast function train_reconstruct_cross(dir::String)
+        "Recommend a train-reconstruct-cross.toml file for cross-mast training"
+        RecommendTrainReconstructCrossCommand.execute(dir)
+    end
+    
+    @cast function analyze_reconstruct_cross(dir::String)
+        "Recommend an analyze-reconstruct-cross.toml file for cross-mast analysis"
+        RecommendAnalyzeReconstructCrossCommand.execute(dir)
+    end
+
+    @cast function reconstruct_cross(train_results_path::String, output_dir::String = "./")
+        "Recommend a reconstruct-cross.toml file from training results"
+        RecommendReconstructCrossCommand.execute(train_results_path, output_dir)
+    end
+    
     @cast function representative_year(dir::String)
         "Recommend a representative-year.toml file for the project"
         RecommendRepresentativeYearCommand.execute(dir)
@@ -228,6 +325,7 @@ Comonicon.@cast module Analyze
     using CleanMastProject.Command.AnalyzeTimeSeriesCommand
     using CleanMastProject.Command.AnalyzeEN
     using CleanMastProject.Command.AnalyzeReconstructSingle
+    using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
 
     """
     timeseries
@@ -235,14 +333,16 @@ Comonicon.@cast module Analyze
     Analyze time series data using an analyze configuration file.
 
     # Arguments
-    - `config_path`: Path to analyze.yaml configuration file
+    - `config_path`: Path to analyze configuration file (supports .yaml, .toml, .json)
 
-    # Example
+    # Examples
     ```bash
     julia bin/CleanMast.jl analyze timeseries path/to/analyze.yaml
+    julia bin/CleanMast.jl analyze timeseries path/to/analyze.toml
+    julia bin/CleanMast.jl analyze timeseries path/to/analyze.json
     ```
 
-    The analyze.yaml file should specify:
+    The configuration file should specify:
     - Multiple masts with their data files and sensor configurations
     - Air density settings for each mast
     - Output directory for results
@@ -318,6 +418,43 @@ Comonicon.@cast module Analyze
     Comonicon.@cast function reconstruct_single(config_path::String)
         AnalyzeReconstructSingle.execute(config_path)
     end
+
+    """
+    reconstruct-cross
+
+    Analyze cross-mast relationships and generate comprehensive reports.
+
+    # Arguments
+    - `config_path`: Path to analyze-reconstruct-cross.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl analyze reconstruct-cross path/to/analyze-reconstruct-cross.toml
+    ```
+
+    The TOML configuration file should specify:
+    - Multiple masts with reconstructed time series data files and sensor configurations
+    - Analysis settings including output directory and report format
+    - Language preference (default: Chinese)
+
+    For each mast pair, generates:
+    - Wind speed correlation analysis with scatter plots and regression parameters
+    - Wind direction relationship analysis with offset and standard deviation
+    - Data coverage statistics and overlap duration
+    - Individual PNG plots for each mast pair
+    - Individual CSV data exports for each pair
+    - Comprehensive Chinese Typst report with embedded visualizations
+
+    Output includes:
+    - report.typ: Main Chinese report with all analysis results
+    - plots/: Individual plot files ({target}_{source}_speed_correlations.png, etc.)
+    - tables/: Individual table files for each mast pair
+    - data/: CSV exports for further analysis
+    """
+    Comonicon.@cast function reconstruct_cross(config_path::String)
+        CommandAnalyzeReconstructCross.execute(config_path)
+    end
+
 end
 
 """

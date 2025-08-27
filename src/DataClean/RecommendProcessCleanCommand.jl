@@ -24,7 +24,7 @@ function execute(dir::String)
             "name" => mast_name,
             "input" => Dict("data" => input_data, "sensors" => input_sensors),
             "output" => Dict("data" => output_data, "sensors" => output_sensors),
-            "rules" => "formats/clean/nrg-strict.toml"
+            "rules" => "formats/clean/default.toml"
         )
     end
 

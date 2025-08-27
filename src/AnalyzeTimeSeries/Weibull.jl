@@ -231,7 +231,7 @@ function analyze_weibull_distribution(config::AnalyzeConfig)
             results[mast.name] = mast_results
             
             # Generate additional formatted outputs with proper mast name
-            generate_weibull_report(mast_results, mast.name, output_dir, config)
+            generate_weibull_report(mast_results, mast.name, output_dir)
             
             @info "Generated Weibull distribution analysis for mast $(mast.name)"
         end
@@ -287,7 +287,7 @@ Generate a comprehensive Weibull analysis report including both the parameters t
 # Returns
 - `String`: Path to the generated report file
 """
-function generate_weibull_report(results_df::DataFrame, mast_name::String, output_dir::String, config::AnalyzeConfig)
+function generate_weibull_report(results_df::DataFrame, mast_name::String, output_dir::String)
     if isempty(results_df)
         @warn "No Weibull parameters data provided"
         return nothing
@@ -300,8 +300,7 @@ function generate_weibull_report(results_df::DataFrame, mast_name::String, outpu
     table = generate_weibull_parameters_table(results_df)
 
     open(typst_path, "w") do io
-        println(io, "#set heading(offset: $(config.output.docx.sectionLevel))")
-        println(io, "= Weibull 拟合结果")
+        println(io, "== Weibull 拟合结果")
         println(io, "表格：测风塔$mast_name 拟合结果")
         show(io, MIME"text/typst"(), table)
     end

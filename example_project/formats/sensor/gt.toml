@@ -8,10 +8,21 @@ format = "{sensorType}_{height}{sensorDirection}m_{statType} [{unit}]"
 [columns.patterns]
 sensorDirection = "[AB]"  # Matches A or B direction indicators
 
+[[columns]]
+match = "{sensorType}_{height}{sensorDirection}m_{statType} {unit}"
+format = "{sensorType}_{height}{sensorDirection}m_{statType} [{unit}]"
+[columns.patterns]
+sensorDirection = "[AB]"  # Matches A or B direction indicators
+
 # Example without direction
 [[columns]]
 match = "{sensorType}_{height}m_{statType} \\[{unit}\\]"
 format = "{sensorType}_{height}m_{statType} [{unit}]"
+
+[[columns]]
+match = "{sensorType}_{height}m_{statType} {unit}"
+format = "{sensorType}_{height}m_{statType} [{unit}]"
+
 
 # Mapping rules
 [[mappings]]
