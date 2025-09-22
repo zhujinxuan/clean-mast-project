@@ -11,13 +11,38 @@ using ...CleanMastUtils: load_dict
 
 export execute
 
-# In future, we shall use best correlation to find which meso model to use.
-function find_16sectors_meso_models(config :: TrainMesoConfiguration, mast_name :: String) :: RepresentativeYearMesoModel
+# Find 16-sector model that uses the same meso source as reconstruct meso operation
+function find_16sectors_meso_models(
+    config :: TrainMesoConfiguration,
+    mast_name :: String,
+    reconstruct_config :: ReconstructMesoConfiguration
+) :: RepresentativeYearMesoModel
+
+    # Find the meso source used by windspeed model in reconstruct meso
+    reconstruct_mast = findfirst(m -> m.name == mast_name, reconstruct_config.masts)
+    if isnothing(reconstruct_mast)
+        error("Mast $(mast_name) not found in reconstruct meso configuration")
+    end
+
+    preferred_meso_name = reconstruct_config.masts[reconstruct_mast].models.windspeed.meso_name
+
+    # Filter 16-sector models for this mast
     models = filter(m -> m.mast_name == mast_name && m.method == "16-sector", config.models)
     if isempty(models)
         error("No 16-sector model found for $(mast_name)")
     end
-    model = first(models)
+
+    # Try to find a model that uses the same meso source as reconstruct meso
+    preferred_model = findfirst(m -> m.meso_name == preferred_meso_name, models)
+
+    if !isnothing(preferred_model)
+        model = models[preferred_model]
+        println("  Using 16-sector model with meso source '$(preferred_meso_name)' to match reconstruct meso")
+    else
+        model = first(models)  # Fall back to first available
+        @warn "No 16-sector model found for meso source '$(preferred_meso_name)'. Using '$(model.meso_name)' instead."
+    end
+
     return from_dict(RepresentativeYearMesoModel, Dict{String, Any}(
         "method" => "16-sector",
         "meso_name" => model.meso_name,
@@ -62,7 +87,7 @@ function execute(dir::String)
                 joinpath("./representative-year", "$(mast.name).sensors.yaml")
             ),
             mast.time_range,
-            find_16sectors_meso_models(train_config, mast.name)
+            find_16sectors_meso_models(train_config, mast.name, reconstruct_config)
         )
     end
     

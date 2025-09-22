@@ -8,7 +8,7 @@ using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, ReconstructM
 using ...Types.MastTimeSeries: load_timeseries, TimeSeriesSource
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
-using ...TimeSeriesProcessing.TimeRangeProcessor: calculate_measurement_year_time_range
+using ...TimeSeriesProcessing.MeasurementPeriodCalculator: calculate_optimal_measurement_period
 
 export execute
 
@@ -65,12 +65,43 @@ function execute(dir::String)
     reconstruct_dict = load_dict(reconstruct_single_path)
     reconstruct_config = from_dict(ReconstructSingleConfiguration, reconstruct_dict)
     
+    # Load meso data for time range calculation
+    meso_data = if !isempty(train_config.mesos)
+        load_timeseries(train_config.mesos[1].input, dir)  # Use first available meso source
+    else
+        error("No mesoscale data sources found in train-meso configuration")
+    end
+
     # Build masts array
     masts = map(reconstruct_config.masts) do mast
         reconstruct_model = select_reconstruct_model(train_config, mast.name)
         if isnothing(reconstruct_model)
             return nothing
         end
+
+        # Load the time series data needed for optimal period calculation
+        reconstruct_single_ts = load_timeseries(mast.input, dir)
+        
+        # Try to find reconstruct-cross data for this mast
+        cross_mast_path = joinpath(dir, "reconstruct-cross", "$(mast.name)_reconstructed.csv")
+        cross_sensors_path = joinpath(dir, "reconstruct-cross", "$(mast.name)_reconstructed.sensors.yaml")
+        
+        reconstruct_cross_ts = if isfile(cross_mast_path) && isfile(cross_sensors_path)
+            cross_source = TimeSeriesSource(cross_mast_path, cross_sensors_path)
+            load_timeseries(cross_source, ".")  # Use absolute paths
+        else
+            # If no cross reconstruction available, use single reconstruction as fallback
+            @warn "No reconstruct-cross data found for $(mast.name), using reconstruct-single data for both inputs"
+            reconstruct_single_ts
+        end
+
+        # Calculate optimal measurement period
+        optimal_time_range = calculate_optimal_measurement_period(
+            reconstruct_single_ts,
+            reconstruct_cross_ts,
+            meso_data
+        )
+
         ReconstructMesoMast(
             mast.name,
             mast.output,
@@ -78,7 +109,7 @@ function execute(dir::String)
                 joinpath("./reconstruct-meso", "$(mast.name).csv"),
                 joinpath("./reconstruct-meso", "$(mast.name).sensors.yaml")
             ),
-            calculate_measurement_year_time_range(load_timeseries(mast.input, dir)),
+            optimal_time_range,
             reconstruct_model,
         )
     end

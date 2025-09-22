@@ -8,6 +8,7 @@ using ProgressMeter
 using CleanMastProject.Types.ReconstructSingleMast: ReconstructedSuccess, ReconstructedFailure, ReconstructionResults, find_reconstruction_targets
 using CleanMastProject.Types.MastTimeSeries: TimeSeriesData, TimeRange
 using CleanMastProject.TimeSeriesProcessing.Regularization: ensure_regular_intervals, validate_intervals
+using CleanMastProject.TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
 using ..WindSpeedTraining
 using ..DirectionTraining
@@ -18,7 +19,8 @@ Reconstruct missing wind measurements in mast data with progress tracking
 function reconstruct_measurements(
     data::TimeSeriesData,
     progress_bar::Union{Progress, Nothing} = nothing,
-    total_timestamps::Int = 0
+    total_timestamps::Int = 0,
+    representative_interval::Minute = Minute(10)
 )::Tuple{Vector{ReconstructedSuccess}, Vector{ReconstructedFailure}}
     
     # Get all reconstruction targets
@@ -48,7 +50,7 @@ function reconstruct_measurements(
                     ProgressMeter.update!(progress_bar, current_task; showvalues = [
                         (:status, "Reconstructing wind speeds"),
                         (:column, string(col)),
-                        (:timestamps, "$total_timestamps timestamps (10-min intervals)"),
+                        (:timestamps, "$total_timestamps timestamps ($(representative_interval.value)-min intervals)"),
                         (:progress, "$current_task / $total_tasks tasks"),
                         (:slow_tasks, "$slow_tasks tasks took >5s")
                     ])
@@ -86,7 +88,7 @@ function reconstruct_measurements(
                     ProgressMeter.update!(progress_bar, current_task; showvalues = [
                         (:status, "Reconstructing wind directions"),
                         (:column, string(col)),
-                        (:timestamps, "$total_timestamps timestamps (10-min intervals)"),
+                        (:timestamps, "$total_timestamps timestamps ($(representative_interval.value)-min intervals)"),
                         (:progress, "$current_task / $total_tasks tasks"),
                         (:slow_tasks, "$slow_tasks tasks took >5s")
                     ])
@@ -121,30 +123,31 @@ function process_data!(
     data::TimeSeriesData
 )::ReconstructionResults
     
-    # Step 1: Regularize time series to 10-minute intervals
-    println("🕐 Regularizing time series to 10-minute intervals...")
-    
+    # Step 1: Detect representative interval and regularize time series
+    representative_interval = detect_representative_interval(data)
+    println("🕐 Regularizing time series to $(representative_interval.value)-minute intervals...")
+
     # Calculate time range from existing data
     time_range = TimeRange(
         minimum(data.df.timestamp),
         maximum(data.df.timestamp)
     )
-    
+
     original_rows = nrow(data.df)
-    
+
     # Check if already regularized
-    if !validate_intervals(data, Minute(10))
-        # Regularize to 10-minute intervals
-        data_regularized = ensure_regular_intervals(data, time_range, Minute(10))
-        
+    if !validate_intervals(data, representative_interval)
+        # Regularize to representative intervals
+        data_regularized = ensure_regular_intervals(data, time_range, representative_interval)
+
         # Replace the data with regularized version
         data = data_regularized
-        
+
         regularized_rows = nrow(data.df)
         println("  ✓ Regularized from $original_rows to $regularized_rows timestamps")
-        println("  ✓ All timestamps now at 10-minute intervals")
+        println("  ✓ All timestamps now at $(representative_interval.value)-minute intervals")
     else
-        println("  ✓ Time series already has regular 10-minute intervals")
+        println("  ✓ Time series already has regular $(representative_interval.value)-minute intervals")
     end
     
     # Count total reconstruction tasks (individual columns to reconstruct)
@@ -179,7 +182,7 @@ function process_data!(
     try        
         # Apply reconstruction with meaningful progress tracking
         start_time = time()
-        successes, failures = reconstruct_measurements(data, progress_bar, total_timestamps)
+        successes, failures = reconstruct_measurements(data, progress_bar, total_timestamps, representative_interval)
         total_time = time() - start_time
         
         # Complete progress bar

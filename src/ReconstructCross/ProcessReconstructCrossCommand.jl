@@ -127,17 +127,13 @@ Load time series data for all masts in the configuration.
 """
 function load_all_mast_data(config::ReconstructCrossConfiguration, project_dir::String)::Dict{String, TimeSeriesData}
     mast_data = Dict{String, TimeSeriesData}()
-    
+
     for mast in config.masts
-        try
-            ts_data = load_timeseries(mast.input, project_dir)
-            mast_data[mast.name] = ts_data
-            println("  ✅ $(mast.name): $(nrow(ts_data.df)) records, $(length(ts_data.sensors)) sensors")
-        catch e
-            @warn "Failed to load data for $(mast.name): $e"
-        end
+        ts_data = load_timeseries(mast.input, project_dir)
+        mast_data[mast.name] = ts_data
+        println("  ✅ $(mast.name): $(nrow(ts_data.df)) records, $(length(ts_data.sensors)) sensors")
     end
-    
+
     return mast_data
 end
 
@@ -147,88 +143,70 @@ end
 
 Execute a single reconstruction job using trained models.
 """
-function execute_reconstruction_job(job::ReconstructionJob, mast_data::Dict{String, TimeSeriesData}, 
+function execute_reconstruction_job(job::ReconstructionJob, mast_data::Dict{String, TimeSeriesData},
                                    config::ReconstructCrossConfiguration, project_dir::String)::ReconstructionJobResult
     execution_start = now()
-    
-    try
-        # Get target and source time series
-        if !haskey(mast_data, job.target_mast)
-            error("Target mast data not found: $(job.target_mast)")
-        end
-        if !haskey(mast_data, job.source_mast)
-            error("Source mast data not found: $(job.source_mast)")
-        end
-        
-        target_ts = mast_data[job.target_mast]
-        source_ts = mast_data[job.source_mast]
-        
-        # Initialize metrics vectors
-        windspeed_metrics = QualityMetrics[]
-        winddirection_metrics = QualityMetrics[]
-        
-        # Start with copy of target time series
-        reconstructed_ts = deepcopy(target_ts)
-        
-        # Apply speed reconstruction if requested
-        if "windspeed" in job.variables
-            speed_model_path = joinpath(project_dir, job.model_dir, "windspeed.jld2")
-            if isfile(speed_model_path)
-                reconstructed_ts, speed_metrics = apply_speed_reconstruction(
-                    reconstructed_ts, source_ts, speed_model_path, config.settings.preserve_existing
-                )
-                append!(windspeed_metrics, speed_metrics)
-            else
-                @warn "Speed model file not found: $speed_model_path"
-            end
-        end
-        
-        # Apply direction reconstruction if requested
-        if "winddirection" in job.variables
-            direction_model_path = joinpath(project_dir, job.model_dir, "winddirection.jld2")
-            if isfile(direction_model_path)
-                reconstructed_ts, direction_metrics = apply_direction_reconstruction(
-                    reconstructed_ts, source_ts, direction_model_path, config.settings.preserve_existing
-                )
-                append!(winddirection_metrics, direction_metrics)
-            else
-                @warn "Direction model file not found: $direction_model_path"
-            end
-        end
-        
-        # Save reconstructed time series
-        output_file = save_reconstructed_timeseries(reconstructed_ts, job, config, project_dir)
-        
-        execution_end = now()
-        
-        return ReconstructionJobResult(
-            job = job,
-            execution_start = execution_start,
-            execution_end = execution_end,
-            success = true,
-            error_message = nothing,
-            windspeed_metrics = windspeed_metrics,
-            winddirection_metrics = winddirection_metrics,
-            output_file = output_file,
-            quality_report = nothing  # TODO: Implement quality reports in future
-        )
-        
-    catch e
-        execution_end = now()
-        error_msg = string(e)
-        
-        return ReconstructionJobResult(
-            job = job,
-            execution_start = execution_start,
-            execution_end = execution_end,
-            success = false,
-            error_message = error_msg,
-            windspeed_metrics = QualityMetrics[],
-            winddirection_metrics = QualityMetrics[],
-            output_file = nothing,
-            quality_report = nothing
-        )
+
+    # Get target and source time series
+    if !haskey(mast_data, job.target_mast)
+        error("Target mast data not found: $(job.target_mast)")
     end
+    if !haskey(mast_data, job.source_mast)
+        error("Source mast data not found: $(job.source_mast)")
+    end
+
+    target_ts = mast_data[job.target_mast]
+    source_ts = mast_data[job.source_mast]
+
+    # Initialize metrics vectors
+    windspeed_metrics = QualityMetrics[]
+    winddirection_metrics = QualityMetrics[]
+
+    # Start with target time series (TimeSeriesData is immutable)
+    reconstructed_ts = target_ts
+
+    # Apply speed reconstruction if requested
+    if "windspeed" in job.variables
+        speed_model_path = joinpath(project_dir, job.model_dir, "windspeed.jld2")
+        if isfile(speed_model_path)
+            reconstructed_ts, speed_metrics = apply_speed_reconstruction(
+                reconstructed_ts, source_ts, speed_model_path, config.settings.preserve_existing
+            )
+            append!(windspeed_metrics, speed_metrics)
+        else
+            @warn "Speed model file not found: $speed_model_path"
+        end
+    end
+
+    # Apply direction reconstruction if requested
+    if "winddirection" in job.variables
+        direction_model_path = joinpath(project_dir, job.model_dir, "winddirection.jld2")
+        if isfile(direction_model_path)
+            reconstructed_ts, direction_metrics = apply_direction_reconstruction(
+                reconstructed_ts, source_ts, direction_model_path, config.settings.preserve_existing
+            )
+            append!(winddirection_metrics, direction_metrics)
+        else
+            @warn "Direction model file not found: $direction_model_path"
+        end
+    end
+
+    # Save reconstructed time series
+    output_file = save_reconstructed_timeseries(reconstructed_ts, job, config, project_dir)
+
+    execution_end = now()
+
+    return ReconstructionJobResult(
+        job = job,
+        execution_start = execution_start,
+        execution_end = execution_end,
+        success = true,
+        error_message = nothing,
+        windspeed_metrics = windspeed_metrics,
+        winddirection_metrics = winddirection_metrics,
+        output_file = output_file,
+        quality_report = nothing  # TODO: Implement quality reports in future
+    )
 end
 
 """
@@ -240,8 +218,8 @@ Apply wind speed reconstruction using trained CrossMastSpeedModel.
 function apply_speed_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
                                    speed_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
     # Load trained model
-    @load speed_model_path model
-    speed_model = model::CrossMastSpeedModel
+    model_data = JLD2.load(speed_model_path)
+    speed_model = model_data["model"]::CrossMastSpeedModel
 
     # Apply reconstruction using existing function
     reconstructed_speed_ts = reconstruct(speed_model, source_ts)
@@ -264,8 +242,8 @@ Apply wind direction reconstruction using trained CrossMastDirectionModel.
 function apply_direction_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
                                        direction_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
     # Load trained model
-    @load direction_model_path model
-    direction_model = model::CrossMastDirectionModel
+    model_data = JLD2.load(direction_model_path)
+    direction_model = model_data["model"]::CrossMastDirectionModel
 
     # Apply reconstruction using existing function
     reconstructed_direction_ts = reconstruct(direction_model, source_ts)
@@ -288,31 +266,47 @@ Merge reconstructed data with original target data.
 function merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData,
                                   preserve_existing::Bool)::TimeSeriesData
     # Start with target data
-    result_df = deepcopy(target_ts.df)
-    result_sensors = deepcopy(target_ts.sensors)
+    result_df = copy(target_ts.df)
+
+    # Build index from reconstructed timestamps to row index for alignment
+    rc_index = Dict{DateTime, Int}()
+    for (i, t) in enumerate(reconstructed_ts.df.timestamp)
+        rc_index[t] = i
+    end
 
     # Merge each reconstructed sensor
     for sensor in reconstructed_ts.sensors
         col_name = sensor.columnName
 
-        # Add sensor if it doesn't exist in target
+        # Validate sensor exists in target; otherwise, this indicates a mismatch between model and target data
         if !hasproperty(result_df, col_name)
-            result_df[!, col_name] = missings(Float64, nrow(result_df))
-            push!(result_sensors, sensor)
+            error("merge_reconstruction_data: Target data is missing expected sensor column '$(col_name)'. Ensure the model's target sensors exist in the target mast data.")
         end
 
-        # Merge data based on preserve_existing setting
+        # Timestamp-aligned merge
         if preserve_existing
-            # Only fill missing values
-            missing_mask = ismissing.(result_df[!, col_name])
-            result_df[missing_mask, col_name] = reconstructed_ts.df[missing_mask, col_name]
+            # Fill only missing values where reconstructed has data at the same timestamp
+            for i in 1:nrow(result_df)
+                ismissing(result_df[i, col_name]) || continue
+                t = result_df.timestamp[i]
+                haskey(rc_index, t) || continue
+                v = reconstructed_ts.df[rc_index[t], col_name]
+                ismissing(v) && continue
+                result_df[i, col_name] = v
+            end
         else
-            # Replace all values
-            result_df[!, col_name] = reconstructed_ts.df[!, col_name]
+            # Replace values where reconstructed has data at the same timestamp
+            for i in 1:nrow(result_df)
+                t = result_df.timestamp[i]
+                haskey(rc_index, t) || continue
+                v = reconstructed_ts.df[rc_index[t], col_name]
+                ismissing(v) && continue
+                result_df[i, col_name] = v
+            end
         end
     end
 
-    return TimeSeriesData(result_df, result_sensors)
+    return TimeSeriesData(result_df, target_ts.sensors)
 end
 
 """
@@ -490,8 +484,8 @@ function create_reconstruction_summary(job_results::Vector{ReconstructionJobResu
     # Calculate aggregate statistics
     all_metrics = vcat([vcat(r.windspeed_metrics, r.winddirection_metrics) for r in job_results]...)
 
-    total_filled_points = sum(m.filled_points for m in all_metrics)
-    total_missing_points = sum(m.total_missing for m in all_metrics)
+    total_filled_points = isempty(all_metrics) ? 0 : sum(m.filled_points for m in all_metrics)
+    total_missing_points = isempty(all_metrics) ? 0 : sum(m.total_missing for m in all_metrics)
     overall_fill_percentage = total_missing_points > 0 ? (total_filled_points / total_missing_points) * 100.0 : 0.0
 
     # Calculate correlation statistics
@@ -549,15 +543,6 @@ function print_completion_summary(summary::ReconstructionSummary)
     println("  Failed: $(summary.failed_jobs)")
     println("  Overall fill rate: $(round(summary.overall_fill_percentage, digits=1))%")
     println("  Average correlation: $(round(summary.average_correlation, digits=3))")
-
-    if summary.failed_jobs > 0
-        println("\n❌ Failed Jobs:")
-        for result in summary.job_results
-            if !result.success
-                println("    $(result.job.target_mast) ← $(result.job.source_mast): $(result.error_message)")
-            end
-        end
-    end
 
     if summary.successful_jobs > 0
         println("\n✅ Successful Reconstructions:")

@@ -8,7 +8,7 @@ using ...Types.Utils: from_dict, show_as_dataframe
 using ...CleanMastUtils: load_dict
 using ...Types.MastReferenceModel: ReconstructionPayload, AbstractMastReferenceModel
 using ..Core: merge_reconstruct_meso
-using ...TimeSeriesProcessing.TimeRangeProcessor: TimeRange
+using ...Types.MastTimeSeries: TimeRange
 
 export execute
 

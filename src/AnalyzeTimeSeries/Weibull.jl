@@ -2,7 +2,7 @@ module Weibull
 
 using DataFrames
 using CSV
-using Gadfly
+using AlgebraOfGraphics, CairoMakie
 using Statistics
 using Distributions
 using Optim
@@ -97,20 +97,20 @@ function calculate_weibull_pdf(k::Float64, c::Float64, x::Vector{Float64})::Vect
 end
 
 """
-    analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
+    analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::String)
 
 Analyze wind speed distributions by fitting Weibull distributions at each height.
 Generates plots and CSV files with the distribution parameters.
 
 # Arguments
-- `data::TimeSeriesData`: Time series data with wind speed measurements
+- `data_ts::TimeSeriesData`: Time series data with wind speed measurements
 - `output_dir::String`: Directory to save output files
 
 # Returns
 - `DataFrame`: DataFrame with Weibull parameters for each height
 """
-function analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
-    speed_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", data.sensors)
+function analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::String)
+    speed_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", data_ts.sensors)
     isempty(speed_sensors) && return nothing
     
     mkpath(output_dir)
@@ -126,7 +126,7 @@ function analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
     # Process each height
     for sensor in speed_sensors
         # Extract wind speed data
-        wind_speeds = data.df[:, sensor.columnName]
+        wind_speeds = data_ts.df[:, sensor.columnName]
         
         # Skip if insufficient valid data
         valid_speeds = Float64[x for x in wind_speeds if !ismissing(x) && x > 0]
@@ -177,26 +177,28 @@ function analyze_weibull_distribution(data::TimeSeriesData, output_dir::String)
         )
         
         # Save data to CSV
-        csv_filename = joinpath(output_dir, "weibull_$(Int(sensor.height))m.csv")
+        csv_filename = joinpath(output_dir, "weibull_$(sensor.height)m.csv")
         CSV.write(csv_filename, DataFrame(
             bin_center = bin_centers,
             observed_density = hist_density,
             fitted_density = calculate_weibull_pdf(k, c, bin_centers)
         ))
         
-        # Create plot
-        p = plot(
-            layer(fit_df, x=:speed, y=:density, Geom.line(), color=[colorant"red"]),
-            layer(hist_df, x=:speed, y=:density, Geom.bar(position=:identity)),
-            Guide.title("Wind Speed Distribution at $(Int(sensor.height))m\nWeibull: k=$(round(k, digits=2)), c=$(round(c, digits=2)) m/s"),
-            Guide.xlabel("Wind Speed (m/s)"),
-            Guide.ylabel("Probability Density"),
-            Theme(background_color="white", bar_spacing=0mm)
-        )
+        # Create plot using AlgebraOfGraphics
+        # Combine histogram bars and fitted line
+        hist_layer = data(hist_df) * mapping(:speed, :density) * visual(BarPlot, alpha=0.7, color=:steelblue)
+        line_layer = data(fit_df) * mapping(:speed, :density) * visual(Lines, color=:red, linewidth=2)
+        
+        plt = hist_layer + line_layer
+        
+        fig = draw(plt, axis=(
+            xlabel="Wind Speed (m/s)",
+            ylabel="Probability Density",
+            title="Wind Speed Distribution at $(sensor.height)m\nWeibull: k=$(round(k, digits=2)), c=$(round(c, digits=2)) m/s"
+        ))
         
         # Save plot
-        svg_filename = joinpath(output_dir, "weibull_$(Int(sensor.height))m.svg")
-        draw(SVG(svg_filename, 8inch, 6inch), p)
+        save(joinpath(output_dir, "weibull_$(sensor.height)m.svg"), fig)
     end
     
     # Save summary to CSV
@@ -303,6 +305,30 @@ function generate_weibull_report(results_df::DataFrame, mast_name::String, outpu
         println(io, "== Weibull 拟合结果")
         println(io, "表格：测风塔$mast_name 拟合结果")
         show(io, MIME"text/typst"(), table)
+        println(io, "")
+        println(io, "")
+        
+        # Add Weibull distribution plots for each height
+        println(io, "== Weibull 分布拟合图")
+        for row in eachrow(results_df)
+            height = row.height
+            svg_filename = "weibull_$(height)m.svg"
+            svg_path = joinpath(output_dir, svg_filename)
+            
+            if isfile(svg_path)
+                # Create relative path for the image (relative to the weibull directory)
+                # Since the weibull.typ is included in the main report, 
+                # we need the path relative to the weibull subdirectory
+                println(io, "")
+                println(io, "=== $(height)m 高度 Weibull 分布拟合")
+                println(io, "")
+                println(io, "#figure(")
+                println(io, "  image(\"$svg_filename\", width: 80%),")
+                println(io, "  caption: [$(height)m 高度风速 Weibull 分布拟合图]")
+                println(io, ")")
+                println(io, "")
+            end
+        end
     end
 end
 

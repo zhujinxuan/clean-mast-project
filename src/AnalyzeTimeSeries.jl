@@ -2,20 +2,19 @@ module AnalyzeTimeSeries
 
 using DataFrames
 using CSV
-using Gadfly
 using Statistics
 using Dates
 using ColorSchemes
 using DataFramesMeta
 using GLM
 using StatsBase: mean, fit, Histogram
-using Compose
 using YAML
 
 import ..Types.MastTimeSeries: TimeSeriesData, SensorColumn
 import ..Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
 
 # Include sub-modules for different analysis types
+include("AnalyzeTimeSeries/Utils.jl")
 include("AnalyzeTimeSeries/AirDensity.jl")
 include("AnalyzeTimeSeries/WindTemporal.jl")
 include("AnalyzeTimeSeries/Vertical.jl")

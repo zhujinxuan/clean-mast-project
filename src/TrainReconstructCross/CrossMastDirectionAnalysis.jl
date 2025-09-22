@@ -273,7 +273,7 @@ function reconstruct(model::CrossMastDirectionModel, source_ts::TimeSeriesData):
     reconstructed_sensors = unique([pair.target_sensor for pair in model.pairs])
     sort!(reconstructed_sensors, by = x -> x.height, rev = true)
 
-    result_df = DataFrame(:timestamp => source_ts.df.timestamp, [x.columnName => missings(Float64,  length(source_ts.df.timestamp)) for x in reconstructed_sensors]...)
+    result_df = DataFrame(:timestamp => source_ts.df.timestamp, [x.columnName => missings(Float64,  length(source_ts.df.timestamp)) for x in reconstructed_sensors]...);
     
     # Process each sensor pair
     for pair in model.pairs
@@ -282,9 +282,9 @@ function reconstruct(model::CrossMastDirectionModel, source_ts::TimeSeriesData):
         
         # Get source data
         missing_mask = ismissing.(result_df[!, target_col])
-        source_data = source_ts.df[missing_mask, source_col]
-        reconstruction = normalize_direction.(source_data .+ pair.offset)
-        result_df[missing_mask, target_col] = reconstruction
+        source_data = source_ts.df[missing_mask, source_col];
+        reconstruction = normalize_direction.(source_data .+ pair.offset);
+        result_df[missing_mask, target_col] .= reconstruction
     end
     
     @info "Reconstructed $(length(reconstructed_sensors)) wind direction sensors for $(model.target_mast_name)"

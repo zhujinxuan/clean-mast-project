@@ -2,7 +2,7 @@ module WindFrequency
 
 using DataFrames
 using CSV
-using Gadfly
+using AlgebraOfGraphics, CairoMakie
 using Statistics
 using StatsBase: fit, Histogram
 using SummaryTables
@@ -10,6 +10,7 @@ using SummaryTables
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
 import ..AirDensity: calculate_air_density, calculate_wind_power_density
+import ..Utils: format_height
 
 struct MastOneHeightStats
     height :: Float64
@@ -106,7 +107,8 @@ function create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stat
             results_df = mast_one_height_stats.data
             
             # Save to CSV
-            CSV.write(joinpath(output_dir, "wind_power_frequency_$(Int(height))m.csv"), results_df)
+            height_str = format_height(height)
+            CSV.write(joinpath(output_dir, "wind_power_frequency_$(height_str)m.csv"), results_df)
             
             # Create a combined plot with both frequency distributions
             # First reshape the data for grouped bar plot
@@ -116,19 +118,29 @@ function create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stat
                 type = repeat(["Wind Speed Frequency", "Wind Power Frequency"], inner=length(results_df.bin_center))
             )
             
-            p_combined = plot(plot_df,
-                x=:bin_center, y=:value, color=:type, group=:type,
-                Geom.bar(position=:dodge),
-                Guide.title("Wind Speed and Power Frequency Distribution - $(mast.name) ($(Int(height))m)"),
-                Guide.xlabel("Wind Speed (m/s)"),
-                Guide.ylabel("Frequency"),
-                Scale.color_discrete_manual(colorant"steelblue", colorant"darkred"),
-                Theme(background_color="white")
-            )
+            # Find the maximum wind speed with non-zero frequency
+            max_nonzero_speed = maximum(plot_df[plot_df.value .> 0, :bin_center])
+            # Set x-axis limit: use data max + 1, but cap at 25 m/s
+            x_max = min(max_nonzero_speed + 1, 25.0)
             
-            draw(SVG(joinpath(output_dir, "wind_frequency_distribution_$(Int(height))m.svg"), 12inch, 7inch), p_combined)
+            # Create the plot using AlgebraOfGraphics with custom colors
+            plt = data(plot_df) * 
+                  mapping(:bin_center, :value, dodge=:type, color=:type) * 
+                  visual(BarPlot)
             
-            @info "Generated wind power frequency plots for mast $(mast.name) at $(Int(height))m"
+            # Create figure with limited x-axis range
+            fig = draw(plt, axis=(
+                xlabel="Wind Speed (m/s)",
+                ylabel="Frequency", 
+                title="Wind Speed and Power Frequency Distribution - $(mast.name) ($(height_str)m)",
+                limits=(0, x_max, nothing, nothing),  # Set x-limits directly
+                xticks=0:2:Int(ceil(x_max))
+            ))
+            
+            # Save the plot
+            save(joinpath(output_dir, "wind_frequency_distribution_$(height_str)m.svg"), fig)
+
+            @info "Generated wind power frequency plots for mast $(mast.name) at $(height_str)m"
         end
     end
     
@@ -194,8 +206,8 @@ function generate_wind_frequency_report(config::AnalyzeConfig)
         
         mast_results = frequency_results[mast.name]
         
-        # Filter for heights >= 120m
-        valid_data = filter(data -> data.height >= 120.0, mast_results)
+        # Filter for heights >= min_plot_height
+        valid_data = filter(data -> data.height >= config.min_plot_height, mast_results)
 
         
         # Create wind speed frequency table
@@ -226,6 +238,27 @@ function generate_wind_frequency_report(config::AnalyzeConfig)
             println(io, "")
             show(io, MIME"text/typst"(), range_summary_table)
             println(io, "")
+            println(io, "")
+            
+            # Add wind frequency distribution plots for each height
+            println(io, "== 风速与风功率频率分布图")
+            for mast_one_height_data in valid_data
+                height = mast_one_height_data.height
+                height_str = format_height(height)
+                svg_filename = "wind_frequency_distribution_$(height_str)m.svg"
+                svg_path = joinpath(output_dir, svg_filename)
+                
+                if isfile(svg_path)
+                    println(io, "")
+                    println(io, "=== $(height_str)m 高度风速与风功率频率分布")
+                    println(io, "")
+                    println(io, "#figure(")
+                    println(io, "  image(\"$svg_filename\", width: 90%),")
+                    println(io, "  caption: [$(height_str)m 高度风速与风功率频率分布图]")
+                    println(io, ")")
+                    println(io, "")
+                end
+            end
         end
         
         @info "Generated wind frequency tables for mast $(mast.name) with heights >= 120m"
@@ -247,16 +280,17 @@ function create_wind_speed_frequency_table(valid_data::Vector{MastOneHeightStats
         风速区间 = ["$(Int(row.bin_start))-$(Int(row.bin_end))" for row in eachrow(first_data)]
     )
     
-    # Add columns for each height >= 120m
+    # Add columns for each height >= min_plot_height
     for mast_one_height_data in valid_data
         height = mast_one_height_data.height
-            
+        height_str = format_height(height)
+
         # Wind speed frequency percentage
-        freq_col = "$(Int(height))m频率"
+        freq_col = "$(height_str)m频率"
         table_df[!, freq_col] = ["$(round(row.frequency * 100, digits=2))%" for row in eachrow(mast_one_height_data.data)]
-            
+
         # Occurrence hours (8760 * frequency)
-        hours_col = "$(Int(height))m小时数"
+        hours_col = "$(height_str)m小时数"
         table_df[!, hours_col] = [round(Int, row.frequency * 8760) for row in eachrow(mast_one_height_data.data)]
     end
     
@@ -278,16 +312,17 @@ function create_wind_power_frequency_table(valid_data::Vector{MastOneHeightStats
         风速区间 = ["$(Int(row.bin_start))-$(Int(row.bin_end))" for row in eachrow(first_data)]
     )
     
-    # Add columns for each height >= 120m
+    # Add columns for each height >= min_plot_height
     for mast_one_height_data in valid_data
         height = mast_one_height_data.height
-            
+        height_str = format_height(height)
+
         # Wind power frequency percentage
-        power_freq_col = "$(Int(height))m功率频率"
+        power_freq_col = "$(height_str)m功率频率"
         table_df[!, power_freq_col] = ["$(round(row.power_frequency*100, digits=1))%" for row in eachrow(mast_one_height_data.data)]
-            
+
         # Wind power density for each bin (calculate average power density for each bin)
-        power_hours_col = "$(Int(height))m功率出现小时数"
+        power_hours_col = "$(height_str)m功率出现小时数"
         table_df[!, power_hours_col] = [round(Int, row.power_frequency .* 8760) for row in eachrow(mast_one_height_data.data)]
     end
     
@@ -319,10 +354,10 @@ function create_wind_range_summary_table(valid_data::Vector{MastOneHeightStats})
         power_hours = round(Int, total_power_freq * 8760)
         
         (
-            height = "$(Int(height))m",
+            height = "$(format_height(height))m",
             wind_freq = "$(round(total_wind_freq * 100, digits=2))%",
             wind_hours = wind_hours,
-            power_freq = "$(round(total_power_freq * 100, digits=1))%", 
+            power_freq = "$(round(total_power_freq * 100, digits=1))%",
             power_hours = power_hours
         )
     end

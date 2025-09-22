@@ -6,6 +6,10 @@ using ...TowerShading.CommandTowerShading
 using ...TowerShading.RecommendTowerShadingCommand
 using ...ReconstructSingleMast.CommandReconstructSingle
 using ...ReconstructSingleMast.RecommendReconstructSingleCommand
+using ...TrainReconstructCross.RecommendTrainReconstructCrossCommand
+using ...TrainReconstructCross.TrainReconstructCrossCommand
+using ...ReconstructCross.RecommendReconstructCrossCommand
+using ...ReconstructCross.ProcessReconstructCrossCommand
 using ...TrainMeso.CommandTrainMeso
 using ...TrainMeso.RecommendTrainMesoCommand
 using ...ReconstructMeso.CommandReconstructMeso
@@ -24,9 +28,11 @@ Execute all processing steps in sequence:
 1. Clean data
 2. Tower shading
 3. Reconstruct single mast
-4. Train meso models
-5. Reconstruct meso
-6. Representative year calibration
+4. Train cross-mast models
+5. Reconstruct cross-mast
+6. Train meso models
+7. Reconstruct meso
+8. Representative year calibration
 
 # Arguments
 - `dir::String`: Project directory containing config.yaml
@@ -52,29 +58,41 @@ function execute(dir::String)
     
     println("\n5. Reconstructing single mast data...")
     CommandReconstructSingle.execute(joinpath(dir, "reconstruct-single.toml"))
-    
-    println("\n6. Recommending train meso config...")
+
+    println("\n6. Recommending train cross-mast config...")
+    RecommendTrainReconstructCrossCommand.execute(dir)
+
+    println("\n7. Training cross-mast models...")
+    TrainReconstructCrossCommand.execute(joinpath(dir, "train-reconstruct-cross.toml"))
+
+    println("\n8. Recommending reconstruct cross-mast config...")
+    RecommendReconstructCrossCommand.execute(joinpath(dir, "train-reconstruct-cross", "train-results.toml"), dir)
+
+    println("\n9. Reconstructing cross-mast data...")
+    ProcessReconstructCrossCommand.execute(joinpath(dir, "reconstruct-cross.toml"))
+
+    println("\n10. Recommending train meso config...")
     RecommendTrainMesoCommand.execute(dir)
     
-    println("\n7. Training mesoscale models...")
+    println("\n11. Training mesoscale models...")
     CommandTrainMeso.execute(joinpath(dir, "train-meso.toml"))
-    
-    println("\n8. Recommending reconstruct meso config...")
+
+    println("\n12. Recommending reconstruct meso config...")
     RecommendReconstructMesoCommand.execute(dir)
-    
-    println("\n9. Reconstructing with mesoscale data...")
+
+    println("\n13. Reconstructing with mesoscale data...")
     CommandReconstructMeso.execute(joinpath(dir, "reconstruct-meso.toml"))
-    
-    println("\n10. Recommending representative year config...")
+
+    println("\n14. Recommending representative year config...")
     RecommendRepresentativeYearCommand.execute(dir)
-    
-    println("\n11. Calibrating to representative year...")
+
+    println("\n15. Calibrating to representative year...")
     CommandRepresentativeYear.execute(joinpath(dir, "representative-year.toml"))
 
-    println("\n12. Recommending wt-timeseries config...")
+    println("\n16. Recommending wt-timeseries config...")
     RecommendWtTimeSeriesCommand.execute(dir)
 
-    println("\n13. Producing MeteoDyn WT time series data...")
+    println("\n17. Producing MeteoDyn WT time series data...")
     CommandWtTimeSeries.execute(joinpath(dir, "wt-timeseries.toml"))
     
     println("\nComplete processing pipeline finished successfully!")

@@ -2,10 +2,9 @@ module Vertical
 
 using DataFrames
 using CSV
-using Gadfly
+using AlgebraOfGraphics, CairoMakie
 using Statistics
 using GLM
-using Compose
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
@@ -77,17 +76,19 @@ function analyze_vertical_profile(config::AnalyzeConfig)
         CSV.write(joinpath(output_dir, "vertical_profile.csv"), results_df)
         CSV.write(joinpath(output_dir, "vertical_profile_metadata.csv"), metadata_df)
         
-        # Create plot
-        p = plot(
-            layer(results_df, x=:speed, y=:height, Geom.point(), Theme(default_color=colorant"blue")),
-            layer(fit_df, x=:speed, y=:height, Geom.line(), Theme(default_color=colorant"red")),
-            Guide.title("Vertical Wind Speed Profile - $(mast.name) (α = $(round(α, digits=3)), R² = $(round(r_squared, digits=3)))"),
-            Guide.xlabel("Wind Speed (m/s)"),
-            Guide.ylabel("Height (m)"),
-            Theme(background_color="white")
-        )
+        # Create plot using AlgebraOfGraphics
+        points_layer = data(results_df) * mapping(:speed, :height) * visual(Scatter, color=:blue, markersize=12)
+        line_layer = data(fit_df) * mapping(:speed, :height) * visual(Lines, color=:red, linewidth=3)
         
-        draw(SVG(joinpath(output_dir, "vertical_profile.svg"), 6inch, 8inch), p)
+        plt = points_layer + line_layer
+        
+        fig = draw(plt, axis=(
+            xlabel="Wind Speed (m/s)",
+            ylabel="Height (m)",
+            title="Vertical Wind Speed Profile - $(mast.name) (α = $(round(α, digits=3)), R² = $(round(r_squared, digits=3)))"
+        ))
+        
+        save(joinpath(output_dir, "vertical_profile.svg"), fig)
         
         results[mast.name] = Dict(
             "data" => results_df,
@@ -217,7 +218,7 @@ function create_wind_speed_ratio_table(config::AnalyzeConfig)
         
         # Create DataFrame for wind shear exponents
         n = length(heights)
-        height_labels = ["$(Int(h))m" for h in heights]
+        height_labels = ["$(h)m" for h in heights]
         
         # Initialize DataFrame with height and wind speed columns
         shear_df = DataFrame()
@@ -226,7 +227,7 @@ function create_wind_speed_ratio_table(config::AnalyzeConfig)
         
         # Add columns for each height showing wind shear exponents
         for (j, target_height) in enumerate(heights)
-            col_name = Symbol("$(Int(target_height))m")
+            col_name = Symbol("$(target_height)m")
             
             # Use map instead of for loop with push!
             alpha_col = map(enumerate(heights)) do (i, source_height)
@@ -259,6 +260,38 @@ function create_wind_speed_ratio_table(config::AnalyzeConfig)
             println(io, "")
             println(io, "== 风切变指数表")
             show(io, MIME"text/typst"(), summary_table)
+            println(io, "")
+            println(io, "")
+            
+            # Add vertical wind profile image if it exists
+            vertical_profile_svg = joinpath(output_dir, "vertical_profile.svg")
+            if isfile(vertical_profile_svg)
+                println(io, "== 垂直风剖面图")
+                println(io, "")
+                println(io, "=== $(mast.name) 垂直风速剖面拟合")
+                println(io, "")
+                
+                # Try to read metadata for enhanced caption
+                metadata_path = joinpath(output_dir, "vertical_profile_metadata.csv")
+                caption_text = "$(mast.name) 垂直风速剖面与幂律拟合图"
+                
+                if isfile(metadata_path)
+                    try
+                        metadata = CSV.read(metadata_path, DataFrame)
+                        α = metadata[metadata.parameter .== "alpha", :value][1]
+                        r_squared = metadata[metadata.parameter .== "r_squared", :value][1]
+                        caption_text = "$(mast.name) 垂直风速剖面与幂律拟合 (α = $(round(α, digits=3)), R² = $(round(r_squared, digits=3)))"
+                    catch
+                        # Fall back to simple caption if metadata reading fails
+                    end
+                end
+                
+                println(io, "#figure(")
+                println(io, "  image(\"vertical_profile.svg\", width: 80%),")
+                println(io, "  caption: [$caption_text]")
+                println(io, ")")
+                println(io, "")
+            end
         end
         
         
@@ -295,8 +328,8 @@ function create_wind_speed_ratio_table(config::AnalyzeConfig)
                 end
             end
             
-            stats_df[!, "alpha_to_$(Int(ref_height_low))m"] = alpha_to_low
-            stats_df[!, "alpha_to_$(Int(ref_height_high))m"] = alpha_to_high
+            stats_df[!, "alpha_to_$(ref_height_low)m"] = alpha_to_low
+            stats_df[!, "alpha_to_$(ref_height_high)m"] = alpha_to_high
         end
         
         CSV.write(joinpath(output_dir, "wind_shear_summary.csv"), stats_df)

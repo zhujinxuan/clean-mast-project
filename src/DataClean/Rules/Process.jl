@@ -8,6 +8,7 @@ using ..ProcessTypes
 using ..ProcessRange
 using ..ProcessLayerDiff
 using ..ProcessIcing
+using ..ProcessAvailability
 using ....Types.MastTimeSeries: SensorColumn, TimeSeriesData
 
 function apply_rule(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
@@ -15,8 +16,12 @@ function apply_rule(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
         return ProcessRange.apply(rule, data)
     elseif rule.criteria isa LayerDifferenceCriteria
         return ProcessLayerDiff.apply(rule, data)
-    else # IcingCriteria
+    elseif rule.criteria isa IcingCriteria
         return ProcessIcing.apply(rule, data)
+    elseif rule.criteria isa AvailabilityCriteria
+        return ProcessAvailability.apply(rule, data)
+    else
+        error("Unknown rule criteria type: $(typeof(rule.criteria))")
     end
 end
 

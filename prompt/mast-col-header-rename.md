@@ -194,7 +194,7 @@ converted_file = "2501_windographer.csv"  # File was edited in-place
 "AT_1_10m_Std" = "Ch22_Analog_10.00m_SD_C"
 
 # Other columns (keep as-is or skip if not needed for wind analysis)
-"BattV [V]" = "Ch30_Analog_0.00m_Avg_V"
+"BattV [V]" = "Ch30_Batt_0.00m_Avg_V"
 ```
 
 ### 3.4 Create the rename-mapping file

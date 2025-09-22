@@ -60,9 +60,16 @@ sensorType = "Temperature"
 
 [[mappings]]
 [mappings.match]
-sensorType = "Analog"
 unit = "hPa"
 [mappings.rule]
 sensorType = "Pressure"
 unit = "Pa"
 multiplier = 100.0 
+
+[[mappings]]
+[mappings.match]
+unit = "kPa"
+[mappings.rule]
+sensorType = "Pressure"
+unit = "Pa"
+multiplier = 1000.0 

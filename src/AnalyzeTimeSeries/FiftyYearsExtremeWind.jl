@@ -13,6 +13,7 @@ using AlgebraOfGraphics
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
 import ..AirDensity: calculate_air_density
+import ..Utils: format_height
 
 # IEC 61400-1 standard air density (kg/m³)
 const STANDARD_AIR_DENSITY = 1.225
@@ -67,18 +68,13 @@ function fit_gumbel_distribution(data::Vector{Float64})::Union{Tuple{Float64, Fl
     end
     
     # Optimize to find MLE parameters
-    try
-        result = optimize(neg_log_likelihood, [μ_init, β_init], LBFGS())
-        
-        if Optim.converged(result)
-            μ, β = Optim.minimizer(result)
-            return (μ, β)
-        else
-            @warn "Gumbel optimization did not converge, using method of moments"
-            return (μ_init, β_init)
-        end
-    catch e
-        @warn "Gumbel fitting failed: $e, using method of moments"
+    result = optimize(neg_log_likelihood, [μ_init, β_init], LBFGS())
+
+    if Optim.converged(result)
+        μ, β = Optim.minimizer(result)
+        return (μ, β)
+    else
+        # If optimization doesn't converge, use method of moments
         return (μ_init, β_init)
     end
 end
@@ -517,8 +513,9 @@ function generate_gumbel_qq_plot(wind_data::Vector{Float64}, μ::Float64, β::Fl
     )
     
     # Save the plot
-    plot_path = joinpath(output_dir, "gumbel_qq_plot_$(Int(height))m_$(wind_speed_type).svg")
-    save(plot_path, fig)
+    height_str = format_height(height)
+    plot_path = joinpath(output_dir, "gumbel_qq_plot_$(height_str)m_$(wind_speed_type).svg")
+    save(plot_path, fig, size=(1000, 1000))
     
     @info "Generated Gumbel Q-Q plot with 95% Monte Carlo confidence bands for $(mast_name) at $(height)m: $(plot_path)"
     return plot_path
@@ -584,134 +581,34 @@ function generate_qq_monte_carlo_bands(empirical_probs::Vector{Float64}, μ::Flo
 end
 
 """
-    generate_gumbel_qq_grid_plot(results_df::DataFrame, mast_name::String, output_dir::String, wind_speed_type::String)::Union{String, Nothing}
+    calculate_qq_grid_layout(n_heights::Int)::@NamedTuple{cols::Int, rows::Int, size::Tuple{Int, Int}}
 
-Generate a grid plot of Q-Q plots for all heights in the results DataFrame.
-Automatically determines optimal grid layout (3 or 4 columns) based on number of heights.
+Calculate optimal grid layout configuration for Q-Q plots based on number of heights.
 
 # Arguments
-- `results_df::DataFrame`: DataFrame containing Method 2 results with Q-Q plot data
-- `mast_name::String`: Mast name for plot title
-- `output_dir::String`: Directory to save the plot
-- `wind_speed_type::String`: Type of wind speed (sustained or extreme)
+- `n_heights::Int`: Number of heights to display
 
 # Returns
-- `String`: Path to the saved grid plot file, or Nothing if no data
+- `@NamedTuple{cols::Int, rows::Int, size::Tuple{Int, Int}}`: Layout configuration with fields (cols, rows, size)
 """
-function generate_gumbel_qq_grid_plot(results_df::DataFrame, mast_name::String, output_dir::String, wind_speed_type::String)::Union{String, Nothing}
-    if isempty(results_df)
-        return nothing
-    end
+function calculate_qq_grid_layout(n_heights::Int)::@NamedTuple{cols::Int, rows::Int, size::Tuple{Int, Int}}
+    # Predefined optimal layouts for small numbers
+    layout_configs = Dict(
+        1 => (cols=1, rows=1, size=(800, 800)),      # Single large plot
+        2 => (cols=2, rows=1, size=(1000, 500)),     # Side by side
+        3 => (cols=3, rows=1, size=(1200, 400)),     # Horizontal row
+        4 => (cols=2, rows=2, size=(800, 800))       # Square grid
+    )
     
-    # Get unique heights and sort them
-    heights = sort(unique(results_df.height), rev=true)
-    n_heights = length(heights)
-    
-    if n_heights == 0
-        return nothing
-    end
-    
-    # Determine optimal grid layout
-    if n_heights <= 3
-        n_cols = n_heights
-        n_rows = 1
-    elseif n_heights <= 4
-        n_cols = 2
-        n_rows = 2
-    elseif n_heights <= 6
-        n_cols = 3
-        n_rows = ceil(Int, n_heights / 3)
-    elseif n_heights <= 8
-        n_cols = 4
-        n_rows = ceil(Int, n_heights / 4)
+    if haskey(layout_configs, n_heights)
+        return layout_configs[n_heights]
     else
-        # For many heights, prefer 4 columns
-        n_cols = 4
-        n_rows = ceil(Int, n_heights / 4)
+        # For 5+ heights, use dynamic calculation
+        n_cols = min(4, n_heights)  # Max 4 columns
+        n_rows = ceil(Int, n_heights / n_cols)
+        figure_size = (n_cols * 350, n_rows * 350)
+        return (cols=n_cols, rows=n_rows, size=figure_size)
     end
-    
-    @info "Creating $(n_rows)×$(n_cols) grid plot for $(n_heights) heights ($(wind_speed_type) wind speed)"
-    
-    # Create figure with subplots
-    fig = Figure(size=(n_cols * 400, n_rows * 400))
-    
-    # Generate individual Q-Q plots for each height
-    for (idx, height) in enumerate(heights)
-        # Calculate subplot position
-        row = ceil(Int, idx / n_cols)
-        col = ((idx - 1) % n_cols) + 1
-        
-        # Get data for this height
-        height_data = filter(row -> row.height == height, results_df)
-        if nrow(height_data) == 0
-            continue
-        end
-        
-        # Extract Gumbel parameters
-        μ = height_data[1, :gumbel_location]
-        β = height_data[1, :gumbel_scale]
-        
-        # We need to recreate the 5-day maxima data for this height
-        # This is a bit tricky since we don't store the raw data in results_df
-        # For now, we'll create a placeholder plot showing the parameters
-        
-        # Create subplot axis
-        ax = Axis(fig[row, col],
-            title="$(Int(height))m (μ=$(round(μ, digits=2)), β=$(round(β, digits=2)))",
-            xlabel="Theoretical Quantiles",
-            ylabel="Empirical Quantiles",
-            titlesize=12,
-            xlabelsize=10,
-            ylabelsize=10
-        )
-        
-        # For demonstration, create some sample data based on the fitted parameters
-        # In practice, you might want to store the original data or regenerate it
-        n_samples = height_data[1, :sample_count]
-        sample_mean = height_data[1, :sample_mean]
-        sample_std = height_data[1, :sample_std]
-        
-        # Generate synthetic data with similar statistics for plotting
-        # This is just for visualization - ideally we'd use the actual 5-day maxima
-        gumbel_dist = Gumbel(μ, β)
-        synthetic_data = sort(rand(gumbel_dist, min(n_samples, 100)))
-        
-        # Calculate empirical and theoretical quantiles
-        n = length(synthetic_data)
-        empirical_probs = collect(1:n) ./ (n + 1)
-        
-        # Calculate theoretical Gumbel quantiles
-        neg_log_probs = -log.(empirical_probs)
-        log_neg_log_probs = log.(neg_log_probs)
-        theoretical_quantiles = μ .- β .* log_neg_log_probs
-        
-        # Plot Q-Q points
-        scatter!(ax, theoretical_quantiles, synthetic_data, markersize=6, color=:blue, alpha=0.7)
-        
-        # Add diagonal reference line
-        min_val = minimum([minimum(theoretical_quantiles), minimum(synthetic_data)])
-        max_val = maximum([maximum(theoretical_quantiles), maximum(synthetic_data)])
-        lines!(ax, [min_val, max_val], [min_val, max_val], linestyle=:dash, linewidth=2, color=:red)
-        
-        # Add confidence bands (simplified)
-        band_width = 0.1 * (max_val - min_val)
-        lines!(ax, [min_val, max_val], [min_val - band_width, max_val - band_width], 
-               linestyle=:dot, linewidth=1, color=:gray, alpha=0.5)
-        lines!(ax, [min_val, max_val], [min_val + band_width, max_val + band_width], 
-               linestyle=:dot, linewidth=1, color=:gray, alpha=0.5)
-    end
-    
-    # Add overall title
-    wind_type_chinese = wind_speed_type == "sustained" ? "持续风速" : "极端风速"
-    Label(fig[0, :], "$(mast_name) - $(wind_type_chinese)Gumbel分布Q-Q图网格", 
-          fontsize=16, font="bold")
-    
-    # Save the plot
-    plot_path = joinpath(output_dir, "gumbel_qq_grid_$(wind_speed_type).svg")
-    save(plot_path, fig)
-    
-    @info "Generated Gumbel Q-Q grid plot for $(mast_name) $(wind_speed_type) wind speeds: $(plot_path)"
-    return plot_path
 end
 
 """
@@ -741,29 +638,14 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
         return nothing
     end
     
-    # Determine optimal grid layout
-    if n_heights <= 3
-        n_cols = n_heights
-        n_rows = 1
-    elseif n_heights <= 4
-        n_cols = 2
-        n_rows = 2
-    elseif n_heights <= 6
-        n_cols = 3
-        n_rows = ceil(Int, n_heights / 3)
-    elseif n_heights <= 8
-        n_cols = 4
-        n_rows = ceil(Int, n_heights / 4)
-    else
-        # For many heights, prefer 4 columns
-        n_cols = 4
-        n_rows = ceil(Int, n_heights / 4)
-    end
+    # Calculate optimal grid layout
+    layout = calculate_qq_grid_layout(n_heights)
+    n_cols, n_rows, figure_size = layout.cols, layout.rows, layout.size
     
-    @info "Creating detailed $(n_rows)×$(n_cols) grid plot for $(n_heights) heights ($(wind_speed_type) wind speed)"
+    @info "Creating detailed $(n_rows)×$(n_cols) grid plot for $(n_heights) heights ($(wind_speed_type) wind speed) - size: $(figure_size)"
     
-    # Create figure with subplots
-    fig = Figure(size=(n_cols * 350, n_rows * 350))
+    # Create figure with optimized size
+    fig = Figure(size=figure_size)
     
     # Generate individual Q-Q plots for each height
     for (idx, height) in enumerate(heights)
@@ -793,8 +675,9 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
         ci_df = generate_qq_monte_carlo_bands(empirical_probs, μ, β, n, n_monte_carlo)
         
         # Create subplot axis
+        height_str = format_height(height)
         ax = Axis(fig[row, col],
-            title="$(Int(height))m (n=$(n))",
+            title="$(height_str)m (n=$(n))",
             xlabel=row == n_rows ? "Theoretical" : "",
             ylabel=col == 1 ? "Empirical" : "",
             titlesize=11,
@@ -821,7 +704,7 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
     
     # Save the plot
     plot_path = joinpath(output_dir, "gumbel_qq_detailed_grid_$(wind_speed_type).svg")
-    save(plot_path, fig)
+    save(plot_path, fig, size=(1000, 1000))
     
     @info "Generated detailed Gumbel Q-Q grid plot for $(mast_name) $(wind_speed_type) wind speeds: $(plot_path)"
     return plot_path
@@ -846,20 +729,20 @@ function analyze_fifty_years_extreme_wind(config::AnalyzeConfig)
         masts -> map(masts) do mast
         output_dir = get_output_path(config, mast.name, "fifty-years")
         
-        # Find average wind speed sensors (heights >= 120m)
-        avg_speed_sensors = filter(s -> s.sensorType == "WindSpeed" && 
-                                       s.statType == "avg" && 
-                                       s.height >= 120.0, 
+        # Find average wind speed sensors (heights >= min_plot_height)
+        avg_speed_sensors = filter(s -> s.sensorType == "WindSpeed" &&
+                                       s.statType == "avg" &&
+                                       s.height >= config.min_plot_height,
                                   mast.timeSeriesData.sensors)
-        
-        # Find maximum wind speed sensors (heights >= 120m)
-        max_speed_sensors = filter(s -> s.sensorType == "WindSpeed" && 
-                                       s.statType == "max" && 
-                                       s.height >= 120.0, 
+
+        # Find maximum wind speed sensors (heights >= min_plot_height)
+        max_speed_sensors = filter(s -> s.sensorType == "WindSpeed" &&
+                                       s.statType == "max" &&
+                                       s.height >= config.min_plot_height,
                                   mast.timeSeriesData.sensors)
-        
+
         if isempty(avg_speed_sensors) && isempty(max_speed_sensors)
-            @warn "No wind speed sensors found at heights >= 120m for mast $(mast.name)"
+            @warn "No wind speed sensors found at heights >= $(config.min_plot_height)m for mast $(mast.name)"
             return nothing
         end
         
@@ -1395,7 +1278,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             if !isnothing(method2_sustained_grid_plot_path)
                 println(io, "")
                 println(io, "#figure(")
-                println(io, "  image(\"./gumbel_qq_detailed_grid_sustained.svg\", width: 100%),")
+                println(io, "  image(\"./gumbel_qq_detailed_grid_sustained.svg\", width: 85%),")
                 println(io, "  caption: [测风塔$(mast_name) 最大持续风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")
@@ -1406,7 +1289,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
                 println(io, "==== 极端风速Q-Q图网格")
                 println(io, "")
                 println(io, "#figure(")
-                println(io, "  image(\"./gumbel_qq_detailed_grid_extreme.svg\", width: 100%),")
+                println(io, "  image(\"./gumbel_qq_detailed_grid_extreme.svg\", width: 85%),")
                 println(io, "  caption: [测风塔$(mast_name) 极大极端风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")
@@ -1623,6 +1506,6 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
     @info "Generated 50-year extreme wind report for mast $(mast_name) at $(typst_path)"
 end
 
-export analyze_fifty_years_extreme_wind, analyze_method1_sustained_and_extreme, analyze_method2_sustained, analyze_method2_extreme, analyze_method3_sustained, analyze_method3_extreme, generate_fifty_years_report, generate_gumbel_qq_grid_plot, generate_detailed_qq_plots_from_raw_data
+export analyze_fifty_years_extreme_wind, analyze_method1_sustained_and_extreme, analyze_method2_sustained, analyze_method2_extreme, analyze_method3_sustained, analyze_method3_extreme, generate_fifty_years_report, generate_detailed_qq_plots_from_raw_data
 
 end # module 

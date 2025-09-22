@@ -4,6 +4,7 @@ using Dates
 import ..Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
 import ..Types.AnalyzeReconstructSingleConfiguration: AnalyzeReconstructSingleConfig, ProcessedMastReconstructConfig
 import ..TimeSeriesProcessing.Regularization: ensure_regular_intervals
+import ..TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
 # Include sub-modules for different analysis types
 include("./AnalyzeReconstructSingle/DataCoverage.jl")
@@ -39,10 +40,12 @@ function regularize_and_merge_data(before_data::TimeSeriesData, after_data::Time
     common_max = min(before_range.max, after_range.max)
     common_range = TimeRange(common_min, common_max)
     
-    # Regularize both datasets to 10-minute intervals
-    interval = Minute(10)
-    before_regular = ensure_regular_intervals(before_data, common_range, interval)
-    after_regular = ensure_regular_intervals(after_data, common_range, interval)
+    # Detect representative interval from the after_data (reconstructed data)
+    representative_interval = detect_representative_interval(after_data)
+
+    # Regularize both datasets to the representative interval
+    before_regular = ensure_regular_intervals(before_data, common_range, representative_interval)
+    after_regular = ensure_regular_intervals(after_data, common_range, representative_interval)
     
     return (before_regular, after_regular)
 end

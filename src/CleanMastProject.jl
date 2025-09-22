@@ -16,6 +16,12 @@ module Types
   export ParseSensorsConfig
   include("./Types/ProcessCleanConfig.jl")
   export ProcessCleanConfig
+  include("./Types/ReportCleanConfig.jl")
+  export ReportCleanConfig
+  include("./Types/ReportRecoveryConfig.jl")
+  export ReportRecoveryConfig
+  include("./Types/ReportRecoveryData.jl")
+  export ReportRecoveryData
   include("./Types/TowerShadingConfig.jl")
   export TowerShadingConfig
   include("./Types/ReconstructSingleConfig.jl")
@@ -70,6 +76,10 @@ module Types
   export ReconstructCrossConfig
   include("./Types/ReconstructCrossResults.jl")
   export ReconstructCrossResults
+  include("./Types/ViolationData.jl")
+  export ViolationData
+  include("./Types/ReportCleanData.jl")
+  export ReportCleanData
 end
 
 export Types
@@ -77,8 +87,9 @@ export Types
 module TimeSeriesProcessing
   include("./TimeSeriesProcessing/Interpolation.jl")
   include("./TimeSeriesProcessing/Regularization.jl")
-  include("./TimeSeriesProcessing/TimeRangeProcessor.jl")
-  export Interpolation, Regularization, TimeRangeProcessor
+  include("./TimeSeriesProcessing/IntervalDetection.jl")
+  include("./TimeSeriesProcessing/MeasurementPeriodCalculator.jl")
+  export Interpolation, Regularization, IntervalDetection, MeasurementPeriodCalculator
 end
 export TimeSeriesProcessing
 
@@ -97,16 +108,39 @@ module DataClean
     include("./DataClean/Rules/ProcessRange.jl")
     include("./DataClean/Rules/ProcessIcing.jl")
     include("./DataClean/Rules/ProcessLayerDiff.jl")
+    include("./DataClean/Rules/ProcessAvailability.jl")
     include("./DataClean/Rules/Process.jl")
-    export Process, ProcessTypes, ProcessIcing, ProcessRange, ProcessLayerDiff
+    export Process, ProcessTypes, ProcessIcing, ProcessRange, ProcessLayerDiff, ProcessAvailability
   end
   export Rules
-  
+
   include("./DataClean/ProcessCleanCommand.jl")
   include("./DataClean/RecommendProcessCleanCommand.jl")
   export ProcessCleanCommand, RecommendProcessCleanCommand
 end
 export DataClean
+
+module ReportClean
+  include("./ReportClean/SensorInventoryReport.jl")
+  include("./ReportClean/DataCoverageReport.jl")
+  include("./ReportClean/ViolationAnalysisReport.jl")
+  include("./ReportClean/RecommendReportCleanCommand.jl")
+  include("./ReportClean/ReportCleanCommand.jl")
+  include("./ReportClean/ReportAllCommand.jl")
+  export SensorInventoryReport, DataCoverageReport, ViolationAnalysisReport
+  export RecommendReportCleanCommand, ReportCleanCommand, ReportAllCommand
+end
+export ReportClean
+
+module ReportRecovery
+  include("./ReportRecovery/RecoveryAnalysis.jl")
+  include("./ReportRecovery/RecoveryStatusReport.jl")
+  include("./ReportRecovery/RecommendReportRecoveryCommand.jl")
+  include("./ReportRecovery/ReportRecoveryCommand.jl")
+  export RecoveryAnalysis, RecoveryStatusReport
+  export RecommendReportRecoveryCommand, ReportRecoveryCommand
+end
+export ReportRecovery
 
 module TowerShading
   include("./TowerShading/Core.jl")
@@ -162,8 +196,11 @@ module RepresentativeYear
   include("./RepresentativeYear/Core.jl")
   include("./RepresentativeYear/CommandRepresentativeYear.jl")
   include("./RepresentativeYear/RecommendRepresentativeYearCommand.jl")
+  include("./RepresentativeYear/ReportGeneration.jl")
+  include("./RepresentativeYear/ReportRepresentativeYearCommand.jl")
   export calibrate_to_representative_year
   export CommandRepresentativeYear, RecommendRepresentativeYearCommand
+  export ReportGeneration, ReportRepresentativeYearCommand
   export Analysis
 end
 export RepresentativeYear
@@ -207,10 +244,17 @@ module AnalyzeReconstructCross
   include("./AnalyzeReconstructCross/ReportGeneration.jl")
   include("./AnalyzeReconstructCross/CommandAnalyzeReconstructCross.jl")
   include("./AnalyzeReconstructCross/RecommendAnalyzeReconstructCrossCommand.jl")
+  include("./AnalyzeReconstructCross/RecommendCrossMastReportCommand.jl")
   export AnalysisCore, DataVisualization, ReportGeneration
-  export CommandAnalyzeReconstructCross, RecommendAnalyzeReconstructCrossCommand
+  export CommandAnalyzeReconstructCross, RecommendAnalyzeReconstructCrossCommand, RecommendCrossMastReportCommand
 end
 export AnalyzeReconstructCross
+
+module ReportAllMasts
+  include("./ReportAllMasts/ReportAllMastsCommand.jl")
+  export ReportAllMastsCommand
+end
+export ReportAllMasts
 
 module ReconstructCross
   include("./ReconstructCross/RecommendReconstructCrossCommand.jl")
@@ -225,8 +269,9 @@ module Command
   include("./Command/ProcessAll.jl")
   include("./Command/AnalyzeEN.jl")
   include("./Command/AnalyzeReconstructSingle.jl")
+  include("./Command/CalculateAirDensityCommand.jl")
   export  QuickStart, ProcessAll, AnalyzeTimeSeriesCommand,
-         AnalyzeEN, AnalyzeReconstructSingle
+         AnalyzeEN, AnalyzeReconstructSingle, CalculateAirDensityCommand
 end
 export Command
 include("./CleanMastCli.jl")

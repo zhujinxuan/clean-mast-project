@@ -252,9 +252,11 @@ end
     using CleanMastProject.ReconstructMeso.RecommendReconstructMesoCommand
     using CleanMastProject.TrainReconstructCross.RecommendTrainReconstructCrossCommand
     using CleanMastProject.AnalyzeReconstructCross.RecommendAnalyzeReconstructCrossCommand
+    using CleanMastProject.AnalyzeReconstructCross.RecommendCrossMastReportCommand
     using CleanMastProject.ReconstructCross.RecommendReconstructCrossCommand
     using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
+    using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
 
     """
     recommend process-clean <dir>
@@ -312,6 +314,16 @@ end
     @cast function wt_timeseries(dir::String)
         "Recommend a wt-timeseries.toml file for the project"
         RecommendWtTimeSeriesCommand.execute(dir)
+    end
+
+    @cast function report_recovery(dir::String)
+        "Recommend a report-recovery.toml file for data recovery status report (saved to report-masts/)"
+        RecommendReportRecoveryCommand.execute(dir)
+    end
+
+    @cast function report_cross_mast(dir::String)
+        "Recommend a report-cross-mast.toml file for cross-mast report (saved to report-masts/)"
+        RecommendCrossMastReportCommand.execute(dir)
     end
 end
 
@@ -419,17 +431,217 @@ Comonicon.@cast module Analyze
         AnalyzeReconstructSingle.execute(config_path)
     end
 
-    """
-    reconstruct-cross
 
-    Analyze cross-mast relationships and generate comprehensive reports.
+end
+
+"""
+calculate
+
+Calculation and utility commands
+"""
+Comonicon.@cast module Calculate
+    using Comonicon
+    using CleanMastProject.Command.CalculateAirDensityCommand
+
+    """
+    ad
+
+    Calculate air density from temperature and pressure data in a CSV file.
 
     # Arguments
-    - `config_path`: Path to analyze-reconstruct-cross.toml configuration file
+    - `csv_path`: Path to CSV file containing temperature and pressure data
+    - `--temp-col`: Name of temperature column (assumed to be in Celsius)
+    - `--pressure-col`: Name of pressure column (assumed to be in Pascals)
 
     # Example
     ```bash
-    julia bin/CleanMast.jl analyze reconstruct-cross path/to/analyze-reconstruct-cross.toml
+    julia bin/CleanMast.jl calculate ad data.csv --temp-col Temperature_80m_avg --pressure-col Pressure_80m_avg
+    ```
+
+    The command calculates air density using:
+    1. Median temperature and pressure values from the specified columns
+    2. Ideal gas law for dry air: ρ = P / (R_specific × T)
+    3. Results are displayed with comparison to standard conditions
+    """
+    Comonicon.@cast function ad(csv_path::String; temp_col::String, pressure_col::String)
+        CalculateAirDensityCommand.execute(csv_path, temp_col, pressure_col)
+    end
+
+end
+
+"""
+report
+
+Report generation commands
+"""
+Comonicon.@cast module Report
+    using Comonicon
+    using CleanMastProject.ReportClean.ReportAllCommand
+    using CleanMastProject.ReportAllMasts.ReportAllMastsCommand
+    using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
+    using CleanMastProject.ReportRecovery.ReportRecoveryCommand
+    using CleanMastProject.RepresentativeYear.ReportRepresentativeYearCommand
+    using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+
+    """
+    clean
+
+    Generate process clean report for a project.
+
+    # Arguments
+    - `project_dir`: Path to project directory containing process-clean.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report clean ./projects/my-project
+    ```
+
+    This command:
+    1. Reads process-clean.toml configuration
+    2. Generates report configuration automatically
+    3. Loads raw and clean data files
+    4. Loads violation summaries from process-stats/
+    5. Generates Chinese Typst report with:
+       - Executive summary (执行摘要)
+       - Sensor inventory (传感器清单)
+       - Data coverage comparison (数据覆盖率对比)
+       - Rule violations analysis (规则违规分析)
+
+    Output:
+    - report-masts/clean/report.typ: Main Chinese report
+    - report-masts/clean/generation.log: Generation log
+    - report-masts/clean/generation.err: Error log
+    - report-masts/clean/plots/: Generated plots
+    """
+    Comonicon.@cast function clean(project_dir::String)
+        ReportAllCommand.execute(project_dir)
+    end
+
+    """
+    all
+
+    Generate all comprehensive mast reports for a project.
+
+    # Arguments
+    - `project_dir`: Path to project directory containing configurations
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report all ./projects/my-project
+    ```
+
+    This command generates four comprehensive reports:
+
+    1. **Clean Report** - Raw vs clean data comparison with violation analysis
+    2. **Recovery Report** - Data coverage across reconstruction stages
+    3. **Cross-Mast Report** - Correlation analysis between mast pairs
+    4. **Representative Year Report** - Calibration analysis and effectiveness
+
+    Requirements:
+    - process-clean.toml (for clean report)
+    - reconstruct-meso.toml (for recovery report)
+    - analyze-reconstruct-cross.toml (for cross-mast report)
+    - representative-year.toml (for representative year report)
+
+    Output:
+    - report-masts/clean/report.typ: Clean data analysis
+    - report-masts/recovery/recovery-report.typ: Reconstruction effectiveness
+    - report-masts/cross-mast/report.typ: Cross-mast correlation analysis
+    - report-masts/representative-year/report.typ: Calibration analysis
+
+    The command continues with available reports if some configurations are missing.
+    """
+    Comonicon.@cast function all(project_dir::String)
+        ReportAllMastsCommand.execute(project_dir)
+    end
+
+    """
+    recovery
+
+    Generate data recovery status report showing reconstruction effectiveness.
+
+    # Arguments
+    - `config_path`: Path to report-recovery.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report recovery ./projects/my-project/report-masts/report-recovery.toml
+    ```
+
+    This command:
+    1. Loads report-recovery.toml configuration
+    2. Analyzes data at each reconstruction stage:
+       - Tower shading (initial processed data)
+       - Single-mast reconstruction
+       - Cross-mast reconstruction
+       - Mesoscale reconstruction
+    3. Calculates recovery statistics for each sensor
+    4. Generates Chinese Typst report with:
+       - Recovery tables for each mast (恢复统计表)
+       - Bar charts showing reconstruction effectiveness
+       - Overall recovery summary (总体恢复统计)
+
+    Output:
+    - report-masts/recovery/recovery-report.typ: Main Chinese report
+    - Tables showing: 初始缺失, 同塔插补, 异塔插补, 中尺度插补, 最终缺失
+    - Bar charts with dodge categories for each reconstruction type
+    """
+    Comonicon.@cast function recovery(config_path::String)
+        ReportRecoveryCommand.execute(config_path)
+    end
+
+    """
+    representative-year
+
+    Generate representative year calibration analysis report.
+
+    # Arguments
+    - `project_dir`: Path to project directory containing representative-year.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report representative-year ./projects/my-project
+    ```
+
+    This command:
+    1. Loads representative-year.toml configuration  
+    2. Analyzes calibration results for each mast-meso pair:
+       - Climatology vs training period comparison
+       - Representative year selection and effectiveness
+       - 16-sector detailed analysis with slopes and intercepts
+    3. Filters sensor analysis to ≥100m height or highest available
+    4. Generates comprehensive Chinese/English Typst report with:
+       - Executive summary (执行摘要)
+       - Climatology analysis (气候学分析)  
+       - 16-sector performance tables (16方向扇区分析)
+       - Sensor calibration status (传感器校正分析)
+       - Performance metrics and recommendations
+
+    Output:
+    - representative-year-report/report.typ: Main bilingual report
+    - representative-year-report/tables/: Individual analysis tables
+    - representative-year-report/data/: CSV data exports
+    
+    Requirements:
+    - representative-year.toml configuration file
+    - Calibration results in process-stats/ (if calibration was applied)
+    - Meso data sources for climatology analysis
+    """
+    Comonicon.@cast function representative_year(project_dir::String)
+        ReportRepresentativeYearCommand.execute(project_dir)
+    end
+
+    """
+    cross-mast
+
+    Generate cross-mast correlation analysis reports.
+
+    # Arguments
+    - `config_path`: Path to report-cross-mast.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report cross-mast path/to/report-cross-mast.toml
     ```
 
     The TOML configuration file should specify:
@@ -451,7 +663,7 @@ Comonicon.@cast module Analyze
     - tables/: Individual table files for each mast pair
     - data/: CSV exports for further analysis
     """
-    Comonicon.@cast function reconstruct_cross(config_path::String)
+    Comonicon.@cast function cross_mast(config_path::String)
         CommandAnalyzeReconstructCross.execute(config_path)
     end
 

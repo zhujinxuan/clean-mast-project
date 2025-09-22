@@ -5,6 +5,19 @@ using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using Statistics
 
 """
+    format_height(height::Float64)::String
+
+Format height for display, showing as integer if it's a whole number, otherwise with one decimal place.
+"""
+function format_height(height::Float64)::String
+    if height == round(height)
+        return "$(Int(round(height)))"
+    else
+        return "$(round(height, digits=1))"
+    end
+end
+
+"""
     find_nearby_sensors(sensors::Vector{SensorColumn}, target_height::Float64, max_diff::Float64=2.0)
 
 Find all sensors at the same height or within max_diff meters of the target height.
@@ -59,7 +72,8 @@ function create_merged_sensor(
     base_sensor = stat_sensors[1]
     
     # Generate new name using the new format {sensorType}_{height}m_{statType}_{unit}
-    new_name = "$(base_sensor.sensorType)_$(Int(preferred_height))m_$(base_sensor.statType)_$(base_sensor.unit)"
+    height_str = format_height(preferred_height)
+    new_name = "$(base_sensor.sensorType)_$(height_str)m_$(base_sensor.statType)_$(base_sensor.unit)"
 
     return SensorColumn(
         Symbol(new_name),            # columnName

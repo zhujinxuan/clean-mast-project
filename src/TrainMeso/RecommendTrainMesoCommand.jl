@@ -8,16 +8,52 @@ using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict, to_dict
 using ...ParseSensors.CommandParseSensors: load_and_normalize_config
 using ...CleanMastUtils: load_dict
+using ...TimeSeriesProcessing.IntervalDetection: get_interval_statistics
+using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries
 
 export execute
+
+"""
+    calculate_tower_shading_valid_time(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
+
+Calculate the valid time (in days) for tower-shading data by loading the TimeSeriesData 
+and using interval statistics.
+
+# Arguments
+- `tower_shading_source::TimeSeriesSource`: Tower-shading output data source
+- `base_dir::String`: Base directory for resolving relative paths
+
+# Returns
+- `Float64`: Valid time in days
+"""
+function calculate_tower_shading_valid_time(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
+    try
+        # Load tower-shading data using the proper load_timeseries function
+        ts_data = load_timeseries(tower_shading_source, base_dir)
+        
+        # Get interval statistics
+        stats = get_interval_statistics(ts_data)
+        
+        # Calculate valid time in days
+        valid_time_days = (stats.total_points * stats.representative_interval.value) / (60 * 24)
+        
+        return valid_time_days
+    catch e
+        @warn "Failed to calculate valid time for tower-shading data: $e"
+        return 0.0
+    end
+end
 
 """
     execute(dir::String)
 
 Generate train-meso.toml configuration based on existing configurations.
+Uses intelligent input source selection:
+- If tower-shading valid time ≥ 150 days: use tower-shading as mast input
+- If tower-shading valid time < 150 days: use reconstruct-cross as mast input
 
 # Arguments
-- `dir::String`: Project directory containing reconstruct-single.toml and parse-sensors.toml
+- `dir::String`: Project directory containing tower-shading.toml and parse-sensors.toml
 """
 function execute(dir::String)
     # Read reconstruct-single.toml for mast information
@@ -38,11 +74,29 @@ function execute(dir::String)
     
     parse_sensors_config = load_and_normalize_config(parse_sensors_path)
     
-    # Build masts array from tower-shading configuration
+    println("🔍 Analyzing mast data validity for input source selection...")
+    
+    # Build masts array with intelligent input source selection
     masts = map(tower_shading_config.masts) do mast
+        # Calculate valid time for tower-shading data
+        tower_shading_valid_time = calculate_tower_shading_valid_time(mast.output, dir)
+        
+        # Choose input source based on valid time
+        if tower_shading_valid_time >= 150.0
+            # Use tower-shading output as input
+            input_source = mast.output
+            println("  Using tower-shading for $(mast.name) ($(round(tower_shading_valid_time, digits=1)) days of valid data)")
+        else
+            # Use reconstruct-cross output as input
+            reconstruct_cross_path = "./reconstruct-cross/$(mast.name)_reconstructed.csv" 
+            reconstruct_cross_sensors = "./reconstruct-cross/$(mast.name)_reconstructed.sensors.yaml"
+            input_source = TimeSeriesSource(reconstruct_cross_path, reconstruct_cross_sensors)
+            println("  Using reconstruct-cross for $(mast.name) (tower-shading only has $(round(tower_shading_valid_time, digits=1)) days, < 150 days required)")
+        end
+        
         TrainMesoMast(
             mast.name,
-            mast.output,
+            input_source,
         )
     end
 

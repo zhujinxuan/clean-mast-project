@@ -32,12 +32,12 @@ end
 Settings for cross-mast analysis output and report generation.
 
 # Fields
-- `output_dir::String`: Directory where analysis results will be saved (default: "./analyze-reconstruct-cross")
+- `output_dir::String`: Directory where analysis results will be saved (default: "./report-masts/cross-mast")
 - `include_plots::Bool`: Whether to generate plots (default: true)
 - `language::String`: Report language (default: "zh", Chinese)
 """
 @with_kw struct AnalyzeReconstructCrossSettings
-    output_dir::String = "./analyze-reconstruct-cross"
+    output_dir::String = "./report-masts/cross-mast"
     include_plots::Bool = true
     language::String = "zh"  # Chinese by default
 end
@@ -64,7 +64,7 @@ function from_dict(::Type{AnalyzeReconstructCrossMast}, dict::Dict{String, Any})
 end
 
 function from_dict(::Type{AnalyzeReconstructCrossSettings}, dict::Dict{String, Any})::AnalyzeReconstructCrossSettings
-    output_dir = get(dict, "output_dir", "./analyze-reconstruct-cross")
+    output_dir = get(dict, "output_dir", "./report-masts/cross-mast")
     include_plots = get(dict, "include_plots", true)
     language = get(dict, "language", "zh")
     

@@ -113,12 +113,13 @@ function from_dict(::Type{MastPairCoverage}, dict::Dict{String, Any})::MastPairC
     overlap_days = dict["overlap_days"]
     concurrent_records = dict["concurrent_records"]
     coverage_percentage = dict["coverage_percentage"]
-    
+
     return MastPairCoverage(
-        overlap_start, overlap_end, overlap_days, 
+        overlap_start, overlap_end, overlap_days,
         concurrent_records, coverage_percentage
     )
 end
+
 
 
 
@@ -130,23 +131,25 @@ function from_dict(::Type{CorrelationSummary}, dict::Dict{String, Any})::Correla
     best_correlation = dict["best_correlation"]
     best_high_elevation_correlation = dict["best_high_elevation_correlation"]
     average_high_elevation_correlation = dict["average_high_elevation_correlation"]
-    
+
     return CorrelationSummary(
         total_pairs, high_elevation_pairs, best_correlation,
         best_high_elevation_correlation, average_high_elevation_correlation
     )
 end
 
+
 function from_dict(::Type{DirectionSummary}, dict::Dict{String, Any})::DirectionSummary
     total_pairs = dict["total_pairs"]
     high_elevation_pairs = dict["high_elevation_pairs"]
     best_std_deviation = dict["best_std_deviation"]
     best_high_elevation_std = dict["best_high_elevation_std"]
-    
+
     return DirectionSummary(
         total_pairs, high_elevation_pairs, best_std_deviation, best_high_elevation_std
     )
 end
+
 
 function from_dict(::Type{MastPairAnalysisResult}, dict::Dict{String, Any})::MastPairAnalysisResult
     target_mast = dict["target_mast"]

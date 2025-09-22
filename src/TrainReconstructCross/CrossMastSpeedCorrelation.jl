@@ -116,28 +116,22 @@ function analyze_sensor_pair_correlation(target_ts::TimeSeriesData, source_ts::T
     correlation = cor(valid_target, valid_source)
     
     # Fit linear regression: target = slope * source + intercept
-    try
-        regression_df = DataFrame(target = valid_target, source = valid_source)
-        model = lm(@formula(target ~ source), regression_df)
-        
-        # Extract regression parameters
-        coeffs = coef(model)
-        intercept = coeffs[1]
-        slope = coeffs[2]
-        
-        return CrossMastSpeedPair(
-            target_sensor = target_sensor,
-            source_sensor = source_sensor,
-            correlation = correlation,
-            slope = slope,
-            intercept = intercept,
-            data_points = nrow(clean_df)
-        )
-        
-    catch e
-        @debug "Regression failed for $target_col vs $source_col: $e"
-        return nothing
-    end
+    regression_df = DataFrame(target = valid_target, source = valid_source)
+    model = lm(@formula(target ~ source), regression_df)
+
+    # Extract regression parameters
+    coeffs = coef(model)
+    intercept = coeffs[1]
+    slope = coeffs[2]
+
+    return CrossMastSpeedPair(
+        target_sensor = target_sensor,
+        source_sensor = source_sensor,
+        correlation = correlation,
+        slope = slope,
+        intercept = intercept,
+        data_points = nrow(clean_df)
+    )
 end
 
 
@@ -248,7 +242,7 @@ function reconstruct(model::CrossMastSpeedModel, source_ts::TimeSeriesData)::Tim
     reconstructed_sensors = unique([pair.target_sensor for pair in model.pairs])
     sort!(reconstructed_sensors, by = x -> x.height, rev = true)
 
-    result_df = DataFrame(:timestamp => source_ts.df.timestamp, [x.columnName => missings(Float64,  length(source_ts.df.timestamp)) for x in reconstructed_sensors]...)
+    result_df = DataFrame(:timestamp => source_ts.df.timestamp, [x.columnName => missings(Float64,  length(source_ts.df.timestamp)) for x in reconstructed_sensors]...);
     
     # Process each sensor pair
     for pair in model.pairs
@@ -257,10 +251,10 @@ function reconstruct(model::CrossMastSpeedModel, source_ts::TimeSeriesData)::Tim
         
         # Get source data
         missing_mask = ismissing.(result_df[!, target_col])
-        source_data = source_ts.df[missing_mask, source_col]
-        reconstruction = pair.slope .* source_data .+ pair.intercept
-        reconstruction = clamp.(reconstruction, 0.0, 50.0)
-        result_df[missing_mask, target_col] = reconstruction
+        source_data = source_ts.df[missing_mask, source_col];
+        reconstruction = pair.slope .* source_data .+ pair.intercept;
+        reconstruction = clamp.(reconstruction, 0.0, 50.0);
+        result_df[missing_mask, target_col] .= reconstruction
     end
     
     @info "Reconstructed $(length(reconstructed_sensors)) wind speed sensors for $(model.target_mast_name)"

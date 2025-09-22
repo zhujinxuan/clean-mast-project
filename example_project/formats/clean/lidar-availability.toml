@@ -1,0 +1,5 @@
+[[rules]]
+name = "Lidar Availability Check"
+sensorType = "Availability"
+[rules.availability]
+low_threshold = 80.0

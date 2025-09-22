@@ -41,15 +41,15 @@ function summarize_correlations(results::Vector{CrossMastSpeedPair})::Correlatio
             average_high_elevation_correlation = 0.0
         )
     end
-    
+
     high_elevation_results = get_high_elevation_correlations(results)
-    
+
     return CorrelationSummary(
         total_pairs = length(results),
         high_elevation_pairs = length(high_elevation_results),
         best_correlation = maximum(r -> r.correlation, results),
         best_high_elevation_correlation = get_best_high_elevation_correlation(results),
-        average_high_elevation_correlation = isempty(high_elevation_results) ? 0.0 : 
+        average_high_elevation_correlation = isempty(high_elevation_results) ? 0.0 :
                                            mean(r -> r.correlation, high_elevation_results)
     )
 end
@@ -79,9 +79,9 @@ function summarize_direction_analysis(results::Vector{CrossMastDirectionPair})::
             best_high_elevation_std = Inf
         )
     end
-    
+
     high_elevation_results = get_high_elevation_direction_results(results)
-    
+
     return DirectionSummary(
         total_pairs = length(results),
         high_elevation_pairs = length(high_elevation_results),

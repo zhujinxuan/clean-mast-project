@@ -12,6 +12,7 @@ import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_heigh
 import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
 import ...Types.Sector: DIRECTION_16_SECTORS, get_direction_sector
 import ...Types.TurbulenceIntensity: TurbulenceSectorStats, TurbulenceResults
+import ..Utils: format_height
 
 const DEFAULT_WIND_SPEED_BINS = collect(0.0:1.0:28.0)
 
@@ -305,26 +306,28 @@ Create combined turbulence intensity comparison plot for multiple heights
 
 # Arguments
 - `mast_name::String`: Name of the mast
-- `heights::Vector{Float64}`: Heights to include (only >= 120m)
+- `heights::Vector{Float64}`: Heights to include (only >= min_plot_height)
 - `output_dir::String`: Directory containing CSV files and where to save the plot
+- `min_plot_height::Float64`: Minimum height threshold for plotting (default: 120.0)
 
 # Description
 Creates a single plot showing:
-- Representative TI values from all heights >= 120m as lines
+- Representative TI values from all heights >= min_plot_height as lines
 - IEC Category A, B, C standard curves as filled bands
 - Only includes wind speeds >= 1 m/s
 """
 function create_combined_ti_comparison_plot(
     mast_name::String,
     heights::Vector{Float64},
-    output_dir::String
+    output_dir::String,
+    min_plot_height::Float64 = 120.0
 )::Nothing
-    # Filter heights >= 120m
-    plot_heights = filter(h -> h >= 120, heights)
+    # Filter heights >= min_plot_height
+    plot_heights = filter(h -> h >= min_plot_height, heights)
     sort!(plot_heights, rev=true)
-    
+
     if isempty(plot_heights)
-        @warn "No heights >= 120m found for plotting"
+        @warn "No heights >= $(min_plot_height)m found for plotting"
         return nothing
     end
     
@@ -349,13 +352,13 @@ function create_combined_ti_comparison_plot(
         return DataFrame(
             wind_speed = plot_data.wind_speed_center,
             ti = plot_data.representative_ti,
-            category = "Spd $(Int(height))m"
+            category = "Spd $(format_height(height))m"
         )
     end
 
     
     if isempty(all_meas_datas)
-        @warn "No measurement data found for heights >= 120m"
+        @warn "No measurement data found for heights >= $(min_plot_height)m"
         return nothing
     end
 
@@ -527,7 +530,7 @@ function analyze_turbulence_intensity(config::AnalyzeConfig)
         end
         
         # Create combined TI comparison plot for this mast
-        create_combined_ti_comparison_plot(mast.name, valid_heights, output_dir)
+        create_combined_ti_comparison_plot(mast.name, valid_heights, output_dir, config.min_plot_height)
 
         results[mast.name] = mast_results
     end
@@ -573,13 +576,13 @@ function generate_turbulence_typst_reports(config::AnalyzeConfig)
         avg_heights = Set([s.height for s in ws_avg_sensors])
         sd_heights = Set([s.height for s in ws_sd_sensors])
         valid_heights = sort(collect(intersect(avg_heights, sd_heights)))
-        valid_heights = filter(h -> h >= 120, valid_heights)
+        valid_heights = filter(h -> h >= config.min_plot_height, valid_heights)
         
         if isempty(valid_heights)
             continue
         end
         
-        generate_consolidated_turbulence_typst_report(output_dir, valid_heights, mast.name)
+        generate_consolidated_turbulence_typst_report(output_dir, valid_heights, mast.name, config.min_plot_height)
     end
 end
 
@@ -601,7 +604,8 @@ Generates a comprehensive Typst report including all heights:
 function generate_consolidated_turbulence_typst_report(
     output_dir::String,
     heights::Vector{Float64},
-    mast_name::String
+    mast_name::String,
+    min_plot_height::Float64
 )::Nothing
     typst_path = joinpath(output_dir, "turbulence.typ")
     
@@ -798,7 +802,7 @@ function generate_consolidated_turbulence_typst_report(
         if isfile(combined_plot_path)
             println(io, "#figure(")
             println(io, "  image(\"iec_comparison_combined.svg\", width: 100%),")
-            println(io, "  caption: [测风塔湍流强度与IEC 61400-1标准对比 (高度 ≥ 120m)]")
+            println(io, "  caption: [测风塔湍流强度与IEC 61400-1标准对比 (高度 ≥ $(min_plot_height)m)]")
             println(io, ")")
             println(io)
         end

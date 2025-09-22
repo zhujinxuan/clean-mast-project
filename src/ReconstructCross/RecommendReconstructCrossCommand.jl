@@ -61,7 +61,7 @@ function execute(train_results_path::String, output_dir::String = "./")::String
     println("🎯 Found reconstruction opportunities for $(length(reconstruction_candidates)) target masts")
     
     # 3. Create priority levels and reconstruction jobs
-    priority_levels = create_priority_levels(reconstruction_candidates, train_results_path)
+    priority_levels = create_priority_levels(reconstruction_candidates, train_results_path, output_dir)
     
     # 4. Create mast configurations from training results
     masts = create_mast_configurations(train_results)
@@ -248,11 +248,11 @@ function calculate_qualification_score(correlation::Float64, direction_std::Floa
 end
 
 """
-    create_priority_levels(candidates::Dict{String, Vector{ReconstructionCandidate}}, train_results_path::String)::Vector{ReconstructionPriority}
+    create_priority_levels(candidates::Dict{String, Vector{ReconstructionCandidate}}, train_results_path::String, output_dir::String)::Vector{ReconstructionPriority}
 
 Group reconstruction jobs into priority levels based on correlation quality.
 """
-function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCandidate}}, train_results_path::String)::Vector{ReconstructionPriority}
+function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCandidate}}, train_results_path::String, output_dir::String)::Vector{ReconstructionPriority}
     # Priority thresholds adjusted for loose criteria
     EXCELLENT_THRESHOLD = 0.7
     GOOD_THRESHOLD = 0.5
@@ -262,18 +262,20 @@ function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCa
     good_jobs = ReconstructionJob[]
     acceptable_jobs = ReconstructionJob[]
     
-    # Extract model directory from train results path
+    # Extract model directory from train results path (make relative to project directory)
     train_dir = dirname(train_results_path)
-    
+    # Make train_dir relative to output_dir (project directory)
+    relative_train_dir = relpath(train_dir, output_dir)
+
     priority_counter = 1
-    
+
     for (target_mast, target_candidates) in candidates
         for (idx, candidate) in enumerate(target_candidates)
             # Determine variables to reconstruct
             variables = collect(keys(candidate.model_paths))
-            
-            # Create model directory path
-            model_dir = joinpath(train_dir, "cross-mast-models", target_mast, candidate.source_mast)
+
+            # Create model directory path (relative to project directory)
+            model_dir = joinpath(relative_train_dir, "cross-mast-models", target_mast, candidate.source_mast)
             
             job = ReconstructionJob(
                 target_mast = target_mast,

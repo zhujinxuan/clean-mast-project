@@ -11,7 +11,7 @@ import ..DataCoverage: CoverageStats
 
 Generate a comprehensive Typst report for reconstruction analysis.
 """
-function generate_reconstruction_report(config::AnalyzeReconstructSingleConfig, results::Dict{String, Any})
+function generate_reconstruction_report(config::AnalyzeReconstructSingleConfig, results::Dict{String, Any})::String
     report_path = joinpath(config.outputDir, "reconstruction_analysis_report.typ")
     
     open(report_path, "w") do io

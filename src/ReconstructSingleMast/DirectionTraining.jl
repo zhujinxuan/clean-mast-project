@@ -7,6 +7,7 @@ using Dates
 using ...Types.ReconstructSingleMast
 using ...Types.MastTimeSeries: SensorColumn, TimeSeriesData
 using ...Types.Sector: degree_diff
+using ...TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
 const DEFAULT_REFERENCE_HEIGHT = 50.0
 
@@ -352,7 +353,7 @@ end
 export reconstruct_wind_directions
 
 """
-Reconstruct a single target column at a specific timestamp - REQUIRES 10-MINUTE INTERVALS
+Reconstruct a single target column at a specific timestamp - REQUIRES REGULAR INTERVALS
 """
 function reconstruct_single_target(
     data::TimeSeriesData,
@@ -389,7 +390,7 @@ function reconstruct_single_target(
         )
     end
     
-    # Validate time series format and require 10-minute intervals
+    # Validate time series format and require regular intervals
     timestamps = data.df.timestamp
     if isempty(timestamps)
         return ReconstructedFailure(
@@ -398,19 +399,20 @@ function reconstruct_single_target(
             "No timestamp data available"
         )
     end
-    
-    # Require 10-minute intervals
+
+    # Detect and validate representative interval
+    representative_interval = detect_representative_interval(data)
     if length(timestamps) > 1
         interval = timestamps[2] - timestamps[1]
-        if interval != Minute(10)
-            error("Time series must have 10-minute intervals. Found interval: $interval. Use regularization first.")
+        if interval != representative_interval
+            error("Time series must have $(representative_interval.value)-minute intervals. Found interval: $interval. Use regularization first.")
         end
     end
     
-    # Fast arithmetic-based timestamp lookup for 10-minute intervals
+    # Fast arithmetic-based timestamp lookup for regular intervals
     start_time = timestamps[1]
     minutes_elapsed = Dates.value(timestamp - start_time) ÷ (1000 * 60)
-    target_row_idx = (minutes_elapsed ÷ 10) + 1
+    target_row_idx = (minutes_elapsed ÷ representative_interval.value) + 1
     
     if target_row_idx < 1 || target_row_idx > length(timestamps) || timestamps[target_row_idx] != timestamp
         return ReconstructedFailure(

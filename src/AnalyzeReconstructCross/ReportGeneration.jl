@@ -10,6 +10,7 @@ using Dates
 using DataFrames
 using Printf
 using CSV
+using Statistics
 
 export generate_typst_report, export_csv_data
 
@@ -61,7 +62,7 @@ Creates:
 - Individual table files in tables/ subdirectory
 - CSV data exports in data/ subdirectory
 """
-function generate_typst_report(analysis_results::Vector, config, output_dir::String)
+function generate_typst_report(analysis_results::Vector, config, output_dir::String)::Nothing
     println("📄 Generating Chinese Typst report...")
     
     # Create directory structure
@@ -69,16 +70,15 @@ function generate_typst_report(analysis_results::Vector, config, output_dir::Str
     mkpath(tables_dir)
     
     # Generate individual table files for each mast pair
-    table_files = []
-    for result in analysis_results
+    table_files = map(analysis_results) do result
         target_name = result.target_mast
         source_name = result.source_mast
-        
+
         table_file = "$(target_name)_$(source_name)_summary.typ"
         table_path = joinpath(tables_dir, table_file)
-        
+
         generate_pair_table(result, table_path)
-        push!(table_files, table_file)
+        table_file
     end
     
     # Generate main report
@@ -191,8 +191,8 @@ _本测风塔对无风向传感器分析数据_
 === $(CHINESE_TEXTS["data_coverage"])
 
 - *$(CHINESE_TEXTS["overlap_days"]):* $(round(coverage.overlap_days, digits=1)) $(CHINESE_TEXTS["unit_days"])
-- *$(CHINESE_TEXTS["target_mast"])数据点:* $(coverage.target_data_points) $(CHINESE_TEXTS["unit_points"])
-- *$(CHINESE_TEXTS["source_mast"])数据点:* $(coverage.source_data_points) $(CHINESE_TEXTS["unit_points"])
+- *$(CHINESE_TEXTS["data_points"]):* $(coverage.concurrent_records) $(CHINESE_TEXTS["unit_points"])
+- *数据覆盖率:* $(round(coverage.coverage_percentage, digits=1))%
 
 """)
         
@@ -236,13 +236,13 @@ Creates comprehensive report with:
 function generate_main_report(results::Vector, table_files::Vector{String}, report_path::String)
     open(report_path, "w") do io
         write(io, """
-#set text(font: ("Noto Sans CJK SC", "SimHei", "Microsoft YaHei"), lang: "zh")
+#set text(lang: "zh")
 #set page(paper: "a4", margin: 2cm)
 #set heading(numbering: "1.")
 
 = $(CHINESE_TEXTS["title"])
 
-$(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月[day]日 [hour]:[minute]:[second]")
+$(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月[day]日")
 
 == 执行摘要
 
@@ -382,13 +382,10 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
             end
             
             if suitable_for_speed || suitable_for_direction
-                capabilities = []
-                if suitable_for_speed
-                    push!(capabilities, "风速重构")
-                end
-                if suitable_for_direction
-                    push!(capabilities, "风向重构")
-                end
+                capabilities = vcat(
+                    suitable_for_speed ? ["风速重构"] : String[],
+                    suitable_for_direction ? ["风向重构"] : String[]
+                )
                 capability_str = join(capabilities, "、")
                 
                 write(io, """
@@ -436,7 +433,7 @@ Creates CSV files in data/ subdirectory:
 - Individual correlation and direction files for each pair
 - Summary statistics file
 """
-function export_csv_data(analysis_results::Vector, output_dir::String)
+function export_csv_data(analysis_results::Vector, output_dir::String)::Nothing
     data_dir = joinpath(output_dir, "data")
     mkpath(data_dir)
     
@@ -448,9 +445,8 @@ function export_csv_data(analysis_results::Vector, output_dir::String)
         
         # Export speed correlations
         if !isempty(result.speed_correlations)
-            speed_df = DataFrame()
-            for corr in result.speed_correlations
-                push!(speed_df, (
+            speed_data = map(result.speed_correlations) do corr
+                (
                     target_mast = target_name,
                     source_mast = source_name,
                     target_height = corr.target_sensor.height,
@@ -459,18 +455,18 @@ function export_csv_data(analysis_results::Vector, output_dir::String)
                     slope = corr.slope,
                     intercept = corr.intercept,
                     data_points = corr.data_points
-                ))
+                )
             end
-            
+            speed_df = DataFrame(speed_data)
+
             speed_csv = joinpath(data_dir, "$(target_name)_$(source_name)_correlations.csv")
             CSV.write(speed_csv, speed_df)
         end
         
         # Export direction analysis
         if !isempty(result.direction_analysis)
-            direction_df = DataFrame()
-            for dir_result in result.direction_analysis
-                push!(direction_df, (
+            direction_data = map(result.direction_analysis) do dir_result
+                (
                     target_mast = target_name,
                     source_mast = source_name,
                     target_height = dir_result.target_sensor.height,
@@ -478,9 +474,10 @@ function export_csv_data(analysis_results::Vector, output_dir::String)
                     mean_offset = dir_result.offset,
                     std_deviation = dir_result.std_deviation,
                     data_points = dir_result.data_points
-                ))
+                )
             end
-            
+            direction_df = DataFrame(direction_data)
+
             direction_csv = joinpath(data_dir, "$(target_name)_$(source_name)_directions.csv")
             CSV.write(direction_csv, direction_df)
         end

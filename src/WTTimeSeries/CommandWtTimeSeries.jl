@@ -60,13 +60,7 @@ function execute(config_path::String)
     end
     
     # Execute processing
-    try
-        process_wt_timeseries(config, project_dir)
-    catch e
-        println("\nError during processing:")
-        println("$e")
-        rethrow(e)
-    end
+    process_wt_timeseries(config, project_dir)
 end
 
 end # module 

@@ -65,6 +65,52 @@ function find_nearest_height_sensor(target_height::Float64, sensors::Vector{Sens
 end
 
 """
+Create standardized sensor short name for reports following the naming conventions:
+- For statType = "avg": {shortName}:{height}m:{direction} or {shortName}:{height}m (if direction is "N/A")
+- For other statType: {shortName}:{height}m:{direction}:{statType} or {shortName}:{height}m:{statType} (if direction is "N/A")
+"""
+function create_sensor_short_name(sensor::SensorColumn)::String
+    # Map sensor types to short names
+    short_name = get_sensor_style_short_name(sensor.sensorType)
+    
+    # Format height as integer if it's a whole number, otherwise as float
+    height_str = sensor.height == floor(sensor.height) ? string(Int(sensor.height)) : string(sensor.height)
+    
+    # Base name with height
+    base_name = "$(short_name):$(height_str)m"
+    
+    # Handle direction
+    has_direction = sensor.sensorDirection != "N/A"
+    direction_part = has_direction ? ":$(sensor.sensorDirection)" : ""
+    
+    # Handle statType
+    if sensor.statType == "avg"
+        # For average sensors, don't include statType
+        return base_name * direction_part
+    else
+        # For non-average sensors, include statType
+        return base_name * direction_part * ":$(sensor.statType)"
+    end
+end
+
+"""
+Map sensor type to standardized short name
+"""
+function get_sensor_style_short_name(sensor_type::String)::String
+    type_mapping = Dict(
+        "WindSpeed" => "WS",
+        "WindDirection" => "WD", 
+        "Temperature" => "TEMP",
+        "Pressure" => "PRES",
+        "Humidity" => "HUM",
+        "SolarRadiation" => "RAD",
+        "Precipitation" => "PREC"
+    )
+    
+    return get(type_mapping, sensor_type, sensor_type)
+end
+
+"""
 Convert a dictionary to a ParsedSensor
 """
 function from_dict(::Type{ParsedSensor}, d::Dict{String, Any})::ParsedSensor
@@ -125,6 +171,6 @@ function to_dict(s::SensorColumn)::Dict{String, Any}
     )
 end
 
-export ParsedSensor, SensorColumn, to_SensorColumn, find_nearest_height_sensor, from_dict, to_dict
+export ParsedSensor, SensorColumn, to_SensorColumn, find_nearest_height_sensor, create_sensor_short_name, get_sensor_style_short_name, from_dict, to_dict
 
 end # module 

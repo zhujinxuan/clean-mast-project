@@ -30,6 +30,10 @@ struct IcingCriteria
     max_change::Float64
 end
 
+struct AvailabilityCriteria
+    low_threshold::Float64
+end
+
 struct ManualCriteria
 end
 
@@ -37,12 +41,12 @@ struct Rule
     name::String
     sensorType::String
     height::HeightFilter
-    criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria}
+    criteria::Union{RangeCriteria, LayerDifferenceCriteria, IcingCriteria, AvailabilityCriteria, ManualCriteria}
 end
 
 function from_dict(::Type{Rule}, config::Dict{String, Any})::Rule
     # Validate one and only one criteria type exists
-    criteria_keys = ["out_of_range", "layer_difference", "icing"]
+    criteria_keys = ["out_of_range", "layer_difference", "icing", "availability"]
     present_keys = filter(k -> haskey(config, k), criteria_keys)
     
     if length(present_keys) != 1
@@ -72,10 +76,14 @@ function from_dict(::Type{Rule}, config::Dict{String, Any})::Rule
                 get(ld["lower_wind_speed"], "max", nothing)
             )
         )
-    else # must be icing based on validation above
+    elseif haskey(config, "icing")
         criteria = IcingCriteria(
             config["icing"]["time_range"],
             config["icing"]["max_change"]
+        )
+    else # must be availability based on validation above
+        criteria = AvailabilityCriteria(
+            config["availability"]["low_threshold"]
         )
     end
 
@@ -95,7 +103,7 @@ end
 
 export RuleViolation
 
-export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria, ManualCriteria,
+export HeightFilter, RangeCriteria, LayerDifferenceCriteria, IcingCriteria, AvailabilityCriteria, ManualCriteria,
        Rule, parse_rule
 
 end # module

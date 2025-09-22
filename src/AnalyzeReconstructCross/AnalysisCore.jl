@@ -18,7 +18,7 @@ using ...TrainReconstructCross.CrossMastSummary: summarize_correlations, summari
 
 # Import types
 using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries
-using ...Types.CrossMastAnalysisResults: MastPairCoverage
+using ...Types.CrossMastAnalysisResults: MastPairCoverage, CorrelationSummary, DirectionSummary
 
 export AnalyzePairResult, analyze_mast_pair, load_all_mast_data
 
@@ -33,8 +33,8 @@ Result struct for a single mast pair analysis (analyze command specific).
 - `coverage::MastPairCoverage`: Data coverage analysis
 - `speed_correlations::Vector`: Wind speed correlation results
 - `direction_analysis::Vector`: Wind direction analysis results
-- `speed_summary::NamedTuple`: Summary of speed correlations
-- `direction_summary::NamedTuple`: Summary of direction analysis
+- `speed_summary::CorrelationSummary`: Summary of speed correlations
+- `direction_summary::DirectionSummary`: Summary of direction analysis
 """
 struct AnalyzePairResult
     target_mast::String
@@ -42,8 +42,8 @@ struct AnalyzePairResult
     coverage::MastPairCoverage
     speed_correlations::Vector
     direction_analysis::Vector
-    speed_summary::NamedTuple
-    direction_summary::NamedTuple
+    speed_summary::CorrelationSummary
+    direction_summary::DirectionSummary
 end
 
 """
@@ -65,19 +65,12 @@ function load_all_mast_data(config, project_dir::String)::Dict{String, TimeSerie
     mast_data = Dict{String, TimeSeriesData}()
     
     for mast_config in config.masts
-        try
-            println("  📈 Loading $(mast_config.name)...")
-            mast_data[mast_config.name] = load_timeseries(mast_config.input, project_dir)
-            
-            # Basic data validation
-            ts = mast_data[mast_config.name]
-            println("    ✓ Loaded $(nrow(ts.data)) records from $(first(ts.data.timestamp)) to $(last(ts.data.timestamp))")
-            
-        catch e
-            @error "Failed to load mast $(mast_config.name): $e"
-            @error "Input file: $(mast_config.input.data)"
-            rethrow(e)
-        end
+        println("  📈 Loading $(mast_config.name)...")
+        mast_data[mast_config.name] = load_timeseries(mast_config.input, project_dir)
+
+        # Basic data validation
+        ts = mast_data[mast_config.name]
+        println("    ✓ Loaded $(nrow(ts.df)) records from $(first(ts.df.timestamp)) to $(last(ts.df.timestamp))")
     end
     
     return mast_data

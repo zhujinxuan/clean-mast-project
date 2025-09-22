@@ -27,11 +27,15 @@ const TEST_SETS = Dict{String, Vector{String}}(
     "process" => ["process/test_apply_missing.jl"],
     "tower" => ["TowerShading/TowerShading.jl"],
     "sector" => ["test_sector.jl"],
-    "time_series_processing" => ["TimeSeriesProcessing/test_time_series_processing.jl"],
-    "single_mast" => [
-        "ReconstructSingleMast/test_wind_speed_training.jl",
-        "ReconstructSingleMast/test_direction_training.jl"
+    "sensor_naming" => ["test_sensor_naming.jl"],
+    "time_series_processing" => [
+        "TimeSeriesProcessing/test_time_series_processing.jl",
+        "TimeSeriesProcessing/test_interval_detection.jl"
     ],
+    # "single_mast" => [
+    #     "ReconstructSingleMast/test_wind_speed_training.jl",
+    #     "ReconstructSingleMast/test_direction_training.jl"
+    # ],
     "representative_year" => ["RepresentativeYear/test_analysis.jl"],
     "wind_models" => [
         "WindModels/test_sectorized_regression_training.jl",

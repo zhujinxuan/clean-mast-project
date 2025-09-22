@@ -7,6 +7,7 @@ import ..MastTimeSeries: TimeSeriesData, TimeSeriesSource
 using ..SensorColumns: SensorColumn
 using ...CleanMastUtils: load_dict
 using YAML
+using TOML
 using CSV
 
 """
@@ -48,6 +49,7 @@ Raw analyze configuration as loaded from YAML
 struct AnalyzeConfigYAML
     masts::Vector{MastAnalyzeConfigYAML}
     output::OutputConfig
+    min_plot_height::Union{Float64, Nothing}  # Optional minimum height for plotting (default: 120.0)
 end
 
 """
@@ -57,6 +59,7 @@ struct AnalyzeConfig
     masts::Vector{MastAnalyzeConfig}
     output::OutputConfig
     configDir::String          # Directory containing the analyze.yaml (for path resolution)
+    min_plot_height::Float64   # Minimum height for plotting (default: 120.0)
 end
 
 # Conversion functions for AirDensityConfig
@@ -112,14 +115,19 @@ end
 function from_dict(::Type{AnalyzeConfigYAML}, dict::Dict{String, Any})::AnalyzeConfigYAML
     masts = [from_dict(MastAnalyzeConfigYAML, Dict{String, Any}(m)) for m in dict["masts"]]
     output = from_dict(OutputConfig, Dict{String, Any}(dict["output"]))
-    AnalyzeConfigYAML(masts, output)
+    min_plot_height = haskey(dict, "min_plot_height") ? convert(Float64, dict["min_plot_height"]) : nothing
+    AnalyzeConfigYAML(masts, output, min_plot_height)
 end
 
 function to_dict(config::AnalyzeConfigYAML)::Dict{String, Any}
-    Dict{String, Any}(
+    result = Dict{String, Any}(
         "masts" => [to_dict(m) for m in config.masts],
         "output" => to_dict(config.output)
     )
+    if !isnothing(config.min_plot_height)
+        result["min_plot_height"] = config.min_plot_height
+    end
+    return result
 end
 
 # Export all types and conversion functions
@@ -163,28 +171,29 @@ end
 """
     load_sensor_config(sensor_config_path::String) -> Vector{SensorColumn}
 
-Load sensor configuration from a YAML file and convert to SensorColumn objects.
+Load sensor configuration from a YAML or TOML file and convert to SensorColumn objects.
 """
 function load_sensor_config(sensor_config_path::String)::Vector{SensorColumn}
     if !isfile(sensor_config_path)
         error("Sensor config file not found: $sensor_config_path")
     end
-    
-    sensor_yaml = YAML.load_file(sensor_config_path)
-    
+
+    # Use load_dict to support both YAML and TOML formats
+    sensor_data = load_dict(sensor_config_path)
+
     # Convert each sensor dict to SensorColumn
     sensors = SensorColumn[]
-    for sensor_dict in sensor_yaml["sensors"]
+    for sensor_dict in sensor_data["sensors"]
         push!(sensors, from_dict(SensorColumn, Dict{String,Any}(sensor_dict)))
     end
-    
+
     return sensors
 end
 
 """
     load_timeseries_data(csv_path::String, sensor_config_path::String) -> TimeSeriesData
 
-Load time series data from CSV and sensor configuration from YAML.
+Load time series data from CSV and sensor configuration from YAML or TOML.
 """
 function load_timeseries_data(csv_path::String, sensor_config_path::String)::TimeSeriesData
     if !isfile(csv_path)
@@ -254,11 +263,15 @@ function load_analyze_config(config_path::String)::AnalyzeConfig
     output_config = OutputConfig(
         resolve_path(config_yaml.output.path, config_dir)
     )
-    
+
+    # Set default min_plot_height if not specified
+    min_plot_height = isnothing(config_yaml.min_plot_height) ? 120.0 : config_yaml.min_plot_height
+
     return AnalyzeConfig(
         processed_masts,
         output_config,
-        config_dir
+        config_dir,
+        min_plot_height
     )
 end
 

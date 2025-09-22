@@ -8,6 +8,7 @@ module CommandAnalyzeReconstructCross
 
 using DataFrames
 using Dates
+using Statistics
 
 # Import configuration types
 using ...Types.AnalyzeReconstructCrossConfig: AnalyzeReconstructCrossConfiguration, from_dict
@@ -55,7 +56,15 @@ function execute(config_path::String)
     # 1. Load and validate configuration
     config_dict = load_dict(config_path)
     config = from_dict(AnalyzeReconstructCrossConfiguration, config_dict)
-    project_dir = dirname(config_path)
+
+    # Determine project directory from config path
+    # If config is in report-masts/, the project dir is the parent of that
+    config_dir = dirname(config_path)
+    project_dir = if basename(config_dir) == "report-masts"
+        dirname(config_dir)  # Go up one level from report-masts to project root
+    else
+        config_dir  # For backward compatibility with configs in project root
+    end
     
     println("📋 Configuration loaded:")
     println("  - Masts: $(length(config.masts))")
@@ -87,7 +96,7 @@ function execute(config_path::String)
     # 5. Generate visualizations
     if config.analyze.include_plots
         println("\n🎨 Generating visualizations...")
-        create_mast_pair_plots(valid_results, output_dir)
+        create_mast_pair_plots(valid_results, output_dir, mast_data)
     end
     
     # 6. Export CSV data
