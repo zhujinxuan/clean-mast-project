@@ -417,15 +417,10 @@ function save_reconstructed_timeseries(reconstructed_ts::TimeSeriesData, job::Re
     # Find the mast configuration for output path
     target_mast_config = findfirst(m -> m.name == job.target_mast, config.masts)
 
-    if target_mast_config === nothing || config.masts[target_mast_config].output === nothing
-        # Generate default output path
-        output_source = TimeSeriesSource(
-            joinpath(config.settings.output_dir, "$(job.target_mast)_reconstructed.csv"),
-            joinpath(config.settings.output_dir, "$(job.target_mast)_reconstructed.sensors.yaml")
-        )
-    else
-        output_source = config.masts[target_mast_config].output
+    if target_mast_config === nothing
+        error("Target mast $(job.target_mast) not found in configuration masts")
     end
+    output_source = config.masts[target_mast_config].output
 
     # Create backup if requested
     if config.settings.backup_originals

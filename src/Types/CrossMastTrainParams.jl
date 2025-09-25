@@ -56,7 +56,7 @@ Parameters for training CrossMastDirectionModel with configurable filtering crit
 - `target_name::String`: Name of target mast (required, no default)
 - `source_name::String`: Name of source mast (required, no default)
 - `min_data_points::Int`: Minimum concurrent data points required (default: 100)
-- `max_std_deviation::Float64`: Maximum standard deviation threshold (default: Inf, recommend: 12.5)
+- `max_std_deviation::Float64`: Maximum standard deviation threshold (default: Inf, recommend: 45.0)
 - `max_abs_offset::Float64`: Maximum absolute offset threshold (default: Inf, recommend: 45.0)
 - `exclude_nan_results::Bool`: Filter out NaN/Inf values (default: true)
 
@@ -69,7 +69,7 @@ params = CrossMastDirectionTrainParams(target_name="Mast1", source_name="Mast2")
 strict_params = CrossMastDirectionTrainParams(
     target_name="Mast1", 
     source_name="Mast2",
-    max_std_deviation=12.5,
+    max_std_deviation=45.0,
     max_abs_offset=45.0
 )
 ```
@@ -81,7 +81,7 @@ strict_params = CrossMastDirectionTrainParams(
     
     # Data quality filters (with defaults)
     min_data_points::Int = 100
-    max_std_deviation::Float64 = Inf         # recommend: 12.5
+    max_std_deviation::Float64 = Inf         # recommend: 45.0
     max_abs_offset::Float64 = Inf            # recommend: 45.0
     exclude_nan_results::Bool = true
 end

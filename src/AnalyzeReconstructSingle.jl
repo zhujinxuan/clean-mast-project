@@ -11,12 +11,14 @@ include("./AnalyzeReconstructSingle/DataCoverage.jl")
 include("./AnalyzeReconstructSingle/WindSpeedCorrelation.jl")
 include("./AnalyzeReconstructSingle/WindDirectionDifference.jl")
 include("./AnalyzeReconstructSingle/ReportGeneration.jl")
+include("./AnalyzeReconstructSingle/RecommendReportReconstructSingleCommand.jl")
 
 # Import specific functions from sub-modules
 import .DataCoverage: analyze_data_coverage
 import .WindSpeedCorrelation: analyze_wind_speed_correlation
 import .WindDirectionDifference: analyze_wind_direction_difference
 import .ReportGeneration: generate_reconstruction_report
+import .RecommendReportReconstructSingleCommand
 
 """
     regularize_and_merge_data(before_data::TimeSeriesData, after_data::TimeSeriesData) -> (TimeSeriesData, TimeSeriesData)

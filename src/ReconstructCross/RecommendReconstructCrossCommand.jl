@@ -39,22 +39,34 @@ Generate reconstruct-cross.toml configuration from train-results.toml.
 """
 function execute(train_results_path::String, output_dir::String = "./")::String
     println("🔍 Analyzing training results for reconstruction recommendations...")
-    
+
     # 1. Load and parse train-results.toml
     if !isfile(train_results_path)
-        error("Training results file not found: $train_results_path")
+        println("⚠️  Training results file not found: $train_results_path")
+        println("📊 This likely indicates a single mast project - cross-mast reconstruction will be skipped")
+        println("💡 For single mast projects, mesoscale reconstruction will use reconstruct-single data directly")
+        return ""
     end
-    
+
     train_results_dict = load_dict(train_results_path)
     train_results = parse_train_results(train_results_dict)
-    
+
+    if isempty(train_results)
+        println("📊 No mast pairs found in training results - this appears to be a single mast project")
+        println("💡 Cross-mast reconstruction will be skipped")
+        println("🔄 Mesoscale reconstruction will use reconstruct-single data directly")
+        return ""
+    end
+
     println("📊 Loaded training results for $(length(train_results)) mast pairs")
-    
+
     # 2. Analyze reconstruction opportunities
     reconstruction_candidates = analyze_reconstruction_opportunities(train_results)
-    
+
     if isempty(reconstruction_candidates)
-        @warn "No qualified reconstruction opportunities found. Check training results and selection criteria."
+        println("⚠️  No qualified reconstruction opportunities found. Check training results and selection criteria.")
+        println("📊 This may indicate insufficient correlation between masts for cross-reconstruction")
+        println("💡 Consider adjusting correlation thresholds or proceeding without cross-mast reconstruction")
         return ""
     end
     

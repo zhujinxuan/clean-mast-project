@@ -276,7 +276,7 @@ Check if mast pair qualifies for wind direction reconstruction.
 """
 function is_qualified_for_direction(result::MastPairAnalysisResult)::Bool
     return result.coverage.overlap_days >= 120.0 && 
-           result.winddirection_summary.best_high_elevation_std <= 12.5
+           result.winddirection_summary.best_high_elevation_std <= 45.0
 end
 
 """

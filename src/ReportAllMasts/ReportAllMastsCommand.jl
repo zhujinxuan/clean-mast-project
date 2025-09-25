@@ -12,12 +12,10 @@ Provides a single command to generate complete mast analysis documentation.
 module ReportAllMastsCommand
 
 using ...ReportClean.ReportAllCommand
-using ...ReportRecovery.RecommendReportRecoveryCommand
 using ...ReportRecovery.ReportRecoveryCommand
 using ...RepresentativeYear.ReportRepresentativeYearCommand
-using ...AnalyzeReconstructCross.RecommendAnalyzeReconstructCrossCommand
-using ...AnalyzeReconstructCross.RecommendCrossMastReportCommand
 using ...AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+using ...ReportTimeSeries.ReportTimeSeriesCommand
 
 export execute
 
@@ -30,7 +28,7 @@ Generate all comprehensive mast reports for a project.
 - `project_dir::String`: Project directory containing all necessary configurations
 
 # Description
-This command generates four comprehensive reports:
+This command generates six comprehensive reports:
 
 1. **Clean Report** (`report-masts/clean/`)
    - Raw vs clean data comparison
@@ -52,13 +50,29 @@ This command generates four comprehensive reports:
    - 16-sector calibration analysis with slopes and intercepts
    - Sensor-level calibration status
 
+5. **Time Series Meso Report** (`report-masts/timeseries-meso/`)
+   - Wind temporal analysis of meso-reconstructed data
+   - Vertical profile analysis and wind rose plots
+   - Turbulence intensity and Weibull distribution analysis
+
+6. **Time Series Representative Year Report** (`report-masts/timeseries-rep/`)
+   - Wind temporal analysis of representative year data
+   - Vertical profile analysis and wind rose plots
+   - Turbulence intensity and Weibull distribution analysis
+
 # Requirements
-The project directory must contain:
+The project directory must contain the following configurations:
 - `process-clean.toml` - For clean report generation
-- `reconstruct-meso.toml` - For recovery report generation
-- `analyze-reconstruct-cross.toml` - For cross-mast analysis report generation
 - `representative-year.toml` - For representative year report generation
-- All associated data files as specified in configurations
+- `report-masts/report-recovery.toml` - For recovery report generation
+- `report-masts/report-cross-mast.toml` - For cross-mast analysis report generation
+- `report-masts/report-timeseries-meso.toml` - For time series meso report generation
+- `report-masts/report-timeseries-rep.toml` - For time series representative year report generation
+
+Generate these configurations first using:
+```bash
+julia bin/CleanMast.jl recommend report-all project-dir
+```
 
 # Output Structure
 ```
@@ -77,15 +91,29 @@ project-dir/
 │   │   ├── tables/
 │   │   ├── plots/
 │   │   └── ...
-│   └── representative-year/
-│       ├── report.typ
-│       ├── tables/
-│       ├── data/
+│   ├── representative-year/
+│   │   ├── report.typ
+│   │   ├── tables/
+│   │   ├── data/
+│   │   └── ...
+│   ├── timeseries-meso/
+│   │   ├── pn-002824/
+│   │   ├── pn-013945/
+│   │   ├── pn-014576/
+│   │   └── ...
+│   └── timeseries-rep/
+│       ├── pn-002824/
+│       ├── pn-013945/
+│       ├── pn-014576/
 │       └── ...
 ```
 
 # Example Usage
 ```bash
+# First, generate all report configurations
+julia bin/CleanMast.jl recommend report-all my-project
+
+# Then, generate all reports using those configurations
 julia bin/CleanMast.jl report all my-project
 ```
 
@@ -112,7 +140,7 @@ function execute(project_dir::String)
     println()
 
     # 1. Generate Clean Report
-    println("📋 Report 1/4: Clean Report (Raw vs Clean Data)")
+    println("📋 Report 1/6: Clean Report (Raw vs Clean Data)")
     try
         process_clean_config = joinpath(project_dir, "process-clean.toml")
         if isfile(process_clean_config)
@@ -131,20 +159,16 @@ function execute(project_dir::String)
     println()
 
     # 2. Generate Recovery Report
-    println("📈 Report 2/4: Recovery Report (Data Coverage Across Stages)")
+    println("📈 Report 2/6: Recovery Report (Data Coverage Across Stages)")
     try
-        reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
-        if isfile(reconstruct_meso_config)
-            # Generate recovery report configuration
-            RecommendReportRecoveryCommand.execute(project_dir)
-
-            # Generate actual recovery report
-            recovery_config_path = joinpath(project_dir, "report-masts", "report-recovery.toml")
+        recovery_config_path = joinpath(project_dir, "report-masts", "report-recovery.toml")
+        if isfile(recovery_config_path)
             ReportRecoveryCommand.execute(recovery_config_path)
             results["recovery"] = true
             println("   ✅ Recovery report generated successfully")
         else
-            println("   ⚠️  Skipping: reconstruct-meso.toml not found")
+            println("   ⚠️  Skipping: report-recovery.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
             results["recovery"] = false
         end
     catch e
@@ -155,24 +179,16 @@ function execute(project_dir::String)
     println()
 
     # 3. Generate Cross-Mast Report
-    println("🔗 Report 3/4: Cross-Mast Report (Correlation Analysis)")
+    println("🔗 Report 3/6: Cross-Mast Report (Correlation Analysis)")
     try
         cross_mast_config = joinpath(project_dir, "report-masts", "report-cross-mast.toml")
-        reconstruct_single_config = joinpath(project_dir, "reconstruct-single.toml")
-
-        if isfile(reconstruct_single_config)
-            # Generate cross-mast configuration if it doesn't exist
-            if !isfile(cross_mast_config)
-                println("   📝 Generating report-cross-mast.toml configuration...")
-                RecommendCrossMastReportCommand.execute(project_dir)
-            end
-
-            # Generate cross-mast report
+        if isfile(cross_mast_config)
             CommandAnalyzeReconstructCross.execute(cross_mast_config)
             results["cross_mast"] = true
             println("   ✅ Cross-mast report generated successfully")
         else
-            println("   ⚠️  Skipping: reconstruct-single.toml not found")
+            println("   ⚠️  Skipping: report-cross-mast.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
             results["cross_mast"] = false
         end
     catch e
@@ -190,7 +206,7 @@ function execute(project_dir::String)
     println()
 
     # 4. Generate Representative Year Report
-    println("📅 Report 4/4: Representative Year Report (Calibration Analysis)")
+    println("📅 Report 4/6: Representative Year Report (Calibration Analysis)")
     try
         rep_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(rep_year_config)
@@ -205,6 +221,46 @@ function execute(project_dir::String)
         results["representative_year"] = false
         errors["representative_year"] = e
         println("   ❌ Representative year report failed: $(e)")
+    end
+    println()
+
+    # 5. Generate Time Series Meso Report
+    println("📊 Report 5/6: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
+    try
+        timeseries_meso_config = joinpath(project_dir, "report-masts", "report-timeseries-meso.toml")
+        if isfile(timeseries_meso_config)
+            ReportTimeSeriesCommand.execute(timeseries_meso_config)
+            results["timeseries_meso"] = true
+            println("   ✅ Time series meso report generated successfully")
+        else
+            println("   ⚠️  Skipping: report-timeseries-meso.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
+            results["timeseries_meso"] = false
+        end
+    catch e
+        results["timeseries_meso"] = false
+        errors["timeseries_meso"] = e
+        println("   ❌ Time series meso report failed: $(e)")
+    end
+    println()
+
+    # 6. Generate Time Series Representative Year Report
+    println("📊 Report 6/6: Time Series Representative Year Report (Rep Year Data Analysis)")
+    try
+        timeseries_rep_config = joinpath(project_dir, "report-masts", "report-timeseries-rep.toml")
+        if isfile(timeseries_rep_config)
+            ReportTimeSeriesCommand.execute(timeseries_rep_config)
+            results["timeseries_rep"] = true
+            println("   ✅ Time series representative year report generated successfully")
+        else
+            println("   ⚠️  Skipping: report-timeseries-rep.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
+            results["timeseries_rep"] = false
+        end
+    catch e
+        results["timeseries_rep"] = false
+        errors["timeseries_rep"] = e
+        println("   ❌ Time series representative year report failed: $(e)")
     end
     println()
 
@@ -226,14 +282,18 @@ function execute(project_dir::String)
             "clean" => "Clean Report",
             "recovery" => "Recovery Report",
             "cross_mast" => "Cross-Mast Report",
-            "representative_year" => "Representative Year Report"
+            "representative_year" => "Representative Year Report",
+            "timeseries_meso" => "Time Series Meso Report",
+            "timeseries_rep" => "Time Series Representative Year Report"
         )[report_name]
 
         output_path = Dict(
             "clean" => "report-masts/clean/report.typ",
             "recovery" => "report-masts/recovery/recovery-report.typ",
             "cross_mast" => "report-masts/cross-mast/report.typ",
-            "representative_year" => "report-masts/representative-year/report.typ"
+            "representative_year" => "report-masts/representative-year/report.typ",
+            "timeseries_meso" => "report-masts/timeseries-meso/",
+            "timeseries_rep" => "report-masts/timeseries-rep/"
         )[report_name]
 
         println("   $status_icon $report_display")
@@ -253,7 +313,7 @@ function execute(project_dir::String)
         if successful_reports < total_attempted
             println()
             println("💡 Some reports were skipped due to missing configuration files.")
-            println("   Ensure all processing stages are complete before generating reports.")
+            println("   Run 'julia bin/CleanMast.jl recommend report-all $project_dir' to generate missing configs.")
         end
     else
         println("❌ No reports were successfully generated.")

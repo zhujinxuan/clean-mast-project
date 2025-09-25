@@ -4,6 +4,7 @@ using TOML
 using ...Types.TowerShadingConfig: TowerShadingConfiguration
 using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoMast, TrainMesoModel, TrainMesoSource
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, ParseSensorsFileConfig
+using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration
 using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict, to_dict
 using ...ParseSensors.CommandParseSensors: load_and_normalize_config
@@ -14,7 +15,7 @@ using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries
 export execute
 
 """
-    calculate_tower_shading_valid_time(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
+    calculate_tower_shading_valid_days(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
 
 Calculate the valid time (in days) for tower-shading data by loading the TimeSeriesData 
 and using interval statistics.
@@ -26,22 +27,68 @@ and using interval statistics.
 # Returns
 - `Float64`: Valid time in days
 """
-function calculate_tower_shading_valid_time(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
-    try
-        # Load tower-shading data using the proper load_timeseries function
-        ts_data = load_timeseries(tower_shading_source, base_dir)
-        
-        # Get interval statistics
-        stats = get_interval_statistics(ts_data)
-        
-        # Calculate valid time in days
-        valid_time_days = (stats.total_points * stats.representative_interval.value) / (60 * 24)
-        
-        return valid_time_days
-    catch e
-        @warn "Failed to calculate valid time for tower-shading data: $e"
-        return 0.0
+function calculate_tower_shading_valid_days(tower_shading_source::TimeSeriesSource, base_dir::String)::Float64
+    # Load tower-shading data using the proper load_timeseries function
+    ts_data = load_timeseries(tower_shading_source, base_dir)
+
+    # Get interval statistics
+    stats = get_interval_statistics(ts_data)
+
+    # Calculate valid time in days
+    valid_time_days = (stats.total_points * stats.representative_interval.value) / (60 * 24)
+
+    return valid_time_days
+end
+
+"""
+    load_reconstruct_cross_source(dir::String)::Union{Nothing, Dict{String, TimeSeriesSource}}
+
+Load reconstruct-cross.toml from the given directory and build a lookup of mast name => output TimeSeriesSource.
+
+- If the file does not exist, returns `nothing`.
+
+# Arguments
+- `dir::String`: Directory containing reconstruct-cross.toml
+
+# Returns
+- `Union{Nothing, Dict{String, TimeSeriesSource}}`: `nothing` when the file is missing; otherwise a Dict mapping mast names to their output sources.
+"""
+function load_reconstruct_cross_source(dir :: String) :: Union{Nothing, Dict{String, TimeSeriesSource}}
+    reconstruct_cross_config_path = joinpath(dir, "reconstruct-cross.toml")
+    if !isfile(reconstruct_cross_config_path)
+        return nothing
     end
+    cross_config_dict = load_dict(reconstruct_cross_config_path)
+    cross_config = from_dict(ReconstructCrossConfiguration, cross_config_dict)
+    return Dict{String, TimeSeriesSource}(
+    mast.name =>  mast.output
+        for mast in cross_config.masts
+    )
+end
+
+"""
+    choose_train_mast_input_source(dir::String, towershading_source::TimeSeriesSource, cross_source::Union{Nothing, TimeSeriesSource})::TimeSeriesSource
+
+Select the mast input source used for training.
+When tower-shading source is not long enough (150 days), try to use reconstruct-cross result.
+
+# Arguments
+- `dir::String`: Project base directory used to resolve relative paths
+- `towershading_source::TimeSeriesSource`: Tower-shading output source for the mast
+- `cross_source::Union{Nothing, TimeSeriesSource}`: Optional reconstruct-cross source for the mast
+
+# Returns
+- `TimeSeriesSource`: The selected input source for training
+"""
+function choose_train_mast_input_source(dir :: String, towershading_source:: TimeSeriesSource, cross_source :: Union{Nothing, TimeSeriesSource}) :: TimeSeriesSource
+    if isnothing(cross_source)
+        return towershading_source
+    end
+    tower_shading_valid_days = calculate_tower_shading_valid_days(towershading_source, dir)
+    if tower_shading_valid_days < 150.0
+        return cross_source
+    end
+    return towershading_source
 end
 
 """
@@ -75,25 +122,13 @@ function execute(dir::String)
     parse_sensors_config = load_and_normalize_config(parse_sensors_path)
     
     println("🔍 Analyzing mast data validity for input source selection...")
+    reconstruct_cross_source_dict = load_reconstruct_cross_source(dir)
     
     # Build masts array with intelligent input source selection
     masts = map(tower_shading_config.masts) do mast
-        # Calculate valid time for tower-shading data
-        tower_shading_valid_time = calculate_tower_shading_valid_time(mast.output, dir)
-        
-        # Choose input source based on valid time
-        if tower_shading_valid_time >= 150.0
-            # Use tower-shading output as input
-            input_source = mast.output
-            println("  Using tower-shading for $(mast.name) ($(round(tower_shading_valid_time, digits=1)) days of valid data)")
-        else
-            # Use reconstruct-cross output as input
-            reconstruct_cross_path = "./reconstruct-cross/$(mast.name)_reconstructed.csv" 
-            reconstruct_cross_sensors = "./reconstruct-cross/$(mast.name)_reconstructed.sensors.yaml"
-            input_source = TimeSeriesSource(reconstruct_cross_path, reconstruct_cross_sensors)
-            println("  Using reconstruct-cross for $(mast.name) (tower-shading only has $(round(tower_shading_valid_time, digits=1)) days, < 150 days required)")
-        end
-        
+        cross_source = isnothing(reconstruct_cross_source_dict) ? nothing : get(reconstruct_cross_source_dict, mast.name, nothing)
+        input_source = choose_train_mast_input_source(dir, mast.output, cross_source)
+
         TrainMesoMast(
             mast.name,
             input_source,

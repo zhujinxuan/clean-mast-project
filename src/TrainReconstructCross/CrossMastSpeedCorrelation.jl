@@ -250,11 +250,11 @@ function reconstruct(model::CrossMastSpeedModel, source_ts::TimeSeriesData)::Tim
         target_col = pair.target_sensor.columnName
         
         # Get source data
-        missing_mask = ismissing.(result_df[!, target_col])
-        source_data = source_ts.df[missing_mask, source_col];
+        reconstruct_mask = ismissing.(result_df[!, target_col]) .& .!ismissing.(source_ts.df[!, source_col])
+        source_data = source_ts.df[reconstruct_mask, source_col];
         reconstruction = pair.slope .* source_data .+ pair.intercept;
         reconstruction = clamp.(reconstruction, 0.0, 50.0);
-        result_df[missing_mask, target_col] .= reconstruction
+        result_df[reconstruct_mask, target_col] .= reconstruction
     end
     
     @info "Reconstructed $(length(reconstructed_sensors)) wind speed sensors for $(model.target_mast_name)"

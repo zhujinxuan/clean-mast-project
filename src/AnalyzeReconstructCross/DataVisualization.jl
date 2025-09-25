@@ -263,7 +263,7 @@ function create_direction_scatter_plot(direction_data::Vector, output_file::Stri
                     target_dirs = Float64.(clean_df.target[sample_indices])
 
                     # Handle 360° wrap-around for plotting (add 360° to smaller values if abs diff > 180°)
-                    for j in 1:length(source_dirs)
+                    for j in eachindex(source_dirs)
                         diff = abs(target_dirs[j] - source_dirs[j])
                         if diff > 180
                             if target_dirs[j] < source_dirs[j]
@@ -278,7 +278,7 @@ function create_direction_scatter_plot(direction_data::Vector, output_file::Stri
                     offset_text = @sprintf("offset=%.1f°", dir_result.offset)
                     std_text = @sprintf("std=%.1f°", dir_result.std_deviation)
 
-                    for j in 1:length(source_dirs)
+                    for j in eachindex(source_dirs)
                         push!(plot_data, (
                             source_direction = source_dirs[j],
                             target_direction = target_dirs[j],

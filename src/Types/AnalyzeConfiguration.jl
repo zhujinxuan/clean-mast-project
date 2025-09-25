@@ -95,11 +95,14 @@ function from_dict(::Type{MastAnalyzeConfigYAML}, dict::Dict{String, Any})::Mast
 end
 
 function to_dict(config::MastAnalyzeConfigYAML)::Dict{String, Any}
-    Dict{String, Any}(
+    result = Dict{String, Any}(
         "name" => config.name,
-        "input" => to_dict(config.input),
-        "airDensity" => to_dict(config.airDensity)
+        "input" => to_dict(config.input)
     )
+    if !isnothing(config.airDensity)
+        result["airDensity"] = to_dict(config.airDensity)
+    end
+    return result
 end
 
 # Conversion functions for OutputConfig

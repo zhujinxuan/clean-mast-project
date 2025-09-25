@@ -281,10 +281,10 @@ function reconstruct(model::CrossMastDirectionModel, source_ts::TimeSeriesData):
         target_col = pair.target_sensor.columnName
         
         # Get source data
-        missing_mask = ismissing.(result_df[!, target_col])
-        source_data = source_ts.df[missing_mask, source_col];
+        reconstruct_mask = ismissing.(result_df[!, target_col]) .&& .!ismissing.(source_ts.df[!, source_col])
+        source_data = source_ts.df[reconstruct_mask, source_col];
         reconstruction = normalize_direction.(source_data .+ pair.offset);
-        result_df[missing_mask, target_col] .= reconstruction
+        result_df[reconstruct_mask, target_col] .= reconstruction
     end
     
     @info "Reconstructed $(length(reconstructed_sensors)) wind direction sensors for $(model.target_mast_name)"

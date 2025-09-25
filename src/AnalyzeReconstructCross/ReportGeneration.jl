@@ -119,7 +119,7 @@ function generate_pair_table(result, table_path::String)
   columns: 6,
   align: center + horizon,
   table.header(
-    [$(CHINESE_TEXTS["target_sensor"])], [$(CHINESE_TEXTS["source_sensor"])], [$(CHINESE_TEXTS["correlation"])], 
+    [$(target_name)], [$(source_name)], [$(CHINESE_TEXTS["correlation"])],
     [$(CHINESE_TEXTS["slope"])], [$(CHINESE_TEXTS["intercept"])], [$(CHINESE_TEXTS["data_points"])]
   ),
 """)
@@ -157,7 +157,7 @@ _本测风塔对无风速传感器相关性数据_
   columns: 5,
   align: center + horizon,
   table.header(
-    [$(CHINESE_TEXTS["target_sensor"])], [$(CHINESE_TEXTS["source_sensor"])], [$(CHINESE_TEXTS["mean_offset"])], 
+    [$(target_name)], [$(source_name)], [$(CHINESE_TEXTS["mean_offset"])],
     [$(CHINESE_TEXTS["std_deviation"])], [$(CHINESE_TEXTS["data_points"])]
   ),
 """)
@@ -378,7 +378,7 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
             if !isempty(result.direction_analysis)
                 best_std = result.direction_summary.best_high_elevation_std
                 overlap_days = result.coverage.overlap_days
-                suitable_for_direction = (best_std <= 12.5 && overlap_days >= 120)
+                suitable_for_direction = (best_std <= 45.0 && overlap_days >= 120)
             end
             
             if suitable_for_speed || suitable_for_direction

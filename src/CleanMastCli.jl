@@ -245,6 +245,7 @@ end
 
 @cast module Recommend
     using Comonicon
+    using CleanMastProject.ParseSensors.RecommendParseSensorsCommand
     using CleanMastProject.DataClean.RecommendProcessCleanCommand
     using CleanMastProject.TowerShading.RecommendTowerShadingCommand
     using CleanMastProject.ReconstructSingleMast.RecommendReconstructSingleCommand
@@ -257,73 +258,379 @@ end
     using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
+    using CleanMastProject.ReportReconstructSingle.RecommendReportReconstructSingleCommand
+    using CleanMastProject.ReportAllMasts.RecommendReportAllCommand
+    using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesMesoCommand
+    using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesRepCommand
 
     """
-    recommend process-clean <dir>
+    parse-sensors
+
+    Recommend a parse-sensors.toml configuration file by scanning for data files.
+
+    # Arguments
+    - `dir`: Project directory to scan for masts/*.{csv,txt} and mesos/*.{csv,txt}
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend parse-sensors ./projects/my-project
+    ```
+
+    Scans the project directory for:
+    - masts/*.{csv,txt} files (assumed to be NRG format)
+    - mesos/*.{csv,txt} files (assumed to be freemeso-meso format)
+
+    Generates parse-sensors.toml with default sensor format configurations.
+    """
+    @cast function parse_sensors(dir::String)
+        RecommendParseSensorsCommand.execute(dir)
+    end
+
+    """
+    process-clean
 
     Recommend a process-clean.toml file for the project
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `dir`: Project directory containing parse-sensors.toml
     """
     @cast function process_clean(dir::String)
         "Recommend a process-clean.toml file for the project"
         RecommendProcessCleanCommand.execute(dir)
     end
     
+    """
+    tower-shading
+
+    Recommend a tower-shading.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing config.yaml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend tower-shading ./projects/my-project
+    ```
+
+    Generates tower-shading.toml based on the project's cleaned data configuration.
+    """
     @cast function tower_shading(dir::String)
-        "Recommend a tower-shading.toml file for the project"
         RecommendTowerShadingCommand.execute(dir)
     end
     
+    """
+    reconstruct-single
+
+    Recommend a reconstruct-single.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing tower-shading.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend reconstruct-single ./projects/my-project
+    ```
+
+    Generates reconstruct-single.toml based on the project's tower-shading configuration.
+    """
     @cast function reconstruct_single(dir::String)
-        "Recommend a reconstruct-single.toml file for the project"
         RecommendReconstructSingleCommand.execute(dir)
     end
     
+    """
+    train-meso
+
+    Recommend a train-meso.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-single.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend train-meso ./projects/my-project
+    ```
+
+    Generates train-meso.toml for training mesoscale weather models.
+    """
     @cast function train_meso(dir::String)
-        "Recommend a train-meso.toml file for the project"
         RecommendTrainMesoCommand.execute(dir)
     end
     
+    """
+    reconstruct-meso
+
+    Recommend a reconstruct-meso.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing train-meso.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend reconstruct-meso ./projects/my-project
+    ```
+
+    Generates reconstruct-meso.toml for reconstructing missing data using trained mesoscale models.
+    """
     @cast function reconstruct_meso(dir::String)
-        "Recommend a reconstruct-meso.toml file for the project"
         RecommendReconstructMesoCommand.execute(dir)
     end
     
+    """
+    train-reconstruct-cross
+
+    Recommend a train-reconstruct-cross.toml configuration file for cross-mast training.
+
+    # Arguments
+    - `dir`: Project directory containing reconstructed mast data
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend train-reconstruct-cross ./projects/my-project
+    ```
+
+    Generates train-reconstruct-cross.toml for training cross-mast relationships and reconstruction models.
+    """
     @cast function train_reconstruct_cross(dir::String)
-        "Recommend a train-reconstruct-cross.toml file for cross-mast training"
         RecommendTrainReconstructCrossCommand.execute(dir)
     end
     
+    """
+    analyze-reconstruct-cross
+
+    Recommend an analyze-reconstruct-cross.toml configuration file for cross-mast analysis.
+
+    # Arguments
+    - `dir`: Project directory containing mast data and configurations
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend analyze-reconstruct-cross ./projects/my-project
+    ```
+
+    This command analyzes the project structure and generates a recommended configuration for cross-mast reconstruction analysis, including:
+    - Detection of available mast data files
+    - Sensor configuration analysis
+    - Output directory setup for analysis results
+    - Default analysis parameters for cross-mast correlation studies
+
+    The generated analyze-reconstruct-cross.toml file can be used with:
+    ```bash
+    julia bin/CleanMast.jl report cross-mast path/to/analyze-reconstruct-cross.toml
+    ```
+    """
     @cast function analyze_reconstruct_cross(dir::String)
-        "Recommend an analyze-reconstruct-cross.toml file for cross-mast analysis"
         RecommendAnalyzeReconstructCrossCommand.execute(dir)
     end
 
+    """
+    reconstruct-cross
+
+    Recommend a reconstruct-cross.toml configuration file from training results.
+
+    # Arguments
+    - `train_results_path`: Path to train-reconstruct-cross results
+    - `output_dir`: Output directory for the configuration file (default: "./")
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend reconstruct-cross ./train-reconstruct-cross
+    julia bin/CleanMast.jl recommend reconstruct-cross ./train-reconstruct-cross ./output
+    ```
+
+    Generates reconstruct-cross.toml for executing cross-mast reconstruction using trained models.
+    """
     @cast function reconstruct_cross(train_results_path::String, output_dir::String = "./")
-        "Recommend a reconstruct-cross.toml file from training results"
         RecommendReconstructCrossCommand.execute(train_results_path, output_dir)
     end
     
+    """
+    representative-year
+
+    Recommend a representative-year.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-meso.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend representative-year ./projects/my-project
+    ```
+
+    Generates representative-year.toml for calibrating data to a representative year.
+    """
     @cast function representative_year(dir::String)
-        "Recommend a representative-year.toml file for the project"
         RecommendRepresentativeYearCommand.execute(dir)
     end
     
+    """
+    wt-timeseries
+
+    Recommend a wt-timeseries.toml configuration file for the project.
+
+    # Arguments
+    - `dir`: Project directory containing representative-year.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend wt-timeseries ./projects/my-project
+    ```
+
+    Generates wt-timeseries.toml for processing wind turbine time series data.
+    """
     @cast function wt_timeseries(dir::String)
-        "Recommend a wt-timeseries.toml file for the project"
         RecommendWtTimeSeriesCommand.execute(dir)
     end
 
+    """
+    report-recovery
+
+    Recommend a report-recovery.toml configuration file for data recovery status reports.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-meso.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-recovery ./projects/my-project
+    ```
+
+    Generates report-recovery.toml in report-masts/ for analyzing data recovery effectiveness.
+    """
     @cast function report_recovery(dir::String)
-        "Recommend a report-recovery.toml file for data recovery status report (saved to report-masts/)"
         RecommendReportRecoveryCommand.execute(dir)
     end
 
+    """
+    report-cross-mast
+
+    Recommend a report-cross-mast.toml configuration file for cross-mast correlation reports.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-single.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-cross-mast ./projects/my-project
+    ```
+
+    Generates report-cross-mast.toml in report-masts/ for cross-mast correlation analysis.
+    """
     @cast function report_cross_mast(dir::String)
-        "Recommend a report-cross-mast.toml file for cross-mast report (saved to report-masts/)"
         RecommendCrossMastReportCommand.execute(dir)
+    end
+
+    """
+    report-reconstruct-single
+
+    Recommend a report-reconstruct-single.yaml configuration file for analyzing single-mast reconstruction effectiveness.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruction configurations
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-reconstruct-single ./projects/my-project
+    ```
+
+    This command analyzes the project structure and generates a recommended configuration for single-mast reconstruction analysis, including:
+    - Detection of tower-shading processed data (before reconstruction)
+    - Detection of reconstruct-single output data (after reconstruction)
+    - Configuration setup for comparing reconstruction effectiveness
+    - Output directory setup under report-masts/
+
+    The generated report-reconstruct-single.yaml file can be used with:
+    ```bash
+    julia bin/CleanMast.jl report reconstruct-single path/to/report-masts/report-reconstruct-single.yaml
+    ```
+    """
+    @cast function report_reconstruct_single(dir::String)
+        RecommendReportReconstructSingleCommand.execute(dir)
+    end
+
+    """
+    report-all
+
+    Generate all report TOML configuration files for comprehensive mast analysis.
+
+    # Arguments
+    - `dir`: Project directory containing processing configurations
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-all ./projects/my-project
+    ```
+
+    This command generates all necessary TOML configuration files for the four main reports:
+    1. **report-recovery.toml** - Data recovery status across reconstruction stages
+    2. **report-cross-mast.toml** - Cross-mast correlation analysis configuration
+    3. **report-reconstruct-single.yaml** - Single-mast reconstruction effectiveness analysis
+
+    The configurations are saved to the `report-masts/` directory and can then be used with:
+    ```bash
+    julia bin/CleanMast.jl report all ./projects/my-project
+    ```
+
+    Requirements:
+    - `reconstruct-meso.toml` (for recovery report config)
+    - `reconstruct-single.toml` (for cross-mast report config)
+    - `tower-shading.toml` (for reconstruct-single report config)
+    - `process-clean.toml` (used directly by clean report)
+    - `representative-year.toml` (used directly by representative year report)
+    """
+    @cast function report_all(dir::String)
+        RecommendReportAllCommand.execute(dir)
+    end
+
+    """
+    report-timeseries-meso
+
+    Generate report-timeseries-meso.toml configuration for time series analysis of meso-reconstructed data.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-meso.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-timeseries-meso ./projects/my-project
+    ```
+
+    This command reads reconstruct-meso.toml and generates a configuration for time series analysis
+    of the meso-reconstructed data output. The configuration will be saved as:
+    `report-masts/report-timeseries-meso.toml`
+
+    Use the generated configuration with:
+    ```bash
+    julia bin/CleanMast.jl report timeseries ./projects/my-project/report-masts/report-timeseries-meso.toml
+    ```
+    """
+    @cast function report_timeseries_meso(dir::String)
+        RecommendReportTimeSeriesMesoCommand.execute(dir)
+    end
+
+    """
+    report-timeseries-rep
+
+    Generate report-timeseries-rep.toml configuration for time series analysis of representative year data.
+
+    # Arguments
+    - `dir`: Project directory containing representative-year.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-timeseries-rep ./projects/my-project
+    ```
+
+    This command reads representative-year.toml and generates a configuration for time series analysis
+    of the representative year data output. The configuration will be saved as:
+    `report-masts/report-timeseries-rep.toml`
+
+    Use the generated configuration with:
+    ```bash
+    julia bin/CleanMast.jl report timeseries ./projects/my-project/report-masts/report-timeseries-rep.toml
+    ```
+    """
+    @cast function report_timeseries_rep(dir::String)
+        RecommendReportTimeSeriesRepCommand.execute(dir)
     end
 end
 
@@ -334,43 +641,9 @@ Analysis and reporting commands
 """
 Comonicon.@cast module Analyze
     using Comonicon
-    using CleanMastProject.Command.AnalyzeTimeSeriesCommand
     using CleanMastProject.Command.AnalyzeEN
-    using CleanMastProject.Command.AnalyzeReconstructSingle
     using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
 
-    """
-    timeseries
-
-    Analyze time series data using an analyze configuration file.
-
-    # Arguments
-    - `config_path`: Path to analyze configuration file (supports .yaml, .toml, .json)
-
-    # Examples
-    ```bash
-    julia bin/CleanMast.jl analyze timeseries path/to/analyze.yaml
-    julia bin/CleanMast.jl analyze timeseries path/to/analyze.toml
-    julia bin/CleanMast.jl analyze timeseries path/to/analyze.json
-    ```
-
-    The configuration file should specify:
-    - Multiple masts with their data files and sensor configurations
-    - Air density settings for each mast
-    - Output directory for results
-    - Optional DOCX report settings
-
-    For each mast, generates:
-    - Wind temporal analysis (time series, daily/monthly patterns)
-    - Vertical profile analysis
-    - Wind direction frequency and power distribution
-    - Wind rose plots (frequency and power)
-    - Turbulence intensity analysis (with meteodyn_ti.txt)
-    - Weibull distribution analysis
-    """
-    Comonicon.@cast function timeseries(config_path::String)
-        AnalyzeTimeSeriesCommand.execute(config_path)
-    end
 
     """
     en
@@ -403,33 +676,6 @@ Comonicon.@cast module Analyze
         AnalyzeEN.execute(config_path, output)
     end
 
-    """
-    reconstruct-single
-
-    Compare time series data before and after single mast reconstruction.
-
-    # Arguments
-    - `config_path`: Path to analyze-reconstruct-single.yaml configuration file
-
-    # Example
-    ```bash
-    julia bin/CleanMast.jl analyze reconstruct-single path/to/analyze-reconstruct-single.yaml
-    ```
-
-    The YAML configuration file should specify:
-    - Multiple masts with before/after reconstruction data files and sensor configurations
-    - Output directory for results (default: ./analyze-reconstruct-single)
-
-    For each mast, generates:
-    - Missing data points count before/after reconstruction
-    - Reconstruction rate and data coverage ratio
-    - R² matrix of wind speed correlations between heights
-    - Mean and standard deviation of wind direction differences between heights
-    - Comprehensive Typst report in Chinese
-    """
-    Comonicon.@cast function reconstruct_single(config_path::String)
-        AnalyzeReconstructSingle.execute(config_path)
-    end
 
 
 end
@@ -482,6 +728,8 @@ Comonicon.@cast module Report
     using CleanMastProject.ReportRecovery.ReportRecoveryCommand
     using CleanMastProject.RepresentativeYear.ReportRepresentativeYearCommand
     using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+    using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
+    using CleanMastProject.ReportReconstructSingle.ReportReconstructSingleCommand
 
     """
     clean
@@ -665,6 +913,67 @@ Comonicon.@cast module Report
     """
     Comonicon.@cast function cross_mast(config_path::String)
         CommandAnalyzeReconstructCross.execute(config_path)
+    end
+
+    """
+    timeseries
+
+    Generate time series analysis reports using an analyze configuration file.
+
+    # Arguments
+    - `config_path`: Path to analyze configuration file (supports .yaml, .toml, .json)
+
+    # Examples
+    ```bash
+    julia bin/CleanMast.jl report timeseries path/to/analyze.yaml
+    julia bin/CleanMast.jl report timeseries path/to/analyze.toml
+    julia bin/CleanMast.jl report timeseries path/to/analyze.json
+    ```
+
+    The configuration file should specify:
+    - Multiple masts with their data files and sensor configurations
+    - Air density settings for each mast
+    - Output directory for results
+    - Optional DOCX report settings
+
+    For each mast, generates:
+    - Wind temporal analysis (time series, daily/monthly patterns)
+    - Vertical profile analysis
+    - Wind direction frequency and power distribution
+    - Wind rose plots (frequency and power)
+    - Turbulence intensity analysis (with meteodyn_ti.txt)
+    - Weibull distribution analysis
+    """
+    Comonicon.@cast function timeseries(config_path::String)
+        ReportTimeSeriesCommand.execute(config_path)
+    end
+
+    """
+    reconstruct-single
+
+    Generate report comparing time series data before and after single mast reconstruction.
+
+    # Arguments
+    - `config_path`: Path to analyze-reconstruct-single.yaml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report reconstruct-single path/to/analyze-reconstruct-single.yaml
+    ```
+
+    The YAML configuration file should specify:
+    - Multiple masts with before/after reconstruction data files and sensor configurations
+    - Output directory for results (default: ./analyze-reconstruct-single)
+
+    For each mast, generates:
+    - Missing data points count before/after reconstruction
+    - Reconstruction rate and data coverage ratio
+    - R² matrix of wind speed correlations between heights
+    - Mean and standard deviation of wind direction differences between heights
+    - Comprehensive Typst report in Chinese
+    """
+    Comonicon.@cast function reconstruct_single(config_path::String)
+        ReportReconstructSingleCommand.execute(config_path)
     end
 
 end

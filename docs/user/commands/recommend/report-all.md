@@ -1,0 +1,239 @@
+# recommend report-all
+
+## 概述
+
+生成综合分析报告的配置文件，包括中尺度重构数据和代表年数据的时间序列分析配置。该命令会在 `report-masts/` 目录下生成多个 TOML 配置文件，用于执行全面的数据质量评估和统计分析。
+
+## 语法
+
+```bash
+julia bin/CleanMast.jl recommend report-all <项目目录>
+```
+
+## 实现位置
+
+**核心实现**: `src/ReportAllMasts/RecommendReportAllCommand.jl` (待实现)
+
+## 功能流程
+
+1. **数据源扫描**
+   - 扫描 `reconstruct-meso/` 目录下的重构数据
+   - 扫描 `representative-year/` 目录下的校准数据
+   - 扫描 `reconstruct-single/`, `clean/` 等各处理阶段数据
+   - 验证数据文件完整性和格式
+
+2. **统一配置生成**
+   - 将所有分析配置文件集中到 `report-masts/` 目录
+   - 为中尺度重构数据生成时间序列分析配置
+   - 为代表年数据生成时间序列分析配置
+   - 为各处理阶段生成对比分析配置
+   - 配置综合报告生成参数
+
+3. **标准化目录结构**
+   - 替代项目根目录下散乱的分析配置文件
+   - 在 `report-masts/` 下创建统一的配置管理
+   - 生成标准化的分析配置模板
+   - 设置报告输出路径和格式
+
+## 生成的配置文件
+
+### 完整的 report-masts/ 目录结构
+```
+report-masts/
+├── analyze-reconstruct-meso.toml     # 中尺度重构数据时间序列分析
+├── analyze-representative-year.toml  # 代表年数据时间序列分析
+├── analyze-clean.toml                # 清理数据质量分析
+├── analyze-reconstruct-single.toml   # 单塔重构质量分析
+├── analyze-recovery.toml             # 数据恢复率分析
+└── analyze-comparison.toml           # 各阶段对比分析
+```
+
+### 1. 中尺度重构分析配置
+
+#### `report-masts/analyze-reconstruct-meso.toml`
+```toml
+# 中尺度重构数据时间序列分析配置
+# 基于实际项目结构分析重构后数据质量
+
+[[masts]]
+name = "pn-002824"
+    [masts.input]
+    data = "./reconstruct-meso/pn-002824.csv"
+    sensors = "./reconstruct-meso/pn-002824.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225  # kg/m³ at sea level, 15°C
+    reference_height = 10.0
+
+[[masts]]
+name = "pn-013945"
+    [masts.input]
+    data = "./reconstruct-meso/pn-013945.csv"
+    sensors = "./reconstruct-meso/pn-013945.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225
+    reference_height = 10.0
+
+[[masts]]
+name = "pn-014576"
+    [masts.input]
+    data = "./reconstruct-meso/pn-014576.csv"
+    sensors = "./reconstruct-meso/pn-014576.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225
+    reference_height = 10.0
+
+[output]
+path = "./report-masts/reconstruct-meso"
+report_format = ["pdf", "html"]
+include_uncertainty = true
+```
+
+### 2. 代表年分析配置
+
+#### `report-masts/analyze-representative-year.toml`
+```toml
+# 代表年数据时间序列分析配置
+# 基于实际项目结构: projects/pn-3masts/analyze-rep.toml
+
+[[masts]]
+name = "pn-002824"
+    [masts.input]
+    data = "./representative-year/pn-002824.csv"
+    sensors = "./representative-year/pn-002824.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225  # kg/m³ at sea level, 15°C
+    reference_height = 10.0
+
+[[masts]]
+name = "pn-013945"
+    [masts.input]
+    data = "./representative-year/pn-013945.csv"
+    sensors = "./representative-year/pn-013945.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225
+    reference_height = 10.0
+
+[[masts]]
+name = "pn-014576"
+    [masts.input]
+    data = "./representative-year/pn-014576.csv"
+    sensors = "./representative-year/pn-014576.sensors.yaml"
+    [masts.airDensity]
+    density = 1.225
+    reference_height = 10.0
+
+[output]
+path = "./report-masts/representative-year"
+report_format = ["pdf", "html"]
+include_calibration_analysis = true
+```
+
+### 3. 数据恢复分析配置
+
+#### `report-masts/analyze-recovery.toml`
+```toml
+# 数据恢复率分析配置
+# 分析从原始数据到最终重构的数据恢复情况
+
+[recovery_analysis]
+stages = [
+    "raw",
+    "clean",
+    "tower-shading",
+    "reconstruct-single",
+    "reconstruct-meso",
+    "representative-year"
+]
+
+[[masts]]
+name = "pn-002824"
+    [masts.stages.raw]
+    data = "./raw/pn-002824.csv"
+    sensors = "./raw/pn-002824.sensors.toml"
+    [masts.stages.clean]
+    data = "./clean/pn-002824.csv"
+    sensors = "./clean/pn-002824.sensors.yaml"
+    [masts.stages.final]
+    data = "./representative-year/pn-002824.csv"
+    sensors = "./representative-year/pn-002824.sensors.yaml"
+
+[output]
+path = "./report-masts/recovery"
+include_stage_comparison = true
+generate_recovery_statistics = true
+```
+
+## 分析功能配置
+
+### 1. 时间序列分析类型
+- **风资源评估**: 风速分布、风向玫瑰图、湍流分析
+- **数据质量评估**: 缺失率、异常值分布、重构效果
+- **统计特征**: 月度、季度、年度统计汇总
+- **相关性分析**: 不同高度间的相关性验证
+
+### 2. 报告输出格式
+- **PDF 报告**: 专业格式的技术报告
+- **HTML 报告**: 交互式网页报告
+- **数据表格**: CSV 格式的详细统计数据
+- **图表文件**: 高质量的可视化图表
+
+### 3. 质量控制参数
+```toml
+[quality_control]
+max_missing_rate = 0.1        # 最大缺失率阈值
+outlier_detection = "iqr"     # 异常值检测方法
+uncertainty_quantile = 0.95   # 不确定度置信区间
+correlation_threshold = 0.8   # 相关性验证阈值
+```
+
+## 智能配置功能
+
+### 1. 自动参数推断
+- **气密度计算**: 基于地理位置和海拔自动计算
+- **参考高度设定**: 根据传感器配置智能选择
+- **输出路径优化**: 避免路径冲突和重复
+
+### 2. 数据验证检查
+- **文件存在性**: 验证所有引用文件是否存在
+- **格式兼容性**: 检查数据格式和传感器配置匹配
+- **时间范围**: 验证不同数据源的时间重叠
+
+### 3. 报告定制选项
+- **分析深度**: 根据数据质量调整分析详细程度
+- **可视化样式**: 配置图表风格和颜色方案
+- **语言本地化**: 支持中英文报告生成
+
+## 相关文件
+
+- **配置文件**: 生成多个分析配置文件
+- **处理命令**: [report all](../report-all.md)
+- **配置类型**: `src/Types/ReportAllConfig.jl` (待创建)
+
+## 生成的配置用途
+
+生成的配置文件用于：
+
+1. **中尺度重构分析**: `julia bin/CleanMast.jl analyze timeseries ./report-masts/analyze-reconstruct-meso.toml`
+2. **代表年分析**: `julia bin/CleanMast.jl analyze timeseries ./report-masts/analyze-representative-year.toml`
+3. **清理数据分析**: `julia bin/CleanMast.jl analyze timeseries ./report-masts/analyze-clean.toml`
+4. **单塔重构分析**: `julia bin/CleanMast.jl analyze timeseries ./report-masts/analyze-reconstruct-single.toml`
+5. **数据恢复分析**: `julia bin/CleanMast.jl analyze recovery ./report-masts/analyze-recovery.toml`
+6. **综合报告生成**: `julia bin/CleanMast.jl report all ./project` (自动使用所有配置)
+
+## 下一步操作
+
+配置生成后，可以执行以下步骤：
+
+1. **检查配置**: 验证生成的 TOML 文件参数正确性
+2. **执行综合分析**: `julia bin/CleanMast.jl report all ./project`
+3. **审核报告**: 检查生成的分析报告和可视化结果
+4. **导出成果**: 整理最终的技术报告和数据分析结果
+
+## 注意事项
+
+- 需要先完成中尺度重构和代表年校准步骤
+- 确保所有数据文件路径正确且文件存在
+- 分析报告生成可能需要较长时间
+- 建议根据项目特点调整分析参数
+- 生成的配置文件可以根据需要手动调整
+- 报告输出目录需要有足够的存储空间

@@ -68,8 +68,14 @@ function execute(dir::String)
     println("\n8. Recommending reconstruct cross-mast config...")
     RecommendReconstructCrossCommand.execute(joinpath(dir, "train-reconstruct-cross", "train-results.toml"), dir)
 
-    println("\n9. Reconstructing cross-mast data...")
-    ProcessReconstructCrossCommand.execute(joinpath(dir, "reconstruct-cross.toml"))
+    config_cross_path = joinpath(dir, "reconstruct-cross.toml")
+
+    if isfile(config_cross_path) 
+      println("\n9. Reconstructing cross-mast data...")
+      ProcessReconstructCrossCommand.execute(joinpath(dir, "reconstruct-cross.toml"))
+    else
+        println("\n9. Skipping cross-mast reconstruction...")
+    end
 
     println("\n10. Recommending train meso config...")
     RecommendTrainMesoCommand.execute(dir)

@@ -74,7 +74,7 @@ Configuration settings for reconstruction execution.
     output_dir::String = "./reconstruct-cross"
     preserve_existing::Bool = true
     min_confidence::Float64 = 0.7
-    max_direction_uncertainty::Float64 = 12.5
+    max_direction_uncertainty::Float64 = 45.0
     generate_reports::Bool = true
     backup_originals::Bool = true
 end
@@ -87,12 +87,12 @@ Input specification for a mast that may be reconstructed.
 # Fields
 - `name::String`: Unique name for the mast
 - `input::TimeSeriesSource`: Original data source (data file and sensors configuration)
-- `output::Union{TimeSeriesSource, Nothing}`: Where to save reconstructed data (optional)
+- `output::TimeSeriesSource`: Where to save reconstructed data (required)
 """
 @with_kw struct ReconstructCrossMast
     name::String
     input::TimeSeriesSource
-    output::Union{TimeSeriesSource, Nothing} = nothing
+    output::TimeSeriesSource
 end
 
 """
@@ -165,7 +165,7 @@ function from_dict(::Type{ReconstructCrossSettings}, dict::Dict{String, Any})::R
         output_dir = get(dict, "output_dir", "./reconstruct-cross"),
         preserve_existing = get(dict, "preserve_existing", true),
         min_confidence = get(dict, "min_confidence", 0.7),
-        max_direction_uncertainty = get(dict, "max_direction_uncertainty", 12.5),
+        max_direction_uncertainty = get(dict, "max_direction_uncertainty", 45.0),
         generate_reports = get(dict, "generate_reports", true),
         backup_originals = get(dict, "backup_originals", true)
     )
@@ -184,8 +184,11 @@ end
 
 function from_dict(::Type{ReconstructCrossMast}, dict::Dict{String, Any})::ReconstructCrossMast
     input = from_dict(TimeSeriesSource, dict["input"])
-    output = haskey(dict, "output") && dict["output"] !== nothing ? 
-             from_dict(TimeSeriesSource, dict["output"]) : nothing
+    # Require output to be present; fail fast if missing
+    if !haskey(dict, "output") || dict["output"] === nothing
+        error("Missing required 'output' for ReconstructCrossMast '$(dict["name"])'")
+    end
+    output = from_dict(TimeSeriesSource, dict["output"])
     return ReconstructCrossMast(
         name = dict["name"],
         input = input,
@@ -194,14 +197,11 @@ function from_dict(::Type{ReconstructCrossMast}, dict::Dict{String, Any})::Recon
 end
 
 function to_dict(mast::ReconstructCrossMast)::Dict{String, Any}
-    result = Dict{String, Any}(
+    return Dict{String, Any}(
         "name" => mast.name,
-        "input" => to_dict(mast.input)
+        "input" => to_dict(mast.input),
+        "output" => to_dict(mast.output)
     )
-    if mast.output !== nothing
-        result["output"] = to_dict(mast.output)
-    end
-    return result
 end
 
 function from_dict(::Type{ReconstructCrossConfiguration}, dict::Dict{String, Any})::ReconstructCrossConfiguration
