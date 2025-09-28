@@ -7,6 +7,7 @@ using ...Types.MastTimeSeries: load_timeseries, TimeSeriesData
 using ...Types.ViolationData: ViolationAnalysisData, ProcessingInfo, ViolationSummary, ViolationColumn
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
+using ...TypstUtils
 using YAML
 using Dates
 
@@ -49,7 +50,10 @@ function execute_internal(config::ReportCleanConfiguration, project_dir::String)
     
     println("✓ Report generated successfully!")
     println("Report location: $(joinpath(report_dir, config.output.report_filename))")
-        
+
+    # Compile Typst report if Typst is available
+    TypstUtils.typst_try_compile(report_dir, config.output.report_filename)
+
 end
 
 """

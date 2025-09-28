@@ -2,7 +2,7 @@ module SensorInventoryReport
 
 using DataFrames
 using ....Types.ReportCleanData: MastReportData
-using ....Types.SensorColumns: SensorColumn
+using ....Types.SensorColumns: SensorColumn, create_sensor_short_name
 
 export generate_sensor_inventory_section
 
@@ -61,26 +61,8 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
 
         # Add all sensors to one table, sorted by type, height, direction
         for sensor in sensors
-            # Generate clean sensor name based on sensor type
-            sensor_name = if sensor.sensorType == "WindSpeed"
-                "WS_$(Int(sensor.height))m_$(sensor.sensorDirection)"
-            elseif sensor.sensorType == "WindDirection"
-                "WD_$(Int(sensor.height))m"
-            elseif sensor.sensorType == "Temperature"
-                "Temp_$(Int(sensor.height))m"
-            elseif sensor.sensorType == "Analog"
-                # Check if it's pressure or humidity based on column name
-                col_name = string(sensor.columnName)
-                if occursin("Pres", col_name) || occursin("kPa", col_name)
-                    "Pres_$(Int(sensor.height))m"
-                elseif occursin("RH", col_name) || occursin("%RH", col_name)
-                    "RH_$(Int(sensor.height))m"
-                else
-                    "Analog_$(Int(sensor.height))m"
-                end
-            else
-                "$(sensor.sensorType)_$(Int(sensor.height))m"
-            end
+            # Use Typst-compatible sensor short name
+            sensor_name = create_sensor_short_name(sensor)
 
             # Translate sensor type to Chinese
             sensor_data_type = if sensor.sensorType == "WindSpeed"

@@ -48,7 +48,7 @@ julia bin/CleanMast.jl <命令> <选项>
 - `project parse-sensors` - 将传感器数据解析为结构化格式
 
 **数据处理**
-- `process all` - 执行完整的处理流水线
+- `process steps --all` - 执行完整的处理流水线
 - `process clean` - 应用数据清理规则
 - `process tower-shading` - 检测和校正塔影效应
 - `process reconstruct-single` - 使用单测风塔相关性重构
@@ -60,9 +60,13 @@ julia bin/CleanMast.jl <命令> <选项>
 - `recommend <过程>` - 为每个处理步骤生成配置文件
 
 **分析和报告**
-- `analyze timeseries` - 综合风能分析和报告
-- `analyze en` - 土木工程 EN 标准分析
-- `analyze reconstruct-single` - 重构质量评估
+- `report all` - 生成所有类型报告
+- `report clean` - 数据清理质量报告
+- `report timeseries` - 综合风能分析和报告
+- `report recovery` - 数据恢复分析报告
+- `report representative-year` - 代表年校正报告
+- `report cross-mast` - 跨塔相关性分析报告
+- `report reconstruct-single` - 单塔重构质量报告
 
 ### 典型工作流程
 
@@ -80,7 +84,7 @@ julia bin/CleanMast.jl project parse-sensors projects/my-windfarm
 
 4. **运行完整处理**：
 ```bash
-julia bin/CleanMast.jl process all projects/my-windfarm
+julia bin/CleanMast.jl process steps --all projects/my-windfarm
 ```
 
 ## 配置

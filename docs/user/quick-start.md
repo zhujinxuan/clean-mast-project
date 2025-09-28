@@ -48,17 +48,35 @@ julia bin/CleanMast.jl project parse-sensors projects/my-windfarm
 ### 5. 执行数据处理流程
 
 ```nushell
-julia bin/CleanMast.jl process all projects/my-windfarm
+julia bin/CleanMast.jl process steps --all projects/my-windfarm
 ```
 
-这将依次执行：
-- `process-clean` - 数据清理
-- `tower-shading` - 塔影校正
-- `reconstruct-single` - 单塔重构
-- `train-reconstruct-cross` - 跨塔模型训练
-- `reconstruct-cross` - 跨塔重构
-- `train-meso` - 中尺度模型训练
-- `reconstruct-meso` - 中尺度重构
+这将依次执行所有 18 个处理步骤：
+- 步骤 1-2: 数据清理配置和执行
+- 步骤 3-4: 塔影校正配置和执行
+- 步骤 5-6: 单塔重构配置和执行
+- 步骤 7-10: 跨塔模型训练和重构
+- 步骤 11-14: 中尺度模型训练和重构
+- 步骤 15-16: 代表年校准
+- 步骤 17-18: 风机时间序列生成
+
+#### 灵活的步骤控制
+
+如果需要分步骤执行或调试特定环节，可以使用：
+
+```nushell
+# 查看所有可用步骤
+julia bin/CleanMast.jl process steps --list
+
+# 仅执行数据准备步骤 (1-6)
+julia bin/CleanMast.jl process steps --from 1 --to 6 projects/my-windfarm
+
+# 从步骤 10 开始执行到结束
+julia bin/CleanMast.jl process steps --from 10 projects/my-windfarm
+
+# 仅执行中尺度相关步骤 (11-14)
+julia bin/CleanMast.jl process steps --from 11 --to 14 projects/my-windfarm
+```
 
 ### 6. 生成报告配置
 

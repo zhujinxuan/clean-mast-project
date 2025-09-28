@@ -176,20 +176,21 @@ julia bin/CleanMast.jl recommend reconstruct-meso <项目目录>
 
 ---
 
-### recommend analyze-timeseries
+### recommend report-all
 
-生成时间序列分析的配置文件。
+生成所有报告配置文件的统一命令。
 
 #### 语法
 ```bash
-julia bin/CleanMast.jl recommend analyze-timeseries <项目目录>
+julia bin/CleanMast.jl recommend report-all <项目目录>
 ```
 
-#### 功能
-1. 识别最终处理的数据文件
-2. 配置综合分析参数
-3. 设置报告输出路径
-4. 生成分析配置
+#### 生成的配置
+- `report-timeseries-meso.toml` - 中尺度重构数据分析
+- `report-timeseries-rep.toml` - 代表年数据分析
+- `report-recovery.toml` - 数据恢复分析
+- `report-cross-mast.toml` - 跨塔相关性分析
+- `report-reconstruct-single.yaml` - 单塔重构分析
 
 ---
 

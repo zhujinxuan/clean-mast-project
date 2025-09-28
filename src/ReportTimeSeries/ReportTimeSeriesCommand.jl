@@ -1,7 +1,8 @@
 module ReportTimeSeriesCommand
 
 using ...Types.AnalyzeConfiguration: load_analyze_config
-using ..TimeSeriesAnalysis: analyze_all
+using ...TypstUtils
+using ..TimeSeriesAnalysis: analyze_all, generate_comprehensive_report
 
 export execute
 
@@ -45,6 +46,14 @@ function execute(config_path::String)
 
     # Run all analyses
     results = analyze_all(config)
+
+    # Generate comprehensive Typst report
+    @info "Generating comprehensive Typst report..."
+    report_path = generate_comprehensive_report(config)
+    results["report_path"] = report_path
+
+    # Compile Typst reports if Typst is available
+    TypstUtils.typst_try_compile_all(config.output.path)
 
     @info "Analysis complete. Results saved to: $(config.output.path)"
 

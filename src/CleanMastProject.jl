@@ -3,6 +3,9 @@ module CleanMastProject
 include("./CleanMastUtils.jl")
 export CleanMastUtils
 
+include("./TypstUtils.jl")
+export TypstUtils
+
 module Types
   include("./Types/Utils.jl")
   export Utils
@@ -297,10 +300,10 @@ export ReconstructCross
 
 module Command
   include("./Command/QuickStart.jl")
-  include("./Command/ProcessAll.jl")
+  include("./Command/ProcessSteps.jl")
   include("./Command/AnalyzeEN.jl")
   include("./Command/CalculateAirDensityCommand.jl")
-  export  QuickStart, ProcessAll,
+  export  QuickStart, ProcessSteps,
          AnalyzeEN, CalculateAirDensityCommand
 end
 export Command

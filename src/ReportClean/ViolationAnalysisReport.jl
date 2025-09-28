@@ -14,7 +14,7 @@ using Dates
 using AlgebraOfGraphics, CairoMakie
 using ....Types.ReportCleanData: MastReportData
 using ....Types.ViolationData: ViolationAnalysisData, ViolationColumn, ViolationRule
-using ..DataCoverageReport: create_short_sensor_name
+using ....Types.SensorColumns: create_sensor_short_name
 
 export generate_violation_analysis_section
 
@@ -147,7 +147,7 @@ function create_violation_monthly_faceted_plot(violations_by_column::ViolationsB
 
         # Get short sensor name
         short_sensor_name = if haskey(column_to_sensor, column_name)
-            create_short_sensor_name(column_to_sensor[column_name])
+            create_sensor_short_name(column_to_sensor[column_name])
         else
             column_name
         end

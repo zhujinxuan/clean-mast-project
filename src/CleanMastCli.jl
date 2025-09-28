@@ -57,7 +57,7 @@ Comonicon.@cast module Process
     using CleanMastProject.ReconstructMeso.CommandReconstructMeso
     using CleanMastProject.RepresentativeYear.CommandRepresentativeYear
     using CleanMastProject.WTTimeSeries.CommandWtTimeSeries
-    using CleanMastProject.Command.ProcessAll
+    using CleanMastProject.Command.ProcessSteps
     using CleanMastProject.ReconstructCross.ProcessReconstructCrossCommand
 
     """
@@ -182,21 +182,32 @@ Comonicon.@cast module Process
     end
 
     """
-    all
+    steps
 
-    Execute all processing steps in sequence:
-    1. Clean data
-    2. Tower shading
-    3. Reconstruct single mast
-    4. Train meso models
-    5. Reconstruct meso
-    6. Representative year calibration
+    Execute processing steps with flexible control options.
 
     # Arguments
-    - `dir`: Project directory containing config.yaml
+    - `dir`: Project directory containing configurations
+    - `--all`: Execute all processing steps (1-18)
+    - `--from`: Starting step number (1-18, default: 1 when --all is used)
+    - `--to`: Ending step number (1-18, default: 18 when --all is used)
+    - `--list`: List all available steps without executing
+
+    # Examples
+    ```bash
+    julia bin/CleanMast.jl process steps --all ./projects/my-project
+    julia bin/CleanMast.jl process steps --from 5 --to 12 ./projects/my-project
+    julia bin/CleanMast.jl process steps --from 10 ./projects/my-project
+    julia bin/CleanMast.jl process steps --list
+    ```
+
+    Execute processing pipeline in flexible steps for better control and debugging.
     """
-    Comonicon.@cast function all(dir::String)
-        ProcessAll.execute(dir)
+    Comonicon.@cast function steps(dir::String=""; all::Bool=false, from::Int=0,
+                                  to::Int=0, list::Bool=false)
+        from_step = from == 0 ? nothing : from
+        to_step = to == 0 ? nothing : to
+        ProcessSteps.execute(dir, all=all, from_step=from_step, to_step=to_step, list_only=list)
     end
 end
 
@@ -430,17 +441,18 @@ end
     # Arguments
     - `train_results_path`: Path to train-reconstruct-cross results
     - `output_dir`: Output directory for the configuration file (default: "./")
+    - `--min-coverage`: Minimum data coverage days for qualification (default: 30.0)
 
     # Example
     ```bash
     julia bin/CleanMast.jl recommend reconstruct-cross ./train-reconstruct-cross
-    julia bin/CleanMast.jl recommend reconstruct-cross ./train-reconstruct-cross ./output
+    julia bin/CleanMast.jl recommend reconstruct-cross ./train-reconstruct-cross ./output --min-coverage 25.0
     ```
 
     Generates reconstruct-cross.toml for executing cross-mast reconstruction using trained models.
     """
-    @cast function reconstruct_cross(train_results_path::String, output_dir::String = "./")
-        RecommendReconstructCrossCommand.execute(train_results_path, output_dir)
+    @cast function reconstruct_cross(train_results_path::String, output_dir::String = "./"; min_coverage::Float64 = 30.0)
+        RecommendReconstructCrossCommand.execute(train_results_path, output_dir, min_coverage)
     end
     
     """

@@ -18,7 +18,7 @@ docs/
 │   ├── commands/
 │   │   ├── recommend/       # recommend 命令系列
 │   │   ├── process/         # process 命令系列
-│   │   └── process-all.md   # process all 命令
+│   │   └── process-steps.md   # process steps 命令
 │   └── configuration/
 │       └── config-files.md  # 配置文件参考
 └── development/             # 开发者文档

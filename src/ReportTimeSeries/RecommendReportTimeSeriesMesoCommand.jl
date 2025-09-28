@@ -65,7 +65,7 @@ function execute(project_dir::String)
     # 3. Create analyze configuration
     analyze_config = AnalyzeConfigYAML(
         analyze_masts,
-        OutputConfig("./report-masts/timeseries-meso"),
+        OutputConfig("timeseries-meso"),
         nothing  # No min_plot_height specified
     )
 

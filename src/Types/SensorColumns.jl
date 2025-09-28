@@ -68,29 +68,36 @@ end
 Create standardized sensor short name for reports following the naming conventions:
 - For statType = "avg": {shortName}:{height}m:{direction} or {shortName}:{height}m (if direction is "N/A")
 - For other statType: {shortName}:{height}m:{direction}:{statType} or {shortName}:{height}m:{statType} (if direction is "N/A")
+
+Modified for Typst compatibility:
+- Replaces underscores (_) and other non-alphanumeric characters with hyphens (-)
+- Trims trailing non-alphanumeric characters to ensure names end with digits or letters
 """
 function create_sensor_short_name(sensor::SensorColumn)::String
     # Map sensor types to short names
     short_name = get_sensor_style_short_name(sensor.sensorType)
-    
+
     # Format height as integer if it's a whole number, otherwise as float
     height_str = sensor.height == floor(sensor.height) ? string(Int(sensor.height)) : string(sensor.height)
-    
+
     # Base name with height
     base_name = "$(short_name):$(height_str)m"
-    
+
     # Handle direction
     has_direction = sensor.sensorDirection != "N/A"
     direction_part = has_direction ? ":$(sensor.sensorDirection)" : ""
-    
+
     # Handle statType
-    if sensor.statType == "avg"
+    full_name = if sensor.statType == "avg"
         # For average sensors, don't include statType
-        return base_name * direction_part
+        base_name * direction_part
     else
         # For non-average sensors, include statType
-        return base_name * direction_part * ":$(sensor.statType)"
+        base_name * direction_part * ":$(sensor.statType)"
     end
+
+    # Make Typst-compatible
+    return make_typst_compatible_name(full_name)
 end
 
 """
@@ -108,6 +115,22 @@ function get_sensor_style_short_name(sensor_type::String)::String
     )
     
     return get(type_mapping, sensor_type, sensor_type)
+end
+
+"""
+Make a sensor name Typst-compatible by:
+1. Replacing underscores and other non-alphanumeric characters (except : and .) with hyphens
+2. Trimming trailing non-alphanumeric characters to ensure names end with digits or letters
+"""
+function make_typst_compatible_name(name::String)::String
+    # Replace underscores and other problematic characters with hyphens
+    # Keep colons (:) and dots (.) as they're used in the naming scheme
+    typst_name = replace(name, r"[^a-zA-Z0-9:./-]" => "-")
+
+    # Trim trailing non-alphanumeric characters (but preserve internal structure)
+    typst_name = replace(typst_name, r"[^a-zA-Z0-9]+$" => "")
+
+    return typst_name
 end
 
 """
@@ -171,6 +194,6 @@ function to_dict(s::SensorColumn)::Dict{String, Any}
     )
 end
 
-export ParsedSensor, SensorColumn, to_SensorColumn, find_nearest_height_sensor, create_sensor_short_name, get_sensor_style_short_name, from_dict, to_dict
+export ParsedSensor, SensorColumn, to_SensorColumn, find_nearest_height_sensor, create_sensor_short_name, get_sensor_style_short_name, make_typst_compatible_name, from_dict, to_dict
 
 end # module 

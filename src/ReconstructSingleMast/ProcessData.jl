@@ -28,8 +28,8 @@ function reconstruct_measurements(
     direction_targets = find_reconstruction_targets(data, "WindDirection", "avg", 50.0)
     
     # Calculate total reconstruction tasks (individual columns to reconstruct)
-    total_speed_tasks = sum(length(t.columns) for t in speed_targets)
-    total_direction_tasks = sum(length(t.columns) for t in direction_targets)
+    total_speed_tasks = sum(length(t.columns) for t in speed_targets; init=0)
+    total_direction_tasks = sum(length(t.columns) for t in direction_targets; init=0)
     total_tasks = total_speed_tasks + total_direction_tasks
     
     # Track current progress and timing
@@ -154,8 +154,8 @@ function process_data!(
     speed_targets = find_reconstruction_targets(data, "WindSpeed", "avg", 50.0)
     direction_targets = find_reconstruction_targets(data, "WindDirection", "avg", 50.0)
     
-    total_speed_tasks = sum(length(t.columns) for t in speed_targets)
-    total_direction_tasks = sum(length(t.columns) for t in direction_targets)
+    total_speed_tasks = sum(length(t.columns) for t in speed_targets; init=0)
+    total_direction_tasks = sum(length(t.columns) for t in direction_targets; init=0)
     total_tasks = total_speed_tasks + total_direction_tasks
     
     if total_tasks == 0

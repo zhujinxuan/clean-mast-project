@@ -11,49 +11,13 @@ using DataFrames
 using Statistics
 using Dates
 using ....Types.ReportCleanData: MastReportData, SensorCoverageInfo, DetectedInterval
-using ....Types.SensorColumns: SensorColumn
+using ....Types.SensorColumns: SensorColumn, create_sensor_short_name
 using AlgebraOfGraphics, CairoMakie
 using DataFrames
 
 export generate_data_coverage_section
 
-"""
-    create_short_sensor_name(sensor :: SensorColumn)
-
-Create a shorter, more readable sensor name in format:
-WS/WD/T/Pres/RH_{height}m_{direction}
-"""
-function create_short_sensor_name(sensor :: SensorColumn)::String
-    # Map sensor types to short names
-    type_map = Dict(
-        "WindSpeed" => "WS",
-        "WindDirection" => "WD",
-        "Temperature" => "T",
-        "Pressure" => "Pres",
-        "Analog" => "Analog"  # Will be refined based on unit
-    )
-
-    # Handle Analog sensors based on unit
-    if sensor.sensorType == "Analog"
-        if sensor.unit in ["kPa", "hPa", "Pa"]
-            short_type = "Pres"
-        elseif sensor.unit in ["%RH", "RH"]
-            short_type = "RH"
-        else
-            short_type = "Analog"
-        end
-    else
-        short_type = get(type_map, sensor.sensorType, sensor.sensorType)
-    end
-
-    # Format height as integer if possible
-    height_str = floor(sensor.height) == sensor.height ? "$(Int(sensor.height))m" : "$(sensor.height)m"
-
-    # Handle direction
-    direction = sensor.sensorDirection == "N/A" ? "" : "_$(sensor.sensorDirection)"
-
-    return "$(short_type)_$(height_str)$(direction)"
-end
+# Note: Using create_sensor_short_name from SensorColumns module instead of custom function
 
 """
     get_unique_avg_sensors(mast::MastReportData)
@@ -95,7 +59,7 @@ function calculate_sensor_coverage(mast::MastReportData, unique_sensors::Dict, e
         total_missing_days = round(final_missing_points * interval_minutes / (60 * 24), digits=4)  # Convert to days
 
         (
-            name = create_short_sensor_name(sensor),
+            name = create_sensor_short_name(sensor),
             raw_coverage = raw_coverage,
             clean_coverage = clean_coverage,
             total_missing_days = total_missing_days
@@ -154,7 +118,7 @@ function calculate_monthly_coverage(mast::MastReportData, unique_sensors::Dict, 
         # Calculate coverage for each sensor in this month
         sensor_coverages = map(collect(unique_sensors)) do (_, sensor)
             sensor_col = sensor.columnName
-            short_name = create_short_sensor_name(sensor)
+            short_name = create_sensor_short_name(sensor)
 
             coverage = if hasproperty(mast.clean_data.df, sensor_col)
                 # Filter timestamps for this month and count non-missing values

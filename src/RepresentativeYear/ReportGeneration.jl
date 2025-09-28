@@ -438,6 +438,11 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
         
         # Individual mast-meso pair sections
         for (i, result) in enumerate(analysis_results)
+            # Calculate percentage change between climatology and training year
+            percent_change = (result.training_mean - result.climatology_mean) / result.climatology_mean * 100
+            percent_change_str = @sprintf("%.1f", percent_change)
+            change_sign = percent_change >= 0 ? "+" : ""
+
             write(io, """
 == $(result.mast_name) ← $(result.meso_name)
 
@@ -445,11 +450,18 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
 
 - *$(CHINESE_TEXTS["climatology_mean"]):* $(round(result.climatology_mean, digits=2)) $(CHINESE_TEXTS["unit_ms"])
 - *$(CHINESE_TEXTS["training_mean"]):* $(round(result.training_mean, digits=2)) $(CHINESE_TEXTS["unit_ms"])
+- *变化率:* $change_sign$percent_change_str%
 """)
             
             if result.calibration_applied && !isnothing(result.representative_year_mean)
+                # Calculate percentage change for representative year vs climatology
+                rep_percent_change = (result.representative_year_mean - result.climatology_mean) / result.climatology_mean * 100
+                rep_change_str = @sprintf("%.1f", rep_percent_change)
+                rep_change_sign = rep_percent_change >= 0 ? "+" : ""
+
                 write(io, """
 - *$(CHINESE_TEXTS["representative_year_mean"]):* $(round(result.representative_year_mean, digits=2)) $(CHINESE_TEXTS["unit_ms"])
+- *代表年变化率:* $rep_change_sign$rep_change_str%
 - *$(CHINESE_TEXTS["selected_year"]):* $(Dates.format(result.representative_year_start, "yyyy年"))
 - *阈值偏差:* $(round(result.threshold_deviation, digits=1))%
 """)

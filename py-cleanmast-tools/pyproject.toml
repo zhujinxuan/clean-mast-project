@@ -1,0 +1,27 @@
+[project]
+name = "py-cleanmast-tools"
+version = "0.1.0"
+description = "Mast data preprocessor to normalize data types and column names"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.0.0",
+    "click>=8.0.0",
+    "pandas>=2.0.0",
+    "tomli>=2.0.0",
+    "tomli-w>=1.0.0",
+    "colorama>=0.4.0",
+    "chardet>=5.0.0"
+]
+
+[project.scripts]
+type-normalizer = "pre_processor_mast_data.type_normalizer:main"
+col-name-normalizer = "pre_processor_mast_data.col_name_normalizer:main"
+timestamp-normalizer = "pre_processor_mast_data.timestamp_normalizer:main"
+csv-merger = "pre_processor_mast_data.csv_merger:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+include = ["pre_processor_mast_data*"]

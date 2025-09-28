@@ -46,7 +46,8 @@ julia bin/CleanMast.jl <命令> <选项>
 - `project parse-sensors` - 将传感器数据解析为 csv 和对应的传感器描述 toml 文件
 
 **数据处理**
-- `process all` - 执行完整的处理流水线(包含生成各步骤配置文件)
+- `process steps --all` - 执行完整的处理流水线(包含生成各步骤配置文件)
+- `process steps --from X --to Y` - 执行指定范围的处理步骤（灵活控制）
 - `process clean` - 应用数据清理规则
 - `process tower-shading` - 检测和校正塔影效应
 - `process reconstruct-single` - 使用单测风塔相关性重构
@@ -59,7 +60,7 @@ julia bin/CleanMast.jl <命令> <选项>
 - `recommend <过程>` - 为每个处理步骤生成配置文件
 
 **分析和报告**
-- `report all` - 综合风能分析和报告(需先运行 `process all` 和 `recommend report-all`)
+- `report all` - 综合风能分析和报告(需先运行 `process steps --all` 和 `recommend report-all`)
 - `analyze en` - 土木工程EN标准分析(未完成)
 
 ## 文档

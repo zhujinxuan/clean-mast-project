@@ -6,6 +6,7 @@ using ...Types.ReportRecoveryConfig: ReportRecoveryConfiguration, from_dict
 using ...Types.ReportRecoveryData: RecoveryReportData
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
+using ...TypstUtils
 using ..RecoveryAnalysis: analyze_mast_recovery
 using ..RecoveryStatusReport: generate_recovery_report_section, generate_recovery_table, create_recovery_bar_chart
 
@@ -67,7 +68,10 @@ function execute(config_path::String)
     
     # Generate summary
     print_report_summary(report_data, report_file)
-    
+
+    # Compile Typst report if Typst is available
+    TypstUtils.typst_try_compile(report_dir, config.output.report_filename)
+
     println("✅ Data recovery status report generated successfully!")
     println("📁 Report saved to: $report_file")
 end

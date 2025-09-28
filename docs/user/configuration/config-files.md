@@ -332,29 +332,20 @@ julia bin/CleanMast.jl recommend report-all ./project
 
 ## 迁移说明
 
-### 从散乱配置到统一管理
-推荐使用 `recommend report-all` 生成的 `report-masts/` 目录结构，替代项目根目录下的散乱分析配置文件：
+### 报告配置管理
+使用 `recommend report-all` 生成统一的报告配置：
 
-**传统方式** (不推荐):
-```
-project/
-├── analyze-rep.toml
-├── analyze-meso.toml
-├── analyze-timeseries.yaml
-└── ...
-```
-
-**推荐方式**:
 ```
 project/
 └── report-masts/
-    ├── analyze-reconstruct-meso.toml
-    ├── analyze-representative-year.toml
-    ├── analyze-clean.toml
-    ├── analyze-reconstruct-single.toml
-    ├── analyze-recovery.toml
-    └── analyze-comparison.toml
+    ├── report-timeseries-meso.toml       # 中尺度重构分析
+    ├── report-timeseries-rep.toml        # 代表年分析
+    ├── report-recovery.toml              # 数据恢复分析
+    ├── report-cross-mast.toml            # 跨塔相关性分析
+    └── report-reconstruct-single.yaml    # 单塔重构分析
 ```
+
+详细配置格式参见: [报告配置文件](report-configs.md)
 
 ### 迁移步骤
 1. 使用 `julia bin/CleanMast.jl recommend report-all ./project` 生成新配置

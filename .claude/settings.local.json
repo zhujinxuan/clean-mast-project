@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/zhu_j/workspace/ecepdi-working/sharing/jzasus/cm-projects/pn-3masts/**)"
+      "Read(//c/Users/zhu_j/workspace/ecepdi-working/sharing/jzasus/cm-projects/pn-3masts/**)",
+      "Bash(julia:*)"
     ],
     "deny": [],
     "ask": []

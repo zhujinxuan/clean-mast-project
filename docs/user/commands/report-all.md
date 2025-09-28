@@ -30,7 +30,7 @@ julia bin/CleanMast.jl report all <项目目录>
 
 ## 前置条件
 
-- 必须先完成 `process all` 或相应的处理步骤
+- 必须先完成 `process steps --all` 或相应的处理步骤
 - 必须先完成 `recommend report-all` 生成配置文件
 - 存在 `report-masts/` 目录及其配置文件
 
@@ -94,10 +94,9 @@ report-masts/
 
 如需单独执行特定分析，可使用以下独立命令：
 
-- [analyze timeseries](report/analyze-timeseries.md) - 时间序列分析
-- [analyze reconstruct-single](report/analyze-reconstruct-single.md) - 单塔重构质量分析
-- [analyze reconstruct-cross](report/analyze-reconstruct-cross.md) - 跨塔重构分析
-- [analyze recovery](report/analyze-recovery.md) - 数据恢复分析
+- [report timeseries](report/timeseries.md) - 时间序列分析
+- [report clean](report/clean.md) - 数据清理质量报告
+- [report representative-year](report/representative-year.md) - 代表年校正报告
 
 ## 配置生成
 
@@ -150,7 +149,7 @@ Reports available in: projects/windfarm-170/report-masts/
 
 ## 注意事项
 
-- 确保先完成数据处理流程 (`process all`)
+- 确保先完成数据处理流程 (`process steps --all`)
 - 必须先生成分析配置 (`recommend report-all`)
 - 检查 `report-masts/` 目录中的配置文件
 - 报告生成可能需要较长时间

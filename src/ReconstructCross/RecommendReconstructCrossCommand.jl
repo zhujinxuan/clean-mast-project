@@ -18,17 +18,18 @@ using ...CleanMastUtils: load_dict
 export execute
 
 """
-    execute(train_results_path::String, output_dir::String = "./")
+    execute(train_results_path::String, output_dir::String, min_coverage_days::Float64)
 
 Generate reconstruct-cross.toml configuration from train-results.toml.
 
 # Arguments
 - `train_results_path::String`: Path to train-results.toml from train command
-- `output_dir::String`: Directory to write reconstruct-cross.toml (default: current directory)
+- `output_dir::String`: Directory to write reconstruct-cross.toml
+- `min_coverage_days::Float64`: Minimum data coverage days for qualification
 
 # Algorithm
 1. Load and parse train-results.toml
-2. Filter qualified mast pairs (correlation ≥0.3, direction std ≤25°, ≥120 days data)
+2. Filter qualified mast pairs (correlation ≥0.3, direction std ≤25°, ≥min_coverage_days data)
 3. For each target mast, find best source mast(s) by correlation
 4. Create priority levels: excellent (≥0.7), good (≥0.5), acceptable (≥0.3)
 5. Generate reconstruction job queue with fallback options
@@ -37,7 +38,7 @@ Generate reconstruct-cross.toml configuration from train-results.toml.
 # Returns
 - Path to generated reconstruct-cross.toml file
 """
-function execute(train_results_path::String, output_dir::String = "./")::String
+function execute(train_results_path::String, output_dir::String, min_coverage_days::Float64)::String
     println("🔍 Analyzing training results for reconstruction recommendations...")
 
     # 1. Load and parse train-results.toml
@@ -61,7 +62,7 @@ function execute(train_results_path::String, output_dir::String = "./")::String
     println("📊 Loaded training results for $(length(train_results)) mast pairs")
 
     # 2. Analyze reconstruction opportunities
-    reconstruction_candidates = analyze_reconstruction_opportunities(train_results)
+    reconstruction_candidates = analyze_reconstruction_opportunities(train_results, min_coverage_days)
 
     if isempty(reconstruction_candidates)
         println("⚠️  No qualified reconstruction opportunities found. Check training results and selection criteria.")
@@ -133,19 +134,18 @@ struct ReconstructionCandidate
 end
 
 """
-    meets_basic_qualification_criteria(result::MastPairAnalysisResult)::Bool
+    meets_basic_qualification_criteria(result::MastPairAnalysisResult, min_coverage_days::Float64)::Bool
 
 Check if a training result meets basic qualification criteria for reconstruction.
 """
-function meets_basic_qualification_criteria(result::MastPairAnalysisResult)::Bool
+function meets_basic_qualification_criteria(result::MastPairAnalysisResult, min_coverage_days::Float64)::Bool
     # Loose threshold criteria for reconstruct cross-masts
     MIN_CORRELATION = 0.3
     MAX_DIRECTION_STD = 25.0
-    MIN_COVERAGE_DAYS = 120.0
 
     speed_qualified = result.windspeed_summary.best_high_elevation_correlation >= MIN_CORRELATION
     direction_qualified = result.winddirection_summary.best_high_elevation_std <= MAX_DIRECTION_STD
-    coverage_qualified = result.coverage.overlap_days >= MIN_COVERAGE_DAYS
+    coverage_qualified = result.coverage.overlap_days >= min_coverage_days
 
     return (speed_qualified || direction_qualified) && coverage_qualified
 end
@@ -219,15 +219,15 @@ function group_candidates_by_target(candidates::Vector{ReconstructionCandidate})
 end
 
 """
-    analyze_reconstruction_opportunities(train_results::Vector{MastPairAnalysisResult})::Dict{String, Vector{ReconstructionCandidate}}
+    analyze_reconstruction_opportunities(train_results::Vector{MastPairAnalysisResult}, min_coverage_days::Float64)::Dict{String, Vector{ReconstructionCandidate}}
 
 Analyze train results to identify reconstruction opportunities for each mast.
 """
-function analyze_reconstruction_opportunities(train_results::Vector{MastPairAnalysisResult})::Dict{String, Vector{ReconstructionCandidate}}
-    
+function analyze_reconstruction_opportunities(train_results::Vector{MastPairAnalysisResult}, min_coverage_days::Float64)::Dict{String, Vector{ReconstructionCandidate}}
+
     # Process all training results into reconstruction candidates
     candidates = train_results |>
-        results -> filter(meets_basic_qualification_criteria, results) |>
+        results -> filter(r -> meets_basic_qualification_criteria(r, min_coverage_days), results) |>
         results -> map(create_reconstruction_candidate, results) |>
         results -> filter(!isnothing, results) |>
         Vector{ReconstructionCandidate}
