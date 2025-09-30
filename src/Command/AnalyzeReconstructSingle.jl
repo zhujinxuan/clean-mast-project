@@ -1,7 +1,7 @@
 module AnalyzeReconstructSingle
 
 using ...Types.AnalyzeReconstructSingleConfiguration: load_analyze_reconstruct_single_config
-using ...AnalyzeReconstructSingle: analyze_reconstruction_comparison
+using ...ReportReconstructSingle: analyze_reconstruction_comparison
 
 """
     execute(config_path::String)

@@ -18,8 +18,36 @@ using ...RepresentativeYear.CommandRepresentativeYear
 using ...RepresentativeYear.RecommendRepresentativeYearCommand
 using ...WTTimeSeries.CommandWtTimeSeries
 using ...WTTimeSeries.RecommendWtTimeSeriesCommand
+using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, from_dict
+using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
+using ...CleanMastUtils: load_dict
 
 export execute, list_steps
+
+"""
+    is_single_mast_project(dir::String)::Bool
+
+Check if this is a single mast project by examining parse-sensors.toml or reconstruct-single.toml.
+Returns true if there is only one mast configured, false otherwise.
+"""
+function is_single_mast_project(dir::String)::Bool
+    parse_sensors_path = joinpath(dir, "parse-sensors.toml")
+    reconstruct_single_path = joinpath(dir, "reconstruct-single.toml")
+
+    # First try to check parse-sensors.toml
+    if isfile(parse_sensors_path)
+        config_dict = load_dict(parse_sensors_path)
+        config = from_dict(ParseSensorsConfiguration, config_dict)
+        # Single mast project if there's exactly one mast and no mesos
+        return length(config.masts) == 1 && length(config.mesos) == 0
+    else
+        error("pares-sensors.toml doesn't exists")
+    end
+
+
+    # If neither file exists or reconstruct-single failed to parse, assume it's not a single mast project
+    return false
+end
 
 """
     ProcessingStep
@@ -109,7 +137,7 @@ function get_all_steps()::Vector{ProcessingStep}
         ProcessingStep(
             7,
             "recommend-train-cross",
-            "Recommend cross-mast training configuration",
+            "Recommend cross-mast training configuration (skip if single mast)",
             dir -> RecommendTrainReconstructCrossCommand.execute(dir),
             "train-reconstruct-cross.toml",
             "train-reconstruct-cross.toml",
@@ -118,7 +146,7 @@ function get_all_steps()::Vector{ProcessingStep}
         ProcessingStep(
             8,
             "train-cross",
-            "Train cross-mast reconstruction models",
+            "Train cross-mast reconstruction models (skip if single mast)",
             dir -> TrainReconstructCrossCommand.execute(joinpath(dir, "train-reconstruct-cross.toml")),
             "train-reconstruct-cross.toml",
             "train-reconstruct-cross",
@@ -127,7 +155,7 @@ function get_all_steps()::Vector{ProcessingStep}
         ProcessingStep(
             9,
             "recommend-reconstruct-cross",
-            "Recommend cross-mast reconstruction configuration",
+            "Recommend cross-mast reconstruction configuration (skip if single mast)",
             dir -> RecommendReconstructCrossCommand.execute(joinpath(dir, "train-reconstruct-cross", "train-results.toml"), dir),
             nothing,
             "reconstruct-cross.toml",
@@ -136,7 +164,7 @@ function get_all_steps()::Vector{ProcessingStep}
         ProcessingStep(
             10,
             "reconstruct-cross",
-            "Reconstruct cross-mast data (conditional)",
+            "Reconstruct cross-mast data (skip if single mast)",
             dir -> ProcessReconstructCrossCommand.execute(joinpath(dir, "reconstruct-cross.toml")),
             "reconstruct-cross.toml",
             "reconstruct-cross",
@@ -295,6 +323,13 @@ Execute a single processing step with error handling and progress reporting.
 """
 function execute_step(step::ProcessingStep, dir::String)
     println("\n$(step.number). $(step.description)...")
+
+    # Check if this is a cross-mast step and we have a single mast project
+    cross_mast_steps = [7, 8, 9, 10]  # recommend-train-cross, train-cross, recommend-reconstruct-cross, reconstruct-cross
+    if step.number in cross_mast_steps && is_single_mast_project(dir)
+        println("   ⏭️  Skipping cross-mast step (single mast project detected)")
+        return
+    end
 
     # Check if step is conditional and should be skipped
     if step.conditional && step.config_file !== nothing

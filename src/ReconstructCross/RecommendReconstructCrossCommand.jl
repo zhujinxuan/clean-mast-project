@@ -462,4 +462,13 @@ function print_recommendation_summary(priority_levels::Vector{ReconstructionPrio
     println("  2. Run: julia bin/CleanMast.jl process reconstruct-cross $output_path")
 end
 
+"""
+    execute(train_results_path::String, output_dir::String)
+
+Wrapper method for execute with default min_coverage_days = 30.0.
+"""
+function execute(train_results_path::String, output_dir::String)::String
+    return execute(train_results_path, output_dir, 30.0)
+end
+
 end # module

@@ -7,11 +7,11 @@ import ..TimeSeriesProcessing.Regularization: ensure_regular_intervals
 import ..TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
 # Include sub-modules for different analysis types
-include("./AnalyzeReconstructSingle/DataCoverage.jl")
-include("./AnalyzeReconstructSingle/WindSpeedCorrelation.jl")
-include("./AnalyzeReconstructSingle/WindDirectionDifference.jl")
-include("./AnalyzeReconstructSingle/ReportGeneration.jl")
-include("./AnalyzeReconstructSingle/RecommendReportReconstructSingleCommand.jl")
+include("./ReportReconstructSingle/DataCoverage.jl")
+include("./ReportReconstructSingle/WindSpeedCorrelation.jl")
+include("./ReportReconstructSingle/WindDirectionDifference.jl")
+include("./ReportReconstructSingle/ReportGeneration.jl")
+include("./ReportReconstructSingle/RecommendReportReconstructSingleCommand.jl")
 
 # Import specific functions from sub-modules
 import .DataCoverage: analyze_data_coverage

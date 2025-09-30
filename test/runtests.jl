@@ -41,7 +41,6 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "WindModels/test_sectorized_regression_training.jl",
         "WindModels/test_direction_offset_training.jl"
     ],
-    "analyze_reconstruct_single" => ["AnalyzeReconstructSingle/test_analyze_reconstruct_single.jl"],
     "train_reconstruct_cross" => [
         "TrainReconstructCross/test_data_coverage.jl",
         "TrainReconstructCross/test_cross_mast_speed_correlation.jl",

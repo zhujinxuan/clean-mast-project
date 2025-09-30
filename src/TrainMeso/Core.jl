@@ -14,6 +14,7 @@ using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionMod
 using ...Types.DirectionReferenceModel.DirectionOffset: DirectionOffsetModel, DirectionOffsetParams
 using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals, validate_intervals
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
+using ...TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
 export train_meso_windspeed_sectorized, train_meso_winddirection_directionoffset
 
@@ -21,7 +22,7 @@ export train_meso_windspeed_sectorized, train_meso_winddirection_directionoffset
     prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData)::Tuple{TimeSeriesData, TimeSeriesData}
 
 Prepare mast and meso data for training by:
-1. Ensuring mast data has regular 10-minute intervals
+1. Detecting representative interval and ensuring mast data has regular intervals
 2. Interpolating meso data to match mast timestamps
 """
 function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData)::Tuple{TimeSeriesData, TimeSeriesData}
@@ -31,9 +32,10 @@ function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData)
         maximum(mast_ts.df.timestamp)
     )
     
-    # Ensure mast data has regular 10-minute intervals
-    if !validate_intervals(mast_ts, Minute(10))
-        mast_ts = ensure_regular_intervals(mast_ts, time_range, Minute(10))
+    # Detect representative interval and ensure mast data has regular intervals
+    representative_interval = detect_representative_interval(mast_ts)
+    if !validate_intervals(mast_ts, representative_interval)
+        mast_ts = ensure_regular_intervals(mast_ts, time_range, representative_interval)
     end
 
     
