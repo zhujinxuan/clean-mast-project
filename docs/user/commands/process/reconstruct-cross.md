@@ -37,7 +37,6 @@ name = "测风塔名称"
 output_dir = "输出目录"
 min_confidence = 0.7
 max_direction_uncertainty = 12.5
-preserve_existing = true
 generate_reports = true
 backup_originals = true
 
@@ -73,7 +72,6 @@ max_direction_std = 15.0
 - **output_dir**: 重构结果输出目录
 - **min_confidence**: 最小置信度阈值（默认0.7）
 - **max_direction_uncertainty**: 风向不确定度最大值（默认45.0°）
-- **preserve_existing**: 仅填补缺失数据，不覆盖现有值（默认true）
 - **generate_reports**: 生成重构质量报告（默认true）
 - **backup_originals**: 备份原始文件（默认true）
 
@@ -124,7 +122,6 @@ name = "测风塔-002"
 output_dir = "./reconstruct-cross"
 min_confidence = 0.7
 max_direction_uncertainty = 15.0
-preserve_existing = true
 generate_reports = true
 backup_originals = true
 

@@ -64,7 +64,6 @@ Configuration settings for reconstruction execution.
 
 # Fields
 - `output_dir::String`: Directory for reconstruction outputs
-- `preserve_existing::Bool`: Only fill missing data, don't override existing values
 - `min_confidence::Float64`: Minimum correlation to attempt reconstruction
 - `max_direction_uncertainty::Float64`: Maximum direction std deviation (degrees)
 - `generate_reports::Bool`: Generate reconstruction quality reports
@@ -72,7 +71,6 @@ Configuration settings for reconstruction execution.
 """
 @with_kw struct ReconstructCrossSettings
     output_dir::String = "./reconstruct-cross"
-    preserve_existing::Bool = true
     min_confidence::Float64 = 0.7
     max_direction_uncertainty::Float64 = 45.0
     generate_reports::Bool = true
@@ -163,7 +161,6 @@ end
 function from_dict(::Type{ReconstructCrossSettings}, dict::Dict{String, Any})::ReconstructCrossSettings
     return ReconstructCrossSettings(
         output_dir = get(dict, "output_dir", "./reconstruct-cross"),
-        preserve_existing = get(dict, "preserve_existing", true),
         min_confidence = get(dict, "min_confidence", 0.7),
         max_direction_uncertainty = get(dict, "max_direction_uncertainty", 45.0),
         generate_reports = get(dict, "generate_reports", true),
@@ -174,7 +171,6 @@ end
 function to_dict(settings::ReconstructCrossSettings)::Dict{String, Any}
     return Dict{String, Any}(
         "output_dir" => settings.output_dir,
-        "preserve_existing" => settings.preserve_existing,
         "min_confidence" => settings.min_confidence,
         "max_direction_uncertainty" => settings.max_direction_uncertainty,
         "generate_reports" => settings.generate_reports,

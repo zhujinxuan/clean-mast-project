@@ -44,7 +44,7 @@ function to_dict(source::TimeSeriesSource) :: Dict{String, Any}
     )
 end
 
-export TimeSeriesData, TimeRange, TimeSeriesSource, load_timeseries, save_timeseries
+export TimeSeriesData, TimeRange, TimeSeriesSource, load_timeseries, save_timeseries, slice_timeseries_by_range
 
 function resolve_absolute_path(source::TimeSeriesSource, base_dir::String) :: TimeSeriesSource
     return TimeSeriesSource(joinpath(base_dir, source.data), joinpath(base_dir, source.sensors))
@@ -96,6 +96,26 @@ function save_timeseries(config_source::TimeSeriesSource, base_dir::Union{String
             TOML.print(io, strip_nothing_values(sensors_dict))
         end
     end
+end
+
+"""
+    slice_timeseries_by_range(ts::TimeSeriesData, time_range::TimeRange)::TimeSeriesData
+
+Slice time series data to only include timestamps within the specified time range.
+
+# Arguments
+- `ts::TimeSeriesData`: Input time series data
+- `time_range::TimeRange`: Time range to filter by (inclusive)
+
+# Returns
+- `TimeSeriesData`: Sliced time series containing only timestamps within the range
+"""
+function slice_timeseries_by_range(ts::TimeSeriesData, time_range::TimeRange)::TimeSeriesData
+    sliced_df = filter(
+        row -> time_range.min <= row.timestamp <= time_range.max,
+        ts.df
+    )
+    return TimeSeriesData(sliced_df, ts.sensors)
 end
 
 end # module 

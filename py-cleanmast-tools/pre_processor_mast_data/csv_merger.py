@@ -48,6 +48,8 @@ class InputConfig(BaseModel):
     date: Optional[DateTimeConfig] = Field(default=None, description="Date column configuration")
     time: Optional[DateTimeConfig] = Field(default=None, description="Time column configuration")
     headline: HeadlineConfig = Field(..., description="Header detection configuration")
+    delim: str = Field(default=",", description="Field delimiter")
+    patterns: List[str] = Field(default=["*.csv"], description="File patterns to match (e.g., ['*.csv', '*.wnd'])")
 
     @model_validator(mode='after')
     def validate_datetime_options(self):
@@ -69,7 +71,6 @@ class CsvMergerConfig(BaseModel):
     """Configuration for CSV merger."""
     output: str = Field(..., description="Output file path relative to config.toml")
     input: InputConfig = Field(..., description="Input configuration")
-    delim: str = Field(default=",", description="Field delimiter")
 
 
 def load_config(config_path: str) -> CsvMergerConfig:
@@ -147,7 +148,7 @@ def read_csv_file(file_path: str, config: CsvMergerConfig) -> pd.DataFrame:
         # header parameter specifies which line to use as column names (0-indexed after skipping)
         df = pd.read_csv(
             utf8_file_path,
-            delimiter=config.delim,
+            delimiter=config.input.delim,
             skiprows=header_line,
             header=0
         )
@@ -160,8 +161,8 @@ def read_csv_file(file_path: str, config: CsvMergerConfig) -> pd.DataFrame:
             os.remove(utf8_file_path)
 
 
-def discover_csv_files(input_dir: str, config_dir: Path) -> List[str]:
-    """Discover all CSV files in the input directory."""
+def discover_csv_files(input_dir: str, config_dir: Path, patterns: List[str]) -> List[str]:
+    """Discover all files matching the specified patterns in the input directory."""
     # Resolve input directory relative to config file
     if not Path(input_dir).is_absolute():
         input_path = config_dir / input_dir
@@ -173,11 +174,15 @@ def discover_csv_files(input_dir: str, config_dir: Path) -> List[str]:
     if not input_path.exists():
         raise FileNotFoundError(f"Input directory not found: {input_path}")
 
-    csv_files = list(input_path.glob("*.csv"))
-    if not csv_files:
-        raise ValueError(f"No CSV files found in directory: {input_path}")
+    # Collect files matching any of the patterns
+    files = []
+    for pattern in patterns:
+        files.extend(input_path.glob(pattern))
 
-    return [str(f) for f in sorted(csv_files)]
+    if not files:
+        raise ValueError(f"No files matching patterns {patterns} found in directory: {input_path}")
+
+    return [str(f) for f in sorted(files)]
 
 
 def validate_column_consistency(dataframes: List[pd.DataFrame], file_paths: List[str]) -> None:
@@ -258,9 +263,9 @@ def merge_csv_files(config: CsvMergerConfig, config_dir: Path) -> pd.DataFrame:
     # Initialize colorama for colored output
     colorama.init()
 
-    # Discover CSV files
-    csv_files = discover_csv_files(config.input.dir, config_dir)
-    click.echo(f"Found {len(csv_files)} CSV files to merge")
+    # Discover files matching patterns
+    csv_files = discover_csv_files(config.input.dir, config_dir, config.input.patterns)
+    click.echo(f"Found {len(csv_files)} files to merge")
 
     # Read all CSV files
     dataframes = []

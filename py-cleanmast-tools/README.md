@@ -1,9 +1,10 @@
 # Pre-processor for Mast Data
 
-This project provides two command-line tools to normalize mast data files:
+This project provides command-line tools to normalize and merge mast data files:
 
-1. **Type Normalizer**: Converts string columns to float types
-2. **Column Name Normalizer**: Renames columns to NRG format
+1. **CSV Merger**: Merges multiple CSV files with timestamp normalization
+2. **Type Normalizer**: Converts string columns to float types
+3. **Column Name Normalizer**: Renames columns to NRG format
 
 ## Installation
 
@@ -14,6 +15,14 @@ uv pip install -e .
 ```
 
 ## Usage
+
+### Step 0: CSV Merging (Optional)
+
+If you have multiple CSV files that need to be merged:
+
+```bash
+uv run csv-merger path/to/merge-config.toml
+```
 
 ### Step 1: Type Normalization
 
@@ -47,6 +56,7 @@ uv run col-name-normalizer datas/by/col-name-config-2502.toml
 
 ## Documentation
 
+- **[CSV Merger Reference](docs/csv-merger.md)** - Merge multiple CSV files with timestamp normalization
 - **[Command Reference](docs/commands.md)** - Detailed command-line tool documentation
 - **[NRG Format Guide](docs/nrg-format.md)** - NRG column header format specification
 - **[Contributing Guide](docs/contributing.md)** - Development and contribution guidelines

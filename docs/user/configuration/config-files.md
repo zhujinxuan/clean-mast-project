@@ -231,7 +231,6 @@ min_confidence = 0.7
 max_direction_uncertainty = 45.0
 backup_originals = true
 output_dir = "./reconstruct-cross"
-preserve_existing = true
 generate_reports = true
 
 # 重构优先级配置

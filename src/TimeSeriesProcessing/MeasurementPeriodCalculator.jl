@@ -275,15 +275,14 @@ function find_optimal_year_range(
     # Calculate optimal period dates
     start_date = score_vector[best_start_idx].date
     end_date = score_vector[best_start_idx + 364].date
-    
-    # Align to month boundaries for cleaner periods
+
+    # Align start to month boundary for cleaner periods
     aligned_start = Date(year(start_date), month(start_date), 1)
-    aligned_end = Date(year(end_date), month(end_date), daysinmonth(year(end_date), month(end_date)))
-    
-    # Convert to DateTime with time boundaries  
+
+    # Convert to DateTime and calculate exact 1-year period
     start_datetime = DateTime(aligned_start)
-    end_datetime = DateTime(year(aligned_end), month(aligned_end), day(aligned_end), 23, 59, 59)
-    
+    end_datetime = start_datetime + Year(1) - Second(1)
+
     return TimeRange(start_datetime, end_datetime)
 end
 

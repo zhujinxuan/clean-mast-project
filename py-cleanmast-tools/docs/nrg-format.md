@@ -25,9 +25,9 @@ Ch{channel}_{sensorType}_{height}m_{statType}_{unit}
 | `{channel}` | Sequential channel number | `1`, `2`, `3`, `13`, `14` |
 | `{sensorType}` | Sensor type identifier | `Anem`, `Vane`, `Analog` |
 | `{height}` | Height in meters (with decimals) | `130.00`, `110.00`, `90.00`, `70.00`, `10.00` |
-| `{sensorDirection}` | Sensor direction (optional) | `A`, `B`, `N`, `NW`, `SE` |
+| `{sensorDirection}` | Sensor direction (optional) | `A`, `B`, `N`, `NW`, `SE`, `SW` |
 | `{statType}` | Statistical type | `Avg`, `SD`, `Min`, `Max`, `Gust`, `GustDir` |
-| `{unit}` | Unit of measurement | `m/s`, `Deg`, `C`, `kPa`, `%RH` |
+| `{unit}` | Unit of measurement | `m/s`, `Deg`, `C`, `hPa`, `kPa`, `Pa`, `%RH` |
 
 ## Channel Assignment Strategy
 
@@ -45,7 +45,9 @@ Channels should be assigned systematically by sensor type and height:
 | `Anem` | `WindSpeed` | `m/s` | Anemometer wind speed |
 | `Vane` | `WindDirection` | `deg` | Wind vane direction |
 | `Analog` + `C` | `Temperature` | `C` | Temperature sensor |
-| `Analog` + `kPa` | `Pressure` | `kPa` | Pressure sensor |
+| `Analog` + `hPa` | `Pressure` | `hPa` | Pressure sensor (hectopascal) |
+| `Analog` + `kPa` | `Pressure` | `kPa` | Pressure sensor (kilopascal) |
+| `Analog` + `Pa` | `Pressure` | `Pa` | Pressure sensor (pascal) |
 | `Analog` + `%RH` | `Humidity` | `%RH` | Humidity sensor |
 
 ## Example Conversions
@@ -69,9 +71,12 @@ NRG:      Ch21_Analog_10.00m_Avg_C, Ch22_Analog_10.00m_Avg_%RH
 ```
 
 ### System Sensors
+
+**Note**: Battery voltage and similar system/diagnostic columns should be kept unchanged, as they are internal sensor statistics and not related to wind or air conditions.
+
 ```
-Original: Batt_Volt
-NRG:      Ch30_Analog_0.00m_Avg_V
+Original: BattV [V], Battery
+Keep:     BattV [V], Battery (unchanged)
 ```
 
 ## Statistical Type Conventions
@@ -88,7 +93,7 @@ NRG:      Ch30_Analog_0.00m_Avg_V
 - Wind speed: `m/s`
 - Wind direction: `Deg`
 - Temperature: `C`
-- Pressure: `kPa`
+- Pressure: `hPa` (hectopascal), `kPa` (kilopascal), or `Pa` (pascal)
 - Humidity: `%RH`
 - Voltage: `V`
 
@@ -97,6 +102,6 @@ NRG:      Ch30_Analog_0.00m_Avg_V
 - [ ] Channel numbers are assigned systematically
 - [ ] Height values include decimal places (e.g., `130.00m`)
 - [ ] Statistical types use proper case (`Avg`, `SD`, `Min`, `Max`)
-- [ ] Units are correctly formatted (`m/s`, `Deg`, `C`, `kPa`, `%RH`)
+- [ ] Units are correctly formatted (`m/s`, `Deg`, `C`, `hPa`/`kPa`/`Pa`, `%RH`)
 - [ ] Timestamp column is standardized as "Timestamp"
 - [ ] Channel assignments follow logical grouping

@@ -3,7 +3,7 @@ module CommandRepresentativeYear
 using CSV, YAML, DataFrames
 using JLD2
 using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration
-using ...Types.MastTimeSeries: TimeSeriesData, TimeRange, load_timeseries, save_timeseries
+using ...Types.MastTimeSeries: TimeSeriesData, TimeRange, load_timeseries, save_timeseries, slice_timeseries_by_range
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
 using ...Types.MastReferenceModel: AbstractMastReferenceModel
@@ -58,10 +58,15 @@ function execute(config_path::String)
     # Process each mast calibration
     for mast_config in config.masts
         println("\nProcessing calibration for $(mast_config.name)...")
-        
+
         # Load mast time series data
-        mast_ts = load_timeseries(mast_config.input, project_dir)
-        
+        mast_ts_full = load_timeseries(mast_config.input, project_dir)
+
+        # Slice mast data to the specified time range for representative year analysis
+        mast_ts = slice_timeseries_by_range(mast_ts_full, mast_config.time_range)
+        println("  Mast data sliced to time range: $(mast_config.time_range.min) to $(mast_config.time_range.max)")
+        println("  Records in range: $(nrow(mast_ts.df))")
+
         # Get meso data based on model specification
         meso_name = mast_config.meso_model.meso_name
         meso_ts = meso_data[meso_name]

@@ -30,7 +30,6 @@ sensors = "输出传感器配置路径"
 # 重构设置
 [settings]
 output_dir = "输出目录"
-preserve_existing = 是否保持现有数据
 min_confidence = 最小置信度
 max_direction_uncertainty = 最大风向不确定性
 generate_reports = 是否生成报告
@@ -109,14 +108,6 @@ sensors = "./reconstruct-cross/pn-002824_reconstructed.sensors.yaml"
 
 ```toml
 output_dir = "./reconstruct-cross"
-```
-
-**preserve_existing** (布尔值)
-- 是否只填补缺失数据，不覆盖现有值
-- 默认值：true
-
-```toml
-preserve_existing = true
 ```
 
 **min_confidence** (浮点数)

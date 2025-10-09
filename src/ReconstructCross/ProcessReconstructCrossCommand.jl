@@ -170,7 +170,7 @@ function execute_reconstruction_job(job::ReconstructionJob, mast_data::Dict{Stri
         speed_model_path = joinpath(project_dir, job.model_dir, "windspeed.jld2")
         if isfile(speed_model_path)
             reconstructed_ts, speed_metrics = apply_speed_reconstruction(
-                reconstructed_ts, source_ts, speed_model_path, config.settings.preserve_existing
+                reconstructed_ts, source_ts, speed_model_path
             )
             append!(windspeed_metrics, speed_metrics)
         else
@@ -183,7 +183,7 @@ function execute_reconstruction_job(job::ReconstructionJob, mast_data::Dict{Stri
         direction_model_path = joinpath(project_dir, job.model_dir, "winddirection.jld2")
         if isfile(direction_model_path)
             reconstructed_ts, direction_metrics = apply_direction_reconstruction(
-                reconstructed_ts, source_ts, direction_model_path, config.settings.preserve_existing
+                reconstructed_ts, source_ts, direction_model_path
             )
             append!(winddirection_metrics, direction_metrics)
         else
@@ -211,12 +211,12 @@ end
 
 """
     apply_speed_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
-                              speed_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
+                              speed_model_path::String)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
 
 Apply wind speed reconstruction using trained CrossMastSpeedModel.
 """
 function apply_speed_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
-                                   speed_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
+                                   speed_model_path::String)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
     # Load trained model
     model_data = JLD2.load(speed_model_path)
     speed_model = model_data["model"]::CrossMastSpeedModel
@@ -224,8 +224,8 @@ function apply_speed_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSe
     # Apply reconstruction using existing function
     reconstructed_speed_ts = reconstruct(speed_model, source_ts)
 
-    # Merge reconstructed data with target data (only fill missing values if preserve_existing)
-    merged_ts = merge_reconstruction_data(target_ts, reconstructed_speed_ts, preserve_existing)
+    # Merge reconstructed data with target data (only fills missing values, preserves existing data)
+    merged_ts = merge_reconstruction_data(target_ts, reconstructed_speed_ts)
 
     # Calculate quality metrics
     metrics = calculate_speed_quality_metrics(target_ts, merged_ts, speed_model)
@@ -235,12 +235,12 @@ end
 
 """
     apply_direction_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
-                                  direction_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
+                                  direction_model_path::String)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
 
 Apply wind direction reconstruction using trained CrossMastDirectionModel.
 """
 function apply_direction_reconstruction(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
-                                       direction_model_path::String, preserve_existing::Bool)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
+                                       direction_model_path::String)::Tuple{TimeSeriesData, Vector{QualityMetrics}}
     # Load trained model
     model_data = JLD2.load(direction_model_path)
     direction_model = model_data["model"]::CrossMastDirectionModel
@@ -248,8 +248,8 @@ function apply_direction_reconstruction(target_ts::TimeSeriesData, source_ts::Ti
     # Apply reconstruction using existing function
     reconstructed_direction_ts = reconstruct(direction_model, source_ts)
 
-    # Merge reconstructed data with target data (only fill missing values if preserve_existing)
-    merged_ts = merge_reconstruction_data(target_ts, reconstructed_direction_ts, preserve_existing)
+    # Merge reconstructed data with target data (only fills missing values, preserves existing data)
+    merged_ts = merge_reconstruction_data(target_ts, reconstructed_direction_ts)
 
     # Calculate quality metrics
     metrics = calculate_direction_quality_metrics(target_ts, merged_ts, direction_model)
@@ -258,15 +258,56 @@ function apply_direction_reconstruction(target_ts::TimeSeriesData, source_ts::Ti
 end
 
 """
-    merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData,
-                             preserve_existing::Bool)::TimeSeriesData
+    append_new_timestamps(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData)::DataFrame
 
-Merge reconstructed data with original target data.
+Extend target DataFrame with new timestamps from reconstructed data.
+Appends rows for timestamps that exist in reconstructed but not in target, with all sensor values as missing.
+Returns sorted DataFrame by timestamp.
 """
-function merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData,
-                                  preserve_existing::Bool)::TimeSeriesData
+function append_new_timestamps(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData)::DataFrame
     # Start with target data
     result_df = copy(target_ts.df)
+
+    # Find timestamps in reconstructed that don't exist in target
+    existing_timestamps = Set(target_ts.df.timestamp)
+    reconstructed_timestamps = reconstructed_ts.df.timestamp
+    new_timestamps = filter(t -> !(t in existing_timestamps), reconstructed_timestamps)
+
+    if isempty(new_timestamps)
+        return result_df  # No new timestamps to add
+    end
+
+    # Create rows for new timestamps with ALL columns from target (including non-sensor columns like Battery_V)
+    new_rows = DataFrame(:timestamp => new_timestamps)
+
+    # Add ALL columns from target_df to match schema
+    for col_name in propertynames(result_df)
+        if col_name == :timestamp
+            continue  # Already added
+        end
+
+        # Get column type from target_df to preserve type consistency
+        col_type = eltype(result_df[!, col_name])
+        new_rows[!, col_name] = missings(col_type, length(new_timestamps))
+    end
+
+    # Append new rows and sort by timestamp
+    result_df = vcat(result_df, new_rows)
+    sort!(result_df, :timestamp)
+
+    return result_df
+end
+
+"""
+    merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData)::TimeSeriesData
+
+Merge reconstructed data with original target data.
+Only fills missing values in target data, preserving all existing data.
+Extends time range to include all timestamps from reconstruction.
+"""
+function merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::TimeSeriesData)::TimeSeriesData
+    # Append new timestamps from reconstruction, then sort
+    result_df = append_new_timestamps(target_ts, reconstructed_ts)
 
     # Build index from reconstructed timestamps to row index for alignment
     rc_index = Dict{DateTime, Int}()
@@ -283,26 +324,14 @@ function merge_reconstruction_data(target_ts::TimeSeriesData, reconstructed_ts::
             error("merge_reconstruction_data: Target data is missing expected sensor column '$(col_name)'. Ensure the model's target sensors exist in the target mast data.")
         end
 
-        # Timestamp-aligned merge
-        if preserve_existing
-            # Fill only missing values where reconstructed has data at the same timestamp
-            for i in 1:nrow(result_df)
-                ismissing(result_df[i, col_name]) || continue
-                t = result_df.timestamp[i]
-                haskey(rc_index, t) || continue
-                v = reconstructed_ts.df[rc_index[t], col_name]
-                ismissing(v) && continue
-                result_df[i, col_name] = v
-            end
-        else
-            # Replace values where reconstructed has data at the same timestamp
-            for i in 1:nrow(result_df)
-                t = result_df.timestamp[i]
-                haskey(rc_index, t) || continue
-                v = reconstructed_ts.df[rc_index[t], col_name]
-                ismissing(v) && continue
-                result_df[i, col_name] = v
-            end
+        # Fill only missing values where reconstructed has data at the same timestamp
+        for i in 1:nrow(result_df)
+            ismissing(result_df[i, col_name]) || continue
+            t = result_df.timestamp[i]
+            haskey(rc_index, t) || continue
+            v = reconstructed_ts.df[rc_index[t], col_name]
+            ismissing(v) && continue
+            result_df[i, col_name] = v
         end
     end
 
@@ -319,16 +348,21 @@ function calculate_speed_quality_metrics(original_ts::TimeSeriesData, reconstruc
                                         model::CrossMastSpeedModel)::Vector{QualityMetrics}
     metrics = QualityMetrics[]
 
+    # Extend original_ts to match reconstructed_ts time range
+    # This ensures both DataFrames have the same timestamps for quality comparison
+    extended_original_df = append_new_timestamps(original_ts, reconstructed_ts)
+
     for pair in model.pairs
         sensor = pair.target_sensor
         col_name = sensor.columnName
 
         # Skip if sensor not in data
-        if !hasproperty(original_ts.df, col_name) || !hasproperty(reconstructed_ts.df, col_name)
+        if !hasproperty(extended_original_df, col_name) || !hasproperty(reconstructed_ts.df, col_name)
             continue
         end
 
-        original_data = original_ts.df[!, col_name]
+        # Use extended original data (same length as reconstructed)
+        original_data = extended_original_df[!, col_name]
         reconstructed_data = reconstructed_ts.df[!, col_name]
 
         # Calculate metrics
@@ -366,16 +400,21 @@ function calculate_direction_quality_metrics(original_ts::TimeSeriesData, recons
                                             model::CrossMastDirectionModel)::Vector{QualityMetrics}
     metrics = QualityMetrics[]
 
+    # Extend original_ts to match reconstructed_ts time range
+    # This ensures both DataFrames have the same timestamps for quality comparison
+    extended_original_df = append_new_timestamps(original_ts, reconstructed_ts)
+
     for pair in model.pairs
         sensor = pair.target_sensor
         col_name = sensor.columnName
 
         # Skip if sensor not in data
-        if !hasproperty(original_ts.df, col_name) || !hasproperty(reconstructed_ts.df, col_name)
+        if !hasproperty(extended_original_df, col_name) || !hasproperty(reconstructed_ts.df, col_name)
             continue
         end
 
-        original_data = original_ts.df[!, col_name]
+        # Use extended original data (same length as reconstructed)
+        original_data = extended_original_df[!, col_name]
         reconstructed_data = reconstructed_ts.df[!, col_name]
 
         # Calculate metrics

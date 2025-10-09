@@ -75,7 +75,6 @@ min_confidence = 0.7                # 最小置信度
 max_direction_uncertainty = 45.0    # 最大风向不确定度
 backup_originals = true             # 备份原始数据
 output_dir = "./reconstruct-cross"  # 输出目录
-preserve_existing = true            # 保留现有数据
 generate_reports = true             # 生成重构报告
 
 # 重构优先级配置（优先级1 - 最高质量）
@@ -124,7 +123,6 @@ max_direction_std = 20.0
 - `min_confidence`: 模型应用的最小置信度要求
 - `max_direction_uncertainty`: 风向重构的最大不确定度
 - `backup_originals`: 是否备份原始数据文件
-- `preserve_existing`: 是否保留已存在的重构数据
 - `generate_reports`: 是否生成详细的重构报告
 
 ### 优先级策略
