@@ -32,6 +32,9 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "TimeSeriesProcessing/test_time_series_processing.jl",
         "TimeSeriesProcessing/test_interval_detection.jl"
     ],
+    "measurement_period" => [
+        "TimeSeriesProcessing/test_measurement_period_calculator.jl"
+    ],
     # "single_mast" => [
     #     "ReconstructSingleMast/test_wind_speed_training.jl",
     #     "ReconstructSingleMast/test_direction_training.jl"
@@ -50,6 +53,9 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "TrainReconstructCross/test_cross_mast_speed_correlation.jl",
         "TrainReconstructCross/test_cross_mast_direction_analysis.jl",
         "TrainReconstructCross/test_cross_mast_summary.jl"
+    ],
+    "reconstruct_cross" => [
+        "ReconstructCross/test_append_new_timestamps.jl"
     ]
 )
 
