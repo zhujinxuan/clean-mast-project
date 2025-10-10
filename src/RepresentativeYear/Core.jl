@@ -8,21 +8,8 @@ using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionMod
 using ...Types.SpeedReferenceModel.SectorizedRegression: find_pair_from_mast_sensor
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
 using ..Analysis
-
-function find_heighest_meso_sensor(meso_ts::TimeSeriesData)::Union{SensorColumn, Nothing}
-    # Filter sensors with statType = "avg" and sensorType = "WindSpeed"
-    avg_wind_speed_sensors = filter(sensor -> sensor.statType == "avg" && sensor.sensorType == "WindSpeed", meso_ts.sensors)
-    if isempty(avg_wind_speed_sensors)
-        return nothing
-    end
-    foldl(avg_wind_speed_sensors, init=first(avg_wind_speed_sensors)) do max_sensor, sensor
-        if (sensor.height > max_sensor.height)
-            sensor
-        else
-            max_sensor
-        end
-    end
-end
+using ..Utils: find_heighest_meso_sensor, calculate_mean_speed, calculate_climatology_mean,
+               is_calibration_needed, find_representative_year
 
 """
 Main function to perform representative year calibration
@@ -38,8 +25,8 @@ function calibrate_to_representative_year(
         error("No suitable meso wind speed sensor found")
     end
 
-    # Calculate mean speeds for meso sensor
-    meso_full_mean = calculate_mean_speed(meso_ts, meso_sensor)
+    # Calculate climatology mean using only complete years
+    meso_full_mean = calculate_climatology_mean(meso_ts, meso_sensor)
     
     # Filter DataFrame and create new TimeSeriesData for training range
     meso_training_df = filter(

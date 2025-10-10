@@ -24,7 +24,9 @@ using ...Types.SensorColumns: SensorColumn, create_sensor_short_name
 using ...Types.Sector: DirectionSector, DIRECTION_16_SECTORS
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
-using ..Analysis: calculate_mean_speed, find_representative_year, calculate_sector_meso_mean
+using ..Analysis: calculate_sector_meso_mean
+using ..Utils: calculate_mean_speed, calculate_climatology_mean, find_representative_year,
+               filter_training_range, find_heighest_meso_sensor
 
 export generate_representative_year_report, load_representative_year_analysis_data
 
@@ -140,14 +142,14 @@ function load_representative_year_analysis_data(project_dir::String)::Vector{Rep
         meso_ts = meso_data[meso_name]
         
         # Find highest meso sensor for analysis
-        meso_sensor = find_highest_meso_sensor(meso_ts)
+        meso_sensor = find_heighest_meso_sensor(meso_ts)
         if isnothing(meso_sensor)
             @warn "No suitable meso sensor found for $(mast_config.name), skipping..."
             continue
         end
         
-        # Calculate climatology and training means
-        climatology_mean = calculate_mean_speed(meso_ts, meso_sensor)
+        # Calculate climatology mean using only complete years
+        climatology_mean = calculate_climatology_mean(meso_ts, meso_sensor)
         training_ts = filter_training_range(meso_ts, mast_config.time_range)
         training_mean = calculate_mean_speed(training_ts, meso_sensor)
         
@@ -211,28 +213,6 @@ function load_representative_year_analysis_data(project_dir::String)::Vector{Rep
     return analysis_results
 end
 
-"""
-    find_highest_meso_sensor(meso_ts::TimeSeriesData)::Union{SensorColumn, Nothing}
-
-Find the highest available wind speed sensor in meso data.
-"""
-function find_highest_meso_sensor(meso_ts::TimeSeriesData)::Union{SensorColumn, Nothing}
-    ws_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", meso_ts.sensors)
-    isempty(ws_sensors) && return nothing
-    
-    # Return sensor with maximum height
-    return reduce((s1, s2) -> s1.height > s2.height ? s1 : s2, ws_sensors)
-end
-
-"""
-    filter_training_range(ts::TimeSeriesData, range::TimeRange)::TimeSeriesData
-
-Filter time series data to training range.
-"""
-function filter_training_range(ts::TimeSeriesData, range::TimeRange)::TimeSeriesData
-    filtered_df = filter(row -> range.min <= row.timestamp <= range.max, ts.df)
-    return TimeSeriesData(filtered_df, ts.sensors)
-end
 
 """
     create_sector_analysis_dataframe(meso_ts, training_range, rep_year_start, meso_sensor)::DataFrame
@@ -319,7 +299,7 @@ function create_sensor_analysis(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData
     selected_sensors = isempty(high_sensors) ? [maximum(ws_sensors, by=s->s.height)] : high_sensors
     
     # Find corresponding meso direction sensor
-    meso_dir_sensor = find_highest_meso_sensor(meso_ts)  # Reuse for direction sensor lookup
+    meso_dir_sensor = find_heighest_meso_sensor(meso_ts)  # Reuse for direction sensor lookup
     
     sensor_info = Vector{Dict{String, Any}}()
     for sensor in selected_sensors

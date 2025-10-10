@@ -59,6 +59,7 @@ Comonicon.@cast module Process
     using CleanMastProject.WTTimeSeries.CommandWtTimeSeries
     using CleanMastProject.Command.ProcessSteps
     using CleanMastProject.ReconstructCross.ProcessReconstructCrossCommand
+    using CleanMastProject.GuessMastFromMeso.CommandGuessMastFromMeso
 
     """
     clean
@@ -182,6 +183,25 @@ Comonicon.@cast module Process
     end
 
     """
+    guess-mast-from-meso
+
+    Generate synthetic mast data from mesoscale data using mean speed matching.
+
+    # Arguments
+    - `config_path`: Path to guess-mast-from-meso.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl process guess-mast-from-meso guess-mast-from-meso.toml
+    ```
+
+    Generates synthetic mast data by scaling meso wind speeds to match target mean values.
+    """
+    Comonicon.@cast function guess_mast_from_meso(config_path::String)
+        CommandGuessMastFromMeso.guess_mast_from_meso_command(config_path)
+    end
+
+    """
     steps
 
     Execute processing steps with flexible control options.
@@ -251,6 +271,61 @@ Comonicon.@cast module Train
     """
     Comonicon.@cast function reconstruct_cross(config_path::String)
         TrainReconstructCrossCommand.execute(config_path)
+    end
+end
+
+"""
+guess
+
+Generate and process synthetic data
+"""
+@cast module Guess
+    using Comonicon
+    using CleanMastProject.GuessMastFromMeso.CommandGuessMastFromMeso
+
+    """
+    mast-from-meso
+
+    Generate synthetic mast data from mesoscale data using mean speed matching.
+
+    # Arguments
+    - `config_path`: Path to guess-mast-from-meso.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl guess mast-from-meso guess-mast-from-meso.toml
+    ```
+
+    Generates synthetic mast data by scaling meso wind speeds to match target mean values.
+    """
+    @cast function mast_from_meso(config_path::String)
+        CommandGuessMastFromMeso.guess_mast_from_meso_command(config_path)
+    end
+end
+
+@cast module Bootstrap
+    using Comonicon
+    using CleanMastProject.GuessMastFromMeso.CommandGuessMastFromMeso
+
+    """
+    guess-mast-from-meso
+
+    Bootstrap a guess-mast-from-meso.toml configuration file from meso data.
+
+    # Arguments
+    - `--meso`: Path to meso data CSV file (sensors file auto-detected as basename.sensors.toml)
+    - `--output`: Output path for configuration file (default: ../{meso-basename}.guess-mast-from-meso.toml relative to meso directory)
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl bootstrap guess-mast-from-meso --meso ./raw/era5.csv
+    ```
+
+    Generates an incomplete configuration file with TODO fields that need to be filled in manually.
+    Output paths: ./guessed-masts/{meso-basename}-vm.csv and ./guessed-masts/{meso-basename}-vm.sensors.toml
+    """
+    @cast function guess_mast_from_meso(; meso::String, output::Union{String, Nothing}=nothing)
+        CommandGuessMastFromMeso.bootstrap_guess_mast_from_meso_command(meso=meso, output=output)
     end
 end
 

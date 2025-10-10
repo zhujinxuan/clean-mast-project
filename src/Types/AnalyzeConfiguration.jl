@@ -44,12 +44,26 @@ struct OutputConfig
 end
 
 """
+Analysis toggles configuration - controls which analyses to run
+"""
+struct AnalysisToggles
+    wind_temporal::Bool        # Wind temporal analysis (default: true)
+    vertical_profile::Bool     # Vertical profile analysis (default: true)
+    wind_frequency::Bool       # Wind frequency distribution (default: true)
+    wind_rose::Bool           # Wind rose plots (default: true)
+    turbulence::Bool          # Turbulence intensity analysis (default: true)
+    weibull::Bool             # Weibull distribution (default: true)
+    fifty_years_extreme::Bool # 50-year extreme wind (default: true)
+end
+
+"""
 Raw analyze configuration as loaded from YAML
 """
 struct AnalyzeConfigYAML
     masts::Vector{MastAnalyzeConfigYAML}
     output::OutputConfig
     min_plot_height::Union{Float64, Nothing}  # Optional minimum height for plotting (default: 120.0)
+    analysis::Union{AnalysisToggles, Nothing}  # Optional analysis toggles (default: all true)
 end
 
 """
@@ -60,6 +74,7 @@ struct AnalyzeConfig
     output::OutputConfig
     configDir::String          # Directory containing the analyze.yaml (for path resolution)
     min_plot_height::Float64   # Minimum height for plotting (default: 120.0)
+    analysis::AnalysisToggles  # Analysis toggles (default: all true)
 end
 
 # Conversion functions for AirDensityConfig
@@ -114,12 +129,38 @@ function to_dict(config::OutputConfig)::Dict{String, Any}
     Dict{String, Any}("path" => config.path)
 end
 
+# Conversion functions for AnalysisToggles
+function from_dict(::Type{AnalysisToggles}, dict::Dict{String, Any})::AnalysisToggles
+    AnalysisToggles(
+        get(dict, "wind_temporal", true),
+        get(dict, "vertical_profile", true),
+        get(dict, "wind_frequency", true),
+        get(dict, "wind_rose", true),
+        get(dict, "turbulence", true),
+        get(dict, "weibull", true),
+        get(dict, "fifty_years_extreme", true)
+    )
+end
+
+function to_dict(config::AnalysisToggles)::Dict{String, Any}
+    Dict{String, Any}(
+        "wind_temporal" => config.wind_temporal,
+        "vertical_profile" => config.vertical_profile,
+        "wind_frequency" => config.wind_frequency,
+        "wind_rose" => config.wind_rose,
+        "turbulence" => config.turbulence,
+        "weibull" => config.weibull,
+        "fifty_years_extreme" => config.fifty_years_extreme
+    )
+end
+
 # Conversion functions for AnalyzeConfigYAML
 function from_dict(::Type{AnalyzeConfigYAML}, dict::Dict{String, Any})::AnalyzeConfigYAML
     masts = [from_dict(MastAnalyzeConfigYAML, Dict{String, Any}(m)) for m in dict["masts"]]
     output = from_dict(OutputConfig, Dict{String, Any}(dict["output"]))
     min_plot_height = haskey(dict, "min_plot_height") ? convert(Float64, dict["min_plot_height"]) : nothing
-    AnalyzeConfigYAML(masts, output, min_plot_height)
+    analysis = haskey(dict, "analysis") && !isnothing(dict["analysis"]) ? from_dict(AnalysisToggles, Dict{String, Any}(dict["analysis"])) : nothing
+    AnalyzeConfigYAML(masts, output, min_plot_height, analysis)
 end
 
 function to_dict(config::AnalyzeConfigYAML)::Dict{String, Any}
@@ -130,13 +171,16 @@ function to_dict(config::AnalyzeConfigYAML)::Dict{String, Any}
     if !isnothing(config.min_plot_height)
         result["min_plot_height"] = config.min_plot_height
     end
+    if !isnothing(config.analysis)
+        result["analysis"] = to_dict(config.analysis)
+    end
     return result
 end
 
 # Export all types and conversion functions
 export MastAnalyzeConfigYAML, MastAnalyzeConfig,
        OutputConfig, AnalyzeConfigYAML, AnalyzeConfig,
-       AirDensityConfig, from_dict, to_dict
+       AirDensityConfig, AnalysisToggles, from_dict, to_dict
 
 """
     get_output_path(config::AnalyzeConfig, mast_name::String, analysis_type::String) -> String
@@ -270,11 +314,17 @@ function load_analyze_config(config_path::String)::AnalyzeConfig
     # Set default min_plot_height if not specified
     min_plot_height = isnothing(config_yaml.min_plot_height) ? 120.0 : config_yaml.min_plot_height
 
+    # Set default analysis toggles if not specified (all true)
+    analysis_toggles = isnothing(config_yaml.analysis) ?
+        AnalysisToggles(true, true, true, true, true, true, true) :
+        config_yaml.analysis
+
     return AnalyzeConfig(
         processed_masts,
         output_config,
         config_dir,
-        min_plot_height
+        min_plot_height,
+        analysis_toggles
     )
 end
 

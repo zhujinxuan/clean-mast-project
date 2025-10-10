@@ -38,6 +38,8 @@ module Types
   export TrainMesoResultsTypes
 
   export RepresentativeYearConfig
+  include("./Types/GuessMastFromMesoConfig.jl")
+  export GuessMastFromMesoConfig
   include("./Types/WtTimeSeriesConfig.jl")
   export WtTimeSeriesConfig
   include("./Types/Sector.jl")
@@ -212,6 +214,7 @@ end
 export ReconstructMeso
 
 module RepresentativeYear
+  include("./RepresentativeYear/Utils.jl")
   include("./RepresentativeYear/Analysis.jl")
   include("./RepresentativeYear/Core.jl")
   include("./RepresentativeYear/CommandRepresentativeYear.jl")
@@ -221,9 +224,18 @@ module RepresentativeYear
   export calibrate_to_representative_year
   export CommandRepresentativeYear, RecommendRepresentativeYearCommand
   export ReportGeneration, ReportRepresentativeYearCommand
-  export Analysis
+  export Analysis, Utils
 end
 export RepresentativeYear
+
+module GuessMastFromMeso
+  include("./GuessMastFromMeso/Core.jl")
+  include("./GuessMastFromMeso/BootstrapGuessMastFromMeso.jl")
+  include("./GuessMastFromMeso/CommandGuessMastFromMeso.jl")
+  export Core, CommandGuessMastFromMeso, BootstrapGuessMastFromMeso
+end
+export GuessMastFromMeso
+
 module WTTimeSeries
   include("./WTTimeSeries/Core.jl")
   include("./WTTimeSeries/CommandWtTimeSeries.jl")

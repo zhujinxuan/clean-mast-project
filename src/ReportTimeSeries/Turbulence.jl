@@ -161,8 +161,10 @@ function calculate_ti_matrix(
         for sector in DIRECTION_16_SECTORS
             # Filter for this sector, skipping missing sectors
             sector_data = filter(row -> !ismissing(row.sector) && row.sector == sector.name, speed_bin_data)
-            
-            if nrow(sector_data) ≥ 5  # Minimum sample size for reliable statistics
+
+            # Count valid TI values and check if we have enough valid data
+            valid_count = count(!ismissing, sector_data.ti)
+            if valid_count ≥ 5  # Minimum sample size for reliable statistics
                 result[i, sector.name] = mean(skipmissing(sector_data.ti))
             end
         end

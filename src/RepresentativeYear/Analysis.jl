@@ -8,61 +8,10 @@ using ...Types.RepresentativeYear: CalibrationResults, CalibrationEachWSSensor, 
 using ...Types.Sector: DIRECTION_16_SECTORS, abs_degree_diff
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
 using ...Types.SpeedReferenceModel.SectorizedRegression: SectorizedRegressionModel, SpeedPair
+using ..Utils: calculate_mean_speed, is_calibration_needed, find_representative_year,
+               filter_training_range, find_target_mast_sensor, find_target_meso_sensor
 
-"""
-Find target wind speed sensor closest to specified height in mast data
-"""
-function find_target_mast_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
-    ws_sensors = filter(s -> 
-        s.sensorType == "WindSpeed" && 
-        s.statType == "avg",
-        ts.sensors
-    )
-    
-    isempty(ws_sensors) && return nothing
-    
-    # Find sensor closest to target height
-    closest = argmin(map(s -> abs(s.height - target_height), ws_sensors))
-    ws_sensors[closest]
-end
-export find_target_mast_sensor
-
-"""
-Find target wind speed sensor closest to specified height in meso data
-"""
-function find_target_meso_sensor(ts::TimeSeriesData, target_height::Float64)::Union{SensorColumn, Nothing}
-    # Filter for wind speed sensors with avg statType
-    ws_sensors = filter(s -> 
-        s.sensorType == "WindSpeed" && 
-        s.statType == "avg",
-        ts.sensors
-    )
-    
-    isempty(ws_sensors) && return nothing
-    
-    # Find sensor closest to target height
-    closest = argmin(map(s -> abs(s.height - target_height), ws_sensors))
-    ws_sensors[closest]
-end
-export find_target_meso_sensor
-
-"""
-Calculate mean wind speed for a specific sensor
-"""
-function calculate_mean_speed(ts::TimeSeriesData, sensor::SensorColumn)::Float64
-    mean(skipmissing(ts.df[!, sensor.columnName]))
-end
-
-"""
-Determine if calibration is needed based on mean speed difference
-"""
-function is_calibration_needed(
-    full_period_mean::Float64,
-    training_period_mean::Float64;
-    threshold::Float64=0.02
-)::Bool
-    abs(full_period_mean - training_period_mean) / full_period_mean > threshold
-end
+export find_target_mast_sensor, find_target_meso_sensor
 
 """
 Find direction sector for a given angle
@@ -77,42 +26,6 @@ function find_direction_sector(angle::Float64)::Int
 end
 export find_direction_sector
 
-"""
-Find the latest representative year, the return value is the year start date
-"""
-function find_representative_year(
-    meso_ts::TimeSeriesData,
-    full_period_mean::Float64,
-    meso_sensor::SensorColumn;
-    threshold::Float64=0.02
-)::DateTime
-    # Create a copy of DataFrame with year start column
-    df = copy(meso_ts.df)
-    df.year_start = floor.(df.timestamp, Year)
-    
-    # Group by year and calculate mean speed for the specific sensor
-    yearly_means = combine(
-        groupby(df, :year_start),
-        meso_sensor.columnName => mean∘skipmissing => :mean_speed
-    )
-    
-    # Find latest year within threshold
-    for year_start in sort(yearly_means.year_start, rev=true)
-        year_mean = yearly_means[yearly_means.year_start .== year_start, :mean_speed][1]
-        if abs(year_mean - full_period_mean) / full_period_mean <= threshold
-            return year_start
-        end
-    end
-    
-    error("No representative year found within threshold")
-end
-export find_representative_year
-
-function filter_training_range(ts::TimeSeriesData, training_range::TimeRange)::TimeSeriesData
-    df = ts.df[training_range.min .<= ts.df.timestamp .<= training_range.max, :]
-    TimeSeriesData(df, ts.sensors)
-end
-export filter_training_range
 
 
 """
@@ -269,6 +182,7 @@ end
 
 
 export calculate_mean_speed, is_calibration_needed, find_representative_year,
-       apply_calibration, calculate_sector_meso_diff, calculate_calibration_each_ws_sensor
+       filter_training_range, apply_calibration, calculate_sector_meso_diff,
+       calculate_calibration_each_ws_sensor
 
 end 

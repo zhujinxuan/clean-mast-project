@@ -44,32 +44,60 @@ function analyze_all(config::AnalyzeConfig)
     mkpath(config.output.path)
 
     # Wind temporal analyses
-    @info "Running wind temporal analyses..."
-    results["temporal"] = analyze_all_temporal(config)
+    if config.analysis.wind_temporal
+        @info "Running wind temporal analyses..."
+        results["temporal"] = analyze_all_temporal(config)
+    else
+        @info "Skipping wind temporal analyses (disabled)"
+    end
 
     # Vertical profile analyses
-    @info "Running vertical profile analyses..."
-    results["vertical"] = analyze_all_vertical(config)
+    if config.analysis.vertical_profile
+        @info "Running vertical profile analyses..."
+        results["vertical"] = analyze_all_vertical(config)
+    else
+        @info "Skipping vertical profile analyses (disabled)"
+    end
 
     # Wind frequency analyses
-    @info "Running wind frequency analyses..."
-    results["frequency"] = analyze_all_frequency(config)
+    if config.analysis.wind_frequency
+        @info "Running wind frequency analyses..."
+        results["frequency"] = analyze_all_frequency(config)
+    else
+        @info "Skipping wind frequency analyses (disabled)"
+    end
 
     # Wind rose analyses
-    @info "Running wind rose analyses..."
-    results["windrose"] = analyze_all_wind_rose(config)
+    if config.analysis.wind_rose
+        @info "Running wind rose analyses..."
+        results["windrose"] = analyze_all_wind_rose(config)
+    else
+        @info "Skipping wind rose analyses (disabled)"
+    end
 
     # Turbulence intensity analyses
-    @info "Running turbulence intensity analyses..."
-    results["turbulence"] = analyze_all_turbulence(config)
+    if config.analysis.turbulence
+        @info "Running turbulence intensity analyses..."
+        results["turbulence"] = analyze_all_turbulence(config)
+    else
+        @info "Skipping turbulence intensity analyses (disabled)"
+    end
 
     # Weibull distribution analysis
-    @info "Running Weibull distribution analysis..."
-    results["weibull"] = analyze_weibull_distribution(config)
+    if config.analysis.weibull
+        @info "Running Weibull distribution analysis..."
+        results["weibull"] = analyze_weibull_distribution(config)
+    else
+        @info "Skipping Weibull distribution analysis (disabled)"
+    end
 
     # 50-year extreme wind analysis
-    @info "Running 50-year extreme wind analysis..."
-    results["fifty_years_extreme"] = analyze_fifty_years_extreme_wind(config)
+    if config.analysis.fifty_years_extreme
+        @info "Running 50-year extreme wind analysis..."
+        results["fifty_years_extreme"] = analyze_fifty_years_extreme_wind(config)
+    else
+        @info "Skipping 50-year extreme wind analysis (disabled)"
+    end
 
     @info "Analysis complete for all masts"
 

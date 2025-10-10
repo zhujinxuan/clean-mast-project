@@ -128,40 +128,7 @@ end
 
 @testset "RepresentativeYear Analysis" begin
     mast_ts, meso_ts = generate_test_data()
-    
-    @testset "find_target_mast_sensor" begin
-        @test find_target_mast_sensor(mast_ts, 120.0).height == 120.0
-        @test find_target_mast_sensor(mast_ts, 100.0).height == 120.0  # Should find closest
-        @test find_target_mast_sensor(mast_ts, 80.0).height == 80.0
-        
-        # Test with no matching sensors
-        temp_only_ts = TimeSeriesData(
-            DataFrame(timestamp = [DateTime(2024,1,1)], temp = [20.0]),
-            [SensorColumn(:temp, "Temperature", "N", 80.0, "avg", "C")]
-        )
-        @test isnothing(find_target_mast_sensor(temp_only_ts, 80.0))
-    end
-    
-    @testset "calculate_mean_speed" begin
-        sensor = first(filter(s -> s.sensorType == "WindSpeed", mast_ts.sensors))
-        mean_speed = calculate_mean_speed(mast_ts, sensor)
-        @test mean_speed isa Float64
-        @test 5.0 <= mean_speed <= 15.0  # Reasonable range for our synthetic data
-        
-        # Test with missing values
-        df_with_missing = copy(mast_ts.df)
-        df_with_missing[1:10, sensor.columnName] .= missing
-        ts_with_missing = TimeSeriesData(df_with_missing, mast_ts.sensors)
-        @test !isnan(calculate_mean_speed(ts_with_missing, sensor))
-    end
-    
-    @testset "is_calibration_needed" begin
-        @test is_calibration_needed(10.0, 9.0)  # 10% difference
-        @test !is_calibration_needed(10.0, 9.9)  # 1% difference
-        @test is_calibration_needed(10.0, 11.0)  # 10% difference
-        @test is_calibration_needed(10.0, 9.0, threshold=0.05)  # Custom threshold
-    end
-    
+
     @testset "find_direction_sector" begin
         @test find_direction_sector(0.0) == 1    # N
         @test find_direction_sector(90.0) == 5   # E
@@ -169,61 +136,6 @@ end
         @test find_direction_sector(270.0) == 13 # W
         @test find_direction_sector(360.0) == 1  # N again
         @test find_direction_sector(-45.0) == 15 # NW
-    end
-    
-    @testset "find_representative_year" begin
-        # Create test data with known values
-        test_df = DataFrame(
-            timestamp = [DateTime(2024,1,1), DateTime(2024,6,1), DateTime(2025,1,1)],
-            ws_100m = [8.0, 8.0, 8.0],  # Mean exactly 8.0
-            ws_80m = [7.0, 7.0, 8.0]    # Lower height
-        )
-        
-        test_sensors = [
-            SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
-            SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s")
-        ]
-        
-        test_ts = TimeSeriesData(test_df, test_sensors)
-        
-        # Test successful case
-        ref_year = find_representative_year(test_ts, 8.0, test_sensors[1])
-        @test ref_year isa DateTime
-        @test year(ref_year) == 2025  # Should find latest year
-
-        ref_year = find_representative_year(test_ts, 7.0, test_sensors[2])
-        @test ref_year isa DateTime
-        @test year(ref_year) == 2024 # Should find latest year
-    end
-    
-    @testset "find_target_meso_sensor" begin
-        # Test with normal meso data
-        @test find_target_meso_sensor(meso_ts, 120.0).height == 100.0  # Should find closest
-        @test find_target_meso_sensor(meso_ts, 90.0).height == 100.0  # Should find closest
-        
-        # Test with multiple sensors
-        multi_sensor_meso = TimeSeriesData(
-            DataFrame(
-                timestamp = [DateTime(2024,1,1)],
-                ws_80m = [10.0],
-                ws_100m = [11.0],
-                ws_120m = [12.0]
-            ),
-            [
-                SensorColumn(:ws_80m, "WindSpeed", "N", 80.0, "avg", "m/s"),
-                SensorColumn(:ws_100m, "WindSpeed", "N", 100.0, "avg", "m/s"),
-                SensorColumn(:ws_120m, "WindSpeed", "N", 120.0, "avg", "m/s")
-            ]
-        )
-        @test find_target_meso_sensor(multi_sensor_meso, 120.0).height == 120.0
-        @test find_target_meso_sensor(multi_sensor_meso, 100.0).height == 100.0
-        
-        # Test with no matching sensors
-        temp_only_ts = TimeSeriesData(
-            DataFrame(timestamp = [DateTime(2024,1,1)], temp = [20.0]),
-            [SensorColumn(:temp, "Temperature", "N", 80.0, "avg", "C")]
-        )
-        @test isnothing(find_target_meso_sensor(temp_only_ts, 80.0))
     end
     
     @testset "apply_calibration" begin
