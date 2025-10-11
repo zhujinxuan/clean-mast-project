@@ -9,6 +9,7 @@ module AnalysisCore
 using DataFrames
 using Statistics
 using Dates
+using Logging
 
 using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries, SensorColumn
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
@@ -202,8 +203,7 @@ function analyze_meso_mast_pair(
 
     best_idx = argmax([m.correlation for m in sensor_metrics])
     best_metrics = sensor_metrics[best_idx]
-    println("    📊 Overlap: $(round(overlap_days, digits=1)) days")
-    println("    🌪️  Sensor pairs: $(length(sensor_metrics)), best r=$(round(best_metrics.correlation, digits=3)), RMSE=$(round(best_metrics.rmse, digits=2)) m/s")
+    @info "Analysis metrics" overlap_days=round(overlap_days, digits=1) sensor_pairs=length(sensor_metrics) best_corr=round(best_metrics.correlation, digits=3) best_rmse=round(best_metrics.rmse, digits=2)
 
     return AnalyzeMesoMastResult(
         mast_name,
@@ -229,22 +229,22 @@ function load_all_data(config, config_dir::String)::Tuple{Dict{String, TimeSerie
     mast_data = Dict{String, TimeSeriesData}()
     meso_data = Dict{String, TimeSeriesData}()
 
-    println("  📈 Loading mast data...")
+    @info "Loading mast data" count=length(config.masts)
     for mast_config in config.masts
-        println("    Loading $(mast_config.name)...")
+        @info "Loading mast" name=mast_config.name
         mast_data[mast_config.name] = load_timeseries(mast_config.input, config_dir)
 
         ts = mast_data[mast_config.name]
-        println("      ✓ $(nrow(ts.df)) records from $(first(ts.df.timestamp)) to $(last(ts.df.timestamp))")
+        @info "Mast loaded" name=mast_config.name records=nrow(ts.df) first_timestamp=first(ts.df.timestamp) last_timestamp=last(ts.df.timestamp)
     end
 
-    println("  🌍 Loading meso data...")
+    @info "Loading meso data" count=length(config.mesos)
     for meso_config in config.mesos
-        println("    Loading $(meso_config.name)...")
+        @info "Loading meso" name=meso_config.name
         meso_data[meso_config.name] = load_timeseries(meso_config.input, config_dir)
 
         ts = meso_data[meso_config.name]
-        println("      ✓ $(nrow(ts.df)) records from $(first(ts.df.timestamp)) to $(last(ts.df.timestamp))")
+        @info "Meso loaded" name=meso_config.name records=nrow(ts.df) first_timestamp=first(ts.df.timestamp) last_timestamp=last(ts.df.timestamp)
     end
 
     return mast_data, meso_data

@@ -6,6 +6,13 @@ export CleanMastUtils
 include("./TypstUtils.jl")
 export TypstUtils
 
+module CleanMastLogging
+  include("./Logging/CleanMastLogger.jl")
+  using .CleanMastLogger
+  export create_cleanmast_logger
+end
+export CleanMastLogging
+
 module Types
   include("./Types/Utils.jl")
   export Utils

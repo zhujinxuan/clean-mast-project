@@ -66,6 +66,8 @@ function load_timeseries(config_source::TimeSeriesSource, base_dir::String)::Tim
     df = CSV.read(
         source.data,
         DataFrame;
+        ntasks=1,
+        copycols=true,
         types=Dict(
             :timestamp => DateTime,
             [col => Union{Float64, Missing} for col in map(s -> s.columnName, sensors) if col != :timestamp]...

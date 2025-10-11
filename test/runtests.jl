@@ -56,6 +56,13 @@ const TEST_SETS = Dict{String, Vector{String}}(
     ],
     "reconstruct_cross" => [
         "ReconstructCross/test_append_new_timestamps.jl"
+    ],
+    "logging" => [
+        "logging/test_utils.jl",
+        "logging/test_log_rotation.jl",
+        "logging/test_jsonl_logger.jl",
+        "logging/test_terminal_formatter.jl",
+        "logging/test_integration.jl"
     ]
 )
 

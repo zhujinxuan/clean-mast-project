@@ -12,54 +12,79 @@ using DataFrames
 using Statistics
 using Printf
 using GLM
+using Logging
 
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.SensorColumns: create_sensor_short_name
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
+using ...CleanMastLogging: create_cleanmast_logger
 
 export create_meso_mast_plots, create_sensor_scatter_plot
 
 """
-    create_meso_mast_plots(analysis_results, output_dir, mast_data, meso_data)
+    create_meso_mast_plots(analysis_results, output_dir, mast_data, meso_data, config_dir, config_basename)
 
-Generate individual plots for all meso-mast pairs.
+Generate individual plots for all meso-mast pairs in parallel with per-worker logging.
 
 # Arguments
 - `analysis_results::Vector`: Array of AnalyzeMesoMastResult
 - `output_dir::String`: Output directory for plots
 - `mast_data::Dict{String,TimeSeriesData}`: Dictionary mapping mast names to TimeSeriesData
 - `meso_data::Dict{String,TimeSeriesData}`: Dictionary mapping meso names to TimeSeriesData
+- `config_dir::String`: Configuration directory for log files
+- `config_basename::String`: Base name for log files
 """
 function create_meso_mast_plots(
     analysis_results::Vector,
     output_dir::String,
     mast_data::Dict{String,TimeSeriesData},
-    meso_data::Dict{String,TimeSeriesData}
+    meso_data::Dict{String,TimeSeriesData},
+    config_dir::String,
+    config_basename::String
 )
     plots_dir = joinpath(output_dir, "plots")
     mkpath(plots_dir)
 
-    for result in analysis_results
-        mast_name = result.mast_name
-        meso_name = result.meso_name
+    total_plots = length(analysis_results)
+    @info "Creating plot queue" total_plots=total_plots
 
-        mast_ts = haskey(mast_data, mast_name) ? mast_data[mast_name] : nothing
-        meso_ts = haskey(meso_data, meso_name) ? meso_data[meso_name] : nothing
+    Threads.@threads for idx in 1:total_plots
+        worker_id = Threads.threadid()
 
-        if isnothing(mast_ts) || isnothing(meso_ts)
-            @warn "Missing data for $(mast_name) ← $(meso_name), skipping plot"
-            continue
-        end
-
-        plot_file = joinpath(plots_dir, "$(mast_name)_$(meso_name)_sensors.png")
-        create_sensor_scatter_plot(
-            mast_ts,
-            meso_ts,
-            result.sensor_metrics,
-            plot_file,
-            mast_name,
-            meso_name
+        worker_logger = create_cleanmast_logger(
+            job_name="create-plot",
+            worker_id=worker_id,
+            config_dir=config_dir,
+            config_basename=config_basename
         )
+
+        with_logger(worker_logger) do
+            result = analysis_results[idx]
+            mast_name = result.mast_name
+            meso_name = result.meso_name
+
+            @info "Creating plot" index=idx total=total_plots mast=mast_name meso=meso_name
+
+            mast_ts = haskey(mast_data, mast_name) ? mast_data[mast_name] : nothing
+            meso_ts = haskey(meso_data, meso_name) ? meso_data[meso_name] : nothing
+
+            if isnothing(mast_ts) || isnothing(meso_ts)
+                @warn "Missing data for $(mast_name) ← $(meso_name), skipping plot"
+                return
+            end
+
+            plot_file = joinpath(plots_dir, "$(mast_name)_$(meso_name)_sensors.png")
+            create_sensor_scatter_plot(
+                mast_ts,
+                meso_ts,
+                result.sensor_metrics,
+                plot_file,
+                mast_name,
+                meso_name
+            )
+
+            @info "Plot completed" mast=mast_name meso=meso_name file=basename(plot_file)
+        end
     end
 end
 
@@ -168,7 +193,6 @@ function create_sensor_scatter_plot(
     end
 
     save(output_file, fig)
-    println("      ✓ Saved plot: $(basename(output_file))")
 end
 
 end # module
