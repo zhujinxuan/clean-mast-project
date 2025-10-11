@@ -13,6 +13,32 @@ using ...CleanMastUtils: load_dict
 export execute
 
 """
+    adjust_path_for_report_masts(path::String)::String
+
+Adjust a project-relative path to be relative to report-masts/ directory.
+Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
+"""
+function adjust_path_for_report_masts(path::String)::String
+    if startswith(path, "./")
+        return "../" * path[3:end]
+    else
+        return "../" * path
+    end
+end
+
+"""
+    adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
+
+Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory.
+"""
+function adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
+    return TimeSeriesSource(
+        adjust_path_for_report_masts(source.data),
+        adjust_path_for_report_masts(source.sensors)
+    )
+end
+
+"""
     execute(project_dir::String)
 
 Generate report-recovery.toml configuration by tracing data sources through the reconstruction pipeline.
@@ -56,17 +82,17 @@ function execute(project_dir::String)
             return nothing
         end
 
-        # Use fallback data sources if stages are missing
-        tower_shading_source = shading_mast.output
-        single_source = isnothing(single_mast) ? tower_shading_source : single_mast.output
-        cross_source = isnothing(cross_mast) ? nothing : cross_mast.output
+        # Use fallback data sources if stages are missing, and adjust paths for report-masts/ directory
+        tower_shading_source = adjust_timeseries_source(shading_mast.output)
+        single_source = adjust_timeseries_source(isnothing(single_mast) ? shading_mast.output : single_mast.output)
+        cross_source = isnothing(cross_mast) ? nothing : adjust_timeseries_source(cross_mast.output)
 
         ReportRecoveryMast(
             name = mast_name,
             tower_shading = tower_shading_source,
             reconstruct_single = single_source,
             reconstruct_cross = cross_source,
-            reconstruct_meso = meso_mast.output,
+            reconstruct_meso = adjust_timeseries_source(meso_mast.output),
             time_range = meso_mast.time_range
         )
     end
@@ -78,10 +104,10 @@ function execute(project_dir::String)
         error("No valid masts found. Please ensure all pipeline configurations exist.")
     end
     
-    # Create final configuration
+    # Create final configuration with paths relative to report-masts/ directory
     config = ReportRecoveryConfiguration(
         masts = valid_masts,
-        output = ReportRecoveryOutput()
+        output = ReportRecoveryOutput(report_dir = "./recovery")
     )
     
     # Save configuration to report-masts directory

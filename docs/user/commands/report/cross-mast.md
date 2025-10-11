@@ -21,16 +21,22 @@ julia bin/CleanMast.jl report cross-mast <配置文件路径>
 
 ### report-cross-mast.toml
 ```toml
-[[mast_pairs]]
-reference_mast = "pn-002824"
-target_mast = "pn-013945"
-[mast_pairs.data]
-reference_data = "./reconstruct-single/pn-002824.csv"
-target_data = "./reconstruct-single/pn-013945.csv"
+[[masts]]
+name = "M230016"
+    [masts.input]
+    sensors = "../reconstruct-single/M230016.sensors.yaml"
+    data = "../reconstruct-single/M230016.csv"
 
-[output]
-report_dir = "./report-masts/cross-mast"
-report_filename = "report.typ"
+[[masts]]
+name = "M230015"
+    [masts.input]
+    sensors = "../reconstruct-single/M230015.sensors.yaml"
+    data = "../reconstruct-single/M230015.csv"
+
+[analyze]
+language = "zh"
+output_dir = "./cross-mast"
+include_plots = true
 ```
 
 ## 输出文件

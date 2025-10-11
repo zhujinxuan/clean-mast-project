@@ -84,20 +84,22 @@ function execute(config_path::String)::ReconstructionSummary
     # 4. Execute reconstruction jobs in priority order
     println("\n🔧 Executing reconstruction jobs...")
     job_results = ReconstructionJobResult[]
-    
+    reconstructed_masts = Set{String}()
+
     total_jobs = sum(length(level.jobs) for level in config.reconstruction_priorities)
     current_job = 0
-    
+
     for priority_level in config.reconstruction_priorities
         println("\n🎯 Priority Level $(priority_level.priority_level): $(length(priority_level.jobs)) jobs")
-        
+
         for job in priority_level.jobs
             current_job += 1
             println("  🔍 Job $(current_job)/$(total_jobs): $(job.target_mast) ← $(job.source_mast)")
-            
+
             result = execute_reconstruction_job(job, mast_data, config, project_dir)
             push!(job_results, result)
-            
+            push!(reconstructed_masts, job.target_mast)
+
             if result.success
                 println("    ✅ Success: $(join(job.variables, ", "))")
             else
@@ -105,6 +107,10 @@ function execute(config_path::String)::ReconstructionSummary
             end
         end
     end
+
+    # 4.5. Ensure all masts have output files (copy input to output for masts without reconstruction)
+    println("\n📋 Ensuring all masts have output files...")
+    copy_unreconstructed_masts(config, mast_data, reconstructed_masts, project_dir)
     
     # 5. Generate campaign summary
     campaign_end = now()
@@ -562,6 +568,30 @@ function save_reconstruction_summary(summary::ReconstructionSummary, output_dir:
     end
 
     println("💾 Saved reconstruction summary: $summary_path")
+end
+
+"""
+    copy_unreconstructed_masts(config::ReconstructCrossConfiguration, mast_data::Dict{String, TimeSeriesData},
+                              reconstructed_masts::Set{String}, project_dir::String)
+
+Ensure all masts have output files by copying input to output for masts without reconstruction.
+This is necessary for downstream steps that expect to read from the reconstruct-cross directory.
+"""
+function copy_unreconstructed_masts(config::ReconstructCrossConfiguration, mast_data::Dict{String, TimeSeriesData},
+                                   reconstructed_masts::Set{String}, project_dir::String)
+    for mast_config in config.masts
+        if !(mast_config.name in reconstructed_masts)
+            println("  📄 $(mast_config.name): No reconstruction applied, copying input to output")
+
+            if haskey(mast_data, mast_config.name)
+                ts_data = mast_data[mast_config.name]
+                save_timeseries(mast_config.output, project_dir, ts_data)
+                println("    ✅ Saved: $(mast_config.output.data)")
+            else
+                @warn "    ⚠️  Mast data not found: $(mast_config.name)"
+            end
+        end
+    end
 end
 
 """

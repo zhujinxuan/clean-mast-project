@@ -51,117 +51,83 @@ report-masts/
 
 ### 1. 中尺度重构分析配置
 
-#### `report-masts/analyze-reconstruct-meso.toml`
+#### `report-masts/report-timeseries-meso.toml`
 ```toml
 # 中尺度重构数据时间序列分析配置
-# 基于实际项目结构分析重构后数据质量
+# 路径相对于 report-masts/ 目录
 
 [[masts]]
-name = "pn-002824"
+name = "M230016"
     [masts.input]
-    data = "./reconstruct-meso/pn-002824.csv"
-    sensors = "./reconstruct-meso/pn-002824.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225  # kg/m³ at sea level, 15°C
-    reference_height = 10.0
+    data = "../reconstruct-meso/M230016.csv"
+    sensors = "../reconstruct-meso/M230016.sensors.yaml"
 
 [[masts]]
-name = "pn-013945"
+name = "M230015"
     [masts.input]
-    data = "./reconstruct-meso/pn-013945.csv"
-    sensors = "./reconstruct-meso/pn-013945.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225
-    reference_height = 10.0
-
-[[masts]]
-name = "pn-014576"
-    [masts.input]
-    data = "./reconstruct-meso/pn-014576.csv"
-    sensors = "./reconstruct-meso/pn-014576.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225
-    reference_height = 10.0
+    data = "../reconstruct-meso/M230015.csv"
+    sensors = "../reconstruct-meso/M230015.sensors.yaml"
 
 [output]
-path = "./report-masts/reconstruct-meso"
-report_format = ["pdf", "html"]
-include_uncertainty = true
+path = "timeseries-meso"
 ```
 
 ### 2. 代表年分析配置
 
-#### `report-masts/analyze-representative-year.toml`
+#### `report-masts/report-timeseries-rep.toml`
 ```toml
 # 代表年数据时间序列分析配置
-# 基于实际项目结构: projects/pn-3masts/analyze-rep.toml
+# 路径相对于 report-masts/ 目录
 
 [[masts]]
-name = "pn-002824"
+name = "M230016"
     [masts.input]
-    data = "./representative-year/pn-002824.csv"
-    sensors = "./representative-year/pn-002824.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225  # kg/m³ at sea level, 15°C
-    reference_height = 10.0
+    data = "../representative-year/M230016.csv"
+    sensors = "../representative-year/M230016.sensors.yaml"
 
 [[masts]]
-name = "pn-013945"
+name = "M230015"
     [masts.input]
-    data = "./representative-year/pn-013945.csv"
-    sensors = "./representative-year/pn-013945.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225
-    reference_height = 10.0
-
-[[masts]]
-name = "pn-014576"
-    [masts.input]
-    data = "./representative-year/pn-014576.csv"
-    sensors = "./representative-year/pn-014576.sensors.yaml"
-    [masts.airDensity]
-    density = 1.225
-    reference_height = 10.0
+    data = "../representative-year/M230015.csv"
+    sensors = "../representative-year/M230015.sensors.yaml"
 
 [output]
-path = "./report-masts/representative-year"
-report_format = ["pdf", "html"]
-include_calibration_analysis = true
+path = "timeseries-rep"
 ```
 
 ### 3. 数据恢复分析配置
 
-#### `report-masts/analyze-recovery.toml`
+#### `report-masts/report-recovery.toml`
 ```toml
 # 数据恢复率分析配置
-# 分析从原始数据到最终重构的数据恢复情况
-
-[recovery_analysis]
-stages = [
-    "raw",
-    "clean",
-    "tower-shading",
-    "reconstruct-single",
-    "reconstruct-meso",
-    "representative-year"
-]
+# 路径相对于 report-masts/ 目录
 
 [[masts]]
-name = "pn-002824"
-    [masts.stages.raw]
-    data = "./raw/pn-002824.csv"
-    sensors = "./raw/pn-002824.sensors.toml"
-    [masts.stages.clean]
-    data = "./clean/pn-002824.csv"
-    sensors = "./clean/pn-002824.sensors.yaml"
-    [masts.stages.final]
-    data = "./representative-year/pn-002824.csv"
-    sensors = "./representative-year/pn-002824.sensors.yaml"
+name = "M230016"
+
+    [masts.tower_shading]
+    sensors = "../tower-shading/M230016.sensors.yaml"
+    data = "../tower-shading/M230016.csv"
+
+    [masts.reconstruct_single]
+    sensors = "../reconstruct-single/M230016.sensors.yaml"
+    data = "../reconstruct-single/M230016.csv"
+
+    [masts.reconstruct_cross]
+    sensors = "../reconstruct-cross/M230016_reconstructed.sensors.yaml"
+    data = "../reconstruct-cross/M230016_reconstructed.csv"
+
+    [masts.reconstruct_meso]
+    sensors = "../reconstruct-meso/M230016.sensors.yaml"
+    data = "../reconstruct-meso/M230016.csv"
+
+    [masts.time_range]
+    max = 2025-07-31T23:59:59.000Z
+    min = 2023-08-01T00:00:00.000Z
 
 [output]
-path = "./report-masts/recovery"
-include_stage_comparison = true
-generate_recovery_statistics = true
+report_dir = "./recovery"
+report_filename = "recovery-report.typ"
 ```
 
 ## 相关文件

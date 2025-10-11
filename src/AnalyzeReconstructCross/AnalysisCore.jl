@@ -47,13 +47,13 @@ struct AnalyzePairResult
 end
 
 """
-    load_all_mast_data(config, project_dir)
+    load_all_mast_data(config, config_dir)
 
 Load time series data for all masts in configuration.
 
 # Arguments
 - `config`: AnalyzeReconstructCrossConfiguration
-- `project_dir::String`: Project directory path
+- `config_dir::String`: Config directory path for resolving relative paths
 
 # Returns
 - `Dict{String, TimeSeriesData}`: Dictionary mapping mast names to loaded data
@@ -61,18 +61,18 @@ Load time series data for all masts in configuration.
 # Description
 Loads all mast time series data with proper error handling for missing files.
 """
-function load_all_mast_data(config, project_dir::String)::Dict{String, TimeSeriesData}
+function load_all_mast_data(config, config_dir::String)::Dict{String, TimeSeriesData}
     mast_data = Dict{String, TimeSeriesData}()
-    
+
     for mast_config in config.masts
         println("  📈 Loading $(mast_config.name)...")
-        mast_data[mast_config.name] = load_timeseries(mast_config.input, project_dir)
+        mast_data[mast_config.name] = load_timeseries(mast_config.input, config_dir)
 
         # Basic data validation
         ts = mast_data[mast_config.name]
         println("    ✓ Loaded $(nrow(ts.df)) records from $(first(ts.df.timestamp)) to $(last(ts.df.timestamp))")
     end
-    
+
     return mast_data
 end
 

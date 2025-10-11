@@ -12,25 +12,25 @@ using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals
 export analyze_mast_recovery
 
 """
-    analyze_mast_recovery(mast_config::ReportRecoveryMast, project_dir::String)::MastRecoveryData
+    analyze_mast_recovery(mast_config::ReportRecoveryMast, config_dir::String)::MastRecoveryData
 
 Analyze data recovery for a single mast by comparing data at each reconstruction stage.
 
 # Arguments
 - `mast_config::ReportRecoveryMast`: Configuration with data sources for all stages
-- `project_dir::String`: Project directory for resolving relative paths
+- `config_dir::String`: Config directory for resolving relative paths
 
 # Returns
 - `MastRecoveryData`: Complete recovery statistics for the mast
 """
-function analyze_mast_recovery(mast_config::ReportRecoveryMast, project_dir::String)::MastRecoveryData
+function analyze_mast_recovery(mast_config::ReportRecoveryMast, config_dir::String)::MastRecoveryData
     println("📊 Analyzing recovery for mast: $(mast_config.name)")
-    
+
     # Load time series data from all stages
-    tower_shading_data = load_timeseries(mast_config.tower_shading, project_dir)
-    single_data = load_timeseries(mast_config.reconstruct_single, project_dir)
-    cross_data = isnothing(mast_config.reconstruct_cross) ? nothing : load_timeseries(mast_config.reconstruct_cross, project_dir)
-    meso_data = load_timeseries(mast_config.reconstruct_meso, project_dir)
+    tower_shading_data = load_timeseries(mast_config.tower_shading, config_dir)
+    single_data = load_timeseries(mast_config.reconstruct_single, config_dir)
+    cross_data = isnothing(mast_config.reconstruct_cross) ? nothing : load_timeseries(mast_config.reconstruct_cross, config_dir)
+    meso_data = load_timeseries(mast_config.reconstruct_meso, config_dir)
 
     # Detect representative interval from the final meso data
     representative_interval = detect_representative_interval(meso_data)

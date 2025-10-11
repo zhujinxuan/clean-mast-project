@@ -29,25 +29,19 @@ Execute data recovery status report generation.
 function execute(config_path::String)
     println("📊 Generating data recovery status report...")
     
-    # Determine project directory from config path
-    # If config is in report-masts/, the project dir is the parent of that
+    # Use config directory as base for all path resolution
     config_dir = dirname(config_path)
-    project_dir = if basename(config_dir) == "report-masts"
-        dirname(config_dir)  # Go up one level from report-masts to project root
-    else
-        config_dir  # For backward compatibility with configs in project root
-    end
-    
+
     # Load configuration
     config = load_recovery_config(config_path)
-    
-    # Setup report directory
-    report_dir = setup_report_directory(config.output.report_dir, project_dir)
-    
+
+    # Setup report directory (paths are relative to config file location)
+    report_dir = setup_report_directory(config.output.report_dir, config_dir)
+
     # Analyze recovery for each mast
     println("🔍 Analyzing recovery statistics...")
     mast_recovery_data = map(config.masts) do mast_config
-        analyze_mast_recovery(mast_config, project_dir)
+        analyze_mast_recovery(mast_config, config_dir)
     end
     
     # Create complete report data
@@ -91,13 +85,13 @@ function load_recovery_config(config_path::String)::ReportRecoveryConfiguration
 end
 
 """
-    setup_report_directory(report_dir::String, project_dir::String)::String
+    setup_report_directory(report_dir::String, config_dir::String)::String
 
 Create report directory and return absolute path.
 """
-function setup_report_directory(report_dir::String, project_dir::String)::String
-    # Resolve relative path
-    abs_report_dir = isabspath(report_dir) ? report_dir : joinpath(project_dir, report_dir)
+function setup_report_directory(report_dir::String, config_dir::String)::String
+    # Resolve relative path (relative to config file location)
+    abs_report_dir = isabspath(report_dir) ? report_dir : joinpath(config_dir, report_dir)
     
     # Create directory if it doesn't exist
     if !isdir(abs_report_dir)

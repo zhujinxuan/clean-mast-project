@@ -345,6 +345,7 @@ end
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportReconstructSingle.RecommendReportReconstructSingleCommand
+    using CleanMastProject.ReportReconstructMeso.RecommendReportReconstructMesoCommand
     using CleanMastProject.ReportAllMasts.RecommendReportAllCommand
     using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesMesoCommand
     using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesRepCommand
@@ -635,6 +636,32 @@ end
     end
 
     """
+    report-reconstruct-meso
+
+    Recommend a report-reconstruct-meso.toml configuration file for meso-mast reconstruction quality analysis.
+
+    # Arguments
+    - `dir`: Project directory containing reconstruct-meso.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-reconstruct-meso ./projects/my-project
+    ```
+
+    Generates report-reconstruct-meso.toml in report-masts/ for meso-mast reconstruction quality analysis.
+    The report shows RMSE and correlation metrics for each mast-meso pair with scatter plots
+    of the top 3 wind speed sensors.
+
+    The generated configuration file can be used with:
+    ```bash
+    julia bin/CleanMast.jl report reconstruct-meso path/to/report-masts/report-reconstruct-meso.toml
+    ```
+    """
+    @cast function report_reconstruct_meso(dir::String)
+        RecommendReportReconstructMesoCommand.execute(dir)
+    end
+
+    """
     report-all
 
     Generate all report TOML configuration files for comprehensive mast analysis.
@@ -817,6 +844,7 @@ Comonicon.@cast module Report
     using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
     using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
     using CleanMastProject.ReportReconstructSingle.ReportReconstructSingleCommand
+    using CleanMastProject.ReportReconstructMeso.CommandReportReconstructMeso
 
     """
     clean
@@ -1061,6 +1089,40 @@ Comonicon.@cast module Report
     """
     Comonicon.@cast function reconstruct_single(config_path::String)
         ReportReconstructSingleCommand.execute(config_path)
+    end
+
+    """
+    reconstruct-meso
+
+    Generate meso-mast reconstruction quality analysis report.
+
+    # Arguments
+    - `config_path`: Path to report-reconstruct-meso.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report reconstruct-meso path/to/report-masts/report-reconstruct-meso.toml
+    ```
+
+    The TOML configuration file should specify:
+    - Multiple masts with their input data files and meso source names
+    - Multiple meso data sources
+    - Analysis settings including output directory and plot preferences
+
+    For each mast-meso pair, generates:
+    - RMSE (Root Mean Square Error) metrics
+    - Pearson correlation coefficients
+    - Scatter plots with fitted regression lines for top 3 wind speed sensors (statType = avg)
+    - CSV data exports for further analysis
+    - Comprehensive Chinese Typst report with embedded visualizations
+
+    Output includes:
+    - report.typ: Main Chinese report with all analysis results
+    - plots/: Individual plot files ({mast}_{meso}_sensors.png)
+    - data/: CSV exports ({mast}_{meso}_metrics.csv)
+    """
+    Comonicon.@cast function reconstruct_meso(config_path::String)
+        CommandReportReconstructMeso.execute(config_path)
     end
 
 end

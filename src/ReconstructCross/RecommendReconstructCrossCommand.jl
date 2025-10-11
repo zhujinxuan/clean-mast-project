@@ -29,9 +29,9 @@ Generate reconstruct-cross.toml configuration from train-results.toml.
 
 # Algorithm
 1. Load and parse train-results.toml
-2. Filter qualified mast pairs (correlation ≥0.3, direction std ≤25°, ≥min_coverage_days data)
+2. Filter qualified mast pairs (correlation ≥0.5, direction std ≤25°, ≥min_coverage_days data)
 3. For each target mast, find best source mast(s) by correlation
-4. Create priority levels: excellent (≥0.7), good (≥0.5), acceptable (≥0.3)
+4. Create priority levels: excellent (≥0.7), good (≥0.5)
 5. Generate reconstruction job queue with fallback options
 6. Create complete reconstruct-cross.toml configuration
 
@@ -140,7 +140,7 @@ Check if a training result meets basic qualification criteria for reconstruction
 """
 function meets_basic_qualification_criteria(result::MastPairAnalysisResult, min_coverage_days::Float64)::Bool
     # Loose threshold criteria for reconstruct cross-masts
-    MIN_CORRELATION = 0.3
+    MIN_CORRELATION = 0.5
     MAX_DIRECTION_STD = 25.0
 
     speed_qualified = result.windspeed_summary.best_high_elevation_correlation >= MIN_CORRELATION
@@ -157,7 +157,7 @@ Create a reconstruction candidate from a qualified training result.
 """
 function create_reconstruction_candidate(result::MastPairAnalysisResult)::Union{ReconstructionCandidate, Nothing}
     # Loose threshold criteria for reconstruct cross-masts
-    MIN_CORRELATION = 0.3
+    MIN_CORRELATION = 0.5
     MAX_DIRECTION_STD = 25.0
 
     # Determine which variables are available
@@ -268,11 +268,9 @@ function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCa
     # Priority thresholds adjusted for loose criteria
     EXCELLENT_THRESHOLD = 0.7
     GOOD_THRESHOLD = 0.5
-    ACCEPTABLE_THRESHOLD = 0.3
-    
+
     excellent_jobs = ReconstructionJob[]
     good_jobs = ReconstructionJob[]
-    acceptable_jobs = ReconstructionJob[]
     
     # Extract model directory from train results path (make relative to project directory)
     train_dir = dirname(train_results_path)
@@ -303,10 +301,8 @@ function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCa
             # Assign to priority level based on correlation
             if candidate.speed_correlation >= EXCELLENT_THRESHOLD
                 push!(excellent_jobs, job)
-            elseif candidate.speed_correlation >= GOOD_THRESHOLD
-                push!(good_jobs, job)
             else
-                push!(acceptable_jobs, job)
+                push!(good_jobs, job)
             end
             
             priority_counter += 1
@@ -330,15 +326,6 @@ function create_priority_levels(candidates::Dict{String, Vector{ReconstructionCa
             min_correlation = GOOD_THRESHOLD,
             max_direction_std = 20.0,
             jobs = good_jobs
-        ))
-    end
-
-    if !isempty(acceptable_jobs)
-        push!(priority_levels, ReconstructionPriority(
-            priority_level = 3,
-            min_correlation = ACCEPTABLE_THRESHOLD,
-            max_direction_std = 25.0,
-            jobs = acceptable_jobs
         ))
     end
     
@@ -443,10 +430,8 @@ function print_recommendation_summary(priority_levels::Vector{ReconstructionPrio
     for level in priority_levels
         level_name = if level.priority_level == 1
             "Excellent (≥0.7 correlation)"
-        elseif level.priority_level == 2
-            "Good (≥0.5 correlation)"
         else
-            "Acceptable (≥0.3 correlation)"
+            "Good (≥0.5 correlation)"
         end
 
         println("  Priority $(level.priority_level) - $level_name: $(length(level.jobs)) jobs")

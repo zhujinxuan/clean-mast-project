@@ -33,6 +33,8 @@ module Types
   export TrainMesoConfig
   include("./Types/ReconstructMesoConfig.jl")
   export ReconstructMesoConfig
+  include("./Types/ReportReconstructMesoConfig.jl")
+  export ReportReconstructMesoConfig
   include("./Types/RepresentativeYearConfig.jl")
   include("./Types/TrainMesoResultsTypes.jl")
   export TrainMesoResultsTypes
@@ -163,6 +165,17 @@ module ReportReconstructSingle
   export ReportReconstructSingleAnalysis, ReportReconstructSingleCommand, RecommendReportReconstructSingleCommand
 end
 export ReportReconstructSingle
+
+module ReportReconstructMeso
+  include("./ReportReconstructMeso/AnalysisCore.jl")
+  include("./ReportReconstructMeso/DataVisualization.jl")
+  include("./ReportReconstructMeso/ReportGeneration.jl")
+  include("./ReportReconstructMeso/CommandReportReconstructMeso.jl")
+  include("./ReportReconstructMeso/RecommendReportReconstructMesoCommand.jl")
+  export AnalysisCore, DataVisualization, ReportGeneration
+  export CommandReportReconstructMeso, RecommendReportReconstructMesoCommand
+end
+export ReportReconstructMeso
 
 module TowerShading
   include("./TowerShading/Core.jl")

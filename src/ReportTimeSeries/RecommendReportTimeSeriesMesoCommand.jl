@@ -66,7 +66,8 @@ function execute(project_dir::String)
     analyze_config = AnalyzeConfigYAML(
         analyze_masts,
         OutputConfig("timeseries-meso"),
-        nothing  # No min_plot_height specified
+        nothing,  # No min_plot_height specified
+        nothing   # No analysis toggles specified (all default to true)
     )
 
     # 4. Save configuration to report-masts directory

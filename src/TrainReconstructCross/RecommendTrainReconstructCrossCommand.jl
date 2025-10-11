@@ -47,9 +47,7 @@ function execute(project_dir::String)
     println("📝 Generated with training parameters:")
     println("   - min_overlap_days: 90.0")
     println("   - min_data_points: 200")
-    println("   - min_correlation: 0.7")
-    println("   - max_std_deviation: 45.0")
-    println("   - max_abs_offset: 45.0")
+    println("   - Filter only by overlapping period and data counts (permissive)")
     println("✅ Run: julia bin/CleanMast.jl train reconstruct-cross $output_file")
 end
 
@@ -85,9 +83,6 @@ function create_train_config(reconstruct_config::ReconstructSingleConfiguration)
             output_dir="./train-reconstruct-cross",
             min_overlap_days = 90.0,
             min_data_points = 200,
-            min_correlation = 0.7,
-            max_std_deviation = 45.0,
-            max_abs_offset = 45.0,
             exclude_nan_results = true
         )
     )

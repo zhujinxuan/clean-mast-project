@@ -22,14 +22,16 @@ julia bin/CleanMast.jl report reconstruct-single <配置文件路径>
 ### report-reconstruct-single.yaml
 ```yaml
 masts:
-  - name: "pn-002824"
-    raw_data: "./clean/pn-002824.csv"
-    reconstructed_data: "./reconstruct-single/pn-002824.csv"
-    sensors: "./reconstruct-single/pn-002824.sensors.yaml"
+  - name: "M230016"
+    before_reconstruction:
+      csv: "../tower-shading/M230016.csv"
+      sensorConfig: "../tower-shading/M230016.sensors.yaml"
+    after_reconstruction:
+      csv: "../reconstruct-single/M230016.csv"
+      sensorConfig: "../reconstruct-single/M230016.sensors.yaml"
 
 output:
-  report_dir: "./report-masts/reconstruct-single"
-  report_filename: "report.yaml"
+  dir: "./reconstruct-single"
 ```
 
 ## 输出文件

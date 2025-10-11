@@ -22,16 +22,30 @@ julia bin/CleanMast.jl report recovery <配置文件路径>
 ### report-recovery.toml
 ```toml
 [[masts]]
-name = "pn-002824"
-[masts.raw]
-data = "./clean/pn-002824.csv"
-sensors = "./clean/pn-002824.sensors.yaml"
-[masts.final]
-data = "./reconstruct-meso/pn-002824.csv"
-sensors = "./reconstruct-meso/pn-002824.sensors.yaml"
+name = "M230016"
+
+    [masts.tower_shading]
+    sensors = "../tower-shading/M230016.sensors.yaml"
+    data = "../tower-shading/M230016.csv"
+
+    [masts.reconstruct_single]
+    sensors = "../reconstruct-single/M230016.sensors.yaml"
+    data = "../reconstruct-single/M230016.csv"
+
+    [masts.reconstruct_cross]
+    sensors = "../reconstruct-cross/M230016_reconstructed.sensors.yaml"
+    data = "../reconstruct-cross/M230016_reconstructed.csv"
+
+    [masts.reconstruct_meso]
+    sensors = "../reconstruct-meso/M230016.sensors.yaml"
+    data = "../reconstruct-meso/M230016.csv"
+
+    [masts.time_range]
+    max = 2025-07-31T23:59:59.000Z
+    min = 2023-08-01T00:00:00.000Z
 
 [output]
-report_dir = "./report-masts/recovery"
+report_dir = "./recovery"
 report_filename = "recovery-report.typ"
 ```
 

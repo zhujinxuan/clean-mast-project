@@ -9,6 +9,7 @@ module RecommendReportAllCommand
 using ...ReportRecovery.RecommendReportRecoveryCommand
 using ...AnalyzeReconstructCross.RecommendCrossMastReportCommand
 using ...ReportReconstructSingle.RecommendReportReconstructSingleCommand
+using ...ReportReconstructMeso.RecommendReportReconstructMesoCommand
 using ...ReportTimeSeries.RecommendReportTimeSeriesMesoCommand
 using ...ReportTimeSeries.RecommendReportTimeSeriesRepCommand
 
@@ -91,7 +92,7 @@ function execute(project_dir::String)
     println()
 
     # 1. Generate report-recovery.toml
-    println("📋 Config 1/5: Report Recovery Configuration")
+    println("📋 Config 1/6: Report Recovery Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -110,7 +111,7 @@ function execute(project_dir::String)
     println()
 
     # 2. Generate report-cross-mast.toml
-    println("🔗 Config 2/5: Cross-Mast Report Configuration")
+    println("🔗 Config 2/6: Cross-Mast Report Configuration")
     try
         reconstruct_single_config = joinpath(project_dir, "reconstruct-single.toml")
         if isfile(reconstruct_single_config)
@@ -129,7 +130,7 @@ function execute(project_dir::String)
     println()
 
     # 3. Generate report-reconstruct-single.yaml
-    println("📈 Config 3/5: Reconstruct Single Report Configuration")
+    println("📈 Config 3/6: Reconstruct Single Report Configuration")
     try
         tower_shading_config = joinpath(project_dir, "tower-shading.toml")
         if isfile(tower_shading_config)
@@ -148,7 +149,7 @@ function execute(project_dir::String)
     println()
 
     # 4. Generate report-timeseries-meso.toml
-    println("📊 Config 4/5: Time Series Meso Report Configuration")
+    println("📊 Config 4/6: Time Series Meso Report Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -167,7 +168,7 @@ function execute(project_dir::String)
     println()
 
     # 5. Generate report-timeseries-rep.toml
-    println("📊 Config 5/5: Time Series Representative Year Report Configuration")
+    println("📊 Config 5/6: Time Series Representative Year Report Configuration")
     try
         representative_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(representative_year_config)
@@ -182,6 +183,25 @@ function execute(project_dir::String)
         results["timeseries_rep"] = false
         errors["timeseries_rep"] = e
         println("   ❌ Timeseries rep config failed: $(e)")
+    end
+    println()
+
+    # 6. Generate report-reconstruct-meso.toml
+    println("🌍 Config 6/6: Reconstruct Meso Report Configuration")
+    try
+        reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
+        if isfile(reconstruct_meso_config)
+            RecommendReportReconstructMesoCommand.execute(project_dir)
+            results["reconstruct_meso"] = true
+            println("   ✅ report-reconstruct-meso.toml generated successfully")
+        else
+            println("   ⚠️  Skipping: reconstruct-meso.toml not found")
+            results["reconstruct_meso"] = false
+        end
+    catch e
+        results["reconstruct_meso"] = false
+        errors["reconstruct_meso"] = e
+        println("   ❌ Reconstruct meso config failed: $(e)")
     end
     println()
 
@@ -204,7 +224,8 @@ function execute(project_dir::String)
             "cross_mast" => "Cross-Mast Report Configuration",
             "reconstruct_single" => "Reconstruct Single Report Configuration",
             "timeseries_meso" => "Time Series Meso Report Configuration",
-            "timeseries_rep" => "Time Series Representative Year Report Configuration"
+            "timeseries_rep" => "Time Series Representative Year Report Configuration",
+            "reconstruct_meso" => "Reconstruct Meso Report Configuration"
         )[config_name]
 
         output_file = Dict(
@@ -212,7 +233,8 @@ function execute(project_dir::String)
             "cross_mast" => "report-masts/report-cross-mast.toml",
             "reconstruct_single" => "report-masts/report-reconstruct-single.yaml",
             "timeseries_meso" => "report-masts/report-timeseries-meso.toml",
-            "timeseries_rep" => "report-masts/report-timeseries-rep.toml"
+            "timeseries_rep" => "report-masts/report-timeseries-rep.toml",
+            "reconstruct_meso" => "report-masts/report-reconstruct-meso.toml"
         )[config_name]
 
         println("   $status_icon $config_display")

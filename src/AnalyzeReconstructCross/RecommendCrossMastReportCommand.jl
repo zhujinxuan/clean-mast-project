@@ -9,10 +9,37 @@ module RecommendCrossMastReportCommand
 using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.AnalyzeReconstructCrossConfig: AnalyzeReconstructCrossConfiguration, AnalyzeReconstructCrossMast, AnalyzeReconstructCrossSettings
+using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
 
 export execute
+
+"""
+    adjust_path_for_report_masts(path::String)::String
+
+Adjust a project-relative path to be relative to report-masts/ directory.
+Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
+"""
+function adjust_path_for_report_masts(path::String)::String
+    if startswith(path, "./")
+        return "../" * path[3:end]
+    else
+        return "../" * path
+    end
+end
+
+"""
+    adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
+
+Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory.
+"""
+function adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
+    return TimeSeriesSource(
+        adjust_path_for_report_masts(source.data),
+        adjust_path_for_report_masts(source.sensors)
+    )
+end
 
 """
     execute(project_dir::String)
@@ -49,17 +76,17 @@ function execute(project_dir::String)
     config_dict = load_dict(reconstruct_single_path)
     reconstruct_config = from_dict(ReconstructSingleConfiguration, config_dict)
 
-    # Create analyze masts configuration using reconstruct-single outputs as inputs
+    # Create analyze masts configuration with paths adjusted for report-masts/ directory
     analyze_masts = map(reconstruct_config.masts) do mast
         AnalyzeReconstructCrossMast(
             name = mast.name,
-            input = mast.output  # Use output from reconstruct-single as input for analysis
+            input = adjust_timeseries_source(mast.output)  # Adjust paths to be relative to report-masts/
         )
     end
 
-    # Create settings with proper report output directory
+    # Create settings with output directory relative to config file location
     settings = AnalyzeReconstructCrossSettings(
-        output_dir = "./report-masts/cross-mast",  # Report goes to report-masts
+        output_dir = "./cross-mast",  # Relative to report-masts/ directory
         include_plots = true,
         language = "zh"
     )

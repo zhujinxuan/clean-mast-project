@@ -57,7 +57,7 @@ function execute(config_path::String)
     config = from_dict(TrainReconstructCrossConfiguration, config_dict)
     project_dir = dirname(config_path)
     println("📋 Loaded configuration with $(length(config.masts)) masts")
-    println("⚙️  Training parameters: min_overlap=$(config.train.min_overlap_days) days, min_data=$(config.train.min_data_points), min_corr=$(config.train.min_correlation), max_std=$(config.train.max_std_deviation)°")
+    println("⚙️  Training parameters: min_overlap=$(config.train.min_overlap_days) days, min_data=$(config.train.min_data_points)")
     
     # 2. Create output directory structure
     full_output_dir = joinpath(project_dir, config.train.output_dir)
@@ -136,24 +136,21 @@ function train_mast_pair(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
     speed_model_file = nothing
     direction_model_file = nothing
     
-    # Train and save speed model
+    # Train and save speed model (use permissive defaults)
     speed_params = CrossMastSpeedTrainParams(
         target_name=target_name,
         source_name=source_name,
         min_data_points=settings.min_data_points,
-        min_correlation=settings.min_correlation,
         exclude_nan_results=settings.exclude_nan_results
     )
     speed_model = train(CrossMastSpeedModel, speed_params, target_ts, source_ts)
     speed_model_file = save_speed_model(speed_model, full_output_dir, target_name, source_name)
-    
-    # Train and save direction model
+
+    # Train and save direction model (use permissive defaults)
     direction_params = CrossMastDirectionTrainParams(
         target_name=target_name,
         source_name=source_name,
         min_data_points=settings.min_data_points,
-        max_std_deviation=settings.max_std_deviation,
-        max_abs_offset=settings.max_abs_offset,
         exclude_nan_results=settings.exclude_nan_results
     )
     direction_model = train(CrossMastDirectionModel, direction_params, target_ts, source_ts)

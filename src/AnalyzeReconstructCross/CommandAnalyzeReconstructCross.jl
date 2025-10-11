@@ -57,28 +57,22 @@ function execute(config_path::String)
     config_dict = load_dict(config_path)
     config = from_dict(AnalyzeReconstructCrossConfiguration, config_dict)
 
-    # Determine project directory from config path
-    # If config is in report-masts/, the project dir is the parent of that
+    # Use config directory as base for all path resolution
     config_dir = dirname(config_path)
-    project_dir = if basename(config_dir) == "report-masts"
-        dirname(config_dir)  # Go up one level from report-masts to project root
-    else
-        config_dir  # For backward compatibility with configs in project root
-    end
-    
+
     println("📋 Configuration loaded:")
     println("  - Masts: $(length(config.masts))")
     println("  - Output: $(config.analyze.output_dir)")
     println("  - Language: $(config.analyze.language)")
     println("  - Include plots: $(config.analyze.include_plots)")
-    
-    # 2. Create output directory structure
-    output_dir = joinpath(project_dir, config.analyze.output_dir)
+
+    # 2. Create output directory structure (paths relative to config file location)
+    output_dir = joinpath(config_dir, config.analyze.output_dir)
     create_output_directories(output_dir, config.analyze.include_plots)
-    
+
     # 3. Load all mast time series data
     println("\n📊 Loading mast time series data...")
-    mast_data = load_all_mast_data(config, project_dir)
+    mast_data = load_all_mast_data(config, config_dir)
     println("✅ Loaded data for $(length(mast_data)) masts")
     
     # 4. Analyze all mast pairs (N² combinations)

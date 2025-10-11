@@ -9,6 +9,20 @@ using ...CleanMastUtils: load_dict
 export execute
 
 """
+    adjust_path_for_report_masts(path::String)::String
+
+Adjust a project-relative path to be relative to report-masts/ directory.
+Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
+"""
+function adjust_path_for_report_masts(path::String)::String
+    if startswith(path, "./")
+        return "../" * path[3:end]
+    else
+        return "../" * path
+    end
+end
+
+"""
     execute(project_dir::String)
 
 Generate report-reconstruct-single.yaml configuration for analyzing reconstruction effectiveness.
@@ -52,21 +66,21 @@ function execute(project_dir::String)
         Dict(
             "name" => mast_name,
             "before_reconstruction" => Dict(
-                "csv" => before_data.data,
-                "sensorConfig" => before_data.sensors
+                "csv" => adjust_path_for_report_masts(before_data.data),
+                "sensorConfig" => adjust_path_for_report_masts(before_data.sensors)
             ),
             "after_reconstruction" => Dict(
-                "csv" => after_data.data,
-                "sensorConfig" => after_data.sensors
+                "csv" => adjust_path_for_report_masts(after_data.data),
+                "sensorConfig" => adjust_path_for_report_masts(after_data.sensors)
             )
         )
     end
 
-    # 4. Create final configuration
+    # 4. Create final configuration with paths relative to report-masts/ directory
     config = Dict(
         "masts" => report_masts,
         "output" => Dict(
-            "dir" => "./report-masts/reconstruct-single"
+            "dir" => "./reconstruct-single"
         )
     )
 

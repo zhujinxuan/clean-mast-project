@@ -16,6 +16,7 @@ using ...ReportRecovery.ReportRecoveryCommand
 using ...RepresentativeYear.ReportRepresentativeYearCommand
 using ...AnalyzeReconstructCross.CommandAnalyzeReconstructCross
 using ...ReportTimeSeries.ReportTimeSeriesCommand
+using ...ReportReconstructMeso
 
 export execute
 
@@ -140,7 +141,7 @@ function execute(project_dir::String)
     println()
 
     # 1. Generate Clean Report
-    println("📋 Report 1/6: Clean Report (Raw vs Clean Data)")
+    println("📋 Report 1/7: Clean Report (Raw vs Clean Data)")
     try
         process_clean_config = joinpath(project_dir, "process-clean.toml")
         if isfile(process_clean_config)
@@ -159,7 +160,7 @@ function execute(project_dir::String)
     println()
 
     # 2. Generate Recovery Report
-    println("📈 Report 2/6: Recovery Report (Data Coverage Across Stages)")
+    println("📈 Report 2/7: Recovery Report (Data Coverage Across Stages)")
     try
         recovery_config_path = joinpath(project_dir, "report-masts", "report-recovery.toml")
         if isfile(recovery_config_path)
@@ -179,7 +180,7 @@ function execute(project_dir::String)
     println()
 
     # 3. Generate Cross-Mast Report
-    println("🔗 Report 3/6: Cross-Mast Report (Correlation Analysis)")
+    println("🔗 Report 3/7: Cross-Mast Report (Correlation Analysis)")
     try
         cross_mast_config = joinpath(project_dir, "report-masts", "report-cross-mast.toml")
         if isfile(cross_mast_config)
@@ -206,7 +207,7 @@ function execute(project_dir::String)
     println()
 
     # 4. Generate Representative Year Report
-    println("📅 Report 4/6: Representative Year Report (Calibration Analysis)")
+    println("📅 Report 4/7: Representative Year Report (Calibration Analysis)")
     try
         rep_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(rep_year_config)
@@ -225,7 +226,7 @@ function execute(project_dir::String)
     println()
 
     # 5. Generate Time Series Meso Report
-    println("📊 Report 5/6: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
+    println("📊 Report 5/7: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
     try
         timeseries_meso_config = joinpath(project_dir, "report-masts", "report-timeseries-meso.toml")
         if isfile(timeseries_meso_config)
@@ -245,7 +246,7 @@ function execute(project_dir::String)
     println()
 
     # 6. Generate Time Series Representative Year Report
-    println("📊 Report 6/6: Time Series Representative Year Report (Rep Year Data Analysis)")
+    println("📊 Report 6/7: Time Series Representative Year Report (Rep Year Data Analysis)")
     try
         timeseries_rep_config = joinpath(project_dir, "report-masts", "report-timeseries-rep.toml")
         if isfile(timeseries_rep_config)
@@ -261,6 +262,26 @@ function execute(project_dir::String)
         results["timeseries_rep"] = false
         errors["timeseries_rep"] = e
         println("   ❌ Time series representative year report failed: $(e)")
+    end
+    println()
+
+    # 7. Generate Reconstruct Meso Report
+    println("🌍 Report 7/7: Reconstruct Meso Report (Meso-Mast Reconstruction Quality)")
+    try
+        reconstruct_meso_config = joinpath(project_dir, "report-masts", "report-reconstruct-meso.toml")
+        if isfile(reconstruct_meso_config)
+            ReportReconstructMeso.CommandReportReconstructMeso.execute(reconstruct_meso_config)
+            results["reconstruct_meso"] = true
+            println("   ✅ Reconstruct meso report generated successfully")
+        else
+            println("   ⚠️  Skipping: report-reconstruct-meso.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
+            results["reconstruct_meso"] = false
+        end
+    catch e
+        results["reconstruct_meso"] = false
+        errors["reconstruct_meso"] = e
+        println("   ❌ Reconstruct meso report failed: $(e)")
     end
     println()
 
@@ -284,7 +305,8 @@ function execute(project_dir::String)
             "cross_mast" => "Cross-Mast Report",
             "representative_year" => "Representative Year Report",
             "timeseries_meso" => "Time Series Meso Report",
-            "timeseries_rep" => "Time Series Representative Year Report"
+            "timeseries_rep" => "Time Series Representative Year Report",
+            "reconstruct_meso" => "Reconstruct Meso Report"
         )[report_name]
 
         output_path = Dict(
@@ -293,7 +315,8 @@ function execute(project_dir::String)
             "cross_mast" => "report-masts/cross-mast/report.typ",
             "representative_year" => "report-masts/representative-year/report.typ",
             "timeseries_meso" => "report-masts/timeseries-meso/",
-            "timeseries_rep" => "report-masts/timeseries-rep/"
+            "timeseries_rep" => "report-masts/timeseries-rep/",
+            "reconstruct_meso" => "report-masts/reconstruct-meso/report.typ"
         )[report_name]
 
         println("   $status_icon $report_display")
