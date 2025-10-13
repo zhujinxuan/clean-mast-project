@@ -63,6 +63,9 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "logging/test_jsonl_logger.jl",
         "logging/test_terminal_formatter.jl",
         "logging/test_integration.jl"
+    ],
+    "turbulence" => [
+        "ReportTimeSeries/test_turbulence_nan_fix.jl"
     ]
 )
 
