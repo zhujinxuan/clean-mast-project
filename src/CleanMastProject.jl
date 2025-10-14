@@ -266,6 +266,7 @@ export WTTimeSeries
 
 module ReportTimeSeries
   include("./ReportTimeSeries/Utils.jl")
+  include("./ReportTimeSeries/CalculateAirDensity.jl")
   include("./ReportTimeSeries/AirDensity.jl")
   include("./ReportTimeSeries/WindTemporal.jl")
   include("./ReportTimeSeries/Vertical.jl")
@@ -278,7 +279,7 @@ module ReportTimeSeries
   include("./ReportTimeSeries/ReportTimeSeriesCommand.jl")
   include("./ReportTimeSeries/RecommendReportTimeSeriesMesoCommand.jl")
   include("./ReportTimeSeries/RecommendReportTimeSeriesRepCommand.jl")
-  export Utils, AirDensity, WindTemporal, Vertical, WindFrequency, WindRose, Turbulence, Weibull, FiftyYearsExtremeWind
+  export Utils, CalculateAirDensity, AirDensity, WindTemporal, Vertical, WindFrequency, WindRose, Turbulence, Weibull, FiftyYearsExtremeWind
   export TimeSeriesAnalysis, ReportTimeSeriesCommand, RecommendReportTimeSeriesMesoCommand, RecommendReportTimeSeriesRepCommand
 end
 export ReportTimeSeries
@@ -334,9 +335,8 @@ module Command
   include("./Command/QuickStart.jl")
   include("./Command/ProcessSteps.jl")
   include("./Command/AnalyzeEN.jl")
-  include("./Command/CalculateAirDensityCommand.jl")
   export  QuickStart, ProcessSteps,
-         AnalyzeEN, CalculateAirDensityCommand
+         AnalyzeEN
 end
 export Command
 include("./CleanMastCli.jl")

@@ -2,10 +2,11 @@ module RecommendReportTimeSeriesRepCommand
 
 using TOML
 using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration, from_dict
-using ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfigYAML, MastReportTimeSeriesConfigYAML, OutputConfig, to_dict
+using ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfigYAML, MastReportTimeSeriesConfigYAML, OutputConfig, to_dict, AirDensityConfig
 using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
+using ..CalculateAirDensity: calculate_air_density_from_data
 
 export execute
 
@@ -55,10 +56,28 @@ function execute(project_dir::String)
 
         adjusted_output = TimeSeriesSource(adjusted_data_path, adjusted_sensors_path)
 
+        # Calculate air density from data if temperature and pressure sensors are available
+        # Resolve paths relative to project directory for loading
+        absolute_data_path = joinpath(project_dir, rep_year_mast.output.data)
+        absolute_sensors_path = joinpath(project_dir, rep_year_mast.output.sensors)
+
+        air_density = try
+            calculate_air_density_from_data(absolute_data_path, absolute_sensors_path)
+        catch e
+            @warn "Failed to calculate air density for $(rep_year_mast.name): $e"
+            nothing
+        end
+
+        if !isnothing(air_density)
+            @info "Calculated air density for $(rep_year_mast.name): $(round(air_density.density, digits=4)) kg/m³ at $(air_density.reference_height)m"
+        else
+            @info "No air density calculated for $(rep_year_mast.name) (missing temperature or pressure sensors)"
+        end
+
         MastReportTimeSeriesConfigYAML(
             rep_year_mast.name,
             adjusted_output,  # Use the adjusted paths
-            nothing  # No air density as requested
+            air_density  # Use calculated air density
         )
     end
 

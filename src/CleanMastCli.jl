@@ -795,41 +795,6 @@ Comonicon.@cast module Analyze
 end
 
 """
-calculate
-
-Calculation and utility commands
-"""
-Comonicon.@cast module Calculate
-    using Comonicon
-    using CleanMastProject.Command.CalculateAirDensityCommand
-
-    """
-    ad
-
-    Calculate air density from temperature and pressure data in a CSV file.
-
-    # Arguments
-    - `csv_path`: Path to CSV file containing temperature and pressure data
-    - `--temp-col`: Name of temperature column (assumed to be in Celsius)
-    - `--pressure-col`: Name of pressure column (assumed to be in Pascals)
-
-    # Example
-    ```bash
-    julia bin/CleanMast.jl calculate ad data.csv --temp-col Temperature_80m_avg --pressure-col Pressure_80m_avg
-    ```
-
-    The command calculates air density using:
-    1. Median temperature and pressure values from the specified columns
-    2. Ideal gas law for dry air: ρ = P / (R_specific × T)
-    3. Results are displayed with comparison to standard conditions
-    """
-    Comonicon.@cast function ad(csv_path::String; temp_col::String, pressure_col::String)
-        CalculateAirDensityCommand.execute(csv_path, temp_col, pressure_col)
-    end
-
-end
-
-"""
 report
 
 Report generation commands
