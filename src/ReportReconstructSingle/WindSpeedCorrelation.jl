@@ -13,7 +13,7 @@ using LinearAlgebra
 using AlgebraOfGraphics: data, mapping, visual, linear, draw
 using CairoMakie: Scatter, Axis, Label, save
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeReconstructSingleConfiguration: ProcessedMastReconstructConfig
+import ...Types.ReportReconstructSingleConfiguration: ProcessedMastReconstructConfig
 
 """
     calculate_r2_matrix(data::TimeSeriesData) -> (Matrix{Float64}, Vector{Float64}, DataFrame)

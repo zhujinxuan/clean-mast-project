@@ -2,7 +2,7 @@ module RecommendReportTimeSeriesRepCommand
 
 using TOML
 using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration, from_dict
-using ...Types.AnalyzeConfiguration: AnalyzeConfigYAML, MastAnalyzeConfigYAML, OutputConfig, to_dict
+using ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfigYAML, MastReportTimeSeriesConfigYAML, OutputConfig, to_dict
 using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
@@ -55,7 +55,7 @@ function execute(project_dir::String)
 
         adjusted_output = TimeSeriesSource(adjusted_data_path, adjusted_sensors_path)
 
-        MastAnalyzeConfigYAML(
+        MastReportTimeSeriesConfigYAML(
             rep_year_mast.name,
             adjusted_output,  # Use the adjusted paths
             nothing  # No air density as requested
@@ -63,7 +63,7 @@ function execute(project_dir::String)
     end
 
     # 3. Create analyze configuration
-    analyze_config = AnalyzeConfigYAML(
+    analyze_config = ReportTimeSeriesConfigYAML(
         analyze_masts,
         OutputConfig("./timeseries-rep"),
         nothing,  # No min_plot_height specified

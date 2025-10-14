@@ -29,6 +29,7 @@ data = "../reconstruct-meso/pn-002824.csv"
 sensors = "../reconstruct-meso/pn-002824.sensors.yaml"
 [masts.airDensity]
 density = 1.225
+reference_height = 10.0  # 参考高度（相对于测风塔地面，非海平面）
 
 [output]
 path = "timeseries-meso"
@@ -43,6 +44,7 @@ data = "../representative-year/pn-002824.csv"
 sensors = "../representative-year/pn-002824.sensors.yaml"
 [masts.airDensity]
 density = 1.225
+reference_height = 10.0  # 参考高度（相对于测风塔地面，非海平面）
 
 [output]
 path = "timeseries-rep"

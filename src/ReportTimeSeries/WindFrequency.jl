@@ -8,7 +8,7 @@ using StatsBase: fit, Histogram
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path, AirDensityConfig
 import ..AirDensity: calculate_air_density, calculate_wind_power_density
 import ..Utils: format_height
 
@@ -18,12 +18,12 @@ struct MastOneHeightStats
 end
 
 """
-    calculate_wind_power_frequency_stats(config::AnalyzeConfig)
+    calculate_wind_power_frequency_stats(config::ReportTimeSeriesConfig)
 
 Calculate wind power frequency distribution statistics across wind speed bins for all masts.
 Returns the statistical data without creating plots or saving files.
 """
-function calculate_wind_power_frequency_stats(config::AnalyzeConfig) :: Dict{String, Vector{MastOneHeightStats}}
+function calculate_wind_power_frequency_stats(config::ReportTimeSeriesConfig) :: Dict{String, Vector{MastOneHeightStats}}
     results = Dict{String, Vector{MastOneHeightStats}}()
     
     for mast in config.masts
@@ -89,11 +89,11 @@ function calculate_wind_power_frequency_stats(config::AnalyzeConfig) :: Dict{Str
 end
 
 """
-    create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stats::Dict)
+    create_wind_power_frequency_plots(config::ReportTimeSeriesConfig, frequency_stats::Dict)
 
 Create wind power frequency plots and save CSV files based on pre-calculated statistics.
 """
-function create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stats::Dict{String, Vector{MastOneHeightStats}})
+function create_wind_power_frequency_plots(config::ReportTimeSeriesConfig, frequency_stats::Dict{String, Vector{MastOneHeightStats}})
     for mast in config.masts
         if !haskey(frequency_stats, mast.name)
             continue
@@ -139,6 +139,7 @@ function create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stat
             
             # Save the plot
             save(joinpath(output_dir, "wind_frequency_distribution_$(height_str)m.svg"), fig)
+            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
             @info "Generated wind power frequency plots for mast $(mast.name) at $(height_str)m"
         end
@@ -148,12 +149,12 @@ function create_wind_power_frequency_plots(config::AnalyzeConfig, frequency_stat
 end
 
 """
-    analyze_wind_power_frequency(config::AnalyzeConfig)
+    analyze_wind_power_frequency(config::ReportTimeSeriesConfig)
 
 Analyze wind power frequency distribution across wind speed bins for all masts.
 This function combines statistical calculation and plotting.
 """
-function analyze_wind_power_frequency(config::AnalyzeConfig)
+function analyze_wind_power_frequency(config::ReportTimeSeriesConfig)
     # Calculate statistics
     frequency_stats = calculate_wind_power_frequency_stats(config)
     
@@ -164,24 +165,24 @@ function analyze_wind_power_frequency(config::AnalyzeConfig)
 end
 
 """
-    analyze_all_frequency(config::AnalyzeConfig)
+    analyze_all_frequency(config::ReportTimeSeriesConfig)
 
 Run all wind direction frequency analyses for all masts in the configuration.
 """
-function analyze_all_frequency(config::AnalyzeConfig)
+function analyze_all_frequency(config::ReportTimeSeriesConfig)
     results = analyze_wind_power_frequency(config)
     generate_wind_frequency_report(config)
     return results
 end
 
 """
-    create_wind_frequency_tables(config::AnalyzeConfig)
+    create_wind_frequency_tables(config::ReportTimeSeriesConfig)
 
 Create wind frequency tables using SummaryTables.jl and export to Typst format.
 Includes wind speed frequency and wind power frequency tables for heights >= 120m.
 Saves all results to "./wind-frequency.typ"
 """
-function generate_wind_frequency_report(config::AnalyzeConfig)
+function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
     # First run the wind power frequency stats calculation to get the data
     frequency_results = calculate_wind_power_frequency_stats(config)
     

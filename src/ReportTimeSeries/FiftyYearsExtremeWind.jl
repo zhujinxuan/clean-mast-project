@@ -11,7 +11,7 @@ using CairoMakie
 using AlgebraOfGraphics
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path
 import ..AirDensity: calculate_air_density
 import ..Utils: format_height
 
@@ -171,20 +171,20 @@ function convert_to_standard_air_density(wind_speed::Float64, actual_density::Fl
 end
 
 """
-    analyze_method1_sustained_and_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+    analyze_method1_sustained_and_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
 
 Analyze wind speeds using Method 1: 5 times average wind speed method.
 Calculates both 50-year maximum sustained wind speed and 50-year extreme gust wind speed.
 
 # Arguments
-- `mast::MastAnalyzeConfig`: Mast configuration with time series data
+- `mast::MastReportTimeSeriesConfig`: Mast configuration with time series data
 - `sensor::SensorColumn`: Average wind speed sensor (statType="avg")
 - `air_density::Float64`: Air density at sensor height
 
 # Returns
 - `NamedTuple`: Results containing both sustained and extreme wind speeds, or Nothing if analysis fails
 """
-function analyze_method1_sustained_and_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+function analyze_method1_sustained_and_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
     # Extract and process wind speed data using functional pipeline
     result = mast.timeSeriesData.df[:, sensor.columnName] |>
         speeds -> filter(x -> !ismissing(x) && !isnan(x) && x > 0, speeds) |>
@@ -223,12 +223,12 @@ function analyze_method1_sustained_and_extreme(mast::MastAnalyzeConfig, sensor::
 end
 
 """
-    analyze_method2_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
+    analyze_method2_sustained(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
 
 Analyze 50-year maximum sustained wind speed using Method 2: 5-day maximum method with Gumbel distribution applied to average wind speed data.
 
 # Arguments
-- `mast::MastAnalyzeConfig`: Mast configuration with time series data
+- `mast::MastReportTimeSeriesConfig`: Mast configuration with time series data
 - `sensor::SensorColumn`: Average wind speed sensor (statType="avg")
 - `air_density::Float64`: Air density at sensor height
 - `output_dir::String`: Directory to save Q-Q plots
@@ -236,7 +236,7 @@ Analyze 50-year maximum sustained wind speed using Method 2: 5-day maximum metho
 # Returns
 - `NamedTuple`: Results containing sustained wind speeds, Gumbel parameters, and Q-Q plot path, or Nothing if analysis fails
 """
-function analyze_method2_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
+function analyze_method2_sustained(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
     # Extract wind speed data (average wind speed for sustained calculation)
     wind_speeds = mast.timeSeriesData.df[:, sensor.columnName]
     timestamps = mast.timeSeriesData.df[:, :timestamp]
@@ -289,12 +289,12 @@ function analyze_method2_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn
 end
 
 """
-    analyze_method2_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
+    analyze_method2_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
 
 Analyze 50-year extreme gust wind speed using Method 2: 5-day maximum method with Gumbel distribution applied to maximum wind speed data.
 
 # Arguments
-- `mast::MastAnalyzeConfig`: Mast configuration with time series data
+- `mast::MastReportTimeSeriesConfig`: Mast configuration with time series data
 - `sensor::SensorColumn`: Maximum wind speed sensor (statType="max")
 - `air_density::Float64`: Air density at sensor height
 - `output_dir::String`: Directory to save Q-Q plots
@@ -302,7 +302,7 @@ Analyze 50-year extreme gust wind speed using Method 2: 5-day maximum method wit
 # Returns
 - `NamedTuple`: Results containing extreme wind speeds, Gumbel parameters, and Q-Q plot path, or Nothing if analysis fails
 """
-function analyze_method2_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
+function analyze_method2_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64, output_dir::String)::Union{NamedTuple, Nothing}
     # Extract wind speed data (maximum wind speed for extreme calculation)
     wind_speeds = mast.timeSeriesData.df[:, sensor.columnName]
     timestamps = mast.timeSeriesData.df[:, :timestamp]
@@ -355,19 +355,19 @@ function analyze_method2_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, 
 end
 
 """
-    analyze_method3_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+    analyze_method3_sustained(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
 
 Analyze 50-year maximum sustained wind speed using Method 3: Extreme Wind Model (EWM) method applied to average wind speed data.
 
 # Arguments
-- `mast::MastAnalyzeConfig`: Mast configuration with time series data
+- `mast::MastReportTimeSeriesConfig`: Mast configuration with time series data
 - `sensor::SensorColumn`: Average wind speed sensor (statType="avg")
 - `air_density::Float64`: Air density at sensor height
 
 # Returns
 - `NamedTuple`: Results containing sustained wind speeds, or Nothing if analysis fails
 """
-function analyze_method3_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+function analyze_method3_sustained(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
     # Extract and process average wind speed data using functional pipeline
     result = mast.timeSeriesData.df[:, sensor.columnName] |>
         speeds -> filter(x -> !ismissing(x) && !isnan(x) && x > 0, speeds) |>
@@ -400,19 +400,19 @@ function analyze_method3_sustained(mast::MastAnalyzeConfig, sensor::SensorColumn
 end
 
 """
-    analyze_method3_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+    analyze_method3_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
 
 Analyze 50-year extreme gust wind speed using Method 3: Extreme Wind Model (EWM) method applied to maximum wind speed data.
 
 # Arguments
-- `mast::MastAnalyzeConfig`: Mast configuration with time series data
+- `mast::MastReportTimeSeriesConfig`: Mast configuration with time series data
 - `sensor::SensorColumn`: Maximum wind speed sensor (statType="max")
 - `air_density::Float64`: Air density at sensor height
 
 # Returns
 - `NamedTuple`: Results containing extreme wind speeds, or Nothing if analysis fails
 """
-function analyze_method3_extreme(mast::MastAnalyzeConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
+function analyze_method3_extreme(mast::MastReportTimeSeriesConfig, sensor::SensorColumn, air_density::Float64)::Union{NamedTuple, Nothing}
     # Extract and process maximum wind speed data using functional pipeline
     result = mast.timeSeriesData.df[:, sensor.columnName] |>
         speeds -> filter(x -> !ismissing(x) && !isnan(x) && x > 0, speeds) |>
@@ -516,7 +516,8 @@ function generate_gumbel_qq_plot(wind_data::Vector{Float64}, μ::Float64, β::Fl
     height_str = format_height(height)
     plot_path = joinpath(output_dir, "gumbel_qq_plot_$(height_str)m_$(wind_speed_type).svg")
     save(plot_path, fig, size=(1000, 1000))
-    
+    empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Generated Gumbel Q-Q plot with 95% Monte Carlo confidence bands for $(mast_name) at $(height)m: $(plot_path)"
     return plot_path
 end
@@ -705,25 +706,26 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
     # Save the plot
     plot_path = joinpath(output_dir, "gumbel_qq_detailed_grid_$(wind_speed_type).svg")
     save(plot_path, fig, size=(1000, 1000))
-    
+    empty!(fig)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Generated detailed Gumbel Q-Q grid plot for $(mast_name) $(wind_speed_type) wind speeds: $(plot_path)"
     return plot_path
 end
 
 """
-    analyze_fifty_years_extreme_wind(config::AnalyzeConfig)
+    analyze_fifty_years_extreme_wind(config::ReportTimeSeriesConfig)
 
 Analyze 50-year extreme wind speeds using three methods for all masts.
 Calculates both 50年最大持续风速 (sustained) and 50年极大极端风速 (extreme) according to IEC standards.
 All results include conversion to standard air density (1.225 kg/m³).
 
 # Arguments
-- `config::AnalyzeConfig`: Analysis configuration with multiple masts
+- `config::ReportTimeSeriesConfig`: Analysis configuration with multiple masts
 
 # Returns
 - `Dict{String, Dict}`: Dictionary mapping mast names to their extreme wind analysis results
 """
-function analyze_fifty_years_extreme_wind(config::AnalyzeConfig)
+function analyze_fifty_years_extreme_wind(config::ReportTimeSeriesConfig)
     # Process all masts using functional approach
     mast_results = config.masts |>
         masts -> map(masts) do mast
@@ -1018,7 +1020,7 @@ function analyze_fifty_years_extreme_wind(config::AnalyzeConfig)
 end
 
 """
-    generate_fifty_years_report(method1_results_df::DataFrame, method2_sustained_results_df::DataFrame, method2_extreme_results_df::DataFrame, method3_sustained_results_df::DataFrame, method3_extreme_results_df::DataFrame, mast_name::String, output_dir::String, config::AnalyzeConfig, method2_sustained_grid_plot_path::Union{String, Nothing}, method2_extreme_grid_plot_path::Union{String, Nothing})
+    generate_fifty_years_report(method1_results_df::DataFrame, method2_sustained_results_df::DataFrame, method2_extreme_results_df::DataFrame, method3_sustained_results_df::DataFrame, method3_extreme_results_df::DataFrame, mast_name::String, output_dir::String, config::ReportTimeSeriesConfig, method2_sustained_grid_plot_path::Union{String, Nothing}, method2_extreme_grid_plot_path::Union{String, Nothing})
 
 Generate a comprehensive 50-year extreme wind analysis report including tables in typst format.
 
@@ -1030,11 +1032,11 @@ Generate a comprehensive 50-year extreme wind analysis report including tables i
 - `method3_extreme_results_df::DataFrame`: DataFrame containing Method 3 extreme wind speed results
 - `mast_name::String`: Name of the mast
 - `output_dir::String`: Directory to save the report
-- `config::AnalyzeConfig`: Analysis configuration
+- `config::ReportTimeSeriesConfig`: Analysis configuration
 - `method2_sustained_grid_plot_path::Union{String, Nothing}`: Path to sustained wind speed grid plot
 - `method2_extreme_grid_plot_path::Union{String, Nothing}`: Path to extreme wind speed grid plot
 """
-function generate_fifty_years_report(method1_results_df::DataFrame, method2_sustained_results_df::DataFrame, method2_extreme_results_df::DataFrame, method3_sustained_results_df::DataFrame, method3_extreme_results_df::DataFrame, mast_name::String, output_dir::String, config::AnalyzeConfig, method2_sustained_grid_plot_path::Union{String, Nothing}, method2_extreme_grid_plot_path::Union{String, Nothing})
+function generate_fifty_years_report(method1_results_df::DataFrame, method2_sustained_results_df::DataFrame, method2_extreme_results_df::DataFrame, method3_sustained_results_df::DataFrame, method3_extreme_results_df::DataFrame, mast_name::String, output_dir::String, config::ReportTimeSeriesConfig, method2_sustained_grid_plot_path::Union{String, Nothing}, method2_extreme_grid_plot_path::Union{String, Nothing})
     if (isempty(method1_results_df) && isempty(method2_sustained_results_df) && 
         isempty(method2_extreme_results_df) && isempty(method3_sustained_results_df) && 
         isempty(method3_extreme_results_df))

@@ -14,7 +14,7 @@ using SpecialFunctions: gamma
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path
 
 """
     fit_weibull(data::Vector{Union{Missing, Float64}})::Union{Tuple{Float64, Float64}, Nothing}
@@ -199,8 +199,9 @@ function analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::Strin
         
         # Save plot
         save(joinpath(output_dir, "weibull_$(sensor.height)m.svg"), fig)
+        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
     end
-    
+
     # Save summary to CSV
     if !isempty(results_df)
         CSV.write(joinpath(output_dir, "weibull_parameters.csv"), results_df)
@@ -210,17 +211,17 @@ function analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::Strin
 end
 
 """
-    analyze_weibull_distribution(config::AnalyzeConfig)
+    analyze_weibull_distribution(config::ReportTimeSeriesConfig)
 
 Analyze wind speed distributions by fitting Weibull distributions for all masts.
 
 # Arguments
-- `config::AnalyzeConfig`: Analysis configuration with multiple masts
+- `config::ReportTimeSeriesConfig`: Analysis configuration with multiple masts
 
 # Returns
 - `Dict{String, DataFrame}`: Dictionary mapping mast names to their Weibull parameters
 """
-function analyze_weibull_distribution(config::AnalyzeConfig)
+function analyze_weibull_distribution(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts

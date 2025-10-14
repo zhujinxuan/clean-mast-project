@@ -71,12 +71,12 @@ module Types
   export RepresentativeYear
   include("./Types/TurbulenceIntensity.jl")
   export TurbulenceIntensity
-  include("./Types/AnalyzeConfiguration.jl")
-  export AnalyzeConfiguration
+  include("./Types/ReportTimeSeriesConfiguration.jl")
+  export ReportTimeSeriesConfiguration
   include("./Types/AnalyzeENConfiguration.jl")
   export AnalyzeENConfiguration
-  include("./Types/AnalyzeReconstructSingleConfiguration.jl")
-  export AnalyzeReconstructSingleConfiguration
+  include("./Types/ReportReconstructSingleConfiguration.jl")
+  export ReportReconstructSingleConfiguration
   include("./Types/TrainReconstructCrossConfig.jl")
   export TrainReconstructCrossConfig
   include("./Types/AnalyzeReconstructCrossConfig.jl")

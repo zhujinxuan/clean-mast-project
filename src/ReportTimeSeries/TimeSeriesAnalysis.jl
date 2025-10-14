@@ -12,7 +12,7 @@ using YAML
 using Logging
 
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
+using ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path, AirDensityConfig
 using ...CleanMastLogging: create_cleanmast_logger
 using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
@@ -28,19 +28,19 @@ import ..FiftyYearsExtremeWind: analyze_fifty_years_extreme_wind
 export analyze_all, generate_comprehensive_report
 
 """
-    analyze_all(config::AnalyzeConfig, config_dir::String, config_basename::String)
+    analyze_all(config::ReportTimeSeriesConfig, config_dir::String, config_basename::String)
 
 Run all available analyses for all masts in the configuration in parallel.
 
 # Arguments
-- `config::AnalyzeConfig`: Analysis configuration with multiple masts
+- `config::ReportTimeSeriesConfig`: Report timeseries configuration with multiple masts
 - `config_dir::String`: Configuration directory for log files
 - `config_basename::String`: Base name for log files
 
 # Returns
 - `Dict{String, Any}`: Dictionary with results from all analyses
 """
-function analyze_all(config::AnalyzeConfig, config_dir::String, config_basename::String)
+function analyze_all(config::ReportTimeSeriesConfig, config_dir::String, config_basename::String)
     results = Dict{String, Any}()
 
     @info "Starting comprehensive time series analysis for $(length(config.masts)) mast(s)"
@@ -98,7 +98,7 @@ function analyze_all(config::AnalyzeConfig, config_dir::String, config_basename:
             @info "Running analysis" index=idx total=total_tasks type=analysis_type mast=mast_config.name
 
             try
-                single_mast_config = AnalyzeConfig(
+                single_mast_config = ReportTimeSeriesConfig(
                     [mast_config],
                     config.output,
                     config.configDir,
@@ -147,18 +147,18 @@ function analyze_all(config::AnalyzeConfig, config_dir::String, config_basename:
 end
 
 """
-    generate_comprehensive_report(config::AnalyzeConfig)
+    generate_comprehensive_report(config::ReportTimeSeriesConfig)
 
 Generate a comprehensive Typst report that includes all individual Typst files
 created by the various analysis modules for all masts.
 
 # Arguments
-- `config::AnalyzeConfig`: Analysis configuration with multiple masts
+- `config::ReportTimeSeriesConfig`: Report timeseries configuration with multiple masts
 
 # Returns
 - `String`: Path to the generated main Typst report file
 """
-function generate_comprehensive_report(config::AnalyzeConfig)
+function generate_comprehensive_report(config::ReportTimeSeriesConfig)
     # Define the main report file path
     report_path = joinpath(config.output.path, "comprehensive_analysis_report.typ")
 

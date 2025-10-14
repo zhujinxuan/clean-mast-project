@@ -9,15 +9,15 @@ using DataFramesMeta
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path, AirDensityConfig
 import ..AirDensity: calculate_air_density, calculate_wind_power_density
 
 """
-    analyze_wind_speed_timeseries(config::AnalyzeConfig)
+    analyze_wind_speed_timeseries(config::ReportTimeSeriesConfig)
 
 Generate time series plots of wind speeds at all heights for all masts.
 """
-function analyze_wind_speed_timeseries(config::AnalyzeConfig)
+function analyze_wind_speed_timeseries(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -51,7 +51,8 @@ function analyze_wind_speed_timeseries(config::AnalyzeConfig)
         
         svg_path = joinpath(output_dir, "wind_speed_timeseries.svg")
         save(svg_path, fig)
-        
+        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
+
         results[mast.name] = plot_df
         @info "Generated wind speed time series for mast $(mast.name)"
     end
@@ -60,11 +61,11 @@ function analyze_wind_speed_timeseries(config::AnalyzeConfig)
 end
 
 """
-    analyze_daily_pattern(config::AnalyzeConfig)
+    analyze_daily_pattern(config::ReportTimeSeriesConfig)
 
 Generate 24-hour daily averaged wind speed and power patterns for all masts.
 """
-function analyze_daily_pattern(config::AnalyzeConfig)
+function analyze_daily_pattern(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -123,7 +124,8 @@ function analyze_daily_pattern(config::AnalyzeConfig)
                                xticks=0:2:23))
         
         save(joinpath(output_dir, "daily_pattern.svg"), fig_speed)
-        
+        empty!(fig_speed.figure)  # Explicitly clean up to avoid GC finalizer issues
+
         # Handle power analysis only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
             CSV.write(joinpath(output_dir, "daily_power_pattern.csv"), power_results_df)
@@ -139,6 +141,7 @@ function analyze_daily_pattern(config::AnalyzeConfig)
                                    xticks=0:2:23))
             
             save(joinpath(output_dir, "daily_power_pattern.svg"), fig_power)
+            empty!(fig_power.figure)  # Explicitly clean up to avoid GC finalizer issues
             results[mast.name] = (speed = speed_results_df, power = power_results_df)
         else
             results[mast.name] = (speed = speed_results_df, power = nothing)
@@ -155,11 +158,11 @@ struct MonthlyPattern
 end
 
 """
-    analyze_monthly_pattern(config::AnalyzeConfig)
+    analyze_monthly_pattern(config::ReportTimeSeriesConfig)
 
 Analyze monthly wind speed and power patterns for all masts.
 """
-function analyze_monthly_pattern(config::AnalyzeConfig) :: Dict{String, MonthlyPattern}
+function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String, MonthlyPattern}
     results = Dict{String, MonthlyPattern}()
     
     for mast in config.masts
@@ -224,7 +227,8 @@ function analyze_monthly_pattern(config::AnalyzeConfig) :: Dict{String, MonthlyP
                                ylabel="Wind Speed (m/s)"))
         
         save(joinpath(output_dir, "monthly_pattern.svg"), fig_speed, size=(800, 600))
-        
+        empty!(fig_speed.figure)  # Explicitly clean up to avoid GC finalizer issues
+
         # Handle power outputs only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
             CSV.write(joinpath(output_dir, "monthly_power_pattern.csv"), power_results_df)
@@ -241,6 +245,7 @@ function analyze_monthly_pattern(config::AnalyzeConfig) :: Dict{String, MonthlyP
                                    ylabel="Wind Power Density (W/m²)"))
             
             save(joinpath(output_dir, "monthly_power_pattern.svg"), fig_power, size=(800, 600))
+            empty!(fig_power.figure)  # Explicitly clean up to avoid GC finalizer issues
             results[mast.name] = MonthlyPattern(speed_results_df, power_results_df)
         else
             # Create MonthlyPattern with empty DataFrame for power
@@ -253,11 +258,11 @@ function analyze_monthly_pattern(config::AnalyzeConfig) :: Dict{String, MonthlyP
 end
 
 """
-    analyze_monthly_daily_wind(config::AnalyzeConfig)
+    analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
 
 Analyze daily wind speed patterns for each month and create combined 3x4 figures for all masts.
 """
-function analyze_monthly_daily_wind(config::AnalyzeConfig)
+function analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -310,8 +315,9 @@ function analyze_monthly_daily_wind(config::AnalyzeConfig)
                              xlabel="Hour"))
             
             save(joinpath(output_dir, "daily_wind_pattern_by_month.svg"), fig, size=(1200, 900))
+            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
         end
-        
+
         # Save CSV - create format similar to original
         speed_results_df = DataFrame(hour = 0:23)
         for m in 1:12
@@ -336,11 +342,11 @@ function analyze_monthly_daily_wind(config::AnalyzeConfig)
 end
 
 """
-    analyze_monthly_daily_windpower(config::AnalyzeConfig)
+    analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
 
 Analyze daily wind power patterns for each month and create combined 3x4 figures for all masts.
 """
-function analyze_monthly_daily_windpower(config::AnalyzeConfig)
+function analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -408,8 +414,9 @@ function analyze_monthly_daily_windpower(config::AnalyzeConfig)
                              xlabel="Hour"))
             
             save(joinpath(output_dir, "daily_power_pattern_by_month.svg"), fig, size=(1200, 900))
+            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
         end
-        
+
         # Save CSV - create format similar to original
         power_results_df = DataFrame(hour = 0:23)
         for m in 1:12
@@ -440,11 +447,11 @@ function analyze_monthly_daily_windpower(config::AnalyzeConfig)
 end
 
 """
-    analyze_all_temporal(config::AnalyzeConfig)
+    analyze_all_temporal(config::ReportTimeSeriesConfig)
 
 Run all temporal wind analyses for all masts in the configuration.
 """
-function analyze_all_temporal(config::AnalyzeConfig)
+function analyze_all_temporal(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     results["timeseries"] = analyze_wind_speed_timeseries(config)
@@ -458,12 +465,12 @@ function analyze_all_temporal(config::AnalyzeConfig)
 end
 
 """
-    generate_typst_monthly_report(config::AnalyzeConfig)
+    generate_typst_monthly_report(config::ReportTimeSeriesConfig)
 
 Generate a Typst report with monthly wind speed and wind power patterns for all masts.
 Wind speeds are formatted to 2 decimal places, wind power to 0 decimal places.
 """
-function generate_typst_monthly_report(config::AnalyzeConfig)
+function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
     # Get monthly pattern data
     monthly_data = analyze_monthly_pattern(config)
     # Get daily pattern data

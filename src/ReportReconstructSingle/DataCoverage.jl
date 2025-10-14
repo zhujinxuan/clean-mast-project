@@ -5,7 +5,7 @@ using CSV
 using Statistics
 using DataFramesMeta
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeReconstructSingleConfiguration: ProcessedMastReconstructConfig
+import ...Types.ReportReconstructSingleConfiguration: ProcessedMastReconstructConfig
 
 """
     CoverageStats

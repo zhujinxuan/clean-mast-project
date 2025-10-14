@@ -1,6 +1,6 @@
 module ReportReconstructSingleCommand
 
-using ...Types.AnalyzeReconstructSingleConfiguration: load_analyze_reconstruct_single_config
+using ...Types.ReportReconstructSingleConfiguration: load_report_reconstruct_single_config
 using ..ReportReconstructSingleAnalysis: analyze_reconstruction_comparison
 
 export execute
@@ -11,11 +11,11 @@ export execute
 Execute reconstruction analysis using the provided configuration file.
 
 # Arguments
-- `config_path::String`: Path to the analyze-reconstruct-single.yaml configuration file
+- `config_path::String`: Path to the report-reconstruct-single.yaml configuration file
 
 # Example
 ```
-julia bin/CleanMast.jl report reconstruct-single path/to/analyze-reconstruct-single.yaml
+julia bin/CleanMast.jl report reconstruct-single path/to/report-reconstruct-single.yaml
 ```
 
 The YAML configuration file should specify:
@@ -32,7 +32,7 @@ function execute(config_path::String)
     @info "Loading report reconstruct-single configuration from: $config_path"
 
     # Load and process the configuration
-    config = load_analyze_reconstruct_single_config(config_path)
+    config = load_report_reconstruct_single_config(config_path)
 
     @info "Starting reconstruction analysis for $(length(config.masts)) mast(s)"
 

@@ -8,14 +8,14 @@ using GLM
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path
 
 """
-    analyze_vertical_profile(config::AnalyzeConfig)
+    analyze_vertical_profile(config::ReportTimeSeriesConfig)
 
 Analyze vertical wind speed profile with power law fitting for all masts.
 """
-function analyze_vertical_profile(config::AnalyzeConfig)
+function analyze_vertical_profile(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -89,7 +89,8 @@ function analyze_vertical_profile(config::AnalyzeConfig)
         ))
         
         save(joinpath(output_dir, "vertical_profile.svg"), fig)
-        
+        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
+
         results[mast.name] = Dict(
             "data" => results_df,
             "fit" => fit_df,
@@ -103,11 +104,11 @@ function analyze_vertical_profile(config::AnalyzeConfig)
 end
 
 """
-    analyze_wind_shear(config::AnalyzeConfig)
+    analyze_wind_shear(config::ReportTimeSeriesConfig)
 
 Analyze wind shear between different height pairs for all masts.
 """
-function analyze_wind_shear(config::AnalyzeConfig)
+function analyze_wind_shear(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -173,11 +174,11 @@ function analyze_wind_shear(config::AnalyzeConfig)
 end
 
 """
-    analyze_all_vertical(config::AnalyzeConfig)
+    analyze_all_vertical(config::ReportTimeSeriesConfig)
 
 Run all vertical profile analyses for all masts in the configuration.
 """
-function analyze_all_vertical(config::AnalyzeConfig)
+function analyze_all_vertical(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     results["profile"] = analyze_vertical_profile(config)
@@ -188,13 +189,13 @@ function analyze_all_vertical(config::AnalyzeConfig)
 end
 
 """
-    create_wind_speed_ratio_table(config::AnalyzeConfig)
+    create_wind_speed_ratio_table(config::ReportTimeSeriesConfig)
 
 Create a wind shear exponent (风切变指数) table showing alpha values between different heights.
 The alpha values are calculated using the power law: α = ln(v2/v1) / ln(h2/h1)
 Saves results as CSV and Typst files using SummaryTables.jl.
 """
-function create_wind_speed_ratio_table(config::AnalyzeConfig)
+function create_wind_speed_ratio_table(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts

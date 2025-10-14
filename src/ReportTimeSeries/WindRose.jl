@@ -8,7 +8,7 @@ using Dates
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path
 import ..AirDensity: calculate_air_density, calculate_wind_power_density
 
 """
@@ -337,11 +337,11 @@ function get_direction_data_for_speed_sensor(speed_sensor::SensorColumn, ts ::Ti
 end
 
 """
-    analyze_wind_rose(config::AnalyzeConfig)
+    analyze_wind_rose(config::ReportTimeSeriesConfig)
 
 Analyze wind rose patterns for all masts, including overall and monthly analysis.
 """
-function analyze_wind_rose(config::AnalyzeConfig)
+function analyze_wind_rose(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -387,19 +387,22 @@ function analyze_wind_rose(config::AnalyzeConfig)
             CSV.write(joinpath(output_dir, "wind_rose_stats_$(speed_sensor.height)m.csv"), overall_stats)
             
             # Create individual wind roses for each height
-            freq_plot = create_wind_rose_plot(overall_stats, 
+            freq_plot = create_wind_rose_plot(overall_stats,
                 "Wind Direction Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :frequency)
             save(joinpath(output_dir, "direction_frequency_rose_$(speed_sensor.height)m.svg"), freq_plot)
-            
+            empty!(freq_plot)  # Explicitly clean up to avoid GC finalizer issues
+
             # Create power-related plots only if air density is available
             if has_air_density
-                power_plot = create_wind_rose_plot(overall_stats, 
+                power_plot = create_wind_rose_plot(overall_stats,
                     "Wind Power Rose - $(mast.name) ($(speed_sensor.height)m)", :avg_power)
                 save(joinpath(output_dir, "wind_power_rose_$(speed_sensor.height)m.svg"), power_plot)
-                
-                power_freq_plot = create_wind_rose_plot(overall_stats, 
+                empty!(power_plot)  # Explicitly clean up to avoid GC finalizer issues
+
+                power_freq_plot = create_wind_rose_plot(overall_stats,
                     "Wind Power Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :power_frequency)
                 save(joinpath(output_dir, "wind_power_frequency_rose_$(speed_sensor.height)m.svg"), power_freq_plot)
+                empty!(power_freq_plot)  # Explicitly clean up to avoid GC finalizer issues
             end
             
             mast_results["$(speed_sensor.height)m"] = Dict(
@@ -412,27 +415,30 @@ function analyze_wind_rose(config::AnalyzeConfig)
         # Create combined multi-height plots (only heights >= 100m)
         if length(stats_by_height_freq) > 1
             freq_multi_plot = create_multi_height_wind_rose(
-                stats_by_height_freq, 
-                "Wind Direction Frequency Rose - $(mast.name) (Heights ≥ 100m)", 
+                stats_by_height_freq,
+                "Wind Direction Frequency Rose - $(mast.name) (Heights ≥ 100m)",
                 :frequency
             )
             save(joinpath(output_dir, "direction_frequency_rose_height_gt100m.svg"), freq_multi_plot)
-            
+            empty!(freq_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
+
             # Create power-related multi-height plots only if air density is available
             if has_air_density
                 power_multi_plot = create_multi_height_wind_rose(
-                    stats_by_height_power, 
-                    "Wind Power Rose - $(mast.name) (Heights ≥ 100m)", 
+                    stats_by_height_power,
+                    "Wind Power Rose - $(mast.name) (Heights ≥ 100m)",
                     :avg_power
                 )
                 save(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"), power_multi_plot)
-                
+                empty!(power_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
+
                 power_freq_multi_plot = create_multi_height_wind_rose(
-                    stats_by_height_power, 
-                    "Wind Power Frequency Rose - $(mast.name) (Heights ≥ 100m)", 
+                    stats_by_height_power,
+                    "Wind Power Frequency Rose - $(mast.name) (Heights ≥ 100m)",
                     :power_frequency
                 )
                 save(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"), power_freq_multi_plot)
+                empty!(power_freq_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
             end
             
             @info "Generated combined multi-height wind rose plots for mast $(mast.name)"
@@ -470,12 +476,12 @@ function analyze_wind_rose(config::AnalyzeConfig)
 end
 
 """
-    analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String, has_air_density::Bool)
+    analyze_monthly_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String, has_air_density::Bool)
 
 Analyze wind rose patterns for each month with all heights >= 100m in one plot.
 Power-related analyses are only performed when has_air_density is true.
 """
-function analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String, has_air_density::Bool)
+function analyze_monthly_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String, has_air_density::Bool)
     # Generate frequency roses
     freq_results = analyze_monthly_frequency_wind_rose_multi_height(mast, output_dir)
     
@@ -490,11 +496,11 @@ function analyze_monthly_wind_rose_multi_height(mast::MastAnalyzeConfig, output_
 end
 
 """
-    analyze_monthly_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+    analyze_monthly_frequency_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
 
 Analyze monthly wind direction frequency patterns for all heights >= 100m.
 """
-function analyze_monthly_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+function analyze_monthly_frequency_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -621,18 +627,19 @@ function analyze_monthly_frequency_wind_rose_multi_height(mast::MastAnalyzeConfi
     
     # Save the grid plot
     save(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.svg"), freq_fig)
-    
+    empty!(freq_fig)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Generated monthly frequency wind rose plots for mast $(mast.name)"
     
     return monthly_results
 end
 
 """
-    analyze_monthly_power_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+    analyze_monthly_power_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
 
 Analyze monthly wind power patterns for all heights >= 100m.
 """
-function analyze_monthly_power_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+function analyze_monthly_power_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -759,18 +766,19 @@ function analyze_monthly_power_wind_rose_multi_height(mast::MastAnalyzeConfig, o
     
     # Save the grid plot
     save(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.svg"), power_fig)
-    
+    empty!(power_fig)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Generated monthly power wind rose plots for mast $(mast.name)"
     
     return monthly_results
 end
 
 """
-    analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+    analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
 
 Analyze monthly wind power frequency patterns for all heights >= 100m.
 """
-function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastAnalyzeConfig, output_dir::String)
+function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastReportTimeSeriesConfig, output_dir::String)
     ts = mast.timeSeriesData
     
     # Find wind speed sensors with height >= 100m
@@ -897,18 +905,19 @@ function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastAnalyz
     
     # Save the grid plot
     save(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.svg"), power_freq_fig)
-    
+    empty!(power_freq_fig)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Generated monthly power frequency wind rose plots for mast $(mast.name)"
     
     return monthly_results
 end
 
 """
-    analyze_all_wind_rose(config::AnalyzeConfig)
+    analyze_all_wind_rose(config::ReportTimeSeriesConfig)
 
 Run all wind rose analyses for all masts in the configuration.
 """
-function analyze_all_wind_rose(config::AnalyzeConfig)
+function analyze_all_wind_rose(config::ReportTimeSeriesConfig)
     return analyze_wind_rose(config)
 end
 

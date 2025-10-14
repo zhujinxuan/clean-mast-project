@@ -2,7 +2,7 @@ module ReportReconstructSingle
 using Dates
 
 import ..Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
-import ..Types.AnalyzeReconstructSingleConfiguration: AnalyzeReconstructSingleConfig, ProcessedMastReconstructConfig
+import ..Types.ReportReconstructSingleConfiguration: ReportReconstructSingleConfig, ProcessedMastReconstructConfig
 import ..TimeSeriesProcessing.Regularization: ensure_regular_intervals
 import ..TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 
@@ -53,17 +53,17 @@ function regularize_and_merge_data(before_data::TimeSeriesData, after_data::Time
 end
 
 """
-    analyze_reconstruction_comparison(config::AnalyzeReconstructSingleConfig)
+    analyze_reconstruction_comparison(config::ReportReconstructSingleConfig)
 
 Run all analyses for reconstruction comparison.
 
 # Arguments
-- `config::AnalyzeReconstructSingleConfig`: Configuration with multiple masts
+- `config::ReportReconstructSingleConfig`: Configuration with multiple masts
 
 # Returns
 - `Dict{String, Any}`: Dictionary with results from all analyses
 """
-function analyze_reconstruction_comparison(config::AnalyzeReconstructSingleConfig)
+function analyze_reconstruction_comparison(config::ReportReconstructSingleConfig)
     results = Dict{String, Any}()
     
     @info "Starting reconstruction comparison analysis for $(length(config.masts)) mast(s)"

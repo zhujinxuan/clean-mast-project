@@ -1,7 +1,7 @@
 module ReportTimeSeriesCommand
 
 using Logging
-using ...Types.AnalyzeConfiguration: load_analyze_config
+using ...Types.ReportTimeSeriesConfiguration: load_report_timeseries_config
 using ...TypstUtils
 using ...CleanMastLogging: create_cleanmast_logger
 using ..TimeSeriesAnalysis: analyze_all, generate_comprehensive_report
@@ -11,10 +11,10 @@ export execute
 """
     execute(config_path::String)
 
-Execute time series analysis report using the provided analyze configuration file.
+Execute time series analysis report using the provided configuration file.
 
 # Arguments
-- `config_path::String`: Path to the analyze configuration file (supports .yaml, .toml, .json)
+- `config_path::String`: Path to the report timeseries configuration file (supports .yaml, .toml, .json)
 
 # Examples
 ```
@@ -50,9 +50,9 @@ function execute(config_path::String)
     )
     global_logger(logger)
 
-    @info "Loading analyze configuration from: $config_path"
+    @info "Loading report timeseries configuration from: $config_path"
 
-    config = load_analyze_config(config_path)
+    config = load_report_timeseries_config(config_path)
 
     @info "Starting analysis for $(length(config.masts)) mast(s)"
 

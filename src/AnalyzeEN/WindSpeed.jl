@@ -4,7 +4,7 @@ using DataFrames
 using Statistics
 using ...Types.AnalyzeENConfiguration: ENMastWindSpeedResult, ENMastConfig
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.AnalyzeConfiguration: load_timeseries_data, resolve_path
+using ...Types.ReportTimeSeriesConfiguration: load_timeseries_data, resolve_path
 
 export analyze_single_mast, create_direction_sectors
 

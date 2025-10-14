@@ -3,15 +3,15 @@ module ReportGeneration
 using DataFrames
 using Dates
 using SummaryTables
-import ...Types.AnalyzeReconstructSingleConfiguration: AnalyzeReconstructSingleConfig
+import ...Types.ReportReconstructSingleConfiguration: ReportReconstructSingleConfig
 import ..DataCoverage: CoverageStats
 
 """
-    generate_reconstruction_report(config::AnalyzeReconstructSingleConfig, results::Dict{String, Any})
+    generate_reconstruction_report(config::ReportReconstructSingleConfig, results::Dict{String, Any})
 
 Generate a comprehensive Typst report for reconstruction analysis.
 """
-function generate_reconstruction_report(config::AnalyzeReconstructSingleConfig, results::Dict{String, Any})::String
+function generate_reconstruction_report(config::ReportReconstructSingleConfig, results::Dict{String, Any})::String
     report_path = joinpath(config.outputDir, "reconstruction_analysis_report.typ")
     
     open(report_path, "w") do io

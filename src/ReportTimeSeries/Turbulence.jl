@@ -9,7 +9,7 @@ using Dates
 using SummaryTables
 
 import ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, find_nearest_height_sensor
-import ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path
+import ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfig, MastReportTimeSeriesConfig, get_output_path
 import ...Types.Sector: DIRECTION_16_SECTORS, get_direction_sector
 import ...Types.TurbulenceIntensity: TurbulenceSectorStats, TurbulenceResults
 import ..Utils: format_height
@@ -424,17 +424,18 @@ function create_combined_ti_comparison_plot(
     # Save the plot
     plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
     save(plot_path, fig, px_per_unit=2)
-    
+    empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
+
     @info "Saved combined TI comparison plot: $plot_path"
     return nothing
 end
 
 """
-    analyze_turbulence_intensity(config::AnalyzeConfig)
+    analyze_turbulence_intensity(config::ReportTimeSeriesConfig)
 
 Analyze turbulence intensity for all masts and heights in the configuration.
 """
-function analyze_turbulence_intensity(config::AnalyzeConfig)
+function analyze_turbulence_intensity(config::ReportTimeSeriesConfig)
     results = Dict{String, Any}()
     
     for mast in config.masts
@@ -541,11 +542,11 @@ function analyze_turbulence_intensity(config::AnalyzeConfig)
 end
 
 """
-    analyze_all_turbulence(config::AnalyzeConfig)
+    analyze_all_turbulence(config::ReportTimeSeriesConfig)
 
 Run all turbulence intensity analyses for all masts in the configuration.
 """
-function analyze_all_turbulence(config::AnalyzeConfig)
+function analyze_all_turbulence(config::ReportTimeSeriesConfig)
     results = analyze_turbulence_intensity(config)
     generate_turbulence_typst_reports(config)
     return results
@@ -555,7 +556,7 @@ end
 Generate Typst reports with turbulence intensity analysis results for all masts
 
 # Arguments
-- `config::AnalyzeConfig`: Analysis configuration
+- `config::ReportTimeSeriesConfig`: Analysis configuration
 
 # Description
 Generates a comprehensive Typst report for each mast including all heights:
@@ -564,7 +565,7 @@ Generates a comprehensive Typst report for each mast including all heights:
 - Summary report with different wind speed ranges for each height
 - All content in Chinese in a single turbulence.typ file
 """
-function generate_turbulence_typst_reports(config::AnalyzeConfig)
+function generate_turbulence_typst_reports(config::ReportTimeSeriesConfig)
     for mast in config.masts
         output_dir = get_output_path(config, mast.name, "turbulence")
         
