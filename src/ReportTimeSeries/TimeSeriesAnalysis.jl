@@ -9,9 +9,12 @@ using DataFramesMeta
 using GLM
 using StatsBase: mean, fit, Histogram
 using YAML
+using Logging
 
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.AnalyzeConfiguration: AnalyzeConfig, MastAnalyzeConfig, get_output_path, AirDensityConfig
+using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
 # Import functions from sub-modules
 import ..WindTemporal: analyze_all_temporal
@@ -25,78 +28,117 @@ import ..FiftyYearsExtremeWind: analyze_fifty_years_extreme_wind
 export analyze_all, generate_comprehensive_report
 
 """
-    analyze_all(config::AnalyzeConfig)
+    analyze_all(config::AnalyzeConfig, config_dir::String, config_basename::String)
 
-Run all available analyses for all masts in the configuration.
+Run all available analyses for all masts in the configuration in parallel.
 
 # Arguments
 - `config::AnalyzeConfig`: Analysis configuration with multiple masts
+- `config_dir::String`: Configuration directory for log files
+- `config_basename::String`: Base name for log files
 
 # Returns
 - `Dict{String, Any}`: Dictionary with results from all analyses
 """
-function analyze_all(config::AnalyzeConfig)
+function analyze_all(config::AnalyzeConfig, config_dir::String, config_basename::String)
     results = Dict{String, Any}()
 
     @info "Starting comprehensive time series analysis for $(length(config.masts)) mast(s)"
 
-    # Create output directory
     mkpath(config.output.path)
 
-    # Wind temporal analyses
-    if config.analysis.wind_temporal
-        @info "Running wind temporal analyses..."
-        results["temporal"] = analyze_all_temporal(config)
-    else
-        @info "Skipping wind temporal analyses (disabled)"
+    enabled_analyses = [
+        (config.analysis.wind_temporal, "wind_temporal"),
+        (config.analysis.vertical_profile, "vertical_profile"),
+        (config.analysis.wind_frequency, "wind_frequency"),
+        (config.analysis.wind_rose, "wind_rose"),
+        (config.analysis.turbulence, "turbulence"),
+        (config.analysis.weibull, "weibull"),
+        (config.analysis.fifty_years_extreme, "fifty_years_extreme")
+    ]
+
+    tasks = [
+        (analysis_type, mast)
+        for (enabled, analysis_type) in enabled_analyses
+        if enabled
+        for mast in config.masts
+    ]
+
+    total_tasks = length(tasks)
+    @info "Created analysis task queue" total_tasks=total_tasks
+
+    if total_tasks == 0
+        @info "No analyses enabled or no masts configured"
+        return results
     end
 
-    # Vertical profile analyses
-    if config.analysis.vertical_profile
-        @info "Running vertical profile analyses..."
-        results["vertical"] = analyze_all_vertical(config)
-    else
-        @info "Skipping vertical profile analyses (disabled)"
+    @info "Archiving old worker logs before parallel execution"
+    archive_all_worker_logs(config_dir, config_basename, Threads.nthreads())
+
+    @info "Pre-creating loggers for all worker threads"
+    worker_loggers = Dict{Int, Any}()
+    for worker_id in 1:Threads.nthreads()
+        worker_loggers[worker_id] = create_cleanmast_logger(
+            job_name="analyze-mast",
+            worker_id=worker_id,
+            config_dir=config_dir,
+            config_basename=config_basename
+        )
     end
 
-    # Wind frequency analyses
-    if config.analysis.wind_frequency
-        @info "Running wind frequency analyses..."
-        results["frequency"] = analyze_all_frequency(config)
-    else
-        @info "Skipping wind frequency analyses (disabled)"
+    task_results = Vector{Any}(undef, total_tasks)
+
+    Threads.@threads for idx in 1:total_tasks
+        worker_id = Threads.threadid()
+        worker_logger = worker_loggers[worker_id]
+
+        with_logger(worker_logger) do
+            analysis_type, mast_config = tasks[idx]
+
+            @info "Running analysis" index=idx total=total_tasks type=analysis_type mast=mast_config.name
+
+            try
+                single_mast_config = AnalyzeConfig(
+                    [mast_config],
+                    config.output,
+                    config.configDir,
+                    config.min_plot_height,
+                    config.analysis
+                )
+
+                result = nothing
+                if analysis_type == "wind_temporal"
+                    result = analyze_all_temporal(single_mast_config)
+                elseif analysis_type == "vertical_profile"
+                    result = analyze_all_vertical(single_mast_config)
+                elseif analysis_type == "wind_frequency"
+                    result = analyze_all_frequency(single_mast_config)
+                elseif analysis_type == "wind_rose"
+                    result = analyze_all_wind_rose(single_mast_config)
+                elseif analysis_type == "turbulence"
+                    result = analyze_all_turbulence(single_mast_config)
+                elseif analysis_type == "weibull"
+                    result = analyze_weibull_distribution(single_mast_config)
+                elseif analysis_type == "fifty_years_extreme"
+                    result = analyze_fifty_years_extreme_wind(single_mast_config)
+                end
+
+                task_results[idx] = (analysis_type, mast_config.name, result)
+                @info "Analysis completed" type=analysis_type mast=mast_config.name
+            catch e
+                @error "Analysis failed" type=analysis_type mast=mast_config.name exception=(e, catch_backtrace())
+                rethrow(e)
+            end
+        end
     end
 
-    # Wind rose analyses
-    if config.analysis.wind_rose
-        @info "Running wind rose analyses..."
-        results["windrose"] = analyze_all_wind_rose(config)
-    else
-        @info "Skipping wind rose analyses (disabled)"
-    end
-
-    # Turbulence intensity analyses
-    if config.analysis.turbulence
-        @info "Running turbulence intensity analyses..."
-        results["turbulence"] = analyze_all_turbulence(config)
-    else
-        @info "Skipping turbulence intensity analyses (disabled)"
-    end
-
-    # Weibull distribution analysis
-    if config.analysis.weibull
-        @info "Running Weibull distribution analysis..."
-        results["weibull"] = analyze_weibull_distribution(config)
-    else
-        @info "Skipping Weibull distribution analysis (disabled)"
-    end
-
-    # 50-year extreme wind analysis
-    if config.analysis.fifty_years_extreme
-        @info "Running 50-year extreme wind analysis..."
-        results["fifty_years_extreme"] = analyze_fifty_years_extreme_wind(config)
-    else
-        @info "Skipping 50-year extreme wind analysis (disabled)"
+    for (analysis_type, mast_name, result) in task_results
+        if !haskey(results, analysis_type)
+            results[analysis_type] = Dict{String, Any}()
+        end
+        if !isnothing(result)
+            merge!(results[analysis_type], result)
+        end
     end
 
     @info "Analysis complete for all masts"
@@ -228,7 +270,7 @@ function generate_comprehensive_report(config::AnalyzeConfig)
 
                     """)
                 else
-                    @warn "Typst file not found: $file_path"
+                    @debug "Typst file not found (analysis may have been skipped): $file_path"
                 end
             end
 

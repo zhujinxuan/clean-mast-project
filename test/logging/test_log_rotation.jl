@@ -43,12 +43,40 @@ using Dates
             archive_dir = joinpath(tmpdir, "archive")
             mkpath(archive_dir)
 
-            recent_file = joinpath(archive_dir, "test.1.$(Dates.format(now(), "yyyymmddTHHMMSS")).jsonl")
+            recent_file = joinpath(archive_dir, "test.1.$(Dates.format(now(), "yyyymmddTHHMMSS.sss")).jsonl")
             write(recent_file, "recent")
 
             cleanup_old_logs(archive_dir, 30)
 
             @test isfile(recent_file)
+        end
+    end
+
+    @testset "archive_all_worker_logs" begin
+        mktempdir() do tmpdir
+            log_dir = joinpath(tmpdir, "logs")
+            mkpath(log_dir)
+
+            write(joinpath(log_dir, "test.1.jsonl"), "worker 1 log\n")
+            write(joinpath(log_dir, "test.2.jsonl"), "worker 2 log\n")
+            write(joinpath(log_dir, "test.3.jsonl"), "worker 3 log\n")
+
+            archive_all_worker_logs(tmpdir, "test", 4; keep_days=30)
+
+            @test !isfile(joinpath(log_dir, "test.1.jsonl"))
+            @test !isfile(joinpath(log_dir, "test.2.jsonl"))
+            @test !isfile(joinpath(log_dir, "test.3.jsonl"))
+
+            archive_dir = joinpath(log_dir, "archive")
+            @test isdir(archive_dir)
+
+            archives = readdir(archive_dir)
+            @test length(archives) == 3
+
+            for archive in archives
+                @test startswith(archive, "test.")
+                @test endswith(archive, ".jsonl")
+            end
         end
     end
 end

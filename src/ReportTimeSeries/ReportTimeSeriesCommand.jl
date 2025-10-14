@@ -1,7 +1,9 @@
 module ReportTimeSeriesCommand
 
+using Logging
 using ...Types.AnalyzeConfiguration: load_analyze_config
 using ...TypstUtils
+using ...CleanMastLogging: create_cleanmast_logger
 using ..TimeSeriesAnalysis: analyze_all, generate_comprehensive_report
 
 export execute
@@ -37,22 +39,29 @@ For each mast, the analysis includes:
 - Weibull distribution analysis
 """
 function execute(config_path::String)
+    config_dir = dirname(config_path)
+    config_basename = splitext(basename(config_path))[1]
+
+    logger = create_cleanmast_logger(
+        job_name="report-timeseries",
+        worker_id=1,
+        config_dir=config_dir,
+        config_basename=config_basename
+    )
+    global_logger(logger)
+
     @info "Loading analyze configuration from: $config_path"
 
-    # Load and process the analyze configuration
     config = load_analyze_config(config_path)
 
     @info "Starting analysis for $(length(config.masts)) mast(s)"
 
-    # Run all analyses
-    results = analyze_all(config)
+    results = analyze_all(config, config_dir, config_basename)
 
-    # Generate comprehensive Typst report
     @info "Generating comprehensive Typst report..."
     report_path = generate_comprehensive_report(config)
     results["report_path"] = report_path
 
-    # Compile Typst reports if Typst is available
     TypstUtils.typst_try_compile_all(config.output.path)
 
     @info "Analysis complete. Results saved to: $(config.output.path)"

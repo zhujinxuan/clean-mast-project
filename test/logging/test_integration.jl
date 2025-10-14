@@ -13,8 +13,7 @@ using JSON
                 worker_id=1,
                 config_dir=tmpdir,
                 config_basename="test",
-                terminal_stream=terminal_buffer,
-                archive_logs=false
+                terminal_stream=terminal_buffer
             )
 
             with_logger(logger) do
@@ -69,8 +68,7 @@ using JSON
                 worker_id=1,
                 config_dir=tmpdir,
                 config_basename="test",
-                enable_terminal=false,
-                archive_logs=false
+                enable_terminal=false
             )
 
             with_logger(logger) do
@@ -93,8 +91,7 @@ using JSON
                 worker_id=1,
                 config_dir=tmpdir,
                 config_basename="test",
-                enable_terminal=false,
-                archive_logs=false
+                enable_terminal=false
             )
 
             logger2 = create_cleanmast_logger(
@@ -102,8 +99,7 @@ using JSON
                 worker_id=2,
                 config_dir=tmpdir,
                 config_basename="test",
-                enable_terminal=false,
-                archive_logs=false
+                enable_terminal=false
             )
 
             with_logger(logger1) do

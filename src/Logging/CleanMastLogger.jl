@@ -24,7 +24,7 @@ function create_cleanmast_logger(;
     file_level::Logging.LogLevel=Logging.Debug,
     enable_terminal::Bool=true,
     enable_file::Bool=true,
-    archive_logs::Bool=true,
+    archive_logs::Bool=false,
     keep_days::Int=30,
     terminal_stream::IO=stderr
 )

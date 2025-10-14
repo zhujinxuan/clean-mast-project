@@ -2,7 +2,7 @@ module LogRotation
 
 using Dates
 
-export prepare_log_file, cleanup_old_logs
+export prepare_log_file, cleanup_old_logs, archive_all_worker_logs
 
 function prepare_log_file(
     config_dir::String,
@@ -20,7 +20,7 @@ function prepare_log_file(
         archive_dir = joinpath(log_dir, "archive")
         mkpath(archive_dir)
 
-        timestamp = Dates.format(now(), "yyyymmddTHHMMSS")
+        timestamp = Dates.format(now(), "yyyymmddTHHMMSS.sss")
         archive_file = joinpath(archive_dir,
             "$(config_basename).$(worker_id).$(timestamp).jsonl")
 
@@ -52,6 +52,51 @@ function cleanup_old_logs(archive_dir::String, keep_days::Int)
                 end
             end
         end
+    end
+end
+
+"""
+    archive_all_worker_logs(config_dir::String, config_basename::String, num_threads::Int; keep_days::Int=30)
+
+Archive existing log files for all potential worker threads before starting parallel work.
+This prevents race conditions when multiple workers try to archive the same log file.
+
+# Arguments
+- `config_dir::String`: Configuration directory containing logs
+- `config_basename::String`: Base name for log files
+- `num_threads::Int`: Number of threads (typically Threads.nthreads())
+- `keep_days::Int`: Number of days to keep archived logs (default: 30)
+"""
+function archive_all_worker_logs(
+    config_dir::String,
+    config_basename::String,
+    num_threads::Int;
+    keep_days::Int=30
+)
+    log_dir = joinpath(config_dir, "logs")
+
+    if !isdir(log_dir)
+        return
+    end
+
+    archive_dir = joinpath(log_dir, "archive")
+
+    for worker_id in 1:num_threads
+        log_file = joinpath(log_dir, "$(config_basename).$(worker_id).jsonl")
+
+        if isfile(log_file)
+            mkpath(archive_dir)
+
+            timestamp = Dates.format(now(), "yyyymmddTHHMMSS.sss")
+            archive_file = joinpath(archive_dir,
+                "$(config_basename).$(worker_id).$(timestamp).jsonl")
+
+            mv(log_file, archive_file)
+        end
+    end
+
+    if isdir(archive_dir)
+        cleanup_old_logs(archive_dir, keep_days)
     end
 end
 

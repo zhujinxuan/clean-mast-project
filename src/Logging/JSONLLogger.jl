@@ -57,11 +57,47 @@ function Logging.handle_message(
     )
 
     lock(logger.file_lock) do
+        # Convert to JSON string first (don't write partial data)
+        json_string = try
+            JSON.json(log_entry)
+        catch e
+            # JSON serialization failed, try sanitizing values
+            sanitized_entry = sanitize_for_json(log_entry)
+            JSON.json(sanitized_entry)
+        end
+
+        # Write complete JSON string atomically
         open(logger.log_file, "a") do io
-            JSON.print(io, log_entry)
-            println(io)
+            println(io, json_string)
         end
     end
+end
+
+function sanitize_for_json(entry::Dict)
+    sanitized = copy(entry)
+    for (key, value) in entry
+        try
+            # Test if this value can be serialized
+            test_io = IOBuffer()
+            JSON.print(test_io, Dict("test" => value))
+        catch
+            # Try string() conversion
+            try
+                sanitized[key] = string(value)
+            catch
+                # Try show() conversion
+                try
+                    io = IOBuffer()
+                    show(io, value)
+                    sanitized[key] = String(take!(io))
+                catch
+                    # Skip this key entirely
+                    delete!(sanitized, key)
+                end
+            end
+        end
+    end
+    return sanitized
 end
 
 function create_log_entry(
@@ -112,6 +148,23 @@ function create_log_entry(
         stacktrace_lines = format_stacktrace(bt)
         if !isempty(stacktrace_lines)
             entry["stacktrace"] = stacktrace_lines
+        end
+    end
+
+    # Add all other kwargs to the log entry (skip non-serializable types)
+    for (key, value) in kwargs
+        key_str = string(key)
+        # Skip exception as it's already handled above
+        if key_str != "exception"
+            # Try to add the value, but skip if it's not JSON-serializable
+            # Skip non-serializable types
+            if value isa Ptr || value isa DataType || value isa Module || value isa Function
+                continue
+            end
+
+            # Add value - if JSON serialization fails later, it will be caught
+            # and we'll try fallback conversions
+            entry[key_str] = value
         end
     end
 
