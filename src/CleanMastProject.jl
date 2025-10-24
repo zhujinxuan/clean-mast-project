@@ -73,6 +73,8 @@ module Types
   export TurbulenceIntensity
   include("./Types/ReportTimeSeriesConfiguration.jl")
   export ReportTimeSeriesConfiguration
+  include("./Types/ReportMesoTimeSeriesConfig.jl")
+  export ReportMesoTimeSeriesConfiguration
   include("./Types/AnalyzeENConfiguration.jl")
   export AnalyzeENConfiguration
   include("./Types/ReportReconstructSingleConfiguration.jl")
@@ -284,6 +286,13 @@ module ReportTimeSeries
 end
 export ReportTimeSeries
 
+module ReportMesoTimeSeries
+  include("./ReportMesoTimeSeries/AnnualClimatology.jl")
+  include("./ReportMesoTimeSeries/ReportMesoTimeSeriesCommand.jl")
+  include("./ReportMesoTimeSeries/RecommendReportMesoTimeSeriesCommand.jl")
+  export AnnualClimatology, ReportMesoTimeSeriesCommand, RecommendReportMesoTimeSeriesCommand
+end
+export ReportMesoTimeSeries
 
 module AnalyzeEN
   include("./AnalyzeEN/WindSpeed.jl")

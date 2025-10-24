@@ -349,6 +349,7 @@ end
     using CleanMastProject.ReportAllMasts.RecommendReportAllCommand
     using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesMesoCommand
     using CleanMastProject.ReportTimeSeries.RecommendReportTimeSeriesRepCommand
+    using CleanMastProject.ReportMesoTimeSeries.RecommendReportMesoTimeSeriesCommand
 
     """
     parse-sensors
@@ -746,6 +747,42 @@ end
     @cast function report_timeseries_rep(dir::String)
         RecommendReportTimeSeriesRepCommand.execute(dir)
     end
+
+    """
+    report-meso-timeseries
+
+    Generate report-meso-timeseries.toml configuration for annual climatology analysis of meso data.
+
+    # Arguments
+    - `dir`: Project directory containing parse-sensors.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-meso-timeseries ./projects/my-project
+    ```
+
+    This command reads parse-sensors.toml to find meso data sources with output configurations
+    and generates a configuration for annual climatology analysis. The configuration will be saved as:
+    `report-masts/report-meso-timeseries.toml`
+
+    The analysis will:
+    - Use the highest wind speed sensor for each meso dataset
+    - Calculate annual mean wind speeds for each year
+    - Compute climatology (multi-year average)
+    - Generate tables and plots showing interannual variability
+
+    Requirements:
+    - parse-sensors.toml must exist in the project directory
+    - Meso datasets in parse-sensors.toml must have 'output' fields defined
+
+    Use the generated configuration with:
+    ```bash
+    julia bin/CleanMast.jl report meso-timeseries ./projects/my-project/report-masts/report-meso-timeseries.toml
+    ```
+    """
+    @cast function report_meso_timeseries(dir::String)
+        RecommendReportMesoTimeSeriesCommand.execute(dir)
+    end
 end
 
 """
@@ -810,6 +847,7 @@ Comonicon.@cast module Report
     using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
     using CleanMastProject.ReportReconstructSingle.ReportReconstructSingleCommand
     using CleanMastProject.ReportReconstructMeso.CommandReportReconstructMeso
+    using CleanMastProject.ReportMesoTimeSeries.ReportMesoTimeSeriesCommand
 
     """
     clean
@@ -1088,6 +1126,38 @@ Comonicon.@cast module Report
     """
     Comonicon.@cast function reconstruct_meso(config_path::String)
         CommandReportReconstructMeso.execute(config_path)
+    end
+
+    """
+    meso-timeseries
+
+    Generate meso-timeseries annual climatology analysis report.
+
+    # Arguments
+    - `config_path`: Path to report-meso-timeseries.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report meso-timeseries path/to/report-masts/report-meso-timeseries.toml
+    ```
+
+    The TOML configuration file should specify:
+    - Multiple meso datasets with their data files and sensor configurations
+    - Output directory for results
+
+    For each meso dataset, generates:
+    - Annual wind speed climatology analysis using the highest sensor
+    - CSV table with annual means, climatology, and differences
+    - SVG plot showing annual timeseries with climatology line
+    - Typst report with summary statistics
+
+    Output includes:
+    - annual_climatology.typ: Main Chinese report with analysis results
+    - annual_climatology.csv: Data table with annual statistics
+    - annual_climatology.svg: Visualization plot
+    """
+    Comonicon.@cast function meso_timeseries(config_path::String)
+        ReportMesoTimeSeriesCommand.execute(config_path)
     end
 
 end
