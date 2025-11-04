@@ -28,4 +28,4 @@ Manifest.toml
 temp/
 tmp/
 *.lnk
-.claude
+.claude/settings.local.json

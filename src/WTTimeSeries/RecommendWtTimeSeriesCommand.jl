@@ -16,7 +16,7 @@ export execute
     discover_target_heights(dir::String, mast_name::String)::Vector{Float64}
 
 Discover target heights for a specific mast by examining its sensors file.
-Finds all WindSpeed sensors with statType="avg" and height >= 120.0m.
+Finds all WindSpeed sensors with statType="avg" and height >= 100.0m.
 
 # Arguments
 - `dir::String`: Project directory
@@ -26,7 +26,7 @@ Finds all WindSpeed sensors with statType="avg" and height >= 120.0m.
 - `Vector{Float64}`: List of target heights for this mast
 
 # Note
-This function uses a hardcoded 120.0m threshold for backward compatibility.
+This function uses a hardcoded 100.0m threshold for backward compatibility.
 For configurable height thresholds, use the analyze timeseries functionality.
 """
 function discover_target_heights(mast:: RepresentativeYearMast, dir::String)::Vector{Float64}
@@ -35,7 +35,7 @@ function discover_target_heights(mast:: RepresentativeYearMast, dir::String)::Ve
     # Find WindSpeed sensors with avg statType
     wind_speed_sensors = filter(s ->
         s.sensorType == "WindSpeed" &&
-        s.statType == "avg" && s.height >= 120.0,
+        s.statType == "avg" && s.height >= 100.0,
         ts.sensors
     )
     sort!(wind_speed_sensors, by = s -> s.height)
