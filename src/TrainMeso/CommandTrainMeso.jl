@@ -4,6 +4,8 @@ using DataFrames
 using CSV
 using TOML
 using JLD2
+using Base.Threads: @threads
+using Logging
 
 using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoModel
 using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries, SensorColumn
@@ -14,6 +16,9 @@ using ..Core: train_meso_windspeed_sectorized, train_meso_winddirection_directio
 using ..Core: prepare_training_data
 using Statistics: cor, mean
 using ...Types.TrainMesoResultsTypes: TrainMesoResults, TrainMesoPairResult, TrainMesoEntity, TrainMesoSpeedMetrics
+
+using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
 
 
@@ -129,6 +134,50 @@ function compute_train_meso_metrics(
 end
 
 """
+    train_mast_meso_pair(mast_name::String, meso_name::String,
+                        models::Vector{TrainMesoModel},
+                        mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
+                        project_dir::String)
+
+Train all models for a single mast-meso pair.
+
+# Returns
+- Vector of (model_config, trained_model) tuples
+"""
+function train_mast_meso_pair(mast_name::String, meso_name::String,
+                              models::Vector{TrainMesoModel},
+                              mast_ts::TimeSeriesData, meso_ts::TimeSeriesData,
+                              project_dir::String)
+    @info "Training models" mast=mast_name meso=meso_name num_models=length(models)
+
+    results = Tuple{TrainMesoModel, AbstractMastReferenceModel}[]
+
+    for model_config in models
+        @info "Training model" method=model_config.method
+
+        trained_model = if model_config.method == "16-sector"
+            train_meso_windspeed_sectorized(mast_ts, meso_ts, "16-sector")
+        elseif model_config.method == "1-sector"
+            train_meso_windspeed_sectorized(mast_ts, meso_ts, "1-sector")
+        elseif model_config.method == "constant-offset"
+            train_meso_winddirection_directionoffset(mast_ts, meso_ts)
+        else
+            @warn "Unknown method" method=model_config.method
+            continue
+        end
+
+        output_path = joinpath(project_dir, model_config.output)
+        mkpath(dirname(output_path))
+        @save output_path model=trained_model
+        @info "Saved model" output=model_config.output
+
+        push!(results, (model_config, trained_model))
+    end
+
+    return results
+end
+
+"""
     execute(config_path::String)
 
 Execute mesoscale model training based on configuration file.
@@ -137,7 +186,19 @@ Execute mesoscale model training based on configuration file.
 - `config_path::String`: Path to train-meso.toml configuration file
 """
 function execute(config_path::String)
-    println("Training mesoscale reference models...")
+    # Setup logging
+    config_dir = dirname(config_path)
+    config_basename = splitext(basename(config_path))[1]
+
+    main_logger = create_cleanmast_logger(
+        job_name="train-meso",
+        worker_id=1,
+        config_dir=config_dir,
+        config_basename=config_basename
+    )
+    global_logger(main_logger)
+
+    @info "Starting mesoscale model training" config_file=config_path
 
     # Load configuration
     config_dict = load_dict(config_path)
@@ -145,68 +206,88 @@ function execute(config_path::String)
     project_dir = dirname(config_path)
 
     # Load all mast data into a dictionary
+    @info "Loading mast data"
     mast_data = Dict(
         mast_config.name => load_timeseries(mast_config.input, project_dir)
         for mast_config in config.masts
     )
-    println("Loaded $(length(mast_data)) mast data source(s)")
+    @info "Loaded mast data sources" count=length(mast_data)
 
     # Load all meso data into a dictionary
+    @info "Loading meso data"
     meso_data = Dict(
         meso_config.name => load_timeseries(meso_config.input, project_dir)
         for meso_config in config.mesos
     )
-    println("Loaded $(length(meso_data)) meso data source(s)")
+    @info "Loaded meso data sources" count=length(meso_data)
 
-    # Group models by mast-meso pair for efficient processing (typed, functional style)
+    # Group models by mast-meso pair for efficient processing
     keys = unique((m.mast_name, m.meso_name) for m in config.models)
     model_groups = Dict{Tuple{String,String}, Vector{TrainMesoModel}}(
         k => [m for m in config.models if (m.mast_name, m.meso_name) == k] for k in keys
     )
 
-    # Train models for each mast-meso pair
-    for ((mast_name, meso_name), models) in model_groups
-        println("\nTraining models for $mast_name with $meso_name...")
+    @info "Training models in parallel" num_pairs=length(model_groups) num_threads=Threads.nthreads()
 
-        # Get data
-        mast_ts = mast_data[mast_name]
-        meso_ts = meso_data[meso_name]
+    # Archive old worker logs and create worker loggers for parallel execution
+    @info "Archiving old worker logs"
+    archive_all_worker_logs(config_dir, config_basename, Threads.nthreads())
 
-        # Train each model
-        for model_config in models
-            println("  Training $(model_config.method) model...")
+    @info "Creating worker loggers" num_threads=Threads.nthreads()
+    worker_loggers = Dict{Int, Any}()
+    for worker_id in 1:Threads.nthreads()
+        worker_loggers[worker_id] = create_cleanmast_logger(
+            job_name="train-meso",
+            worker_id=worker_id,
+            config_dir=config_dir,
+            config_basename=config_basename
+        )
+    end
 
-            # Train and save based on method
-            trained_model = if model_config.method == "16-sector"
-                train_meso_windspeed_sectorized(mast_ts, meso_ts, "16-sector")
-            elseif model_config.method == "1-sector"
-                train_meso_windspeed_sectorized(mast_ts, meso_ts, "1-sector")
-            elseif model_config.method == "constant-offset"
-                train_meso_winddirection_directionoffset(mast_ts, meso_ts)
-            else
-                println("    Warning: Unknown method: $(model_config.method)")
-                continue
+    # Convert model_groups to array for parallel processing
+    pair_list = collect(model_groups)
+    trained_pairs = Vector{Bool}(undef, length(pair_list))
+
+    # Train models for each mast-meso pair in parallel
+    @threads for idx in eachindex(pair_list)
+        worker_id = Threads.threadid()
+        worker_logger = worker_loggers[worker_id]
+
+        with_logger(worker_logger) do
+            (mast_name, meso_name), models = pair_list[idx]
+            @info "Starting training" pair_index="$idx/$(length(pair_list))" mast=mast_name meso=meso_name
+
+            try
+                mast_ts = mast_data[mast_name]
+                meso_ts = meso_data[meso_name]
+
+                train_mast_meso_pair(mast_name, meso_name, models, mast_ts, meso_ts, project_dir)
+                trained_pairs[idx] = true
+                @info "Completed training" mast=mast_name meso=meso_name
+            catch e
+                @error "Training failed" mast=mast_name meso=meso_name error=e
+                trained_pairs[idx] = false
             end
-
-            # Save model
-            output_path = joinpath(project_dir, model_config.output)
-            mkpath(dirname(output_path))
-            @save output_path model=trained_model
-            println("    Saved model to: $(model_config.output)")
         end
     end
+
+    # Check if all pairs were trained successfully
+    num_successful = count(trained_pairs)
+    if num_successful < length(pair_list)
+        @warn "Some training jobs failed" successful=num_successful total=length(pair_list)
+    end
+
     # Compute and write training results metrics (1-sector only for now)
-    println("\nComputing training metrics and writing results...")
+    @info "Computing training metrics"
     results = compute_train_meso_metrics(config, mast_data, meso_data, model_groups)
     results_path = joinpath(project_dir, "meso-models", "train-meso-results.toml")
     mkpath(dirname(results_path))
     open(results_path, "w") do io
         TOML.print(io, to_dict(results))
     end
-    println("Saved training metrics to: $(results_path)")
+    @info "Saved training metrics" path=results_path
 
-    println("\nMesoscale model training completed successfully.")
-    println("Trained $(length(config.models)) model(s) total.")
+    @info "Mesoscale model training completed" total_models=length(config.models) successful_pairs=num_successful
 end
 
 end # module

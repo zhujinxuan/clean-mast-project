@@ -7,6 +7,7 @@ module Core
 
 using DataFrames
 using Dates
+using Logging
 using ...Types.MastTimeSeries: TimeSeriesData, TimeRange
 using ...Types.Sector: DirectionSector, DIRECTION_16_SECTORS
 using ...Types.MastReferenceModel: train
@@ -41,16 +42,18 @@ function prepare_training_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData)
     
     # Interpolate meso data to match mast timestamps
     meso_ts = interpolate_timeseries(meso_ts, mast_ts.df.timestamp)
-    
+
     # Verify alignment
     mast_times = Set(mast_ts.df.timestamp)
     meso_times = Set(meso_ts.df.timestamp)
-    println("  Timestamps match: $(mast_times == meso_times)")
-    if mast_times != meso_times
-        println("  Missing in meso: $(length(setdiff(mast_times, meso_times))) timestamps")
-        println("  Extra in meso: $(length(setdiff(meso_times, mast_times))) timestamps")
+    timestamps_match = mast_times == meso_times
+    @debug "Timestamp alignment check" timestamps_match=timestamps_match
+    if !timestamps_match
+        missing_count = length(setdiff(mast_times, meso_times))
+        extra_count = length(setdiff(meso_times, mast_times))
+        @warn "Timestamp mismatch detected" missing_in_meso=missing_count extra_in_meso=extra_count
     end
-    
+
     return mast_ts, meso_ts
 end
 
