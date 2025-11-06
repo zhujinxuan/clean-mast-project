@@ -1,6 +1,16 @@
 # Parallel Cross-Mast Reconstruction
 
-## Problem Description
+## ✅ IMPLEMENTATION COMPLETED (2025-11-06)
+
+**Status**: Fully implemented and tested
+- ✅ Job batching with unique targets per batch
+- ✅ Parallel execution using `@threads`
+- ✅ Thread-safe structured logging (CleanMastLogging)
+- ✅ Cumulative reconstruction (mast_data updated after each batch)
+- ✅ Backup logic removed (simplified codebase)
+- ✅ All 121 tests passing
+
+## Problem Description (Historical)
 
 ### Symptom
 During cross-mast reconstruction, the process fails with a file locking error:
@@ -59,6 +69,11 @@ Potential (Parallel):
 
 ## Proposed Solution: Option A - Parallel Job Scheduling
 
+**Implementation Decision (2025-11-06):**
+- **Phase 1 (Current)**: Implement job batching + `@threads` for basic parallelization
+- **Phase 2 (Future)**: Refactor to use `ThreadsX.jl` for better load balancing and functional API
+- **Rationale**: Get core functionality working first with stdlib, then optimize with ThreadsX
+
 ### Design Goals
 1. **Eliminate file locking**: Ensure each target mast is backed up only once
 2. **Enable parallelization**: Run jobs for different target masts concurrently
@@ -98,7 +113,7 @@ function create_job_batches(jobs::Vector{ReconstructionJob})::Vector{Vector{Reco
 end
 ```
 
-#### 2. Parallel Execution with ThreadsX
+#### 2. Parallel Execution with @threads (Phase 1)
 
 Replace the current sequential loop with parallel batch execution:
 
@@ -111,41 +126,38 @@ for priority_level in config.reconstruction_priorities
     end
 end
 
-# Proposed (Parallel)
+# Phase 1: Parallel with @threads
 for priority_level in config.reconstruction_priorities
     # Group jobs into batches with unique targets
     job_batches = create_job_batches(priority_level.jobs)
 
     for batch in job_batches
-        # Execute batch in parallel using ThreadsX
-        batch_results = ThreadsX.map(batch) do job
-            execute_reconstruction_job(job, mast_data, config, project_dir)
+        # Execute batch in parallel using @threads
+        batch_results = Vector{ReconstructionJobResult}(undef, length(batch))
+        @threads for i in 1:length(batch)
+            batch_results[i] = execute_reconstruction_job(batch[i], mast_data, config, project_dir)
         end
         append!(job_results, batch_results)
     end
 end
+
+# Phase 2 (Future): Refactor to ThreadsX for better load balancing
+# batch_results = ThreadsX.map(batch) do job
+#     execute_reconstruction_job(job, mast_data, config, project_dir)
+# end
 ```
 
-#### 3. Thread-Safe Backup Management
+#### 3. Backup Management (No Locks Needed)
 
-Implement backup tracking to ensure each target is backed up only once:
+**Design Decision (2025-11-06):**
+- **No thread-safe locks needed**: Job batching ensures each target appears only once per batch
+- **Natural deduplication**: First job for each target handles backup, subsequent jobs for same target go to different batches
+- **Rationale**: If backup errors occur after correct batching, it indicates a bug in the batching logic that should be fixed, not masked with locks
 
-```julia
-# Global backup tracking (thread-safe with locks)
-const backup_lock = ReentrantLock()
-const backed_up_targets = Set{String}()
-
-function backup_original_files_threadsafe(job::ReconstructionJob,
-                                          config::ReconstructCrossConfiguration,
-                                          project_dir::String)
-    lock(backup_lock) do
-        if !(job.target_mast in backed_up_targets)
-            backup_original_files(job, config, project_dir)
-            push!(backed_up_targets, job.target_mast)
-        end
-    end
-end
-```
+The existing `backup_original_files()` function works as-is because:
+- Within a batch, all targets are unique (guaranteed by `create_job_batches`)
+- Different threads write to different backup files (no conflicts)
+- If the same target appears in multiple batches, only the first batch backs it up (subsequent batches find the backup already exists)
 
 #### 4. Thread-Safe File I/O
 
@@ -240,15 +252,24 @@ end
 4. **Maintains correctness**: Same cumulative reconstruction semantics
 
 ### Implementation Checklist
+
+**Phase 1 (COMPLETED - @threads):**
+- [x] Implement `create_job_batches()` function (ProcessReconstructCrossCommand.jl:183-231)
+- [x] Refactor main execution loop to use job batches with `@threads` (lines 131-174)
+- [x] Replace `println` calls with `CleanMastLogging` infrastructure
+- [x] Update progress reporting to use structured logging (`@info`, `@error`)
+- [x] Thread count uses Julia's `Threads.nthreads()` (no config needed)
+- [x] Tested with real configuration (tgl-group1-10masts, 110 jobs)
+- [x] Verified log file output is clean and parseable (JSONL format)
+- [x] **IMPROVED**: Backup logic removed entirely (simplified)
+- [x] **ADDED**: Cumulative reconstruction (mast_data updated after each batch, lines 150-171)
+- [x] All 121 tests passing (83 existing + 38 new batching tests)
+
+**Phase 2 (Future - ThreadsX):**
 - [ ] Add ThreadsX.jl dependency to Project.toml
-- [ ] Implement `create_job_batches()` function
-- [ ] Refactor main execution loop to use job batches
-- [ ] Add thread-safe backup tracking
-- [ ] Replace `println` calls with `CleanMastLogging` infrastructure
-- [ ] Update progress reporting to use structured logging (`@info`, `@error`)
-- [ ] Add configuration option for thread count
-- [ ] Test with various job configurations
-- [ ] Verify log file output is clean and parseable (JSONL format)
+- [ ] Refactor `@threads` loops to use `ThreadsX.map` for better load balancing
+- [ ] Benchmark performance improvements
+- [ ] Update tests to verify ThreadsX behavior
 
 ## Test Requirements
 

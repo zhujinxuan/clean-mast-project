@@ -11,6 +11,8 @@ using JLD2
 using Dates
 using DataFrames
 using Statistics
+using Base.Threads: @threads
+using Logging
 
 # Import configuration and result types
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration, ReconstructionJob, from_dict
@@ -21,6 +23,10 @@ using ...Types.CrossMastDirectionModels: CrossMastDirectionModel
 using ...Types.SensorColumns: SensorColumn
 using ...Types.Utils: strip_nothing_values
 using ...CleanMastUtils: load_dict
+
+# Import logging infrastructure
+using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
 # Import reconstruction functions
 using ...TrainReconstructCross.CrossMastSpeedCorrelation: reconstruct
@@ -49,81 +55,191 @@ Execute cross-mast reconstruction using trained models.
 - ReconstructionSummary with complete results
 """
 function execute(config_path::String)::ReconstructionSummary
-    println("🚀 Starting cross-mast reconstruction...")
-    
+    # Setup logging
+    config_dir = dirname(config_path)
+    config_basename = splitext(basename(config_path))[1]
+
+    # Create main logger for sequential operations
+    main_logger = create_cleanmast_logger(
+        job_name="reconstruct-cross",
+        worker_id=1,
+        config_dir=config_dir,
+        config_basename=config_basename
+    )
+    global_logger(main_logger)
+
+    @info "Starting cross-mast reconstruction" config_file=config_path
+
     campaign_start = now()
-    
+
     # 1. Load and validate configuration
     if !isfile(config_path)
         error("Configuration file not found: $config_path")
     end
-    
+
     config_dict = load_dict(config_path)
     config = from_dict(ReconstructCrossConfiguration, config_dict)
     project_dir = dirname(config_path)
-    
-    println("📋 Configuration loaded:")
-    println("  - Masts: $(length(config.masts))")
-    println("  - Priority levels: $(length(config.reconstruction_priorities))")
-    println("  - Output: $(config.settings.output_dir)")
-    
+
+    @info "Configuration loaded" masts=length(config.masts) priority_levels=length(config.reconstruction_priorities) output_dir=config.settings.output_dir
+
     # 2. Create output directory
     output_dir = joinpath(project_dir, config.settings.output_dir)
     mkpath(output_dir)
-    
-    if config.settings.backup_originals
-        backup_dir = joinpath(output_dir, "originals")
-        mkpath(backup_dir)
-    end
-    
+
     # 3. Load all mast time series data
-    println("\n📊 Loading mast time series data...")
+    @info "Loading mast time series data"
     mast_data = load_all_mast_data(config, project_dir)
-    println("✅ Loaded data for $(length(mast_data)) masts")
+    @info "Loaded mast data" mast_count=length(mast_data)
     
-    # 4. Execute reconstruction jobs in priority order
-    println("\n🔧 Executing reconstruction jobs...")
+    # 4. Execute reconstruction jobs in priority order using parallel batches
+    @info "Executing reconstruction jobs"
+
+    # Archive old worker logs and create worker loggers for parallel execution
+    @info "Archiving old worker logs before parallel execution"
+    archive_all_worker_logs(config_dir, config_basename, Threads.nthreads())
+
+    @info "Pre-creating loggers for all worker threads" num_threads=Threads.nthreads()
+    worker_loggers = Dict{Int, Any}()
+    for worker_id in 1:Threads.nthreads()
+        worker_loggers[worker_id] = create_cleanmast_logger(
+            job_name="reconstruct-cross",
+            worker_id=worker_id,
+            config_dir=config_dir,
+            config_basename=config_basename
+        )
+    end
+
     job_results = ReconstructionJobResult[]
     reconstructed_masts = Set{String}()
 
     total_jobs = sum(length(level.jobs) for level in config.reconstruction_priorities)
-    current_job = 0
+    completed_jobs = 0
 
     for priority_level in config.reconstruction_priorities
-        println("\n🎯 Priority Level $(priority_level.priority_level): $(length(priority_level.jobs)) jobs")
+        @info "Processing priority level" level=priority_level.priority_level jobs=length(priority_level.jobs)
 
-        for job in priority_level.jobs
-            current_job += 1
-            println("  🔍 Job $(current_job)/$(total_jobs): $(job.target_mast) ← $(job.source_mast)")
+        # Group jobs into batches with unique target masts for parallel execution
+        job_batches = create_job_batches(priority_level.jobs)
+        @info "Created batches for parallel execution" num_batches=length(job_batches)
 
-            result = execute_reconstruction_job(job, mast_data, config, project_dir)
-            push!(job_results, result)
-            push!(reconstructed_masts, job.target_mast)
+        for (batch_idx, batch) in enumerate(job_batches)
+            @info "Processing batch" batch=batch_idx total_batches=length(job_batches) batch_size=length(batch)
 
-            if result.success
-                println("    ✅ Success: $(join(job.variables, ", "))")
-            else
-                println("    ❌ Failed: $(result.error_message)")
+            # Execute batch in parallel using @threads
+            batch_results = Vector{ReconstructionJobResult}(undef, length(batch))
+            @threads for i in eachindex(batch)
+                worker_id = Threads.threadid()
+                worker_logger = worker_loggers[worker_id]
+
+                with_logger(worker_logger) do
+                    job = batch[i]
+                    @info "Job started" job_index="$(completed_jobs + i)/$(total_jobs)" target=job.target_mast source=job.source_mast
+
+                    result = execute_reconstruction_job(job, mast_data, config, project_dir)
+                    batch_results[i] = result
+
+                    if result.success
+                        @info "Job completed successfully" target=job.target_mast source=job.source_mast variables=join(job.variables, ", ")
+                    else
+                        @error "Job failed" target=job.target_mast source=job.source_mast error=result.error_message
+                    end
+                end
             end
+
+            # Collect results from batch and update mast_data for cumulative reconstruction
+            append!(job_results, batch_results)
+
+            for (i, job) in enumerate(batch)
+                push!(reconstructed_masts, job.target_mast)
+
+                result = batch_results[i]
+                if result.success
+                    # Reload the saved file to get cumulative reconstruction for next batch
+                    target_mast_config = findfirst(m -> m.name == job.target_mast, config.masts)
+                    if target_mast_config !== nothing
+                        output_source = config.masts[target_mast_config].output
+                        try
+                            updated_ts = load_timeseries(output_source, project_dir)
+                            mast_data[job.target_mast] = updated_ts
+                            @debug "Updated mast_data for cumulative reconstruction" target=job.target_mast
+                        catch e
+                            @warn "Failed to reload reconstructed data, using previous version" target=job.target_mast error=e
+                        end
+                    end
+                end
+            end
+
+            completed_jobs += length(batch)
         end
     end
 
     # 4.5. Ensure all masts have output files (copy input to output for masts without reconstruction)
-    println("\n📋 Ensuring all masts have output files...")
+    @info "Ensuring all masts have output files"
     copy_unreconstructed_masts(config, mast_data, reconstructed_masts, project_dir)
     
     # 5. Generate campaign summary
     campaign_end = now()
     summary = create_reconstruction_summary(job_results, campaign_start, campaign_end, config, output_dir)
-    
+
     # 6. Save summary results
     save_reconstruction_summary(summary, output_dir)
-    
-    # 7. Print completion summary
-    print_completion_summary(summary)
-    
-    println("\n✅ Cross-mast reconstruction completed!")
+
+    # 7. Log completion summary
+    @info "Reconstruction campaign completed" duration=(campaign_end - campaign_start) total_jobs=summary.total_jobs successful_jobs=summary.successful_jobs failed_jobs=summary.failed_jobs fill_percentage=round(summary.overall_fill_percentage, digits=1) average_correlation=round(summary.average_correlation, digits=3)
+
+    for result in summary.job_results
+        if result.success
+            total_metrics = length(result.windspeed_metrics) + length(result.winddirection_metrics)
+            total_filled = sum(m.filled_points for m in vcat(result.windspeed_metrics, result.winddirection_metrics))
+            @info "Reconstruction summary" target=result.job.target_mast source=result.job.source_mast points_filled=total_filled sensors=total_metrics
+        end
+    end
+
+    @info "Cross-mast reconstruction completed successfully"
     return summary
+end
+
+"""
+    create_job_batches(jobs::Vector{ReconstructionJob})::Vector{Vector{ReconstructionJob}}
+
+Reorganize reconstruction jobs into batches where each batch contains jobs with unique target masts.
+This enables parallel execution within each batch while preventing file conflicts.
+
+# Algorithm
+- Iteratively select jobs with unique target masts for each batch
+- Continue until all jobs are assigned to batches
+- Jobs for the same target mast are distributed across different batches
+
+# Returns
+Vector of job batches, where each batch has unique target masts and can be executed in parallel.
+
+# Example
+Input: [M04←M05, M04←M02, M02←M04, M02←M01]
+Output: [[M04←M05, M02←M04], [M04←M02, M02←M01]]
+"""
+function create_job_batches(jobs::Vector{ReconstructionJob})::Vector{Vector{ReconstructionJob}}
+    batches = Vector{Vector{ReconstructionJob}}()
+    remaining_jobs = copy(jobs)
+
+    while !isempty(remaining_jobs)
+        batch = Vector{ReconstructionJob}()
+        used_targets = Set{String}()
+
+        jobs_to_remove = Int[]
+        for (i, job) in enumerate(remaining_jobs)
+            if !(job.target_mast in used_targets)
+                push!(batch, job)
+                push!(used_targets, job.target_mast)
+                push!(jobs_to_remove, i)
+            end
+        end
+
+        deleteat!(remaining_jobs, jobs_to_remove)
+        push!(batches, batch)
+    end
+
+    return batches
 end
 
 """
@@ -137,7 +253,7 @@ function load_all_mast_data(config::ReconstructCrossConfiguration, project_dir::
     for mast in config.masts
         ts_data = load_timeseries(mast.input, project_dir)
         mast_data[mast.name] = ts_data
-        println("  ✅ $(mast.name): $(nrow(ts_data.df)) records, $(length(ts_data.sensors)) sensors")
+        @info "Loaded mast data" mast=mast.name records=nrow(ts_data.df) sensors=length(ts_data.sensors)
     end
 
     return mast_data
@@ -467,45 +583,10 @@ function save_reconstructed_timeseries(reconstructed_ts::TimeSeriesData, job::Re
     end
     output_source = config.masts[target_mast_config].output
 
-    # Create backup if requested
-    if config.settings.backup_originals
-        backup_original_files(job, config, project_dir)
-    end
-
     # Save reconstructed data
     save_timeseries(output_source, project_dir, reconstructed_ts)
 
     return joinpath(project_dir, output_source.data)
-end
-
-"""
-    backup_original_files(job::ReconstructionJob, config::ReconstructCrossConfiguration, project_dir::String)
-
-Create backup of original files before reconstruction.
-"""
-function backup_original_files(job::ReconstructionJob, config::ReconstructCrossConfiguration, project_dir::String)
-    target_mast_config = findfirst(m -> m.name == job.target_mast, config.masts)
-    if target_mast_config === nothing
-        return
-    end
-
-    mast = config.masts[target_mast_config]
-    backup_dir = joinpath(project_dir, config.settings.output_dir, "originals")
-    mkpath(backup_dir)
-
-    # Copy original files to backup directory
-    original_data_path = joinpath(project_dir, mast.input.data)
-    original_sensors_path = joinpath(project_dir, mast.input.sensors)
-
-    if isfile(original_data_path)
-        backup_data_path = joinpath(backup_dir, "$(job.target_mast).csv")
-        cp(original_data_path, backup_data_path, force=true)
-    end
-
-    if isfile(original_sensors_path)
-        backup_sensors_path = joinpath(backup_dir, "$(job.target_mast).sensors.yaml")
-        cp(original_sensors_path, backup_sensors_path, force=true)
-    end
 end
 
 """
@@ -567,7 +648,7 @@ function save_reconstruction_summary(summary::ReconstructionSummary, output_dir:
         TOML.print(io, strip_nothing_values(summary_dict))
     end
 
-    println("💾 Saved reconstruction summary: $summary_path")
+    @info "Saved reconstruction summary" path=summary_path
 end
 
 """
@@ -581,40 +662,14 @@ function copy_unreconstructed_masts(config::ReconstructCrossConfiguration, mast_
                                    reconstructed_masts::Set{String}, project_dir::String)
     for mast_config in config.masts
         if !(mast_config.name in reconstructed_masts)
-            println("  📄 $(mast_config.name): No reconstruction applied, copying input to output")
+            @info "No reconstruction applied, copying input to output" mast=mast_config.name
 
             if haskey(mast_data, mast_config.name)
                 ts_data = mast_data[mast_config.name]
                 save_timeseries(mast_config.output, project_dir, ts_data)
-                println("    ✅ Saved: $(mast_config.output.data)")
+                @info "Saved unreconstructed mast" mast=mast_config.name path=mast_config.output.data
             else
-                @warn "    ⚠️  Mast data not found: $(mast_config.name)"
-            end
-        end
-    end
-end
-
-"""
-    print_completion_summary(summary::ReconstructionSummary)
-
-Print a summary of the reconstruction campaign results.
-"""
-function print_completion_summary(summary::ReconstructionSummary)
-    println("\n📊 Reconstruction Campaign Summary:")
-    println("  Duration: $(summary.campaign_end - summary.campaign_start)")
-    println("  Total jobs: $(summary.total_jobs)")
-    println("  Successful: $(summary.successful_jobs)")
-    println("  Failed: $(summary.failed_jobs)")
-    println("  Overall fill rate: $(round(summary.overall_fill_percentage, digits=1))%")
-    println("  Average correlation: $(round(summary.average_correlation, digits=3))")
-
-    if summary.successful_jobs > 0
-        println("\n✅ Successful Reconstructions:")
-        for result in summary.job_results
-            if result.success
-                total_metrics = length(result.windspeed_metrics) + length(result.winddirection_metrics)
-                total_filled = sum(m.filled_points for m in vcat(result.windspeed_metrics, result.winddirection_metrics))
-                println("    $(result.job.target_mast) ← $(result.job.source_mast): $total_filled points filled across $total_metrics sensors")
+                @warn "Mast data not found" mast=mast_config.name
             end
         end
     end

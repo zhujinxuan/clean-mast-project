@@ -55,7 +55,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "TrainReconstructCross/test_cross_mast_summary.jl"
     ],
     "reconstruct_cross" => [
-        "ReconstructCross/test_append_new_timestamps.jl"
+        "ReconstructCross/test_append_new_timestamps.jl",
+        "ReconstructCross/test_reconstruct_cross_batching.jl"
     ],
     "logging" => [
         "logging/test_utils.jl",
