@@ -37,6 +37,18 @@ src/
 
 ## Coding Standards
 
+### File Path Convention (CRITICAL)
+
+**Claude Code File Modification Bug Workaround**: Always use complete absolute Windows paths with drive letters and backslashes for ALL file operations. This applies to Read, Write, Edit, and any other file tools.
+
+**Correct format**: `C:\Users\zhu_j\workspace\developing\clean-mast-project\file.txt`
+**Incorrect formats**:
+- Relative paths: `projects/file.txt`
+- Forward slashes: `C:/Users/...`
+- Mixed separators
+
+Apply this rule consistently throughout the session, not just when encountering errors.
+
 ### Formatting Rules
 - **Julia Code**: 4 whitespaces for indentation, max 92 characters per line
 - **Markdown**: 2 whitespaces for indentation, max 80 characters per line

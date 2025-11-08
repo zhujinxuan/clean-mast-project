@@ -71,6 +71,10 @@ class CsvMergerConfig(BaseModel):
     """Configuration for CSV merger."""
     output: str = Field(..., description="Output file path relative to config.toml")
     input: InputConfig = Field(..., description="Input configuration")
+    duplicate_handling: Optional[str] = Field(
+        default='keep_last',
+        description="How to handle duplicate timestamps: 'keep_first', 'keep_last', or None to keep all (default: 'keep_last')"
+    )
 
 
 def load_config(config_path: str) -> CsvMergerConfig:
@@ -245,17 +249,63 @@ def create_timestamp_column(df: pd.DataFrame, config: CsvMergerConfig) -> pd.Dat
     return df_copy
 
 
-def check_duplicates(df: pd.DataFrame) -> None:
-    """Check for duplicate timestamps and warn if found."""
+def check_and_handle_duplicates(df: pd.DataFrame, duplicate_handling: Optional[str] = None) -> pd.DataFrame:
+    """Check for duplicate timestamps, warn, and optionally remove them.
+
+    Args:
+        df: DataFrame with '_timestamp' column
+        duplicate_handling: One of 'keep_first', 'keep_last', or None
+            - 'keep_first': Remove duplicate timestamps, keeping the first occurrence
+            - 'keep_last': Remove duplicate timestamps, keeping the last occurrence
+            - None: Keep all duplicates (default behavior)
+
+    Returns:
+        DataFrame with duplicates handled according to the specified strategy
+    """
     duplicates = df[df['_timestamp'].duplicated(keep=False)]
+
     if not duplicates.empty:
         colorama.init()
+        num_duplicate_timestamps = duplicates['_timestamp'].nunique()
+        num_duplicate_rows = len(duplicates)
+
         click.echo(
-            f"{colorama.Fore.YELLOW}Warning: Found {len(duplicates)} duplicate timestamps{colorama.Style.RESET_ALL}",
+            f"{colorama.Fore.YELLOW}Warning: Found {num_duplicate_rows} duplicate rows "
+            f"across {num_duplicate_timestamps} unique timestamps{colorama.Style.RESET_ALL}",
             err=True
         )
-        for timestamp in duplicates['_timestamp'].unique():
+
+        for timestamp in sorted(duplicates['_timestamp'].unique())[:10]:
             click.echo(f"  Duplicate: {timestamp}", err=True)
+
+        if num_duplicate_timestamps > 10:
+            click.echo(f"  ... and {num_duplicate_timestamps - 10} more duplicate timestamps", err=True)
+
+        if duplicate_handling == 'keep_first':
+            click.echo(
+                f"{colorama.Fore.CYAN}Removing duplicates: keeping first occurrence{colorama.Style.RESET_ALL}",
+                err=True
+            )
+            df = df.drop_duplicates(subset='_timestamp', keep='first').reset_index(drop=True)
+        elif duplicate_handling == 'keep_last':
+            click.echo(
+                f"{colorama.Fore.CYAN}Removing duplicates: keeping last occurrence{colorama.Style.RESET_ALL}",
+                err=True
+            )
+            df = df.drop_duplicates(subset='_timestamp', keep='last').reset_index(drop=True)
+        elif duplicate_handling is None:
+            click.echo(
+                f"{colorama.Fore.YELLOW}Keeping all duplicate rows. "
+                f"Set 'duplicate_handling' in config to remove duplicates.{colorama.Style.RESET_ALL}",
+                err=True
+            )
+        else:
+            raise ValueError(
+                f"Invalid duplicate_handling value: '{duplicate_handling}'. "
+                f"Must be 'keep_first', 'keep_last', or None."
+            )
+
+    return df
 
 
 def merge_csv_files(config: CsvMergerConfig, config_dir: Path) -> pd.DataFrame:
@@ -284,8 +334,8 @@ def merge_csv_files(config: CsvMergerConfig, config_dir: Path) -> pd.DataFrame:
     # Sort by timestamp
     merged_df = merged_df.sort_values('_timestamp').reset_index(drop=True)
 
-    # Check for duplicates
-    check_duplicates(merged_df)
+    # Check and handle duplicates
+    merged_df = check_and_handle_duplicates(merged_df, config.duplicate_handling)
 
     # Remove temporary timestamp column and reorder columns to put Timestamp first
     merged_df = merged_df.drop('_timestamp', axis=1)

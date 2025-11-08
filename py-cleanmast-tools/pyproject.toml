@@ -25,3 +25,8 @@ package = true
 
 [tool.setuptools.packages.find]
 include = ["pre_processor_mast_data*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
