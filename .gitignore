@@ -31,3 +31,4 @@ tmp/
 .claude/settings.local.json
 *.pdf
 *.docx
+nul
