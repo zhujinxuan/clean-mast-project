@@ -89,7 +89,6 @@ function analyze_vertical_profile(config::ReportTimeSeriesConfig)
         ))
         
         save(joinpath(output_dir, "vertical_profile.svg"), fig)
-        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
         results[mast.name] = Dict(
             "data" => results_df,

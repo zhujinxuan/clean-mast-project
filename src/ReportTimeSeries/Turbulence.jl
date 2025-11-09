@@ -122,7 +122,8 @@ function calculate_sector_stats(ti_df::DataFrame)::TurbulenceSectorStats
         :ws_avg => mean => :mean_speed,
         :ti => mean => :ti,
         :ti => std => :std,
-        nrow => :occurrence
+        nrow => :occurrence;
+        threads=false
     )
     
     # Calculate overall statistics
@@ -424,7 +425,6 @@ function create_combined_ti_comparison_plot(
     # Save the plot
     plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
     save(plot_path, fig, px_per_unit=2)
-    empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Saved combined TI comparison plot: $plot_path"
     return nothing

@@ -139,7 +139,6 @@ function create_wind_power_frequency_plots(config::ReportTimeSeriesConfig, frequ
             
             # Save the plot
             save(joinpath(output_dir, "wind_frequency_distribution_$(height_str)m.svg"), fig)
-            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
             @info "Generated wind power frequency plots for mast $(mast.name) at $(height_str)m"
         end

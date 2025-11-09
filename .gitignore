@@ -29,3 +29,5 @@ temp/
 tmp/
 *.lnk
 .claude/settings.local.json
+*.pdf
+*.docx

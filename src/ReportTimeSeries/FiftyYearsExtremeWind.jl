@@ -144,7 +144,7 @@ function extract_five_day_maxima(wind_speeds::Vector{Union{Missing, Float64}}, t
     # Extract 5-day maxima using groupby and combine
     five_day_maxima = df_with_periods |>
         data -> groupby(data, :five_day_period) |>
-        groups -> combine(groups, :wind_speed => maximum => :max_wind_speed) |>
+        groups -> combine(groups, :wind_speed => maximum => :max_wind_speed; threads=false) |>
         result -> result.max_wind_speed |>
         maxima -> filter(speed -> !isnan(speed) && !isinf(speed), maxima)
     
@@ -516,7 +516,6 @@ function generate_gumbel_qq_plot(wind_data::Vector{Float64}, μ::Float64, β::Fl
     height_str = format_height(height)
     plot_path = joinpath(output_dir, "gumbel_qq_plot_$(height_str)m_$(wind_speed_type).svg")
     save(plot_path, fig, size=(1000, 1000))
-    empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Generated Gumbel Q-Q plot with 95% Monte Carlo confidence bands for $(mast_name) at $(height)m: $(plot_path)"
     return plot_path
@@ -706,7 +705,6 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
     # Save the plot
     plot_path = joinpath(output_dir, "gumbel_qq_detailed_grid_$(wind_speed_type).svg")
     save(plot_path, fig, size=(1000, 1000))
-    empty!(fig)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Generated detailed Gumbel Q-Q grid plot for $(mast_name) $(wind_speed_type) wind speeds: $(plot_path)"
     return plot_path

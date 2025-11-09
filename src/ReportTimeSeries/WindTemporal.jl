@@ -51,7 +51,6 @@ function analyze_wind_speed_timeseries(config::ReportTimeSeriesConfig)
         
         svg_path = joinpath(output_dir, "wind_speed_timeseries.svg")
         save(svg_path, fig)
-        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
 
         results[mast.name] = plot_df
         @info "Generated wind speed time series for mast $(mast.name)"
@@ -88,8 +87,9 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
         
         for sensor in speed_sensors
             # Calculate wind speed hourly means
-            hourly_means = combine(groupby(hourly_df, :hour), 
-                sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m")
+            hourly_means = combine(groupby(hourly_df, :hour),
+                sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m";
+                threads=false)
             speed_results_df[!, "$(sensor.height)m"] = hourly_means[:, "$(sensor.height)m"]
             
             # Calculate power only if air density is available
@@ -104,8 +104,9 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
                                                for ws in hourly_df[!, sensor.columnName]]
                 
                 # Calculate power hourly means
-                hourly_power = combine(groupby(hourly_df, :hour), 
-                    power_col_name => (x -> mean(skipmissing(x))) => "$(sensor.height)m")
+                hourly_power = combine(groupby(hourly_df, :hour),
+                    power_col_name => (x -> mean(skipmissing(x))) => "$(sensor.height)m";
+                    threads=false)
                 power_results_df[!, "$(sensor.height)m"] = hourly_power[:, "$(sensor.height)m"]
             end
         end
@@ -124,7 +125,6 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
                                xticks=0:2:23))
         
         save(joinpath(output_dir, "daily_pattern.svg"), fig_speed)
-        empty!(fig_speed.figure)  # Explicitly clean up to avoid GC finalizer issues
 
         # Handle power analysis only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
@@ -141,7 +141,6 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
                                    xticks=0:2:23))
             
             save(joinpath(output_dir, "daily_power_pattern.svg"), fig_power)
-            empty!(fig_power.figure)  # Explicitly clean up to avoid GC finalizer issues
             results[mast.name] = (speed = speed_results_df, power = power_results_df)
         else
             results[mast.name] = (speed = speed_results_df, power = nothing)
@@ -184,7 +183,7 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
         pairs = map(speed_sensors) do sensor
             sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m"
         end
-        speed_results_df = combine(groupby(base_df, :month), pairs...)
+        speed_results_df = combine(groupby(base_df, :month), pairs...; threads=false)
         sort!(speed_results_df, :month)
         
         # Calculate power only if air density is available
@@ -207,7 +206,7 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
                 power_col = "power_$(sensor.height)m"
                 Symbol(power_col) => (x -> mean(skipmissing(x))) => "$(sensor.height)m"
             end
-            power_results_df = combine(groupby(power_df, :month), power_pairs...)
+            power_results_df = combine(groupby(power_df, :month), power_pairs...; threads=false)
             sort!(power_results_df, :month)
         end
         
@@ -227,7 +226,6 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
                                ylabel="Wind Speed (m/s)"))
         
         save(joinpath(output_dir, "monthly_pattern.svg"), fig_speed, size=(800, 600))
-        empty!(fig_speed.figure)  # Explicitly clean up to avoid GC finalizer issues
 
         # Handle power outputs only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
@@ -245,7 +243,6 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
                                    ylabel="Wind Power Density (W/m²)"))
             
             save(joinpath(output_dir, "monthly_power_pattern.svg"), fig_power, size=(800, 600))
-            empty!(fig_power.figure)  # Explicitly clean up to avoid GC finalizer issues
             results[mast.name] = MonthlyPattern(speed_results_df, power_results_df)
         else
             # Create MonthlyPattern with empty DataFrame for power
@@ -288,15 +285,16 @@ function analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
             if nrow(month_data) > 0
                 # Calculate hourly means for this month
                 for sensor in speed_sensors
-                    hourly_means = combine(groupby(month_data, :hour), 
-                        sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m")
-                    
+                    hourly_means = combine(groupby(month_data, :hour),
+                        sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m";
+                        threads=false)
+
                     # Add month info and stack the data
                     hourly_means.month .= m
                     hourly_means.month_name .= month_names[m]
-                    stacked_month = stack(hourly_means, Not([:hour, :month, :month_name]), 
+                    stacked_month = stack(hourly_means, Not([:hour, :month, :month_name]),
                                         variable_name=:height, value_name=:wind_speed)
-                    
+
                     append!(all_data, stacked_month)
                 end
             end
@@ -315,7 +313,6 @@ function analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
                              xlabel="Hour"))
             
             save(joinpath(output_dir, "daily_wind_pattern_by_month.svg"), fig, size=(1200, 900))
-            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
         end
 
         # Save CSV - create format similar to original
@@ -324,8 +321,9 @@ function analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
             month_data = filter(row -> row.month == m, hourly_df)
             if nrow(month_data) > 0
                 for sensor in speed_sensors
-                    hourly_means = combine(groupby(month_data, :hour), 
-                        sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m_month$(m)")
+                    hourly_means = combine(groupby(month_data, :hour),
+                        sensor.columnName => (x -> mean(skipmissing(x))) => "$(sensor.height)m_month$(m)";
+                        threads=false)
                     hourly_means = leftjoin(DataFrame(hour = 0:23), hourly_means, on = :hour, matchmissing = :equal)
                     speed_results_df[!, "$(sensor.height)m_month$(m)"] = hourly_means[!, "$(sensor.height)m_month$(m)"]
                 end
@@ -383,19 +381,20 @@ function analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
                     power_col = "power_$(sensor.height)m"
                     
                     # Add power column
-                    month_data[!, power_col] = [ismissing(ws) ? missing : 
-                                              calculate_wind_power_density(ws, air_density) 
+                    month_data[!, power_col] = [ismissing(ws) ? missing :
+                                              calculate_wind_power_density(ws, air_density)
                                               for ws in month_data[!, sensor.columnName]]
-                    
-                    hourly_power = combine(groupby(month_data, :hour), 
-                        Symbol(power_col) => (x -> mean(skipmissing(x))) => "$(sensor.height)m")
-                    
+
+                    hourly_power = combine(groupby(month_data, :hour),
+                        Symbol(power_col) => (x -> mean(skipmissing(x))) => "$(sensor.height)m";
+                        threads=false)
+
                     # Add month info and stack the data
                     hourly_power.month .= m
                     hourly_power.month_name .= month_names[m]
-                    stacked_month = stack(hourly_power, Not([:hour, :month, :month_name]), 
+                    stacked_month = stack(hourly_power, Not([:hour, :month, :month_name]),
                                         variable_name=:height, value_name=:wind_power)
-                    
+
                     append!(all_data, stacked_month)
                 end
             end
@@ -414,7 +413,6 @@ function analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
                              xlabel="Hour"))
             
             save(joinpath(output_dir, "daily_power_pattern_by_month.svg"), fig, size=(1200, 900))
-            empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
         end
 
         # Save CSV - create format similar to original
@@ -425,12 +423,13 @@ function analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
                 for sensor in speed_sensors
                     air_density = calculate_air_density(sensor.height, mast.airDensity)
                     power_col = "power_$(sensor.height)m"
-                    month_data[!, power_col] = [ismissing(ws) ? missing : 
-                                              calculate_wind_power_density(ws, air_density) 
+                    month_data[!, power_col] = [ismissing(ws) ? missing :
+                                              calculate_wind_power_density(ws, air_density)
                                               for ws in month_data[!, sensor.columnName]]
-                    
-                    hourly_power = combine(groupby(month_data, :hour), 
-                        Symbol(power_col) => (x -> mean(skipmissing(x))) => "$(sensor.height)m_month$(m)")
+
+                    hourly_power = combine(groupby(month_data, :hour),
+                        Symbol(power_col) => (x -> mean(skipmissing(x))) => "$(sensor.height)m_month$(m)";
+                        threads=false)
                     hourly_power = leftjoin(DataFrame(hour = 0:23), hourly_power, on = :hour, matchmissing = :equal)
                     power_results_df[!, "$(sensor.height)m_month$(m)"] = hourly_power[!, "$(sensor.height)m_month$(m)"]
                 end

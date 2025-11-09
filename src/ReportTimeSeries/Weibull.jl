@@ -199,7 +199,6 @@ function analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::Strin
         
         # Save plot
         save(joinpath(output_dir, "weibull_$(sensor.height)m.svg"), fig)
-        empty!(fig.figure)  # Explicitly clean up to avoid GC finalizer issues
     end
 
     # Save summary to CSV

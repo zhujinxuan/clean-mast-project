@@ -84,7 +84,8 @@ function calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::
                 nrow => :count,
                 speed_col => mean => :avg_speed,
                 :power => mean => :avg_power,
-                :power => sum => :total_power,  # Add total power for power frequency calculation
+                :power => sum => :total_power;  # Add total power for power frequency calculation
+                threads=false
             )
     else
         # Group by sector and calculate statistics without power
@@ -92,7 +93,8 @@ function calculate_sector_statistics(df::DataFrame, speed_col::Symbol, dir_col::
             df -> groupby(df, :sector) |>
             gdf -> combine(gdf,
                 nrow => :count,
-                speed_col => mean => :avg_speed,
+                speed_col => mean => :avg_speed;
+                threads=false
             )
     end
     
