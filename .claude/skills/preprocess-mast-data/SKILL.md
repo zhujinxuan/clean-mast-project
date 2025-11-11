@@ -1,3 +1,8 @@
+---
+name: preprocess-mast-data
+description: Automates preprocessing of wind measurement tower data using py-cleanmast-tools pipeline. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and NRG format conversion for meteorological mast data. Use when converting raw mast data files into clean NRG-formatted CSV files.
+---
+
 # Preprocess Mast Data Skill
 
 This skill automates the preprocessing of mast data using the py-cleanmast-tools pipeline.

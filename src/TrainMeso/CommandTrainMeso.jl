@@ -17,7 +17,7 @@ using ..Core: prepare_training_data
 using Statistics: cor, mean
 using ...Types.TrainMesoResultsTypes: TrainMesoResults, TrainMesoPairResult, TrainMesoEntity, TrainMesoSpeedMetrics
 
-using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging: create_cleanmast_logger, WorkerLoggerManager, get_logger
 using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
 
@@ -233,16 +233,11 @@ function execute(config_path::String)
     @info "Archiving old worker logs"
     archive_all_worker_logs(config_dir, config_basename, Threads.nthreads())
 
-    @info "Creating worker loggers" num_threads=Threads.nthreads()
-    worker_loggers = Dict{Int, Any}()
-    for worker_id in 1:Threads.nthreads()
-        worker_loggers[worker_id] = create_cleanmast_logger(
-            job_name="train-meso",
-            worker_id=worker_id,
-            config_dir=config_dir,
-            config_basename=config_basename
-        )
-    end
+    @info "Creating worker logger manager" num_threads=Threads.nthreads()
+    manager = WorkerLoggerManager(
+        config_dir,
+        config_basename
+    )
 
     # Convert model_groups to array for parallel processing
     pair_list = collect(model_groups)
@@ -251,7 +246,7 @@ function execute(config_path::String)
     # Train models for each mast-meso pair in parallel
     @threads for idx in eachindex(pair_list)
         worker_id = Threads.threadid()
-        worker_logger = worker_loggers[worker_id]
+        worker_logger = get_logger(manager, worker_id)
 
         with_logger(worker_logger) do
             (mast_name, meso_name), models = pair_list[idx]

@@ -25,7 +25,7 @@ using ...Types.Utils: strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 # Import logging infrastructure
-using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging: create_cleanmast_logger, WorkerLoggerManager, get_logger
 using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
 # Import reconstruction functions
@@ -99,16 +99,11 @@ function execute(config_path::String)::ReconstructionSummary
     @info "Archiving old worker logs before parallel execution"
     archive_all_worker_logs(config_dir, config_basename, Threads.nthreads())
 
-    @info "Pre-creating loggers for all worker threads" num_threads=Threads.nthreads()
-    worker_loggers = Dict{Int, Any}()
-    for worker_id in 1:Threads.nthreads()
-        worker_loggers[worker_id] = create_cleanmast_logger(
-            job_name="reconstruct-cross",
-            worker_id=worker_id,
-            config_dir=config_dir,
-            config_basename=config_basename
-        )
-    end
+    @info "Creating worker logger manager" num_threads=Threads.nthreads()
+    manager = WorkerLoggerManager(
+        config_dir,
+        config_basename
+    )
 
     job_results = ReconstructionJobResult[]
     reconstructed_masts = Set{String}()
@@ -130,7 +125,7 @@ function execute(config_path::String)::ReconstructionSummary
             batch_results = Vector{ReconstructionJobResult}(undef, length(batch))
             @threads for i in eachindex(batch)
                 worker_id = Threads.threadid()
-                worker_logger = worker_loggers[worker_id]
+                worker_logger = get_logger(manager, worker_id)
 
                 with_logger(worker_logger) do
                     job = batch[i]

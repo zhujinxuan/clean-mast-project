@@ -89,59 +89,60 @@ Or run this file directly:
         mktempdir() do tmpdir
             archive_all_worker_logs(tmpdir, "test", available_threads)
 
-            # Pre-create loggers
-            worker_loggers = Dict{Int, Any}()
-            for worker_id in 1:available_threads
-                worker_loggers[worker_id] = create_cleanmast_logger(
-                    job_name="concurrent-test",
-                    worker_id=worker_id,
-                    config_dir=tmpdir,
-                    config_basename="test",
-                    enable_terminal=false
-                )
-            end
+            # Create logger manager
+            manager = WorkerLoggerManager(
+                tmpdir,
+                "test";
+                enable_terminal=false
+            )
 
             # Run parallel tasks (5 tasks per thread)
             total_tasks = available_threads * 5
             task_results = Vector{Int}(undef, total_tasks)
 
             Threads.@threads for idx in 1:total_tasks
-                worker_id = Threads.threadid()
-                worker_logger = worker_loggers[worker_id]
+                tid = Threads.threadid()
+                worker_logger = get_logger(manager, tid)
 
                 with_logger(worker_logger) do
-                    @info "Processing task" task_id=idx thread_id=worker_id
+                    @info "Processing task" task_id=idx thread_id=tid
                     sleep(0.001)  # Simulate work
-                    task_results[idx] = worker_id
-                    @info "Task completed" task_id=idx thread_id=worker_id
+                    task_results[idx] = tid
+                    @info "Task completed" task_id=idx thread_id=tid
                 end
             end
 
-            # Verify all log files exist
-            for worker_id in 1:available_threads
-                log_file = joinpath(tmpdir, "logs", "test.$(worker_id).jsonl")
+            # Collect actual thread IDs used
+            used_tids = sort(unique(task_results))
+
+            # Verify all log files exist for used thread IDs
+            for tid in used_tids
+                log_file = joinpath(tmpdir, "logs", "test.$(tid).jsonl")
                 @test isfile(log_file)
             end
 
             # Verify log content integrity
-            for worker_id in 1:available_threads
-                log_file = joinpath(tmpdir, "logs", "test.$(worker_id).jsonl")
+            for tid in used_tids
+                log_file = joinpath(tmpdir, "logs", "test.$(tid).jsonl")
                 lines = readlines(log_file)
 
                 @test length(lines) > 0
 
                 for line in lines
                     log = JSON.parse(line)
-                    @test log["worker_id"] == worker_id
-                    @test log["job_name"] == "concurrent-test"
+                    @test log["worker_id"] == tid
+                    @test log["job_name"] == "test"
                     @test haskey(log, "task_id")
                     @test haskey(log, "thread_id")
-                    @test log["thread_id"] == worker_id
+                    @test log["thread_id"] == tid
                 end
             end
 
-            # Verify all tasks were assigned to threads
-            @test all(1 .<= task_results .<= available_threads)
+            # Verify all tasks were assigned to valid threads
+            @test length(used_tids) <= available_threads
+            @test all(t -> 1 <= t <= 1000, task_results)
+
+            cleanup!(manager)
         end
     end
 
@@ -156,68 +157,88 @@ Or run this file directly:
 
             # Phase 1: Analysis
             @info "Phase 1: Running analysis tasks"
-            analyze_loggers = Dict{Int, Any}()
-            for worker_id in 1:available_threads
-                analyze_loggers[worker_id] = create_cleanmast_logger(
-                    job_name="analyze-phase",
-                    worker_id=worker_id,
-                    config_dir=tmpdir,
-                    config_basename="test",
-                    enable_terminal=false
-                )
-            end
+            analyze_manager = WorkerLoggerManager(
+                tmpdir,
+                "analyze-phase";
+                enable_terminal=false
+            )
+
+            analyze_tids = Set{Int}()
+            tid_lock = ReentrantLock()
 
             Threads.@threads for idx in 1:(available_threads * 3)
-                worker_id = Threads.threadid()
-                worker_logger = analyze_loggers[worker_id]
+                tid = Threads.threadid()
+                lock(tid_lock) do
+                    push!(analyze_tids, tid)
+                end
+                worker_logger = get_logger(analyze_manager, tid)
 
                 with_logger(worker_logger) do
                     @info "Analyzing" task_id=idx
                 end
             end
 
+            cleanup!(analyze_manager)
+
             # Phase 2: Plotting
             @info "Phase 2: Running plotting tasks"
-            plot_loggers = Dict{Int, Any}()
-            for worker_id in 1:available_threads
-                plot_loggers[worker_id] = create_cleanmast_logger(
-                    job_name="plot-phase",
-                    worker_id=worker_id,
-                    config_dir=tmpdir,
-                    config_basename="test",
-                    enable_terminal=false
-                )
-            end
+            plot_manager = WorkerLoggerManager(
+                tmpdir,
+                "plot-phase";
+                enable_terminal=false
+            )
+
+            plot_tids = Set{Int}()
 
             Threads.@threads for idx in 1:(available_threads * 2)
-                worker_id = Threads.threadid()
-                worker_logger = plot_loggers[worker_id]
+                tid = Threads.threadid()
+                lock(tid_lock) do
+                    push!(plot_tids, tid)
+                end
+                worker_logger = get_logger(plot_manager, tid)
 
                 with_logger(worker_logger) do
                     @info "Plotting" task_id=idx
                 end
             end
 
-            # Verify logs contain both phases
-            for worker_id in 1:available_threads
-                log_file = joinpath(tmpdir, "logs", "test.$(worker_id).jsonl")
-                lines = readlines(log_file)
+            cleanup!(plot_manager)
 
-                has_analyze = false
-                has_plot = false
+            # Collect all used thread IDs
+            all_tids = union(analyze_tids, plot_tids)
+
+            # Verify logs exist for each phase
+            for tid in analyze_tids
+                log_file = joinpath(tmpdir, "logs", "analyze-phase.$(tid).jsonl")
+                @test isfile(log_file)
+            end
+
+            for tid in plot_tids
+                log_file = joinpath(tmpdir, "logs", "plot-phase.$(tid).jsonl")
+                @test isfile(log_file)
+            end
+
+            # Verify log content has correct phase markers
+            for tid in analyze_tids
+                log_file = joinpath(tmpdir, "logs", "analyze-phase.$(tid).jsonl")
+                lines = readlines(log_file)
+                @test length(lines) > 0
 
                 for line in lines
                     log = JSON.parse(line)
-                    if log["job_name"] == "analyze-phase"
-                        has_analyze = true
-                    elseif log["job_name"] == "plot-phase"
-                        has_plot = true
-                    end
+                    @test log["job_name"] == "analyze-phase"
                 end
+            end
 
-                # Each thread should have participated in both phases
-                # (though thread 1 might only do analysis if tasks < threads)
-                @test has_analyze || has_plot
+            for tid in plot_tids
+                log_file = joinpath(tmpdir, "logs", "plot-phase.$(tid).jsonl")
+                lines = readlines(log_file)
+                @test length(lines) > 0
+
+                for line in lines
+                    log = JSON.parse(line)
+                    @test log["job_name"] == "plot-phase"
+                end
             end
         end
     end

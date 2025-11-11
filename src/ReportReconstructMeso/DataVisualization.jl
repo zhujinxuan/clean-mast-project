@@ -17,7 +17,7 @@ using Logging
 using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
 using ...Types.SensorColumns: create_sensor_short_name
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
-using ...CleanMastLogging: create_cleanmast_logger
+using ...CleanMastLogging: create_cleanmast_logger, WorkerLoggerManager, get_logger
 
 export create_meso_mast_plots, create_sensor_scatter_plot
 
@@ -48,20 +48,15 @@ function create_meso_mast_plots(
     total_plots = length(analysis_results)
     @info "Creating plot queue" total_plots=total_plots
 
-    @info "Pre-creating loggers for all worker threads"
-    worker_loggers = Dict{Int, Any}()
-    for worker_id in 1:Threads.nthreads()
-        worker_loggers[worker_id] = create_cleanmast_logger(
-            job_name="create-plot",
-            worker_id=worker_id,
-            config_dir=config_dir,
-            config_basename=config_basename
-        )
-    end
+    @info "Creating worker logger manager"
+    manager = WorkerLoggerManager(
+        config_dir,
+        config_basename
+    )
 
     Threads.@threads for idx in 1:total_plots
         worker_id = Threads.threadid()
-        worker_logger = worker_loggers[worker_id]
+        worker_logger = get_logger(manager, worker_id)
 
         with_logger(worker_logger) do
             result = analysis_results[idx]

@@ -9,7 +9,7 @@ export TypstUtils
 module CleanMastLogging
   include("./Logging/CleanMastLogger.jl")
   using .CleanMastLogger
-  export create_cleanmast_logger
+  export create_cleanmast_logger, WorkerLoggerManager, get_logger, cleanup!
 end
 export CleanMastLogging
 
