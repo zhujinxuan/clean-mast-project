@@ -88,7 +88,7 @@ function analyze_vertical_profile(config::ReportTimeSeriesConfig)
             title="Vertical Wind Speed Profile - $(mast.name) (α = $(round(α, digits=3)), R² = $(round(r_squared, digits=3)))"
         ))
         
-        save(joinpath(output_dir, "vertical_profile.svg"), fig)
+        save(joinpath(output_dir, "vertical_profile.png"), fig)
 
         results[mast.name] = Dict(
             "data" => results_df,
@@ -264,7 +264,7 @@ function create_wind_speed_ratio_table(config::ReportTimeSeriesConfig)
             println(io, "")
             
             # Add vertical wind profile image if it exists
-            vertical_profile_svg = joinpath(output_dir, "vertical_profile.svg")
+            vertical_profile_svg = joinpath(output_dir, "vertical_profile.png")
             if isfile(vertical_profile_svg)
                 println(io, "== 垂直风剖面图")
                 println(io, "")
@@ -287,7 +287,7 @@ function create_wind_speed_ratio_table(config::ReportTimeSeriesConfig)
                 end
                 
                 println(io, "#figure(")
-                println(io, "  image(\"vertical_profile.svg\", width: 80%),")
+                println(io, "  image(\"vertical_profile.png\", width: 80%),")
                 println(io, "  caption: [$caption_text]")
                 println(io, ")")
                 println(io, "")

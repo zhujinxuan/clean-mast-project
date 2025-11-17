@@ -220,40 +220,69 @@ function create_correlation_grid_plot(ts_data::TimeSeriesData,
 end
 
 """
+    determine_high_sensors(sensors::Vector{SensorColumn})
+
+Determine which sensors are considered "high" sensors based on the following logic:
+1. If there are at least 3 sensors with height >= 100m, use those sensors (>=100m)
+2. Otherwise, use the top 3 highest sensors
+
+Returns a Set of heights that are considered "high" sensors.
+"""
+function determine_high_sensors(sensors::Vector{SensorColumn})::Set{Float64}
+    speed_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", sensors)
+    sorted_sensors = sort(speed_sensors, by = s -> s.height, rev=true)
+
+    high_100m_sensors = filter(s -> s.height >= 100, sorted_sensors)
+
+    if length(high_100m_sensors) >= 3
+        return Set(map(s -> s.height, high_100m_sensors))
+    else
+        top_3 = sorted_sensors[1:min(3, length(sorted_sensors))]
+        return Set(map(s -> s.height, top_3))
+    end
+end
+
+"""
     analyze_wind_speed_correlation(mast::ProcessedMastReconstructConfig, output_dir::String)
 
 Analyze wind speed correlations between different heights.
 """
 function analyze_wind_speed_correlation(mast::ProcessedMastReconstructConfig, output_dir::String)
     @info "Analyzing wind speed correlations for mast: $(mast.name)"
-    
+
     # Calculate R² matrix for after reconstruction data
     r2_matrix, heights, r2_df = calculate_r2_matrix(mast.afterData)
-    
+
     # Save R² matrix to CSV
     CSV.write(joinpath(output_dir, "wind_speed_r2_matrix.csv"), r2_df)
-    
+
     # Create correlation plots for different height groups
     plots_dir = joinpath(output_dir, "correlation_plots")
     mkpath(plots_dir)
-    
-    # Define height groups for plotting
+
+    # Determine high sensors dynamically
+    high_sensor_heights = determine_high_sensors(mast.afterData.sensors)
+
+    # Define height groups for plotting based on dynamic high sensor determination
     height_groups = [
-        ("high_vs_high", h -> h >= 100, h -> h >= 100),
-        ("high_vs_low", h -> h >= 100, h -> h < 100),
-        ("low_vs_low", h -> h < 100, h -> h < 100)
+        ("high_vs_high", h -> h in high_sensor_heights, h -> h in high_sensor_heights),
+        ("high_vs_low", h -> h in high_sensor_heights, h -> !(h in high_sensor_heights)),
+        ("low_vs_low", h -> !(h in high_sensor_heights), h -> !(h in high_sensor_heights))
     ]
     
+    # Create plot titles based on actual high sensor heights
+    high_heights_str = join(sort(collect(high_sensor_heights), rev=true), "m, ") * "m"
+
     plot_results = Dict{String, Any}()
     for (group_name, filter1, filter2) in height_groups
         plot_path = joinpath(plots_dir, "correlation_$(group_name).png")
         r2_path = joinpath(plots_dir, "correlation_$(group_name)_r2_values.csv")
         plot_title = if group_name == "high_vs_high"
-            "Wind Speed Correlations: Heights ≥ 100m vs Heights ≥ 100m"
+            "Wind Speed Correlations: High Sensors ($(high_heights_str)) vs High Sensors"
         elseif group_name == "high_vs_low"
-            "Wind Speed Correlations: Heights ≥ 100m vs Heights < 100m"
+            "Wind Speed Correlations: High Sensors ($(high_heights_str)) vs Low Sensors"
         else
-            "Wind Speed Correlations: Heights < 100m vs Heights < 100m"
+            "Wind Speed Correlations: Low Sensors vs Low Sensors"
         end
         
         fig = create_correlation_grid_plot(mast.afterData, (group_name, filter1, filter2), 

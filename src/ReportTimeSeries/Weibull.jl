@@ -198,7 +198,7 @@ function analyze_weibull_distribution(data_ts::TimeSeriesData, output_dir::Strin
         ))
         
         # Save plot
-        save(joinpath(output_dir, "weibull_$(sensor.height)m.svg"), fig)
+        save(joinpath(output_dir, "weibull_$(sensor.height)m.png"), fig)
     end
 
     # Save summary to CSV
@@ -312,7 +312,7 @@ function generate_weibull_report(results_df::DataFrame, mast_name::String, outpu
         println(io, "== Weibull 分布拟合图")
         for row in eachrow(results_df)
             height = row.height
-            svg_filename = "weibull_$(height)m.svg"
+            svg_filename = "weibull_$(height)m.png"
             svg_path = joinpath(output_dir, svg_filename)
             
             if isfile(svg_path)

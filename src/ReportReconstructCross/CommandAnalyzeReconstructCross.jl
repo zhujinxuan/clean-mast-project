@@ -11,7 +11,7 @@ using Dates
 using Statistics
 
 # Import configuration types
-using ...Types.AnalyzeReconstructCrossConfig: AnalyzeReconstructCrossConfiguration, from_dict
+using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, from_dict
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
 
@@ -55,7 +55,7 @@ function execute(config_path::String)
     
     # 1. Load and validate configuration
     config_dict = load_dict(config_path)
-    config = from_dict(AnalyzeReconstructCrossConfiguration, config_dict)
+    config = from_dict(ReportReconstructCrossConfiguration, config_dict)
 
     # Use config directory as base for all path resolution
     config_dir = dirname(config_path)
@@ -99,7 +99,7 @@ function execute(config_path::String)
     
     # 7. Generate comprehensive report
     println("\n📄 Generating report...")
-    generate_typst_report(valid_results, config, output_dir)
+    generate_typst_report(valid_results, config, output_dir, mast_data)
     
     # 8. Print completion summary
     print_completion_summary(valid_results, output_dir, config)

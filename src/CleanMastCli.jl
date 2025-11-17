@@ -338,11 +338,12 @@ end
     using CleanMastProject.TrainMeso.RecommendTrainMesoCommand
     using CleanMastProject.ReconstructMeso.RecommendReconstructMesoCommand
     using CleanMastProject.TrainReconstructCross.RecommendTrainReconstructCrossCommand
-    using CleanMastProject.AnalyzeReconstructCross.RecommendAnalyzeReconstructCrossCommand
-    using CleanMastProject.AnalyzeReconstructCross.RecommendCrossMastReportCommand
+    using CleanMastProject.ReportReconstructCross.RecommendAnalyzeReconstructCrossCommand
+    using CleanMastProject.ReportReconstructCross.RecommendCrossMastReportCommand
     using CleanMastProject.ReconstructCross.RecommendReconstructCrossCommand
     using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
+    using CleanMastProject.ReportClean.RecommendReportCleanCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportReconstructSingle.RecommendReportReconstructSingleCommand
     using CleanMastProject.ReportReconstructMeso.RecommendReportReconstructMesoCommand
@@ -571,6 +572,33 @@ end
     end
 
     """
+    report-clean
+
+    Recommend a report-clean.toml configuration file for data cleaning reports.
+
+    # Arguments
+    - `dir`: Project directory containing process-clean.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-clean ./projects/my-project
+    ```
+
+    Generates report-clean.toml in report-masts/ with:
+    - Raw and clean data source configurations
+    - Pre-loaded cleaning rules for analysis
+    - Layer difference parameters for table generation
+
+    The generated configuration can be edited and used with:
+    ```bash
+    julia bin/CleanMast.jl report clean ./projects/my-project
+    ```
+    """
+    @cast function report_clean(dir::String)
+        RecommendReportCleanCommand.execute(dir)
+    end
+
+    """
     report-recovery
 
     Recommend a report-recovery.toml configuration file for data recovery status reports.
@@ -793,7 +821,7 @@ Analysis and reporting commands
 Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.AnalyzeEN
-    using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+    using CleanMastProject.ReportReconstructCross.CommandAnalyzeReconstructCross
 
 
     """
@@ -843,7 +871,7 @@ Comonicon.@cast module Report
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportRecovery.ReportRecoveryCommand
     using CleanMastProject.RepresentativeYear.ReportRepresentativeYearCommand
-    using CleanMastProject.AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+    using CleanMastProject.ReportReconstructCross.CommandAnalyzeReconstructCross
     using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
     using CleanMastProject.ReportReconstructSingle.ReportReconstructSingleCommand
     using CleanMastProject.ReportReconstructMeso.CommandReportReconstructMeso

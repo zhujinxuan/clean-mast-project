@@ -5,6 +5,7 @@ using ...Types.ReportCleanConfig: ReportCleanConfiguration
 using ...Types.ReportCleanData: MastReportData, SensorCoverageInfo, ReportGenerationData, DetectedInterval
 using ...Types.MastTimeSeries: load_timeseries, TimeSeriesData
 using ...Types.ViolationData: ViolationAnalysisData, ProcessingInfo, ViolationSummary, ViolationColumn
+using ...Types.CleanRules: Rule
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
 using ...TypstUtils
@@ -18,8 +19,34 @@ using ...TimeSeriesProcessing.IntervalDetection: detect_representative_interval,
 using ..SensorInventoryReport
 using ..DataCoverageReport
 using ..ViolationAnalysisReport
+using ..MonthlyCoverageTable
+using ..LayerDiffParametersTable
 
-export execute_internal
+export execute
+
+"""
+    execute(project_dir::String)
+
+Generate report from report-clean.toml configuration file.
+User-facing command that loads configuration from report-masts/report-clean.toml.
+"""
+function execute(project_dir::String)::Nothing
+    println("Loading report configuration...")
+
+    # Load report-clean.toml
+    config_path = joinpath(project_dir, "report-masts", "report-clean.toml")
+    if !isfile(config_path)
+        error("report-clean.toml not found at: $config_path\nPlease run 'recommend report-clean $project_dir' first")
+    end
+
+    config_dict = load_dict(config_path)
+    config = from_dict(ReportCleanConfiguration, config_dict)
+
+    println("✓ Configuration loaded from: $config_path")
+
+    # Generate report
+    execute_internal(config, project_dir)
+end
 
 """
     execute_internal(config::ReportCleanConfiguration, project_dir::String)
@@ -79,7 +106,7 @@ Main report generation logic. Loads data and generates all report sections.
 """
 function generate_report_content(config::ReportCleanConfiguration, project_dir::String, report_dir::String)::Nothing
     println("Loading data and generating report sections...")
-    
+
     # Collect data for all masts
     mast_data = map(zip(config.raw.masts, config.clean.masts)) do (raw_mast, clean_mast)
         println("Processing mast: $(raw_mast.name)")
@@ -114,18 +141,46 @@ function generate_report_content(config::ReportCleanConfiguration, project_dir::
             expected_points = expected_points
         )
     end
-    
+
+    # Get rules from the first clean mast (rules are already loaded in config)
+    rules = get_rules_from_config(config)
+
     # Generate Typst report with plots directory
     plots_dir = joinpath(report_dir, "plots")
-    typst_content = generate_typst_report(mast_data, plots_dir)
-    
+    typst_content = generate_typst_report(mast_data, plots_dir, rules)
+
     # Save report
     report_file = joinpath(report_dir, config.output.report_filename)
     open(report_file, "w") do io
         write(io, typst_content)
     end
-    
+
     println("Report saved to: $report_file")
+end
+
+"""
+    get_rules_from_config(config::ReportCleanConfiguration) -> Vector{Rule}
+
+Get rules from the first clean mast configuration.
+Rules are already loaded as Vector{Rule} during the recommend phase.
+Assumes all masts use the same rules.
+"""
+function get_rules_from_config(config::ReportCleanConfiguration)::Vector{Rule}
+    if isempty(config.clean.masts)
+        @warn "No clean masts found in configuration"
+        return Rule[]
+    end
+
+    first_mast = config.clean.masts[1]
+
+    if isnothing(first_mast.rules)
+        @warn "No rules specified in configuration for mast $(first_mast.name)"
+        return Rule[]
+    end
+
+    println("Using $(length(first_mast.rules)) rules from configuration")
+
+    return first_mast.rules
 end
 
 """
@@ -157,11 +212,11 @@ function load_violation_data(violation_file::String)::ViolationAnalysisData
 end
 
 """
-    generate_typst_report(mast_data::Vector, plots_dir::String) -> String
+    generate_typst_report(mast_data::Vector{MastReportData}, plots_dir::String, rules::Vector{Rule}) -> String
 
 Generate Chinese Typst report content from mast data using modular components.
 """
-function generate_typst_report(mast_data::Vector{MastReportData}, plots_dir::String)::String
+function generate_typst_report(mast_data::Vector{MastReportData}, plots_dir::String, rules::Vector{Rule})::String
     # Generate header and executive summary
     header_section = """
 #set page(paper: "a4", margin: 2cm)
@@ -186,6 +241,16 @@ $(join([
     # Generate modular sections
     sensor_inventory_section = generate_sensor_inventory_section(mast_data)
     data_coverage_section = generate_data_coverage_section(mast_data, plots_dir)
+    monthly_coverage_section = generate_monthly_coverage_table(mast_data)
+
+    # Generate layer difference parameters table (if rules available)
+    layer_diff_section = if !isempty(rules) && !isempty(mast_data)
+        sensors = mast_data[1].clean_data.sensors
+        generate_layer_diff_parameters_section(rules, sensors)
+    else
+        ""
+    end
+
     violation_analysis_section = generate_violation_analysis_section(mast_data, plots_dir)
 
     # Generate footer
@@ -204,7 +269,9 @@ _配置文件：process-clean.toml_
     return join([
         header_section,
         sensor_inventory_section,
+        layer_diff_section,
         data_coverage_section,
+        monthly_coverage_section,
         violation_analysis_section,
         footer_section
     ], "\n")

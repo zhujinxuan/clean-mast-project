@@ -4,8 +4,11 @@
 Comprehensive report generation command that creates all mast-related reports:
 1. Clean report (raw vs clean data comparison)
 2. Recovery report (data coverage across reconstruction stages)
-3. Cross-mast report (correlation analysis between mast pairs)
-4. Representative year report (calibration analysis)
+3. Reconstruct single report (single-mast reconstruction analysis)
+4. Cross-mast report (correlation analysis between mast pairs)
+5. Representative year report (calibration analysis)
+6. Time series reports (meso and representative year wind analysis)
+7. Reconstruct meso report (meso-mast reconstruction quality)
 
 Provides a single command to generate complete mast analysis documentation.
 """
@@ -14,9 +17,10 @@ module ReportAllMastsCommand
 using ...ReportClean.ReportAllCommand
 using ...ReportRecovery.ReportRecoveryCommand
 using ...RepresentativeYear.ReportRepresentativeYearCommand
-using ...AnalyzeReconstructCross.CommandAnalyzeReconstructCross
+using ...ReportReconstructCross.CommandAnalyzeReconstructCross
 using ...ReportTimeSeries.ReportTimeSeriesCommand
 using ...ReportReconstructMeso
+using ...ReportReconstructSingle.ReportReconstructSingleCommand
 
 export execute
 
@@ -29,7 +33,7 @@ Generate all comprehensive mast reports for a project.
 - `project_dir::String`: Project directory containing all necessary configurations
 
 # Description
-This command generates six comprehensive reports:
+This command generates eight comprehensive reports:
 
 1. **Clean Report** (`report-masts/clean/`)
    - Raw vs clean data comparison
@@ -41,34 +45,46 @@ This command generates six comprehensive reports:
    - Shows data filled by: tower shading → single-mast → cross-mast → mesoscale
    - Recovery effectiveness analysis with bar charts
 
-3. **Cross-Mast Report** (`report-masts/cross-mast/`)
+3. **Reconstruct Single Report** (`report-masts/reconstruct-single/`)
+   - Single-mast reconstruction analysis before/after comparison
+   - Wind speed correlation (R²) matrices between heights
+   - Wind direction difference analysis
+   - Data coverage and reconstruction rate statistics
+
+4. **Cross-Mast Report** (`report-masts/cross-mast/`)
    - Cross-mast correlation analysis and relationships
    - Wind speed and direction correlation matrices
    - Reconstruction effectiveness between mast pairs
 
-4. **Representative Year Report** (`report-masts/representative-year/`)
+5. **Representative Year Report** (`report-masts/representative-year/`)
    - Climatology vs training vs representative year analysis
    - 16-sector calibration analysis with slopes and intercepts
    - Sensor-level calibration status
 
-5. **Time Series Meso Report** (`report-masts/timeseries-meso/`)
+6. **Time Series Meso Report** (`report-masts/timeseries-meso/`)
    - Wind temporal analysis of meso-reconstructed data
    - Vertical profile analysis and wind rose plots
    - Turbulence intensity and Weibull distribution analysis
 
-6. **Time Series Representative Year Report** (`report-masts/timeseries-rep/`)
+7. **Time Series Representative Year Report** (`report-masts/timeseries-rep/`)
    - Wind temporal analysis of representative year data
    - Vertical profile analysis and wind rose plots
    - Turbulence intensity and Weibull distribution analysis
 
+8. **Reconstruct Meso Report** (`report-masts/reconstruct-meso/`)
+   - Meso-mast reconstruction quality analysis
+   - Comparison of mesoscale vs reconstructed mast data
+
 # Requirements
 The project directory must contain the following configurations:
 - `process-clean.toml` - For clean report generation
-- `representative-year.toml` - For representative year report generation
 - `report-masts/report-recovery.toml` - For recovery report generation
+- `report-masts/report-reconstruct-single.yaml` - For reconstruct single report generation
 - `report-masts/report-cross-mast.toml` - For cross-mast analysis report generation
+- `representative-year.toml` - For representative year report generation
 - `report-masts/report-timeseries-meso.toml` - For time series meso report generation
 - `report-masts/report-timeseries-rep.toml` - For time series representative year report generation
+- `report-masts/report-reconstruct-meso.toml` - For reconstruct meso report generation
 
 Generate these configurations first using:
 ```bash
@@ -87,6 +103,10 @@ project-dir/
 │   │   ├── recovery-report.typ
 │   │   ├── plots/
 │   │   └── ...
+│   ├── reconstruct-single/
+│   │   ├── reconstruction_analysis_report.typ
+│   │   ├── plots/
+│   │   └── ...
 │   ├── cross-mast/
 │   │   ├── report.typ
 │   │   ├── tables/
@@ -102,10 +122,13 @@ project-dir/
 │   │   ├── pn-013945/
 │   │   ├── pn-014576/
 │   │   └── ...
-│   └── timeseries-rep/
-│       ├── pn-002824/
-│       ├── pn-013945/
-│       ├── pn-014576/
+│   ├── timeseries-rep/
+│   │   ├── pn-002824/
+│   │   ├── pn-013945/
+│   │   ├── pn-014576/
+│   │   └── ...
+│   └── reconstruct-meso/
+│       ├── report.typ
 │       └── ...
 ```
 
@@ -141,7 +164,7 @@ function execute(project_dir::String)
     println()
 
     # 1. Generate Clean Report
-    println("📋 Report 1/7: Clean Report (Raw vs Clean Data)")
+    println("📋 Report 1/8: Clean Report (Raw vs Clean Data)")
     try
         process_clean_config = joinpath(project_dir, "process-clean.toml")
         if isfile(process_clean_config)
@@ -160,7 +183,7 @@ function execute(project_dir::String)
     println()
 
     # 2. Generate Recovery Report
-    println("📈 Report 2/7: Recovery Report (Data Coverage Across Stages)")
+    println("📈 Report 2/8: Recovery Report (Data Coverage Across Stages)")
     try
         recovery_config_path = joinpath(project_dir, "report-masts", "report-recovery.toml")
         if isfile(recovery_config_path)
@@ -179,8 +202,28 @@ function execute(project_dir::String)
     end
     println()
 
-    # 3. Generate Cross-Mast Report
-    println("🔗 Report 3/7: Cross-Mast Report (Correlation Analysis)")
+    # 3. Generate Reconstruct Single Report
+    println("🔄 Report 3/8: Reconstruct Single Report (Single-Mast Reconstruction)")
+    try
+        reconstruct_single_config = joinpath(project_dir, "report-masts", "report-reconstruct-single.yaml")
+        if isfile(reconstruct_single_config)
+            ReportReconstructSingleCommand.execute(reconstruct_single_config)
+            results["reconstruct_single"] = true
+            println("   ✅ Reconstruct single report generated successfully")
+        else
+            println("   ⚠️  Skipping: report-reconstruct-single.yaml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
+            results["reconstruct_single"] = false
+        end
+    catch e
+        results["reconstruct_single"] = false
+        errors["reconstruct_single"] = e
+        println("   ❌ Reconstruct single report failed: $(e)")
+    end
+    println()
+
+    # 4. Generate Cross-Mast Report
+    println("🔗 Report 4/8: Cross-Mast Report (Correlation Analysis)")
     try
         cross_mast_config = joinpath(project_dir, "report-masts", "report-cross-mast.toml")
         if isfile(cross_mast_config)
@@ -206,8 +249,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 4. Generate Representative Year Report
-    println("📅 Report 4/7: Representative Year Report (Calibration Analysis)")
+    # 5. Generate Representative Year Report
+    println("📅 Report 5/8: Representative Year Report (Calibration Analysis)")
     try
         rep_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(rep_year_config)
@@ -225,8 +268,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 5. Generate Time Series Meso Report
-    println("📊 Report 5/7: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
+    # 6. Generate Time Series Meso Report
+    println("📊 Report 6/8: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
     try
         timeseries_meso_config = joinpath(project_dir, "report-masts", "report-timeseries-meso.toml")
         if isfile(timeseries_meso_config)
@@ -245,8 +288,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 6. Generate Time Series Representative Year Report
-    println("📊 Report 6/7: Time Series Representative Year Report (Rep Year Data Analysis)")
+    # 7. Generate Time Series Representative Year Report
+    println("📊 Report 7/8: Time Series Representative Year Report (Rep Year Data Analysis)")
     try
         timeseries_rep_config = joinpath(project_dir, "report-masts", "report-timeseries-rep.toml")
         if isfile(timeseries_rep_config)
@@ -265,8 +308,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 7. Generate Reconstruct Meso Report
-    println("🌍 Report 7/7: Reconstruct Meso Report (Meso-Mast Reconstruction Quality)")
+    # 8. Generate Reconstruct Meso Report
+    println("🌍 Report 8/8: Reconstruct Meso Report (Meso-Mast Reconstruction Quality)")
     try
         reconstruct_meso_config = joinpath(project_dir, "report-masts", "report-reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -302,6 +345,7 @@ function execute(project_dir::String)
         report_display = Dict(
             "clean" => "Clean Report",
             "recovery" => "Recovery Report",
+            "reconstruct_single" => "Reconstruct Single Report",
             "cross_mast" => "Cross-Mast Report",
             "representative_year" => "Representative Year Report",
             "timeseries_meso" => "Time Series Meso Report",
@@ -312,6 +356,7 @@ function execute(project_dir::String)
         output_path = Dict(
             "clean" => "report-masts/clean/report.typ",
             "recovery" => "report-masts/recovery/recovery-report.typ",
+            "reconstruct_single" => "report-masts/reconstruct-single/reconstruction_analysis_report.typ",
             "cross_mast" => "report-masts/cross-mast/report.typ",
             "representative_year" => "report-masts/representative-year/report.typ",
             "timeseries_meso" => "report-masts/timeseries-meso/",

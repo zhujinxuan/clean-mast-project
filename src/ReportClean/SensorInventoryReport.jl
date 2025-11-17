@@ -10,8 +10,9 @@ export generate_sensor_inventory_section
     generate_sensor_inventory_section(mast_data::Vector{MastReportData}) :: String
 
 Generate sensor inventory section for the report.
-Shows unique sensors organized by mast, then by sensor type, height, and direction.
-Only shows base sensors (not statistical channels like avg, sd, min, max).
+Shows unique sensors organized by mast, grouped by sensor type.
+Only considers sensors with statType = 'avg'.
+Two columns: 传感器类型 and 位置.
 """
 function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) :: String
     if isempty(mast_data)
@@ -22,7 +23,7 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
     sections = String[
         "== 2. 传感器清单",
         "",
-        "本节列出各测风塔的传感器配置信息，按传感器类型、高度和方向排序。",
+        "本节列出各测风塔的传感器配置信息，按传感器类型分组。",
         ""
     ]
 
@@ -32,12 +33,14 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
         push!(sections, "=== $(mast.name)")
         push!(sections, "")
 
-        # Get unique sensors (group by sensorType, height, sensorDirection)
+        # Filter only avg sensors and get unique sensors by type, height, direction
         unique_sensors = Dict{Tuple{String, Float64, String}, SensorColumn}()
         for sensor in mast.raw_data.sensors
-            key = (sensor.sensorType, sensor.height, sensor.sensorDirection)
-            if !haskey(unique_sensors, key)
-                unique_sensors[key] = sensor
+            if sensor.statType == "avg"
+                key = (sensor.sensorType, sensor.height, sensor.sensorDirection)
+                if !haskey(unique_sensors, key)
+                    unique_sensors[key] = sensor
+                end
             end
         end
 
@@ -48,46 +51,50 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
         # Group sensors by type
         sensor_groups = Dict{String, Vector{SensorColumn}}()
         for sensor in sensors
-            if !haskey(sensor_groups, sensor.sensorType)
-                sensor_groups[sensor.sensorType] = SensorColumn[]
+            sensor_type_cn = translate_sensor_type(sensor.sensorType, sensor.columnName)
+            if !haskey(sensor_groups, sensor_type_cn)
+                sensor_groups[sensor_type_cn] = SensorColumn[]
             end
-            push!(sensor_groups[sensor.sensorType], sensor)
+            push!(sensor_groups[sensor_type_cn], sensor)
         end
 
-        # Create one table for all sensors in this mast
+        # Sort sensor types for consistent ordering
+        sorted_types = sort(collect(keys(sensor_groups)))
+
+        # Create table with two columns
         push!(sections, "#table(")
-        push!(sections, "  columns: 3,")
-        push!(sections, "  [传感器名称], [传感器数据类型], [高度 (m)],")
+        push!(sections, "  columns: 2,")
+        push!(sections, "  [传感器类型], [位置],")
 
-        # Add all sensors to one table, sorted by type, height, direction
-        for sensor in sensors
-            # Use Typst-compatible sensor short name
-            sensor_name = create_sensor_short_name(sensor)
+        # Add sensors grouped by type
+        for sensor_type_cn in sorted_types
+            type_sensors = sensor_groups[sensor_type_cn]
 
-            # Translate sensor type to Chinese
-            sensor_data_type = if sensor.sensorType == "WindSpeed"
-                "风速"
-            elseif sensor.sensorType == "WindDirection"
-                "风向"
-            elseif sensor.sensorType == "Temperature"
-                "温度"
-            elseif sensor.sensorType == "Analog"
-                # Check if it's pressure or humidity based on column name
-                col_name = string(sensor.columnName)
-                if occursin("Pres", col_name) || occursin("kPa", col_name)
-                    "气压"
-                elseif occursin("RH", col_name) || occursin("%RH", col_name)
-                    "湿度"
-                else
-                    "模拟量"
-                end
-            else
-                sensor.sensorType
+            # Check if there are multiple sensors at the same height
+            height_counts = Dict{Float64, Int}()
+            for sensor in type_sensors
+                height_counts[sensor.height] = get(height_counts, sensor.height, 0) + 1
             end
 
-            height = string(Int(sensor.height))
+            # Build position string
+            positions = String[]
+            for sensor in type_sensors
+                if height_counts[sensor.height] > 1
+                    # Multiple sensors at same height, include direction
+                    height_str = sensor.height == floor(sensor.height) ?
+                        string(Int(sensor.height)) : string(sensor.height)
+                    direction_str = sensor.sensorDirection == "N/A" ? "" : ":$(sensor.sensorDirection)"
+                    push!(positions, "$(height_str)m$(direction_str)")
+                else
+                    # Single sensor at this height
+                    height_str = sensor.height == floor(sensor.height) ?
+                        string(Int(sensor.height)) : string(sensor.height)
+                    push!(positions, "$(height_str)m")
+                end
+            end
 
-            push!(sections, "  [$sensor_name], [$sensor_data_type], [$height],")
+            position_str = join(positions, ", ")
+            push!(sections, "  [$sensor_type_cn], [$position_str],")
         end
 
         push!(sections, ")")
@@ -95,6 +102,33 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
     end
 
     return join(sections, "\n")
+end
+
+"""
+Translate sensor type to Chinese.
+"""
+function translate_sensor_type(sensor_type::String, column_name::Symbol)::String
+    if sensor_type == "WindSpeed"
+        return "风速"
+    elseif sensor_type == "WindDirection"
+        return "风向"
+    elseif sensor_type == "Temperature"
+        return "温度"
+    elseif sensor_type == "Pressure"
+        return "气压"
+    elseif sensor_type == "Analog"
+        # Check column name for analog sensors
+        col_name = string(column_name)
+        if occursin("Pres", col_name) || occursin("kPa", col_name)
+            return "气压"
+        elseif occursin("RH", col_name) || occursin("%RH", col_name)
+            return "相对湿度"
+        else
+            return "模拟量"
+        end
+    else
+        return sensor_type
+    end
 end
 
 end # module SensorInventoryReport

@@ -138,7 +138,7 @@ function create_wind_power_frequency_plots(config::ReportTimeSeriesConfig, frequ
             ))
             
             # Save the plot
-            save(joinpath(output_dir, "wind_frequency_distribution_$(height_str)m.svg"), fig)
+            save(joinpath(output_dir, "wind_frequency_distribution_$(height_str)m.png"), fig)
 
             @info "Generated wind power frequency plots for mast $(mast.name) at $(height_str)m"
         end
@@ -178,7 +178,7 @@ end
     create_wind_frequency_tables(config::ReportTimeSeriesConfig)
 
 Create wind frequency tables using SummaryTables.jl and export to Typst format.
-Includes wind speed frequency and wind power frequency tables for heights >= 120m.
+Includes wind speed frequency and wind power frequency tables for heights >= 100m.
 Saves all results to "./wind-frequency.typ"
 """
 function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
@@ -245,7 +245,7 @@ function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
             for mast_one_height_data in valid_data
                 height = mast_one_height_data.height
                 height_str = format_height(height)
-                svg_filename = "wind_frequency_distribution_$(height_str)m.svg"
+                svg_filename = "wind_frequency_distribution_$(height_str)m.png"
                 svg_path = joinpath(output_dir, svg_filename)
                 
                 if isfile(svg_path)
@@ -261,7 +261,7 @@ function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
             end
         end
         
-        @info "Generated wind frequency tables for mast $(mast.name) with heights >= 120m"
+        @info "Generated wind frequency tables for mast $(mast.name) with heights >= 100m"
         @info "Wind frequency tables saved to $(typst_file)"
     end
 end

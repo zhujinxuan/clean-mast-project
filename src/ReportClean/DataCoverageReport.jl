@@ -219,7 +219,7 @@ function create_monthly_coverage_plot(monthly_coverage::Vector{Dict{String,Any}}
 
     # Save plot
     mkpath(output_dir)
-    plot_path = joinpath(output_dir, "monthly_coverage_$(mast_name).svg")
+    plot_path = joinpath(output_dir, "monthly_coverage_$(mast_name).png")
     save(plot_path, fig.figure)
 
     return plot_path

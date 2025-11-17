@@ -81,8 +81,8 @@ module Types
   export ReportReconstructSingleConfiguration
   include("./Types/TrainReconstructCrossConfig.jl")
   export TrainReconstructCrossConfig
-  include("./Types/AnalyzeReconstructCrossConfig.jl")
-  export AnalyzeReconstructCrossConfig
+  include("./Types/ReportReconstructCrossConfig.jl")
+  export ReportReconstructCrossConfig
   include("./Types/CrossMastSpeedModels.jl")
   export CrossMastSpeedModels
   include("./Types/CrossMastDirectionModels.jl")
@@ -143,11 +143,13 @@ export DataClean
 module ReportClean
   include("./ReportClean/SensorInventoryReport.jl")
   include("./ReportClean/DataCoverageReport.jl")
+  include("./ReportClean/MonthlyCoverageTable.jl")
+  include("./ReportClean/LayerDiffParametersTable.jl")
   include("./ReportClean/ViolationAnalysisReport.jl")
   include("./ReportClean/RecommendReportCleanCommand.jl")
   include("./ReportClean/ReportCleanCommand.jl")
   include("./ReportClean/ReportAllCommand.jl")
-  export SensorInventoryReport, DataCoverageReport, ViolationAnalysisReport
+  export SensorInventoryReport, DataCoverageReport, MonthlyCoverageTable, LayerDiffParametersTable, ViolationAnalysisReport
   export RecommendReportCleanCommand, ReportCleanCommand, ReportAllCommand
 end
 export ReportClean
@@ -166,11 +168,12 @@ module ReportReconstructSingle
   include("./ReportReconstructSingle/DataCoverage.jl")
   include("./ReportReconstructSingle/WindSpeedCorrelation.jl")
   include("./ReportReconstructSingle/WindDirectionDifference.jl")
+  include("./ReportReconstructSingle/MonthlyReconstructionTable.jl")
   include("./ReportReconstructSingle/ReportGeneration.jl")
   include("./ReportReconstructSingle/ReportReconstructSingleAnalysis.jl")
   include("./ReportReconstructSingle/ReportReconstructSingleCommand.jl")
   include("./ReportReconstructSingle/RecommendReportReconstructSingleCommand.jl")
-  export DataCoverage, WindSpeedCorrelation, WindDirectionDifference, ReportGeneration
+  export DataCoverage, WindSpeedCorrelation, WindDirectionDifference, MonthlyReconstructionTable, ReportGeneration
   export ReportReconstructSingleAnalysis, ReportReconstructSingleCommand, RecommendReportReconstructSingleCommand
 end
 export ReportReconstructSingle
@@ -314,17 +317,18 @@ module TrainReconstructCross
 end
 export TrainReconstructCross
 
-module AnalyzeReconstructCross
-  include("./AnalyzeReconstructCross/AnalysisCore.jl")
-  include("./AnalyzeReconstructCross/DataVisualization.jl")
-  include("./AnalyzeReconstructCross/ReportGeneration.jl")
-  include("./AnalyzeReconstructCross/CommandAnalyzeReconstructCross.jl")
-  include("./AnalyzeReconstructCross/RecommendAnalyzeReconstructCrossCommand.jl")
-  include("./AnalyzeReconstructCross/RecommendCrossMastReportCommand.jl")
-  export AnalysisCore, DataVisualization, ReportGeneration
+module ReportReconstructCross
+  include("./ReportReconstructCross/AnalysisCore.jl")
+  include("./ReportReconstructCross/DataVisualization.jl")
+  include("./ReportReconstructCross/MonthlyCoverage.jl")
+  include("./ReportReconstructCross/ReportGeneration.jl")
+  include("./ReportReconstructCross/CommandAnalyzeReconstructCross.jl")
+  include("./ReportReconstructCross/RecommendAnalyzeReconstructCrossCommand.jl")
+  include("./ReportReconstructCross/RecommendCrossMastReportCommand.jl")
+  export AnalysisCore, DataVisualization, MonthlyCoverage, ReportGeneration
   export CommandAnalyzeReconstructCross, RecommendAnalyzeReconstructCrossCommand, RecommendCrossMastReportCommand
 end
-export AnalyzeReconstructCross
+export ReportReconstructCross
 
 module ReportAllMasts
   include("./ReportAllMasts/ReportAllMastsCommand.jl")

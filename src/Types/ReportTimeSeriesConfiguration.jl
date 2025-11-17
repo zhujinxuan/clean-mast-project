@@ -62,7 +62,7 @@ Raw report timeseries configuration as loaded from YAML/TOML
 struct ReportTimeSeriesConfigYAML
     masts::Vector{MastReportTimeSeriesConfigYAML}
     output::OutputConfig
-    min_plot_height::Union{Float64, Nothing}  # Optional minimum height for plotting (default: 120.0)
+    min_plot_height::Union{Float64, Nothing}  # Optional minimum height for plotting (default: 100.0)
     analysis::Union{AnalysisToggles, Nothing}  # Optional analysis toggles (default: all true)
 end
 
@@ -73,7 +73,7 @@ struct ReportTimeSeriesConfig
     masts::Vector{MastReportTimeSeriesConfig}
     output::OutputConfig
     configDir::String          # Directory containing the configuration file (for path resolution)
-    min_plot_height::Float64   # Minimum height for plotting (default: 120.0)
+    min_plot_height::Float64   # Minimum height for plotting (default: 100.0)
     analysis::AnalysisToggles  # Analysis toggles (default: all true)
 end
 
@@ -312,7 +312,7 @@ function load_report_timeseries_config(config_path::String)::ReportTimeSeriesCon
     )
 
     # Set default min_plot_height if not specified
-    min_plot_height = isnothing(config_yaml.min_plot_height) ? 120.0 : config_yaml.min_plot_height
+    min_plot_height = isnothing(config_yaml.min_plot_height) ? 100.0 : config_yaml.min_plot_height
 
     # Set default analysis toggles if not specified (all true)
     analysis_toggles = isnothing(config_yaml.analysis) ?

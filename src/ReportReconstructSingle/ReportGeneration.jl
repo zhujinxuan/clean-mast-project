@@ -3,8 +3,9 @@ module ReportGeneration
 using DataFrames
 using Dates
 using SummaryTables
-import ...Types.ReportReconstructSingleConfiguration: ReportReconstructSingleConfig
+import ...Types.ReportReconstructSingleConfiguration: ReportReconstructSingleConfig, ProcessedMastReconstructConfig
 import ..DataCoverage: CoverageStats
+import ..MonthlyReconstructionTable: generate_monthly_reconstruction_table
 
 """
     generate_reconstruction_report(config::ReportReconstructSingleConfig, results::Dict{String, Any})
@@ -81,24 +82,30 @@ function generate_reconstruction_report(config::ReportReconstructSingleConfig, r
         
         """)
         
+        # Generate monthly reconstruction table for all masts
+        monthly_table = generate_monthly_reconstruction_table(config.masts)
+        write(io, "\n")
+        write(io, monthly_table)
+        write(io, "\n")
+
         # Process each mast
         for (idx, mast) in enumerate(config.masts)
             mast_results = results[mast.name]
-            
+
             write(io, """
-            
+
             #pagebreak()
-            
+
             = 测风塔 $(mast.name) 分析结果
-            
+
             """)
-            
+
             # Data coverage section
             write_data_coverage_section(io, mast.name, mast_results["coverage"])
-            
+
             # Wind speed correlation section
             write_wind_speed_correlation_section(io, mast.name, mast_results["speed_correlation"], config.outputDir)
-            
+
             # Wind direction difference section
             write_wind_direction_difference_section(io, mast.name, mast_results["direction_difference"])
         end

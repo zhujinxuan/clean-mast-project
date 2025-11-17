@@ -8,7 +8,7 @@ module RecommendCrossMastReportCommand
 
 using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
-using ...Types.AnalyzeReconstructCrossConfig: AnalyzeReconstructCrossConfiguration, AnalyzeReconstructCrossMast, AnalyzeReconstructCrossSettings
+using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, ReportReconstructCrossMast, ReportReconstructCrossSettings
 using ...Types.MastTimeSeries: TimeSeriesSource
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
@@ -78,21 +78,21 @@ function execute(project_dir::String)
 
     # Create analyze masts configuration with paths adjusted for report-masts/ directory
     analyze_masts = map(reconstruct_config.masts) do mast
-        AnalyzeReconstructCrossMast(
+        ReportReconstructCrossMast(
             name = mast.name,
             input = adjust_timeseries_source(mast.output)  # Adjust paths to be relative to report-masts/
         )
     end
 
     # Create settings with output directory relative to config file location
-    settings = AnalyzeReconstructCrossSettings(
+    settings = ReportReconstructCrossSettings(
         output_dir = "./cross-mast",  # Relative to report-masts/ directory
         include_plots = true,
         language = "zh"
     )
 
     # Create complete configuration
-    config = AnalyzeReconstructCrossConfiguration(
+    config = ReportReconstructCrossConfiguration(
         masts = analyze_masts,
         analyze = settings
     )

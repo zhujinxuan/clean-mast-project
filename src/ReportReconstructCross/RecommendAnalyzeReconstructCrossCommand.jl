@@ -8,7 +8,7 @@ module RecommendAnalyzeReconstructCrossCommand
 
 using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
-using ...Types.AnalyzeReconstructCrossConfig: AnalyzeReconstructCrossConfiguration, AnalyzeReconstructCrossMast, AnalyzeReconstructCrossSettings
+using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, ReportReconstructCrossMast, ReportReconstructCrossSettings
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
 
@@ -75,23 +75,23 @@ end
 
 Create analyze-reconstruct-cross configuration from reconstruct-single configuration.
 """
-function create_analyze_config(reconstruct_config::ReconstructSingleConfiguration)::AnalyzeReconstructCrossConfiguration
+function create_analyze_config(reconstruct_config::ReconstructSingleConfiguration)::ReportReconstructCrossConfiguration
     # Convert each mast's output to input for analysis
     masts = map(reconstruct_config.masts) do mast
-        AnalyzeReconstructCrossMast(
+        ReportReconstructCrossMast(
             name = mast.name,
             input = mast.output  # Output from reconstruct-single becomes input for analysis
         )
     end
     
     # Create settings with Chinese defaults
-    settings = AnalyzeReconstructCrossSettings(
+    settings = ReportReconstructCrossSettings(
         output_dir = "./analyze-reconstruct-cross",
         include_plots = true,
         language = "zh"
     )
     
-    return AnalyzeReconstructCrossConfiguration(masts, settings)
+    return ReportReconstructCrossConfiguration(masts, settings)
 end
 
 end # module 

@@ -514,7 +514,7 @@ function generate_gumbel_qq_plot(wind_data::Vector{Float64}, μ::Float64, β::Fl
     
     # Save the plot
     height_str = format_height(height)
-    plot_path = joinpath(output_dir, "gumbel_qq_plot_$(height_str)m_$(wind_speed_type).svg")
+    plot_path = joinpath(output_dir, "gumbel_qq_plot_$(height_str)m_$(wind_speed_type).png")
     save(plot_path, fig, size=(1000, 1000))
 
     @info "Generated Gumbel Q-Q plot with 95% Monte Carlo confidence bands for $(mast_name) at $(height)m: $(plot_path)"
@@ -703,7 +703,7 @@ function generate_detailed_qq_plots_from_raw_data(wind_data_dict::Dict, mast_nam
           fontsize=14, font="bold")
     
     # Save the plot
-    plot_path = joinpath(output_dir, "gumbel_qq_detailed_grid_$(wind_speed_type).svg")
+    plot_path = joinpath(output_dir, "gumbel_qq_detailed_grid_$(wind_speed_type).png")
     save(plot_path, fig, size=(1000, 1000))
 
     @info "Generated detailed Gumbel Q-Q grid plot for $(mast_name) $(wind_speed_type) wind speeds: $(plot_path)"
@@ -1278,7 +1278,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
             if !isnothing(method2_sustained_grid_plot_path)
                 println(io, "")
                 println(io, "#figure(")
-                println(io, "  image(\"./gumbel_qq_detailed_grid_sustained.svg\", width: 85%),")
+                println(io, "  image(\"./gumbel_qq_detailed_grid_sustained.png\", width: 85%),")
                 println(io, "  caption: [测风塔$(mast_name) 最大持续风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")
@@ -1289,7 +1289,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
                 println(io, "==== 极端风速Q-Q图网格")
                 println(io, "")
                 println(io, "#figure(")
-                println(io, "  image(\"./gumbel_qq_detailed_grid_extreme.svg\", width: 85%),")
+                println(io, "  image(\"./gumbel_qq_detailed_grid_extreme.png\", width: 85%),")
                 println(io, "  caption: [测风塔$(mast_name) 极大极端风速Gumbel分布Q-Q图网格检验（95%置信带）]")
                 println(io, ")")
                 println(io, "")

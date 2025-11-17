@@ -130,7 +130,7 @@ function create_recovery_bar_chart(mast::MastRecoveryData, output_dir::String)::
 
     # Save plot
     mkpath(output_dir)
-    plot_path = joinpath(output_dir, "recovery_chart_$(mast.name).svg")
+    plot_path = joinpath(output_dir, "recovery_chart_$(mast.name).png")
     save(plot_path, fig.figure)
 
     return plot_path

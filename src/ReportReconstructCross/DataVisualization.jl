@@ -179,7 +179,7 @@ function create_speed_correlation_plot(correlations::Vector, output_file::String
         ax = Axis(fig[row, col],
                  xlabel = "源测风塔风速 (m/s)",
                  ylabel = "目标测风塔风速 (m/s)",
-                 title = "$(target_height)m ← $(source_height)m\nr = $(round(corr.correlation, digits=3))")
+                 title = "$(target_height)m ← $(source_height)m\nr = $(floor(corr.correlation * 1000) / 1000)")
 
         # Use pre-extracted data for this sensor pair
         if haskey(sensor_pair_data, pair_key)
@@ -194,7 +194,7 @@ function create_speed_correlation_plot(correlations::Vector, output_file::String
             lines!(ax, x_range, y_range, color = :red, linewidth = 2)
         else
             # No data found - show empty plot with note
-            text!(ax, 0.5, 0.5, text="No data available\nr = $(round(corr.correlation, digits=3))",
+            text!(ax, 0.5, 0.5, text="No data available\nr = $(floor(corr.correlation * 1000) / 1000)",
                   align=(:center, :center), space=:relative)
         end
     end

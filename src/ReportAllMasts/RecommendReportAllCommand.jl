@@ -7,7 +7,7 @@ This command prepares all configurations needed for the 'report all' command.
 module RecommendReportAllCommand
 
 using ...ReportRecovery.RecommendReportRecoveryCommand
-using ...AnalyzeReconstructCross.RecommendCrossMastReportCommand
+using ...ReportReconstructCross.RecommendCrossMastReportCommand
 using ...ReportReconstructSingle.RecommendReportReconstructSingleCommand
 using ...ReportReconstructMeso.RecommendReportReconstructMesoCommand
 using ...ReportTimeSeries.RecommendReportTimeSeriesMesoCommand

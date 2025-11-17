@@ -52,7 +52,7 @@ end
 Load time series data for all masts in configuration.
 
 # Arguments
-- `config`: AnalyzeReconstructCrossConfiguration
+- `config`: ReportReconstructCrossConfiguration
 - `config_dir::String`: Config directory path for resolving relative paths
 
 # Returns
@@ -122,7 +122,7 @@ function analyze_mast_pair(target_ts::TimeSeriesData, source_ts::TimeSeriesData,
     direction_summary = summarize_direction_analysis(direction_analysis)
     
     println("    📊 Coverage: $(round(coverage.overlap_days, digits=1)) days")
-    println("    🌪️  Speed correlations: $(length(speed_correlations)) pairs, best = $(round(speed_summary.best_high_elevation_correlation, digits=3))")
+    println("    🌪️  Speed correlations: $(length(speed_correlations)) pairs, best = $(floor(speed_summary.best_high_elevation_correlation * 1000) / 1000)")
     println("    🧭 Direction analysis: $(length(direction_analysis)) pairs, best std = $(round(direction_summary.best_high_elevation_std, digits=1))°")
     
     return AnalyzePairResult(

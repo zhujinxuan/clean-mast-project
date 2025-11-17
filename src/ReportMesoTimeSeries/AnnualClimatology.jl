@@ -134,7 +134,7 @@ function generate_typst_report(annual_stats::DataFrame, meso_name::String, senso
         println(io, "=== 年际风速变化图")
         println(io)
         println(io, "#figure(")
-        println(io, "  image(\"annual_climatology.svg\"),")
+        println(io, "  image(\"annual_climatology.png\"),")
         println(io, "  caption: [$(meso_name) 年际风速变化及气候平均],")
         println(io, ")")
         println(io)
@@ -197,7 +197,7 @@ function analyze_annual_climatology(config::ReportMesoTimeSeriesConfig)::Dict{St
         CSV.write(csv_path, annual_stats)
         @info "Saved annual statistics to: $csv_path"
 
-        svg_path = joinpath(output_dir, "annual_climatology.svg")
+        svg_path = joinpath(output_dir, "annual_climatology.png")
         generate_climatology_plot(annual_stats, meso.name, highest_sensor.height, svg_path)
         @info "Saved climatology plot to: $svg_path"
 

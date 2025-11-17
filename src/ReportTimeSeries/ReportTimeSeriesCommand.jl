@@ -27,7 +27,7 @@ The configuration file should specify:
 - Multiple masts with their data files and sensor configurations
 - Air density settings for each mast
 - Output directory for results
-- Optional min_plot_height for turbulence intensity plotting (default: 120.0m)
+- Optional min_plot_height for turbulence intensity plotting (default: 100.0m)
 - Optional DOCX report settings
 
 For each mast, the analysis includes:

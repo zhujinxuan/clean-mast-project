@@ -10,6 +10,7 @@ import ..TimeSeriesProcessing.IntervalDetection: detect_representative_interval
 include("./ReportReconstructSingle/DataCoverage.jl")
 include("./ReportReconstructSingle/WindSpeedCorrelation.jl")
 include("./ReportReconstructSingle/WindDirectionDifference.jl")
+include("./ReportReconstructSingle/MonthlyReconstructionTable.jl")
 include("./ReportReconstructSingle/ReportGeneration.jl")
 include("./ReportReconstructSingle/RecommendReportReconstructSingleCommand.jl")
 
@@ -17,6 +18,7 @@ include("./ReportReconstructSingle/RecommendReportReconstructSingleCommand.jl")
 import .DataCoverage: analyze_data_coverage
 import .WindSpeedCorrelation: analyze_wind_speed_correlation
 import .WindDirectionDifference: analyze_wind_direction_difference
+import .MonthlyReconstructionTable: generate_monthly_reconstruction_table
 import .ReportGeneration: generate_reconstruction_report
 import .RecommendReportReconstructSingleCommand
 

@@ -3,16 +3,15 @@ module ReportReconstructSingleConfiguration
 using DataFrames
 using CSV
 import ..Utils: from_dict, to_dict
-import ..MastTimeSeries: TimeSeriesData, SensorColumn
-import ..ReportTimeSeriesConfiguration: resolve_path, load_sensor_config, load_timeseries_data
+import ..MastTimeSeries: TimeSeriesData, SensorColumn, TimeSeriesSource, load_timeseries
+import ..ReportTimeSeriesConfiguration: resolve_path
 using YAML
 
 """
-Configuration for reconstruction data (before/after)
+Configuration for reconstruction data (before/after) using TimeSeriesSource
 """
 struct ReconstructionDataConfig
-    csv::String              # Path to CSV file
-    sensorConfig::String     # Path to sensor config YAML
+    input::TimeSeriesSource  # Time series source with data and sensors paths
 end
 
 """
@@ -60,15 +59,13 @@ end
 # Conversion functions
 function from_dict(::Type{ReconstructionDataConfig}, dict::Dict{String, Any})::ReconstructionDataConfig
     ReconstructionDataConfig(
-        dict["csv"],
-        dict["sensorConfig"]
+        from_dict(TimeSeriesSource, Dict{String, Any}(dict["input"]))
     )
 end
 
 function to_dict(config::ReconstructionDataConfig)::Dict{String, Any}
     Dict{String, Any}(
-        "csv" => config.csv,
-        "sensorConfig" => config.sensorConfig
+        "input" => to_dict(config.input)
     )
 end
 
@@ -121,21 +118,13 @@ end
 """
     process_mast_reconstruct_config(mast_config::MastReconstructReportConfig, config_dir::String) -> ProcessedMastReconstructConfig
 
-Process a single mast configuration by resolving paths and loading data.
+Process a single mast configuration by resolving paths and loading data using load_timeseries.
 """
 function process_mast_reconstruct_config(mast_config::MastReconstructReportConfig, config_dir::String)::ProcessedMastReconstructConfig
-    # Resolve paths for before reconstruction data
-    before_csv_path = resolve_path(mast_config.before_reconstruction.csv, config_dir)
-    before_sensor_path = resolve_path(mast_config.before_reconstruction.sensorConfig, config_dir)
-    
-    # Resolve paths for after reconstruction data
-    after_csv_path = resolve_path(mast_config.after_reconstruction.csv, config_dir)
-    after_sensor_path = resolve_path(mast_config.after_reconstruction.sensorConfig, config_dir)
-    
-    # Load time series data
-    before_data = load_timeseries_data(before_csv_path, before_sensor_path)
-    after_data = load_timeseries_data(after_csv_path, after_sensor_path)
-    
+    # Load time series data using load_timeseries with automatic path resolution
+    before_data = load_timeseries(mast_config.before_reconstruction.input, config_dir)
+    after_data = load_timeseries(mast_config.after_reconstruction.input, config_dir)
+
     return ProcessedMastReconstructConfig(
         mast_config.name,
         before_data,

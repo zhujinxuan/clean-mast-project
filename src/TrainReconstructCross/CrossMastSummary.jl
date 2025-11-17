@@ -112,8 +112,8 @@ function get_best_high_elevation_correlation(results::Vector{CrossMastSpeedPair}
     end
     
     # Filter for high-elevation pairs (both sensors ≥120m)
-    high_elevation_results = filter(r -> r.target_sensor.height >= 120.0 && 
-                                         r.source_sensor.height >= 120.0, results)
+    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 && 
+                                         r.source_sensor.height >= 100.0, results)
     
     if isempty(high_elevation_results)
         @debug "No high-elevation (≥120m) sensor pairs found"
@@ -147,8 +147,8 @@ function get_best_high_elevation_direction_std(results::Vector{CrossMastDirectio
     end
     
     # Filter for high-elevation pairs (both sensors ≥120m)
-    high_elevation_results = filter(r -> r.target_sensor.height >= 120.0 && 
-                                         r.source_sensor.height >= 120.0, results)
+    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 && 
+                                         r.source_sensor.height >= 100.0, results)
     
     if isempty(high_elevation_results)
         @debug "No high-elevation (≥120m) sensor pairs found"
@@ -171,7 +171,7 @@ Get all correlation results for high-elevation sensor pairs (≥120m).
 - `Vector{CrossMastSpeedPair}`: Filtered results for high-elevation pairs only
 """
 function get_high_elevation_correlations(results::Vector{CrossMastSpeedPair})::Vector{CrossMastSpeedPair}
-    return filter(r -> r.target_sensor.height >= 120.0 && r.source_sensor.height >= 120.0, results)
+    return filter(r -> r.target_sensor.height >= 100.0 && r.source_sensor.height >= 100.0, results)
 end
 
 """
@@ -186,7 +186,7 @@ Get all direction analysis results for high-elevation sensor pairs (≥120m).
 - `Vector{CrossMastDirectionPair}`: Filtered results for high-elevation pairs only
 """
 function get_high_elevation_direction_results(results::Vector{CrossMastDirectionPair})::Vector{CrossMastDirectionPair}
-    return filter(r -> r.target_sensor.height >= 120.0 && r.source_sensor.height >= 120.0, results)
+    return filter(r -> r.target_sensor.height >= 100.0 && r.source_sensor.height >= 100.0, results)
 end
 
 end # module 

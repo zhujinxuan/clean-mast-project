@@ -12,23 +12,39 @@ julia bin/CleanMast.jl report all <项目目录>
 
 ## 功能
 
-自动生成以下报告：
-- **数据清理报告**: 数据质量分析
-- **数据恢复分析**: 重构阶段数据恢复统计
-- **跨塔关联分析**: 测风塔间相关性分析
-- **单塔重构分析**: 单塔重构质量评估
-- **时间序列分析**: 中尺度和代表年数据分析
+自动生成以下 8 个综合报告：
+
+1. **数据清理报告** (`clean/`): 原始数据与清洗后数据对比分析
+2. **数据恢复分析** (`recovery/`): 各重构阶段数据覆盖率追踪
+3. **单塔重构报告** (`reconstruct-single/`): 单塔重构前后对比分析
+4. **跨塔关联分析** (`cross-mast/`): 测风塔间相关性分析
+5. **代表年报告** (`representative-year/`): 校准分析
+6. **时间序列分析-中尺度** (`timeseries-meso/`): 中尺度重构数据风资源分析
+7. **时间序列分析-代表年** (`timeseries-rep/`): 代表年数据风资源分析
+8. **中尺度重构报告** (`reconstruct-meso/`): 中尺度-测风塔重构质量分析
 
 ## 输出结构
 
 ```
 report-masts/
-├── clean/report.typ
-├── recovery/recovery-report.typ
-├── cross-mast/report.typ
-├── reconstruct-single/report.yaml
-├── timeseries-meso/comprehensive_analysis_report.typ
-└── timeseries-rep/comprehensive_analysis_report.typ
+├── clean/
+│   └── report.typ
+├── recovery/
+│   └── recovery-report.typ
+├── reconstruct-single/
+│   └── reconstruction_analysis_report.typ
+├── cross-mast/
+│   └── report.typ
+├── representative-year/
+│   └── report.typ
+├── timeseries-meso/
+│   ├── <mast-name>/
+│   └── ...
+├── timeseries-rep/
+│   ├── <mast-name>/
+│   └── ...
+└── reconstruct-meso/
+    └── report.typ
 ```
 
 ## 前置条件

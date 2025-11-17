@@ -49,7 +49,7 @@ function analyze_wind_speed_timeseries(config::ReportTimeSeriesConfig)
                          xlabel="Time", 
                          ylabel="Wind Speed (m/s)"))
         
-        svg_path = joinpath(output_dir, "wind_speed_timeseries.svg")
+        svg_path = joinpath(output_dir, "wind_speed_timeseries.png")
         save(svg_path, fig)
 
         results[mast.name] = plot_df
@@ -124,7 +124,7 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
                                ylabel="Wind Speed (m/s)",
                                xticks=0:2:23))
         
-        save(joinpath(output_dir, "daily_pattern.svg"), fig_speed)
+        save(joinpath(output_dir, "daily_pattern.png"), fig_speed)
 
         # Handle power analysis only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
@@ -140,7 +140,7 @@ function analyze_daily_pattern(config::ReportTimeSeriesConfig)
                                    ylabel="Wind Power Density (W/m²)",
                                    xticks=0:2:23))
             
-            save(joinpath(output_dir, "daily_power_pattern.svg"), fig_power)
+            save(joinpath(output_dir, "daily_power_pattern.png"), fig_power)
             results[mast.name] = (speed = speed_results_df, power = power_results_df)
         else
             results[mast.name] = (speed = speed_results_df, power = nothing)
@@ -225,7 +225,7 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
                                xlabel="Month", 
                                ylabel="Wind Speed (m/s)"))
         
-        save(joinpath(output_dir, "monthly_pattern.svg"), fig_speed, size=(800, 600))
+        save(joinpath(output_dir, "monthly_pattern.png"), fig_speed, size=(800, 600))
 
         # Handle power outputs only if air density is available
         if !isnothing(mast.airDensity) && !isnothing(power_results_df)
@@ -242,7 +242,7 @@ function analyze_monthly_pattern(config::ReportTimeSeriesConfig) :: Dict{String,
                                    xlabel="Month", 
                                    ylabel="Wind Power Density (W/m²)"))
             
-            save(joinpath(output_dir, "monthly_power_pattern.svg"), fig_power, size=(800, 600))
+            save(joinpath(output_dir, "monthly_power_pattern.png"), fig_power, size=(800, 600))
             results[mast.name] = MonthlyPattern(speed_results_df, power_results_df)
         else
             # Create MonthlyPattern with empty DataFrame for power
@@ -312,7 +312,7 @@ function analyze_monthly_daily_wind(config::ReportTimeSeriesConfig)
                        axis=(ylabel="Wind Speed (m/s)",
                              xlabel="Hour"))
             
-            save(joinpath(output_dir, "daily_wind_pattern_by_month.svg"), fig, size=(1200, 900))
+            save(joinpath(output_dir, "daily_wind_pattern_by_month.png"), fig, size=(1200, 900))
         end
 
         # Save CSV - create format similar to original
@@ -412,7 +412,7 @@ function analyze_monthly_daily_windpower(config::ReportTimeSeriesConfig)
                        axis=(ylabel="Wind Power Density (W/m²)",
                              xlabel="Hour"))
             
-            save(joinpath(output_dir, "daily_power_pattern_by_month.svg"), fig, size=(1200, 900))
+            save(joinpath(output_dir, "daily_power_pattern_by_month.png"), fig, size=(1200, 900))
         end
 
         # Save CSV - create format similar to original
@@ -587,10 +587,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             println(io, "== 图表分析")
             
             # Monthly wind speed pattern
-            monthly_pattern_svg = joinpath(output_dir, "monthly_pattern.svg")
+            monthly_pattern_svg = joinpath(output_dir, "monthly_pattern.png")
             if isfile(monthly_pattern_svg)
                 println(io, "#figure(")
-                println(io, "  image(\"monthly_pattern.svg\"),")
+                println(io, "  image(\"monthly_pattern.png\"),")
                 println(io, "  caption: [$(mast.name)测风塔各月份风速分布图],")
                 println(io, ")")
                 println(io)
@@ -598,10 +598,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             
             # Monthly wind power pattern (if available)
             if has_power_data
-                monthly_power_svg = joinpath(output_dir, "monthly_power_pattern.svg")
+                monthly_power_svg = joinpath(output_dir, "monthly_power_pattern.png")
                 if isfile(monthly_power_svg)
                     println(io, "#figure(")
-                    println(io, "  image(\"monthly_power_pattern.svg\"),")
+                    println(io, "  image(\"monthly_power_pattern.png\"),")
                     println(io, "  caption: [$(mast.name)测风塔各月份风功率密度分布图],")
                     println(io, ")")
                     println(io)
@@ -609,10 +609,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             end
             
             # Daily wind speed pattern
-            daily_pattern_svg = joinpath(output_dir, "daily_pattern.svg")
+            daily_pattern_svg = joinpath(output_dir, "daily_pattern.png")
             if isfile(daily_pattern_svg)
                 println(io, "#figure(")
-                println(io, "  image(\"daily_pattern.svg\"),")
+                println(io, "  image(\"daily_pattern.png\"),")
                 println(io, "  caption: [$(mast.name)测风塔24小时风速变化图],")
                 println(io, ")")
                 println(io)
@@ -620,10 +620,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             
             # Daily wind power pattern (if available)
             if has_power_data
-                daily_power_svg = joinpath(output_dir, "daily_power_pattern.svg")
+                daily_power_svg = joinpath(output_dir, "daily_power_pattern.png")
                 if isfile(daily_power_svg)
                     println(io, "#figure(")
-                    println(io, "  image(\"daily_power_pattern.svg\"),")
+                    println(io, "  image(\"daily_power_pattern.png\"),")
                     println(io, "  caption: [$(mast.name)测风塔24小时风功率密度变化图],")
                     println(io, ")")
                     println(io)
@@ -631,10 +631,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             end
             
             # Monthly-daily wind speed pattern
-            monthly_daily_wind_svg = joinpath(output_dir, "daily_wind_pattern_by_month.svg")
+            monthly_daily_wind_svg = joinpath(output_dir, "daily_wind_pattern_by_month.png")
             if isfile(monthly_daily_wind_svg)
                 println(io, "#figure(")
-                println(io, "  image(\"daily_wind_pattern_by_month.svg\"),")
+                println(io, "  image(\"daily_wind_pattern_by_month.png\"),")
                 println(io, "  caption: [$(mast.name)测风塔各月份24小时风速变化对比图],")
                 println(io, ")")
                 println(io)
@@ -642,10 +642,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
             
             # Monthly-daily wind power pattern (if available)
             if has_power_data
-                monthly_daily_power_svg = joinpath(output_dir, "daily_power_pattern_by_month.svg")
+                monthly_daily_power_svg = joinpath(output_dir, "daily_power_pattern_by_month.png")
                 if isfile(monthly_daily_power_svg)
                     println(io, "#figure(")
-                    println(io, "  image(\"daily_power_pattern_by_month.svg\"),")
+                    println(io, "  image(\"daily_power_pattern_by_month.png\"),")
                     println(io, "  caption: [$(mast.name)测风塔各月份24小时风功率密度变化对比图],")
                     println(io, ")")
                     println(io)

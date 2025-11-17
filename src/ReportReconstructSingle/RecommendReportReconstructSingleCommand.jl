@@ -66,12 +66,16 @@ function execute(project_dir::String)
         Dict(
             "name" => mast_name,
             "before_reconstruction" => Dict(
-                "csv" => adjust_path_for_report_masts(before_data.data),
-                "sensorConfig" => adjust_path_for_report_masts(before_data.sensors)
+                "input" => Dict(
+                    "data" => adjust_path_for_report_masts(before_data.data),
+                    "sensors" => adjust_path_for_report_masts(before_data.sensors)
+                )
             ),
             "after_reconstruction" => Dict(
-                "csv" => adjust_path_for_report_masts(after_data.data),
-                "sensorConfig" => adjust_path_for_report_masts(after_data.sensors)
+                "input" => Dict(
+                    "data" => adjust_path_for_report_masts(after_data.data),
+                    "sensors" => adjust_path_for_report_masts(after_data.sensors)
+                )
             )
         )
     end

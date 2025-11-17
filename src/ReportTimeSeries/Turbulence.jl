@@ -311,7 +311,7 @@ Create combined turbulence intensity comparison plot for multiple heights
 - `mast_name::String`: Name of the mast
 - `heights::Vector{Float64}`: Heights to include (only >= min_plot_height)
 - `output_dir::String`: Directory containing CSV files and where to save the plot
-- `min_plot_height::Float64`: Minimum height threshold for plotting (default: 120.0)
+- `min_plot_height::Float64`: Minimum height threshold for plotting (default: 100.0)
 
 # Description
 Creates a single plot showing:
@@ -323,7 +323,7 @@ function create_combined_ti_comparison_plot(
     mast_name::String,
     heights::Vector{Float64},
     output_dir::String,
-    min_plot_height::Float64 = 120.0
+    min_plot_height::Float64 = 100.0
 )::Nothing
     # Filter heights >= min_plot_height
     plot_heights = filter(h -> h >= min_plot_height, heights)
@@ -423,7 +423,7 @@ function create_combined_ti_comparison_plot(
     )
     
     # Save the plot
-    plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
+    plot_path = joinpath(output_dir, "iec_comparison_combined.png")
     save(plot_path, fig, px_per_unit=2)
 
     @info "Saved combined TI comparison plot: $plot_path"
@@ -801,10 +801,10 @@ function generate_consolidated_turbulence_typst_report(
         println(io)
         
         # Check if combined plot exists
-        combined_plot_path = joinpath(output_dir, "iec_comparison_combined.svg")
+        combined_plot_path = joinpath(output_dir, "iec_comparison_combined.png")
         if isfile(combined_plot_path)
             println(io, "#figure(")
-            println(io, "  image(\"iec_comparison_combined.svg\", width: 100%),")
+            println(io, "  image(\"iec_comparison_combined.png\", width: 100%),")
             println(io, "  caption: [测风塔湍流强度与IEC 61400-1标准对比 (高度 ≥ $(min_plot_height)m)]")
             println(io, ")")
             println(io)

@@ -12,6 +12,8 @@ using Printf
 using CSV
 using Statistics
 
+using ..MonthlyCoverage: generate_monthly_coverage_tables
+
 export generate_typst_report, export_csv_data
 
 # Chinese text constants
@@ -47,28 +49,34 @@ const CHINESE_TEXTS = Dict(
 )
 
 """
-    generate_typst_report(analysis_results, config, output_dir)
+    generate_typst_report(analysis_results, config, output_dir, mast_data)
 
 Generate comprehensive Chinese Typst report with individual tables for each mast pair.
 
 # Arguments
 - `analysis_results::Vector`: Array of AnalyzePairResult
-- `config`: AnalyzeReconstructCrossConfiguration
+- `config`: ReportReconstructCrossConfiguration
 - `output_dir::String`: Output directory path
+- `mast_data::Dict{String, TimeSeriesData}`: Dictionary mapping mast names to time series data
 
 # Description
 Creates:
 - Main report.typ with embedded plots and tables
 - Individual table files in tables/ subdirectory
 - CSV data exports in data/ subdirectory
+- Monthly coverage tables for all masts
 """
-function generate_typst_report(analysis_results::Vector, config, output_dir::String)::Nothing
+function generate_typst_report(analysis_results::Vector, config, output_dir::String, mast_data::Dict)::Nothing
     println("📄 Generating Chinese Typst report...")
-    
+
     # Create directory structure
     tables_dir = joinpath(output_dir, "tables")
     mkpath(tables_dir)
-    
+
+    # Generate monthly coverage tables for all masts
+    println("  📊 Generating monthly coverage tables...")
+    monthly_coverage_content = generate_monthly_coverage_tables(mast_data)
+
     # Generate individual table files for each mast pair
     table_files = map(analysis_results) do result
         target_name = result.target_mast
@@ -83,11 +91,12 @@ function generate_typst_report(analysis_results::Vector, config, output_dir::Str
     
     # Generate main report
     report_file = joinpath(output_dir, "report.typ")
-    generate_main_report(analysis_results, table_files, report_file)
-    
+    generate_main_report(analysis_results, table_files, report_file, monthly_coverage_content)
+
     println("✅ Report generation completed")
     println("    📋 Main report: $(report_file)")
     println("    📊 Table files: $(length(table_files)) individual summaries")
+    println("    📅 Monthly coverage tables included")
 end
 
 """
@@ -128,7 +137,7 @@ function generate_pair_table(result, table_path::String)
             for corr in result.speed_correlations
                 target_height = corr.target_sensor.height
                 source_height = corr.source_sensor.height
-                correlation_str = @sprintf("%.3f", corr.correlation)
+                correlation_str = @sprintf("%.3f", floor(corr.correlation * 1000) / 1000)
                 slope_str = @sprintf("%.3f", corr.slope)
                 intercept_str = @sprintf("%.3f", corr.intercept)
                 
@@ -198,7 +207,7 @@ _本测风塔对无风向传感器分析数据_
         
         # Best performance summary
         if !isempty(result.speed_correlations)
-            best_speed_corr = round(result.speed_summary.best_high_elevation_correlation, digits=3)
+            best_speed_corr = floor(result.speed_summary.best_high_elevation_correlation * 1000) / 1000
             write(io, """
 - *最佳高空风速相关性:* $(best_speed_corr)
 """)
@@ -216,7 +225,7 @@ _本测风塔对无风向传感器分析数据_
 end
 
 """
-    generate_main_report(results, table_files, report_path)
+    generate_main_report(results, table_files, report_path, monthly_coverage_content)
 
 Generate main Typst report file with embedded plots and included tables.
 
@@ -224,16 +233,18 @@ Generate main Typst report file with embedded plots and included tables.
 - `results::Vector`: Array of AnalyzePairResult
 - `table_files::Vector{String}`: List of individual table file names
 - `report_path::String`: Output path for main report
+- `monthly_coverage_content::String`: Pre-generated monthly coverage tables in Typst format
 
 # Description
 Creates comprehensive report with:
 - Chinese fonts and formatting
 - Executive summary
+- Monthly coverage tables for all masts
 - Individual sections for each mast pair
 - Embedded plots and tables
 - Analysis conclusions
 """
-function generate_main_report(results::Vector, table_files::Vector{String}, report_path::String)
+function generate_main_report(results::Vector, table_files::Vector{String}, report_path::String, monthly_coverage_content::String)
     open(report_path, "w") do io
         write(io, """
 #set text(lang: "zh")
@@ -260,11 +271,11 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
             all_speed_corrs = vcat([r.speed_correlations for r in results]...)
             best_overall_corr = maximum(c.correlation for c in all_speed_corrs)
             avg_corr = mean(c.correlation for c in all_speed_corrs)
-            
+
             write(io, """
 - *风速传感器对总数:* $(total_speed_pairs) 对
-- *最佳相关系数:* $(round(best_overall_corr, digits=3))
-- *平均相关系数:* $(round(avg_corr, digits=3))
+- *最佳相关系数:* $(floor(best_overall_corr * 1000) / 1000)
+- *平均相关系数:* $(floor(avg_corr * 1000) / 1000)
 """)
         end
         
@@ -288,7 +299,11 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
 - *平均数据重叠期:* $(round(avg_overlap, digits=1)) 天
 
 """)
-        
+
+        # Insert monthly coverage tables
+        write(io, monthly_coverage_content)
+        write(io, "\n")
+
         # Individual mast pair sections
         for (i, result) in enumerate(results)
             target_name = result.target_mast
@@ -325,9 +340,9 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
                 else
                     assessment = "需要改进"
                 end
-                
+
                 write(io, """
-*风速相关性评估:* $(assessment) (最佳相关系数: $(round(best_corr, digits=3)))
+*风速相关性评估:* $(assessment) (最佳相关系数: $(floor(best_corr * 1000) / 1000))
 
 """)
             end

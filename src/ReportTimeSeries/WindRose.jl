@@ -391,19 +391,19 @@ function analyze_wind_rose(config::ReportTimeSeriesConfig)
             # Create individual wind roses for each height
             freq_plot = create_wind_rose_plot(overall_stats,
                 "Wind Direction Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :frequency)
-            save(joinpath(output_dir, "direction_frequency_rose_$(speed_sensor.height)m.svg"), freq_plot)
+            save(joinpath(output_dir, "direction_frequency_rose_$(speed_sensor.height)m.png"), freq_plot)
             empty!(freq_plot)  # Explicitly clean up to avoid GC finalizer issues
 
             # Create power-related plots only if air density is available
             if has_air_density
                 power_plot = create_wind_rose_plot(overall_stats,
                     "Wind Power Rose - $(mast.name) ($(speed_sensor.height)m)", :avg_power)
-                save(joinpath(output_dir, "wind_power_rose_$(speed_sensor.height)m.svg"), power_plot)
+                save(joinpath(output_dir, "wind_power_rose_$(speed_sensor.height)m.png"), power_plot)
                 empty!(power_plot)  # Explicitly clean up to avoid GC finalizer issues
 
                 power_freq_plot = create_wind_rose_plot(overall_stats,
                     "Wind Power Frequency Rose - $(mast.name) ($(speed_sensor.height)m)", :power_frequency)
-                save(joinpath(output_dir, "wind_power_frequency_rose_$(speed_sensor.height)m.svg"), power_freq_plot)
+                save(joinpath(output_dir, "wind_power_frequency_rose_$(speed_sensor.height)m.png"), power_freq_plot)
                 empty!(power_freq_plot)  # Explicitly clean up to avoid GC finalizer issues
             end
             
@@ -421,7 +421,7 @@ function analyze_wind_rose(config::ReportTimeSeriesConfig)
                 "Wind Direction Frequency Rose - $(mast.name) (Heights ≥ 100m)",
                 :frequency
             )
-            save(joinpath(output_dir, "direction_frequency_rose_height_gt100m.svg"), freq_multi_plot)
+            save(joinpath(output_dir, "direction_frequency_rose_height_gt100m.png"), freq_multi_plot)
             empty!(freq_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
 
             # Create power-related multi-height plots only if air density is available
@@ -431,7 +431,7 @@ function analyze_wind_rose(config::ReportTimeSeriesConfig)
                     "Wind Power Rose - $(mast.name) (Heights ≥ 100m)",
                     :avg_power
                 )
-                save(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"), power_multi_plot)
+                save(joinpath(output_dir, "wind_power_rose_height_gt100m.png"), power_multi_plot)
                 empty!(power_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
 
                 power_freq_multi_plot = create_multi_height_wind_rose(
@@ -439,7 +439,7 @@ function analyze_wind_rose(config::ReportTimeSeriesConfig)
                     "Wind Power Frequency Rose - $(mast.name) (Heights ≥ 100m)",
                     :power_frequency
                 )
-                save(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"), power_freq_multi_plot)
+                save(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.png"), power_freq_multi_plot)
                 empty!(power_freq_multi_plot)  # Explicitly clean up to avoid GC finalizer issues
             end
             
@@ -628,7 +628,7 @@ function analyze_monthly_frequency_wind_rose_multi_height(mast::MastReportTimeSe
     end
     
     # Save the grid plot
-    save(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.svg"), freq_fig)
+    save(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.png"), freq_fig)
     empty!(freq_fig)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Generated monthly frequency wind rose plots for mast $(mast.name)"
@@ -767,7 +767,7 @@ function analyze_monthly_power_wind_rose_multi_height(mast::MastReportTimeSeries
     end
     
     # Save the grid plot
-    save(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.svg"), power_fig)
+    save(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.png"), power_fig)
     empty!(power_fig)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Generated monthly power wind rose plots for mast $(mast.name)"
@@ -906,7 +906,7 @@ function analyze_monthly_power_frequency_wind_rose_multi_height(mast::MastReport
     end
     
     # Save the grid plot
-    save(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.svg"), power_freq_fig)
+    save(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.png"), power_freq_fig)
     empty!(power_freq_fig)  # Explicitly clean up to avoid GC finalizer issues
 
     @info "Generated monthly power frequency wind rose plots for mast $(mast.name)"
@@ -991,22 +991,22 @@ function export_wind_direction_summary_tables(stats_by_height_freq::Dict, stats_
             println(f, "")
             
             # Add frequency wind rose figure
-            if isfile(joinpath(output_dir, "direction_frequency_rose_height_gt100m.svg"))
+            if isfile(joinpath(output_dir, "direction_frequency_rose_height_gt100m.png"))
                 println(f, " 图: [测风塔$(mast_name)代表年风向频率玫瑰图 - 高度≥100m]")
                 println(f, "")
                 println(f, "#figure(")
-                println(f, "  image(\"direction_frequency_rose_height_gt100m.svg\", width: 80%),")
+                println(f, "  image(\"direction_frequency_rose_height_gt100m.png\", width: 80%),")
                 println(f, "  caption: [测风塔$(mast_name)代表年风向频率玫瑰图 - 高度≥100m]")
                 println(f, ")")
                 println(f, "")
             end
             
             # Add monthly frequency wind rose figure
-            if isfile(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.svg"))
+            if isfile(joinpath(output_dir, "monthly_direction_frequency_roses_height_gt100m.png"))
                 println(f, " 图: [测风塔$(mast_name)各月风向频率玫瑰图 - 高度≥100m]")
                 println(f, "")
                 println(f, "#figure(")
-                println(f, "  image(\"monthly_direction_frequency_roses_height_gt100m.svg\", width: 100%),")
+                println(f, "  image(\"monthly_direction_frequency_roses_height_gt100m.png\", width: 100%),")
                 println(f, "  caption: [测风塔$(mast_name)各月风向频率玫瑰图 - 高度≥100m]")
                 println(f, ")")
                 println(f, "")
@@ -1035,44 +1035,44 @@ function export_wind_direction_summary_tables(stats_by_height_freq::Dict, stats_
                 println(f, "")
                 
                 # Add power wind rose figure
-                if isfile(joinpath(output_dir, "wind_power_rose_height_gt100m.svg"))
+                if isfile(joinpath(output_dir, "wind_power_rose_height_gt100m.png"))
                     println(f, " 图: [测风塔$(mast_name)代表年风功率玫瑰图 - 高度≥100m]")
                     println(f, "")
                     println(f, "#figure(")
-                    println(f, "  image(\"wind_power_rose_height_gt100m.svg\", width: 80%),")
+                    println(f, "  image(\"wind_power_rose_height_gt100m.png\", width: 80%),")
                     println(f, "  caption: [测风塔$(mast_name)代表年风功率玫瑰图 - 高度≥100m]")
                     println(f, ")")
                     println(f, "")
                 end
                 
                 # Add power frequency wind rose figure
-                if isfile(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.svg"))
+                if isfile(joinpath(output_dir, "wind_power_frequency_rose_height_gt100m.png"))
                     println(f, " 图: [测风塔$(mast_name)代表年风能频率玫瑰图 - 高度≥100m]")
                     println(f, "")
                     println(f, "#figure(")
-                    println(f, "  image(\"wind_power_frequency_rose_height_gt100m.svg\", width: 80%),")
+                    println(f, "  image(\"wind_power_frequency_rose_height_gt100m.png\", width: 80%),")
                     println(f, "  caption: [测风塔$(mast_name)代表年风能频率玫瑰图 - 高度≥100m]")
                     println(f, ")")
                     println(f, "")
                 end
                 
                 # Add monthly power wind rose figure
-                if isfile(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.svg"))
+                if isfile(joinpath(output_dir, "monthly_wind_power_roses_height_gt100m.png"))
                     println(f, " 图: [测风塔$(mast_name)各月风功率玫瑰图 - 高度≥100m]")
                     println(f, "")
                     println(f, "#figure(")
-                    println(f, "  image(\"monthly_wind_power_roses_height_gt100m.svg\", width: 100%),")
+                    println(f, "  image(\"monthly_wind_power_roses_height_gt100m.png\", width: 100%),")
                     println(f, "  caption: [测风塔$(mast_name)各月风功率玫瑰图 - 高度≥100m]")
                     println(f, ")")
                     println(f, "")
                 end
                 
                 # Add monthly power frequency wind rose figure
-                if isfile(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.svg"))
+                if isfile(joinpath(output_dir, "monthly_wind_power_frequency_roses_height_gt100m.png"))
                     println(f, " 图: [测风塔$(mast_name)各月风能频率玫瑰图 - 高度≥100m]")
                     println(f, "")
                     println(f, "#figure(")
-                    println(f, "  image(\"monthly_wind_power_frequency_roses_height_gt100m.svg\", width: 100%),")
+                    println(f, "  image(\"monthly_wind_power_frequency_roses_height_gt100m.png\", width: 100%),")
                     println(f, "  caption: [测风塔$(mast_name)各月风能频率玫瑰图 - 高度≥100m]")
                     println(f, ")")
                     println(f, "")
