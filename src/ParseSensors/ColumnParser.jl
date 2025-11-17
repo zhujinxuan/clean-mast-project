@@ -111,7 +111,7 @@ function parse_column_name(
             final_data["height"],
             String(final_data["statType"]),
             String(final_data["unit"]),
-            originalColumnName=Symbol(column_name),
+            originalColumnNames=Symbol(column_name),
             multiplier=rule_outcome.multiplier
         )
     end

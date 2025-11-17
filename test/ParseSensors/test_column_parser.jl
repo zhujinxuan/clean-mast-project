@@ -43,9 +43,9 @@ using CleanMastProject.Types.SensorColumns: ParsedSensor
 
         original_name = "Ch1_Anem_80m_315_Avg_mps"
         result = parse_column_name(original_name, column_configs, mappings)
-        
+
         @test result !== nothing
-        @test result.originalColumnName == Symbol(original_name)
+        @test Symbol(original_name) in result.originalColumnNames
         @test result.sensorType == "WindSpeed"
         @test result.height == 80.0
         @test result.sensorDirection == "315"

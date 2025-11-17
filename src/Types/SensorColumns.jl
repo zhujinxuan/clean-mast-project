@@ -6,7 +6,7 @@ using Parameters
 
 struct ParsedSensor
     columnName::Symbol
-    originalColumnName::Symbol  # Track the original column name before unit transformation
+    originalColumnNames::Vector{Symbol}  # Track original column names (supports merging)
     columnFormat::String       # Store the format used to create this column
     sensorType::String      # "WindSpeed" | "WindDirection" | "Temperature" | "Pressure"
     sensorDirection::String
@@ -14,17 +14,19 @@ struct ParsedSensor
     statType::String     # Changed from StatType enum to String
     unit::String
     multiplier::Union{Float64, Nothing}
-    
-    function ParsedSensor(columnName::Symbol, 
+
+    function ParsedSensor(columnName::Symbol,
                          columnFormat::String,
-                         sensorType::String, 
-                         sensorDirection::String, 
-                         height::Float64, 
-                         statType::String, 
+                         sensorType::String,
+                         sensorDirection::String,
+                         height::Float64,
+                         statType::String,
                          unit::String;
-                         originalColumnName::Symbol=columnName,
+                         originalColumnNames::Union{Symbol, Vector{Symbol}}=columnName,
                          multiplier::Union{Float64, Nothing}=nothing)
-        new(columnName, originalColumnName, columnFormat, sensorType, sensorDirection, height, statType, unit, multiplier)
+        # Convert single Symbol to Vector for consistency
+        orig_names = originalColumnNames isa Symbol ? [originalColumnNames] : originalColumnNames
+        new(columnName, orig_names, columnFormat, sensorType, sensorDirection, height, statType, unit, multiplier)
     end
 end
 
@@ -138,8 +140,17 @@ Convert a dictionary to a ParsedSensor
 """
 function from_dict(::Type{ParsedSensor}, d::Dict{String, Any})::ParsedSensor
     columnName = Symbol(d["columnName"])
-    originalColumnName = get(d, "originalColumnName", columnName)
     columnFormat = get(d, "columnFormat", "")  # Default to empty string if not provided
+
+    # Handle both old (originalColumnName) and new (originalColumnNames) formats
+    originalColumnNames = if haskey(d, "originalColumnNames")
+        [Symbol(name) for name in d["originalColumnNames"]]
+    elseif haskey(d, "originalColumnName")
+        [Symbol(d["originalColumnName"])]
+    else
+        [columnName]
+    end
+
     ParsedSensor(
         columnName,
         columnFormat,
@@ -148,7 +159,7 @@ function from_dict(::Type{ParsedSensor}, d::Dict{String, Any})::ParsedSensor
         d["height"],
         d["statType"],
         d["unit"],
-        originalColumnName=Symbol(originalColumnName),
+        originalColumnNames=originalColumnNames,
         multiplier=get(d, "multiplier", nothing)
     )
 end
@@ -173,7 +184,7 @@ Convert a ParsedSensor to a dictionary
 function to_dict(s::ParsedSensor)::Dict{String, Any}
     Dict{String, Any}(
         "columnName" => String(s.columnName),
-        "originalColumnName" => String(s.originalColumnName),
+        "originalColumnNames" => [String(name) for name in s.originalColumnNames],
         "columnFormat" => s.columnFormat,
         "sensorType" => s.sensorType,
         "sensorDirection" => s.sensorDirection,

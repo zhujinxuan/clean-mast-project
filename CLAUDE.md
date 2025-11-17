@@ -49,6 +49,28 @@ src/
 
 Apply this rule consistently throughout the session, not just when encountering errors.
 
+**IMPORTANT: Shell Commands with Paths**
+When using paths in Bash/shell commands with double quotes, you MUST:
+- Use forward slashes `/` OR
+- Escape backslashes with `\\`
+
+**Examples:**
+```bash
+# CORRECT - Forward slashes
+ls -la "/c/Users/zhu_j/workspace/test"
+ls -la "C:/Users/zhu_j/workspace/test"
+
+# CORRECT - Escaped backslashes
+ls -la "C:\\Users\\zhu_j\\workspace\\test"
+
+# WRONG - Single backslashes in quotes
+ls -la "C:\Users\zhu_j\workspace\test"  # ERROR: \U, \w, \t are escape sequences
+```
+
+**Rule of thumb:**
+- **File tool parameters** (Read, Write, Edit): Use Windows backslashes `C:\path\to\file`
+- **Shell command strings**: Use forward slashes `"C:/path/to/file"` or escaped backslashes `"C:\\path\\to\\file"`
+
 ### Formatting Rules
 - **Julia Code**: 4 whitespaces for indentation, max 92 characters per line
 - **Markdown**: 2 whitespaces for indentation, max 80 characters per line
@@ -171,21 +193,15 @@ Based on the `SensorColumn` definition (see `src/Types/SensorColumns.jl`), the s
 
 ### Testing Conventions
 
-#### Running Tests
-- **Full Test Suite**: `julia test/runtests.jl` from project root
-- **Specific Test Sets**: `julia test/runtests.jl parse_sensors rules process`
-- **List Available Tests**: `julia test/runtests.jl --help`
+For comprehensive testing documentation, see **[docs/development/tests.md](docs/development/tests.md)**.
 
-The test system uses organized test sets:
-- `parse_sensors` - Data parsing and column mapping
-- `rules` - Data cleaning rules (range, icing, layer difference)
-- `process` - Data processing operations
-- `time_series_processing` - Time series operations
-- `representative_year` - Long-term calibration
-- And more (see `test/runtests.jl` for full list)
+**Quick Reference:**
+- **Run tests**: `julia test/runtests.jl [test_set]`
+- **List test sets**: `julia test/runtests.jl --help`
+- **Fixtures**: Use `test/{Module}/fixtures/` for complex scenarios
+- **Inline data**: Use for simple unit tests and temp file tests
 
-#### Test File Structure
-Follow existing patterns in the test directory - tests are organized by functionality and included via the main `runtests.jl`.
+Always run relevant tests after code changes: `julia test/runtests.jl [module_name]`
 
 ### Visualization Standards
 

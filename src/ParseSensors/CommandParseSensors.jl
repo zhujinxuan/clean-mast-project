@@ -14,7 +14,7 @@ using ...Types.SensorColumns: ParsedSensor, SensorColumn
 using ...CleanMastUtils: load_dict
 using ..ColumnParser: parse_column_name
 using ..FileProcessor: generate_csv_opts
-using ..DataFrameProcessor: normalize_timestamp!, rename_and_apply_multipliers!
+using ..DataFrameProcessor: normalize_timestamp!, transform_columns!
 using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals
 using ...TimeSeriesProcessing.Interpolation: interpolate_timeseries
 using TOML
@@ -118,17 +118,17 @@ function process_single_file(file_config::ParseSensorsFileConfigNormalized, conf
             s for s in (parse_column_name(String(col), file_config.sensor.columns, file_config.sensor.mappings) for col in names(df))
             if !isnothing(s)
         ]
-        
-        # 5. Transform DataFrame
-        df_transformed = rename_and_apply_multipliers!(df, sensors)
+
+        # 5. Transform DataFrame (rename, merge duplicates, apply multipliers)
+        df_transformed, merged_sensors = transform_columns!(df, sensors)
 
         # 6. Apply interpolation if configured
         if !isnothing(file_config.interpolate)
-            df_transformed = apply_interpolation(df_transformed, sensors, file_config.interpolate)
+            df_transformed = apply_interpolation(df_transformed, merged_sensors, file_config.interpolate)
         end
 
         # 7. Save outputs
-        save_outputs(df_transformed, sensors, file_config, config_path)
+        save_outputs(df_transformed, merged_sensors, file_config, config_path)
 
     catch e
         @error "Failed to process file $(file_config.input):" exception=(e, catch_backtrace())
