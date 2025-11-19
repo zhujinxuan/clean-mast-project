@@ -35,10 +35,13 @@ const TEST_SETS = Dict{String, Vector{String}}(
     "measurement_period" => [
         "TimeSeriesProcessing/test_measurement_period_calculator.jl"
     ],
-    # "single_mast" => [
-    #     "ReconstructSingleMast/test_wind_speed_training.jl",
-    #     "ReconstructSingleMast/test_direction_training.jl"
-    # ],
+    "single_mast" => [
+        "ReconstructSingleMast/test_apply_reconstruction.jl",
+        "ReconstructSingleMast/test_group_by_hour.jl",
+        "ReconstructSingleMast/test_layer_selection.jl",
+        "ReconstructSingleMast/test_wind_speed_reconstruct_hourly.jl",
+        "ReconstructSingleMast/test_wind_direction_reconstruct_hourly.jl"
+    ],
     "representative_year" => [
         "RepresentativeYear/test_utils.jl",
         "RepresentativeYear/test_analysis.jl"

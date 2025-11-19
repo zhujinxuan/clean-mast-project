@@ -20,17 +20,6 @@ struct ReconstructedFailure
     reason::String
 end
 
-struct WindSpeedProfile
-    reference_height::Float64 # Default is 50m
-    shear_exponent::Float64
-end
-
-struct DirectionCorrelation
-    source_height::Float64
-    target_height::Float64
-    mean_difference::Float64  # Average directional difference
-end
-
 struct ReconstructionResults
     successes::Vector{Dict{String, Any}}
     failures::Vector{Dict{String, Any}}
@@ -72,7 +61,7 @@ function find_reconstruction_targets(data::TimeSeriesData, sensorType::String, s
     return targets
 end
 
-export ReconstructedSuccess, ReconstructedFailure, WindSpeedProfile, DirectionCorrelation,
+export ReconstructedSuccess, ReconstructedFailure,
        ReconstructionTarget, find_reconstruction_targets
 
 end 

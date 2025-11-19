@@ -200,12 +200,15 @@ export TowerShading
 
 
 module ReconstructSingleMast
-  include("./ReconstructSingleMast/WindSpeedTraining.jl")
-  include("./ReconstructSingleMast/DirectionTraining.jl")
+  include("./ReconstructSingleMast/GroupByHour.jl")
+  include("./ReconstructSingleMast/LayerSelection.jl")
+  include("./ReconstructSingleMast/WindSpeedReconstructHourly.jl")
+  include("./ReconstructSingleMast/WindDirectionReconstructHourly.jl")
   include("./ReconstructSingleMast/ProcessData.jl")
   include("./ReconstructSingleMast/CommandReconstructSingle.jl")
   include("./ReconstructSingleMast/RecommendReconstructSingleCommand.jl")
-  export ProcessData, WindSpeedTraining, DirectionTraining
+  export ProcessData
+  export GroupByHour, LayerSelection, WindSpeedReconstructHourly, WindDirectionReconstructHourly
   export CommandReconstructSingle, RecommendReconstructSingleCommand
 end
 export ReconstructSingleMast

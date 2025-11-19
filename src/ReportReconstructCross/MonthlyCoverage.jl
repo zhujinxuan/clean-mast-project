@@ -177,7 +177,7 @@ function generate_monthly_coverage_tables(mast_data::Dict{String, TimeSeriesData
         ""
     ]
 
-    for (mast_name, time_series) in sort(collect(mast_data))
+    for (mast_name, time_series) in sort(collect(mast_data), by = first)
         push!(sections, "=== $(mast_name)")
         push!(sections, "")
 
