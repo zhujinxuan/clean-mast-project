@@ -216,34 +216,37 @@ end
     find_optimal_year_range(
         daily_scores::Vector{DailyScore},
         earliest_start_date::Date,
-        latest_end_date::Date
+        latest_end_date::Date,
+        target_days::Int = 365
     )::TimeRange
 
-Find the optimal 1-year period within the specified date range using efficient vector operations.
+Find the optimal N-year period within the specified date range using efficient vector operations.
 Creates a complete vector of all days with zero scores for missing days, then uses array slicing
-to find the best 365-day period.
+to find the best period.
 
 # Arguments
 - `daily_scores::Vector{DailyScore}`: Array of actual daily scores
 - `earliest_start_date::Date`: Earliest possible start date for measurement period
 - `latest_end_date::Date`: Latest possible end date (considering meso/cross data constraints)
+- `target_days::Int`: Target period length in days (default: 365 for 1 year)
 
 # Returns
 - `TimeRange`: Optimal time range aligned to month boundaries
 
-# Throws  
-- `ErrorException`: If date range is insufficient for yearly analysis
+# Throws
+- `ErrorException`: If date range is insufficient for target period length
 """
 function find_optimal_year_range(
     daily_scores::Vector{DailyScore},
     earliest_start_date::Date,
-    latest_end_date::Date
+    latest_end_date::Date,
+    target_days::Int = 365
 )::TimeRange
-    # Check if we have enough date range for a full year
+    # Check if we have enough date range for target period
     total_span_days = (latest_end_date - earliest_start_date).value + 1
-    
-    if total_span_days < 365
-        error("Date range is too short for yearly analysis. Need at least 365 days, got $total_span_days days")
+
+    if total_span_days < target_days
+        error("Date range is too short for target period. Need at least $target_days days, got $total_span_days days")
     end
     
     # Create vector with all dates and zero scores
@@ -260,28 +263,30 @@ function find_optimal_year_range(
         end
     end
     
-    # Find best 365-day slice using efficient array operations
+    # Find best N-day slice using efficient array operations
     best_score = 0.0
     best_start_idx = 1
-    
-    for start_idx in 1:(length(score_vector) - 364)
-        period_score = sum(score_vector[i].total_score for i in start_idx:start_idx+364)
+
+    for start_idx in 1:(length(score_vector) - (target_days - 1))
+        period_score = sum(score_vector[i].total_score for i in start_idx:(start_idx + target_days - 1))
         if period_score > best_score
             best_score = period_score
             best_start_idx = start_idx
         end
     end
-    
+
     # Calculate optimal period dates
     start_date = score_vector[best_start_idx].date
-    end_date = score_vector[best_start_idx + 364].date
+    end_date = score_vector[best_start_idx + target_days - 1].date
 
     # Align start to month boundary for cleaner periods
     aligned_start = Date(year(start_date), month(start_date), 1)
 
-    # Convert to DateTime and calculate exact 1-year period
+    # Convert to DateTime and calculate exact period
+    # Use Year() for whole years to properly handle leap years
     start_datetime = DateTime(aligned_start)
-    end_datetime = start_datetime + Year(1) - Second(1)
+    target_years = round(Int, target_days / 365.0)
+    end_datetime = start_datetime + Year(target_years) - Second(1)
 
     return TimeRange(start_datetime, end_datetime)
 end
@@ -290,19 +295,21 @@ end
     calculate_optimal_measurement_period(
         reconstruct_single_ts::TimeSeriesData,
         reconstruct_cross_ts::TimeSeriesData,
-        meso_ts::TimeSeriesData
+        meso_ts::TimeSeriesData,
+        target_days::Int = 365
     )::TimeRange
 
 Calculate the optimal measurement period based on data coverage quality across multiple datasets.
 
-This function analyzes the completeness of reconstruct-single and reconstruct-cross data 
-to find the 365-day period with the best overall data coverage, while respecting 
+This function analyzes the completeness of reconstruct-single and reconstruct-cross data
+to find the N-day period with the best overall data coverage, while respecting
 mesoscale data boundaries.
 
 # Arguments
 - `reconstruct_single_ts::TimeSeriesData`: Single mast reconstruction time series
-- `reconstruct_cross_ts::TimeSeriesData`: Cross mast reconstruction time series  
+- `reconstruct_cross_ts::TimeSeriesData`: Cross mast reconstruction time series
 - `meso_ts::TimeSeriesData`: Mesoscale time series data
+- `target_days::Int`: Target period length in days (default: 365 for 1 year)
 
 # Returns
 - `TimeRange`: Optimal measurement period aligned to month boundaries
@@ -310,13 +317,14 @@ mesoscale data boundaries.
 # Algorithm
 1. Calculate maximum allowed end time from mesoscale data
 2. Score each day based on data completeness (single_weight=1.0, cross_weight=0.5)
-3. Use sliding 365-day window to find period with maximum total score
+3. Use sliding N-day window to find period with maximum total score
 4. Return month-aligned time range for clean period boundaries
 """
 function calculate_optimal_measurement_period(
     reconstruct_single_ts::TimeSeriesData,
     reconstruct_cross_ts::TimeSeriesData,
-    meso_ts::TimeSeriesData
+    meso_ts::TimeSeriesData,
+    target_days::Int = 365
 )::TimeRange
     
     # Step 1: Calculate boundary constraints
@@ -330,21 +338,21 @@ function calculate_optimal_measurement_period(
     
     # Calculate earliest start date based on constraints
     earliest_start_date = min(
-        latest_end_date - Year(1),           # Can't start later than 1 year before end
-        start_of_cross_data,                 # Can't start before cross data begins
-        end_of_cross_data - Day(364)         # Need at least 365 days of cross data
+        latest_end_date - Day(target_days - 1),  # Can't start later than target period before end
+        start_of_cross_data,                      # Can't start before cross data begins
+        end_of_cross_data - Day(target_days - 1) # Need at least target_days of cross data
     )
-    
+
     # Step 2: Calculate daily coverage scores
     daily_scores = calculate_daily_coverage_scores(
         reconstruct_single_ts,
         reconstruct_cross_ts,
         DateTime(year(latest_end_date), month(latest_end_date), day(latest_end_date), 23, 59, 59)  # Convert back to DateTime for compatibility
     )
-    
-    # Step 3: Find optimal year-long period within constraints
-    optimal_range = find_optimal_year_range(daily_scores, earliest_start_date, latest_end_date)
-    
+
+    # Step 3: Find optimal N-day period within constraints
+    optimal_range = find_optimal_year_range(daily_scores, earliest_start_date, latest_end_date, target_days)
+
     return optimal_range
 end
 

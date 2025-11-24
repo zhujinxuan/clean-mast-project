@@ -17,8 +17,7 @@ using ....Types.SensorColumns: SensorColumn
 
 function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
     @assert rule.criteria isa AvailabilityCriteria
-    @assert rule.sensorType == "Availability"
-    
+
     # Find availability sensors that match the rule criteria
     availability_columns = filter_applicable_columns(rule, data.sensors)
     criteria = rule.criteria

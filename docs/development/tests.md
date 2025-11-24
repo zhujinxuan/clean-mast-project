@@ -9,7 +9,7 @@ This document describes the testing structure, conventions, and best practices f
 # From project root
 julia test/runtests.jl                    # Run all tests
 julia test/runtests.jl parse_sensors      # Run specific test set
-julia test/runtests.jl rules process      # Run multiple test sets
+julia test/runtests.jl data-clean process # Run multiple test sets
 julia test/runtests.jl --help             # List available test sets
 ```
 
@@ -20,7 +20,7 @@ The test system uses organized test sets defined in `test/runtests.jl`:
 | Test Set | Description |
 |----------|-------------|
 | `parse_sensors` | Data parsing and column mapping |
-| `rules` | Data cleaning rules (range, icing, layer difference) |
+| `data-clean` | Data cleaning rules (range, icing, layer difference, availability) |
 | `process` | Data processing operations |
 | `time_series_processing` | Time series operations |
 | `representative_year` | Long-term calibration |
@@ -30,7 +30,20 @@ The test system uses organized test sets defined in `test/runtests.jl`:
 
 ## Test File Organization
 
-Tests are organized by module:
+### Organization Pattern
+
+Tests follow a consistent naming pattern:
+
+**Pattern**: For source module `src/{ModuleName}`:
+- Test set name: `{module-name}` (kebab-case)
+- Test directory: `test/{ModuleName}/` (matching source structure)
+
+**Examples**:
+- `src/DataClean` → test set `data-clean` → directory `test/DataClean/`
+- `src/ParseSensors` → test set `parse_sensors` → directory `test/ParseSensors/`
+- `src/TimeSeriesProcessing` → test set `time_series_processing` → directory `test/TimeSeriesProcessing/`
+
+### Directory Structure
 
 ```
 test/
@@ -41,6 +54,10 @@ test/
 │   ├── test_dataframe_processor.jl
 │   └── ...
 ├── DataClean/                   # DataClean module tests
+│   ├── test_range_rules.jl
+│   ├── test_icing_rules.jl
+│   ├── test_layer_diff_rules.jl
+│   └── test_availability_rules.jl
 ├── TimeSeriesProcessing/        # TimeSeriesProcessing tests
 └── ...
 ```

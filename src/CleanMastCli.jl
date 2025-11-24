@@ -453,15 +453,25 @@ end
     # Arguments
     - `dir`: Project directory containing train-meso.toml
 
+    # Options
+    - `--cluster-threshold <threshold>`: Overlap threshold for mast clustering (default: 0.8)
+    - `--threshold-period <days>`: Minimum intersection period for clustering (default: 120 days)
+
     # Example
     ```bash
     julia bin/CleanMast.jl recommend reconstruct-meso ./projects/my-project
+    julia bin/CleanMast.jl recommend reconstruct-meso ./projects/my-project --cluster-threshold 0.7 --threshold-period 90
     ```
 
     Generates reconstruct-meso.toml for reconstructing missing data using trained mesoscale models.
+    When multiple masts have overlapping data, they will be clustered and share the same reconstruction period.
     """
-    @cast function reconstruct_meso(dir::String)
-        RecommendReconstructMesoCommand.execute(dir)
+    @cast function reconstruct_meso(
+        dir::String;
+        cluster_threshold::Float64=0.8,
+        threshold_period::Int=120
+    )
+        RecommendReconstructMesoCommand.execute(dir; cluster_threshold, threshold_period)
     end
     
     """

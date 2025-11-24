@@ -108,7 +108,8 @@ module TimeSeriesProcessing
   include("./TimeSeriesProcessing/Regularization.jl")
   include("./TimeSeriesProcessing/IntervalDetection.jl")
   include("./TimeSeriesProcessing/MeasurementPeriodCalculator.jl")
-  export Interpolation, Regularization, IntervalDetection, MeasurementPeriodCalculator
+  include("./TimeSeriesProcessing/MastPeriodAlignment.jl")
+  export Interpolation, Regularization, IntervalDetection, MeasurementPeriodCalculator, MastPeriodAlignment
 end
 export TimeSeriesProcessing
 

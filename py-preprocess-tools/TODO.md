@@ -1,4 +1,4 @@
-# py-cleanmast-tools TODO
+# py-preprocess-tools TODO
 
 ## Column Consistency Checker
 
@@ -56,7 +56,7 @@ Recommendation:
 ### Usage (planned)
 
 ```bash
-cd py-cleanmast-tools
+cd py-preprocess-tools
 
 # Basic consistency check
 uv run check-consistency ../projects/{PROJECT}/pre-masts/{MAST_ID}/

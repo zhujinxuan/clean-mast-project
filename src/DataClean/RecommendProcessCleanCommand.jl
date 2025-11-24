@@ -20,11 +20,19 @@ function execute(dir::String)
         output_data = joinpath("./clean", "$(mast_name).csv")
         output_sensors = joinpath("./clean", "$(mast_name).sensors.yaml")
 
+        # Determine clean rules based on mast name convention
+        # Lidar masts start with 'L' (e.g., L77009, Lidar77009)
+        clean_rules = if startswith(mast_name, "L")
+            "formats/clean/lidar-availability.toml"
+        else
+            "formats/clean/default.toml"
+        end
+
         Dict(
             "name" => mast_name,
             "input" => Dict("data" => input_data, "sensors" => input_sensors),
             "output" => Dict("data" => output_data, "sensors" => output_sensors),
-            "rules" => "formats/clean/default.toml"
+            "rules" => clean_rules
         )
     end
 

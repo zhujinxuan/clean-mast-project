@@ -132,7 +132,7 @@ uv run col-name-normalizer M230017.toml
 
 Don't assume - let Claude read the docs and explore:
 ```
-"Can you check the py-cleanmast-tools/docs/ to see how to normalize?"
+"Can you check the py-preprocess-tools/docs/ to see how to normalize?"
 ```
 
 ### 2. Iterate on One Example First

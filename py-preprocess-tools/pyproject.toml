@@ -1,5 +1,5 @@
 [project]
-name = "py-cleanmast-tools"
+name = "py-preprocess-tools"
 version = "0.1.0"
 description = "Mast data preprocessor to normalize data types and column names"
 readme = "README.md"

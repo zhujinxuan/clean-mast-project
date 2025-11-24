@@ -32,44 +32,44 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
             source_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m, sensorDirection="N", unit="m/s")
             
             correlations = [
-                # High elevation pairs (both ≥120m)
+                # High elevation pairs (both ≥100m)
                 CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_140_sensor, slope=1.1, intercept=0.2, correlation=0.85, data_points=200),  # High elevation
                 CrossMastSpeedPair(target_sensor=target_160_sensor, source_sensor=source_140_sensor, slope=1.15, intercept=0.3, correlation=0.92, data_points=250), # High elevation, best
-                
-                # Mixed elevation pairs (one <120m)
-                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_100_sensor, slope=1.05, intercept=0.1, correlation=0.78, data_points=180),
+                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_100_sensor, slope=1.05, intercept=0.1, correlation=0.78, data_points=180),  # High elevation
+
+                # Mixed elevation pairs (one <100m)
                 CrossMastSpeedPair(target_sensor=target_80_sensor, source_sensor=source_140_sensor, slope=0.95, intercept=-0.1, correlation=0.75, data_points=190)
             ]
-            
+
             summary = summarize_correlations(correlations)
-            
+
             @test summary.total_pairs == 4
-            @test summary.high_elevation_pairs == 2  # Only 2 pairs where both sensors ≥120m
+            @test summary.high_elevation_pairs == 3  # 3 pairs where both sensors ≥100m
             @test summary.best_correlation ≈ 0.92   # Best overall
             @test summary.best_high_elevation_correlation ≈ 0.92  # Best among high elevation
-            
-            # Average high elevation correlation should be (0.85 + 0.92) / 2 = 0.885
-            expected_high_avg = (0.85 + 0.92) / 2
+
+            # Average high elevation correlation should be (0.85 + 0.92 + 0.78) / 3 = 0.85
+            expected_high_avg = (0.85 + 0.92 + 0.78) / 3
             @test summary.average_high_elevation_correlation ≈ expected_high_avg atol=0.001
         end
 
         @testset "test_summarize_correlations_no_high_elevation" begin
             # Test case with no high elevation pairs
             target_80_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=80.0, columnName=:WS_80m, sensorDirection="N", unit="m/s")
-            target_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m, sensorDirection="N", unit="m/s")
-            
+            target_90_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=90.0, columnName=:WS_90m, sensorDirection="N", unit="m/s")
+
             source_60_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=60.0, columnName=:WS_60m, sensorDirection="N", unit="m/s")
-            source_90_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=90.0, columnName=:WS_90m, sensorDirection="N", unit="m/s")
-            
+            source_70_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=70.0, columnName=:WS_70m, sensorDirection="N", unit="m/s")
+
             correlations = [
                 CrossMastSpeedPair(target_sensor=target_80_sensor, source_sensor=source_60_sensor, slope=0.95, intercept=0.1, correlation=0.75, data_points=150),
-                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_90_sensor, slope=1.02, intercept=0.3, correlation=0.82, data_points=180)
+                CrossMastSpeedPair(target_sensor=target_90_sensor, source_sensor=source_70_sensor, slope=1.02, intercept=0.3, correlation=0.82, data_points=180)
             ]
-            
+
             summary = summarize_correlations(correlations)
-            
+
             @test summary.total_pairs == 2
-            @test summary.high_elevation_pairs == 0  # No pairs where both sensors ≥120m
+            @test summary.high_elevation_pairs == 0  # No pairs where both sensors ≥100m
             @test summary.best_correlation ≈ 0.82
             @test summary.best_high_elevation_correlation ≈ 0.0  # No high elevation pairs
             @test summary.average_high_elevation_correlation ≈ 0.0  # No high elevation pairs
@@ -96,19 +96,17 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
             source_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m, sensorDirection="N", unit="m/s")
             
             correlations = [
-                # High elevation pair
+                # High elevation pairs (both ≥100m)
                 CrossMastSpeedPair(target_sensor=target_160_sensor, source_sensor=source_140_sensor, slope=1.15, intercept=0.3, correlation=0.88, data_points=200),
-                
-                # Mixed elevation pairs (should be excluded)
-                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_100_sensor, slope=1.05, intercept=0.1, correlation=0.95, data_points=180),  # Higher correlation but low source
-                CrossMastSpeedPair(target_sensor=target_80_sensor, source_sensor=source_140_sensor, slope=0.95, intercept=-0.1, correlation=0.85, data_points=190),  # Low target
-                
-                # Another high elevation pair
-                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_140_sensor, slope=1.1, intercept=0.2, correlation=0.82, data_points=200)
+                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_100_sensor, slope=1.05, intercept=0.1, correlation=0.95, data_points=180),  # Best high elevation
+                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_140_sensor, slope=1.1, intercept=0.2, correlation=0.82, data_points=200),
+
+                # Mixed elevation pairs (should be excluded - target <100m)
+                CrossMastSpeedPair(target_sensor=target_80_sensor, source_sensor=source_140_sensor, slope=0.95, intercept=-0.1, correlation=0.85, data_points=190)
             ]
-            
+
             best_high_corr = get_best_high_elevation_correlation(correlations)
-            @test best_high_corr ≈ 0.88  # Best among high elevation pairs only
+            @test best_high_corr ≈ 0.95  # Best among high elevation pairs (≥100m)
             
             # Test with no high elevation pairs
             low_elevation_correlations = [
@@ -135,19 +133,19 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
             source_100_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=100.0, columnName=:WD_100m, sensorDirection="N", unit="deg")
             
             direction_results = [
-                # High elevation pairs (both ≥120m)
+                # High elevation pairs (both ≥100m)
                 CrossMastDirectionPair(target_120_sensor, source_140_sensor, 5.0, 8.5, 200),  # High elevation
                 CrossMastDirectionPair(target_160_sensor, source_140_sensor, 3.2, 6.1, 250), # High elevation, best std
-                
-                # Mixed elevation pairs (one <120m)
-                CrossMastDirectionPair(target_120_sensor, source_100_sensor, 8.1, 12.3, 180),
+                CrossMastDirectionPair(target_120_sensor, source_100_sensor, 8.1, 12.3, 180), # High elevation
+
+                # Mixed elevation pairs (one <100m)
                 CrossMastDirectionPair(target_80_sensor, source_140_sensor, -2.5, 9.8, 190)
             ]
-            
+
             summary = summarize_direction_analysis(direction_results)
-            
+
             @test summary.total_pairs == 4
-            @test summary.high_elevation_pairs == 2  # Only 2 pairs where both sensors ≥120m
+            @test summary.high_elevation_pairs == 3  # 3 pairs where both sensors ≥100m
             @test summary.best_std_deviation ≈ 6.1   # Best overall std deviation
             @test summary.best_high_elevation_std ≈ 6.1  # Best among high elevation pairs
         end
@@ -155,20 +153,20 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
         @testset "test_summarize_direction_analysis_no_high_elevation" begin
             # Test case with no high elevation pairs
             target_80_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=80.0, columnName=:WD_80m, sensorDirection="N", unit="deg")
-            target_100_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=100.0, columnName=:WD_100m, sensorDirection="N", unit="deg")
-            
+            target_90_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=90.0, columnName=:WD_90m, sensorDirection="N", unit="deg")
+
             source_60_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=60.0, columnName=:WD_60m, sensorDirection="N", unit="deg")
-            source_90_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=90.0, columnName=:WD_90m, sensorDirection="N", unit="deg")
-            
+            source_70_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=70.0, columnName=:WD_70m, sensorDirection="N", unit="deg")
+
             direction_results = [
                 CrossMastDirectionPair(target_80_sensor, source_60_sensor, 12.5, 15.2, 150),
-                CrossMastDirectionPair(target_100_sensor, source_90_sensor, -5.8, 11.7, 180)
+                CrossMastDirectionPair(target_90_sensor, source_70_sensor, -5.8, 11.7, 180)
             ]
-            
+
             summary = summarize_direction_analysis(direction_results)
-            
+
             @test summary.total_pairs == 2
-            @test summary.high_elevation_pairs == 0  # No pairs where both sensors ≥120m
+            @test summary.high_elevation_pairs == 0  # No pairs where both sensors ≥100m
             @test summary.best_std_deviation ≈ 11.7
             @test summary.best_high_elevation_std == Inf  # No high elevation pairs
         end
@@ -193,17 +191,17 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
             source_100_sensor = SensorColumn(sensorType="WindDirection", statType="avg", height=100.0, columnName=:WD_100m, sensorDirection="N", unit="deg")
             
             direction_results = [
-                # High elevation pairs
-                CrossMastDirectionPair(target_160_sensor, source_140_sensor, 3.2, 7.8, 200),  # Best std among high elevation
+                # High elevation pairs (both ≥100m)
+                CrossMastDirectionPair(target_160_sensor, source_140_sensor, 3.2, 7.8, 200),
                 CrossMastDirectionPair(target_120_sensor, source_140_sensor, 5.1, 9.5, 200),
-                
-                # Mixed elevation pairs (should be excluded)
-                CrossMastDirectionPair(target_120_sensor, source_100_sensor, 2.5, 5.2, 180),  # Better std but low source
+                CrossMastDirectionPair(target_120_sensor, source_100_sensor, 2.5, 5.2, 180),  # Best std among high elevation
+
+                # Mixed elevation pairs (should be excluded - target <100m)
                 CrossMastDirectionPair(target_80_sensor, source_140_sensor, -1.8, 4.1, 190)  # Better std but low target
             ]
-            
+
             best_high_std = get_best_high_elevation_direction_std(direction_results)
-            @test best_high_std ≈ 7.8  # Best (minimum) std among high elevation pairs only
+            @test best_high_std ≈ 5.2  # Best (minimum) std among high elevation pairs (≥100m)
             
             # Test with no high elevation pairs
             low_elevation_results = [
@@ -220,51 +218,52 @@ using CleanMastProject.Types.CrossMastAnalysisResults: CorrelationSummary, Direc
 
     @testset "High Elevation Filtering Tests" begin
         
-        @testset "test_high_elevation_boundary_120m" begin
-            # Test the exact 120m boundary for high elevation classification
-            target_119_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=119.9, columnName=:WS_119m, sensorDirection="N", unit="m/s")
-            target_120_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=120.0, columnName=:WS_120m, sensorDirection="N", unit="m/s")
-            target_121_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=120.1, columnName=:WS_121m, sensorDirection="N", unit="m/s")
-            
-            source_120_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=120.0, columnName=:WS_120m_src, sensorDirection="N", unit="m/s")
-            
+        @testset "test_high_elevation_boundary_100m" begin
+            # Test the exact 100m boundary for high elevation classification
+            target_99_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=99.9, columnName=:WS_99m, sensorDirection="N", unit="m/s")
+            target_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m, sensorDirection="N", unit="m/s")
+            target_101_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.1, columnName=:WS_101m, sensorDirection="N", unit="m/s")
+
+            source_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m_src, sensorDirection="N", unit="m/s")
+
             correlations = [
-                CrossMastSpeedPair(target_sensor=target_119_sensor, source_sensor=source_120_sensor, slope=1.0, intercept=0.0, correlation=0.85, data_points=200),  # Should NOT qualify (119.9 < 120)
-                CrossMastSpeedPair(target_sensor=target_120_sensor, source_sensor=source_120_sensor, slope=1.0, intercept=0.0, correlation=0.80, data_points=200),  # Should qualify (120.0 >= 120)
-                CrossMastSpeedPair(target_sensor=target_121_sensor, source_sensor=source_120_sensor, slope=1.0, intercept=0.0, correlation=0.90, data_points=200)   # Should qualify (120.1 >= 120)
+                CrossMastSpeedPair(target_sensor=target_99_sensor, source_sensor=source_100_sensor, slope=1.0, intercept=0.0, correlation=0.85, data_points=200),  # Should NOT qualify (99.9 < 100)
+                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_100_sensor, slope=1.0, intercept=0.0, correlation=0.80, data_points=200),  # Should qualify (100.0 >= 100)
+                CrossMastSpeedPair(target_sensor=target_101_sensor, source_sensor=source_100_sensor, slope=1.0, intercept=0.0, correlation=0.90, data_points=200)   # Should qualify (100.1 >= 100)
             ]
-            
+
             summary = summarize_correlations(correlations)
-            
+
             @test summary.total_pairs == 3
             @test summary.high_elevation_pairs == 2  # Only pairs 2 and 3 qualify
             @test summary.best_high_elevation_correlation ≈ 0.90  # Best among qualifying pairs
-            
+
             expected_high_avg = (0.80 + 0.90) / 2  # Average of qualifying pairs
             @test summary.average_high_elevation_correlation ≈ expected_high_avg atol=0.001
         end
 
         @testset "test_both_sensors_must_be_high_elevation" begin
-            # Test that BOTH sensors must be ≥120m for high elevation classification
+            # Test that BOTH sensors must be ≥100m for high elevation classification
             target_140_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=140.0, columnName=:WS_140m, sensorDirection="N", unit="m/s")
             target_100_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=100.0, columnName=:WS_100m, sensorDirection="N", unit="m/s")
-            
+
             source_130_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=130.0, columnName=:WS_130m, sensorDirection="N", unit="m/s")
             source_110_sensor = SensorColumn(sensorType="WindSpeed", statType="avg", height=110.0, columnName=:WS_110m, sensorDirection="N", unit="m/s")
-            
+
             correlations = [
                 CrossMastSpeedPair(target_sensor=target_140_sensor, source_sensor=source_130_sensor, slope=1.1, intercept=0.2, correlation=0.88, data_points=200),  # Both high: QUALIFIES
-                CrossMastSpeedPair(target_sensor=target_140_sensor, source_sensor=source_110_sensor, slope=1.05, intercept=0.1, correlation=0.85, data_points=180), # High target, low source: NO
-                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_130_sensor, slope=0.95, intercept=-0.1, correlation=0.82, data_points=190), # Low target, high source: NO
-                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_110_sensor, slope=0.98, intercept=0.05, correlation=0.75, data_points=160)  # Both low: NO
+                CrossMastSpeedPair(target_sensor=target_140_sensor, source_sensor=source_110_sensor, slope=1.05, intercept=0.1, correlation=0.85, data_points=180), # Both high: QUALIFIES
+                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_130_sensor, slope=0.95, intercept=-0.1, correlation=0.82, data_points=190), # Both high: QUALIFIES
+                CrossMastSpeedPair(target_sensor=target_100_sensor, source_sensor=source_110_sensor, slope=0.98, intercept=0.05, correlation=0.75, data_points=160)  # Both high: QUALIFIES
             ]
-            
+
             summary = summarize_correlations(correlations)
-            
+
             @test summary.total_pairs == 4
-            @test summary.high_elevation_pairs == 1  # Only first pair qualifies
+            @test summary.high_elevation_pairs == 4  # All pairs qualify (all sensors ≥100m)
             @test summary.best_high_elevation_correlation ≈ 0.88
-            @test summary.average_high_elevation_correlation ≈ 0.88  # Only one qualifying pair
+            expected_high_avg = (0.88 + 0.85 + 0.82 + 0.75) / 4  # Average of all pairs
+            @test summary.average_high_elevation_correlation ≈ expected_high_avg atol=0.001
         end
     end
 

@@ -1,5 +1,5 @@
 def main():
-    print("Hello from py-cleanmast-tools!")
+    print("Hello from py-preprocess-tools!")
 
 
 if __name__ == "__main__":

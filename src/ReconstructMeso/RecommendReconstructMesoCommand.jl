@@ -6,10 +6,14 @@ using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoSource
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration, ReconstructCrossSettings
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, ReconstructMesoMast, ReconstructMesoModels, ReconstructMesoModelSpec
-using ...Types.MastTimeSeries: load_timeseries, TimeSeriesSource
+using ...Types.MastTimeSeries: load_timeseries, TimeSeriesSource, TimeSeriesData, TimeRange
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
 using ...TimeSeriesProcessing.MeasurementPeriodCalculator: calculate_optimal_measurement_period
+using ...TimeSeriesProcessing.MastPeriodAlignment:
+    calculate_pairwise_overlap,
+    cluster_masts_by_overlap,
+    calculate_cluster_optimal_period
 using ...Types.TrainMesoResultsTypes: TrainMesoResults
 
 
@@ -168,9 +172,13 @@ end
                              results::TrainMesoResults,
                              single_outputs_by_mast::Dict{String, TimeSeriesSource},
                              use_cross_mast_data::Bool, cross_outputs_by_mast::Dict{String, TimeSeriesSource},
-                             dir::String)
+                             dir::String;
+                             override_period::Union{Nothing, TimeRange}=nothing)
 
 Create a single mast configuration for meso reconstruction.
+
+# Arguments
+- `override_period::Union{Nothing, TimeRange}`: If provided, use this period instead of calculating
 
 # Returns
 - ReconstructMesoMast configuration
@@ -180,30 +188,33 @@ function create_mast_configuration(mast_name::String, train_config::TrainMesoCon
                                   results::TrainMesoResults,
                                   single_outputs_by_mast::Dict{String, TimeSeriesSource},
                                   use_cross_mast_data::Bool, cross_outputs_by_mast::Dict{String, TimeSeriesSource},
-                                  dir::String)::ReconstructMesoMast
+                                  dir::String;
+                                  override_period::Union{Nothing, TimeRange}=nothing)::ReconstructMesoMast
     # Choose reconstruct model and meso input using helper (results-driven if available)
     reconstruct_model, meso_source = select_reconstruct_model(train_config, mast_name, meso_by_name, results)
 
-    # Get single-mast source for period calculation
-    single_source = get(single_outputs_by_mast, mast_name, nothing)
-    if single_source === nothing
-        error("No reconstruct-single output configured for $(mast_name). Please generate reconstruct-single first.")
-    end
-    reconstruct_single_ts = load_timeseries(single_source, dir)
-
     # Determine input data source
     input_source = determine_input_source(mast_name, use_cross_mast_data, single_outputs_by_mast, cross_outputs_by_mast)
-    input_reconstruction_ts = load_timeseries(input_source, dir)
 
-    # Load meso dataset
-    meso_data = load_timeseries(meso_source, dir)
+    # Use override period if provided, otherwise calculate
+    if override_period !== nothing
+        optimal_time_range = override_period
+    else
+        # Get single-mast source for period calculation
+        single_source = get(single_outputs_by_mast, mast_name, nothing)
+        if single_source === nothing
+            error("No reconstruct-single output configured for $(mast_name). Please generate reconstruct-single first.")
+        end
+        reconstruct_single_ts = load_timeseries(single_source, dir)
+        input_reconstruction_ts = load_timeseries(input_source, dir)
+        meso_data = load_timeseries(meso_source, dir)
 
-    # Calculate optimal measurement period
-    optimal_time_range = calculate_optimal_measurement_period(
-        reconstruct_single_ts,
-        input_reconstruction_ts,
-        meso_data
-    )
+        optimal_time_range = calculate_optimal_measurement_period(
+            reconstruct_single_ts,
+            input_reconstruction_ts,
+            meso_data
+        )
+    end
 
     return ReconstructMesoMast(
         mast_name,
@@ -218,14 +229,25 @@ function create_mast_configuration(mast_name::String, train_config::TrainMesoCon
 end
 
 """
-    execute(dir::String)
+    execute(dir::String; cluster_threshold::Float64=0.8, threshold_period::Int=120)
 
 Generate reconstruct-meso.toml configuration based on train-meso.toml.
 
+When multiple masts have overlapping data coverage (>cluster_threshold), they will be
+clustered and share the same reconstruction period for consistency.
+
 # Arguments
 - `dir::String`: Project directory containing train-meso.toml
+
+# Keyword Arguments
+- `cluster_threshold::Float64`: Overlap threshold for mast clustering (default: 0.8)
+- `threshold_period::Int`: Minimum intersection period in days for clustering (default: 120)
 """
-function execute(dir::String)::Nothing
+function execute(
+    dir::String;
+    cluster_threshold::Float64=0.8,
+    threshold_period::Int=120
+)::Nothing
     # Load all required configurations
     train_config, single_outputs_by_mast, use_cross_mast_data, cross_outputs_by_mast, available_masts =
         load_required_configurations(dir)
@@ -239,10 +261,27 @@ function execute(dir::String)::Nothing
         error("No mesoscale data sources found in train-meso configuration")
     end
 
-    # Create mast configurations
+    # Determine periods for each mast (with clustering for multi-mast projects)
+    mast_periods = calculate_mast_periods(
+        available_masts,
+        train_config,
+        meso_by_name,
+        results,
+        single_outputs_by_mast,
+        use_cross_mast_data,
+        cross_outputs_by_mast,
+        dir,
+        cluster_threshold,
+        threshold_period
+    )
+
+    # Create mast configurations with assigned periods
     masts = map(available_masts) do mast_name
-        create_mast_configuration(mast_name, train_config, meso_by_name, results,
-                                 single_outputs_by_mast, use_cross_mast_data, cross_outputs_by_mast, dir)
+        create_mast_configuration(
+            mast_name, train_config, meso_by_name, results,
+            single_outputs_by_mast, use_cross_mast_data, cross_outputs_by_mast, dir;
+            override_period=mast_periods[mast_name]
+        )
     end
 
     # Create and save output configuration
@@ -267,6 +306,159 @@ function execute(dir::String)::Nothing
     else
         println("📊 Using single-mast reconstructed data as input for mesoscale reconstruction (cross-mast step skipped)")
     end
+end
+
+"""
+    calculate_mast_periods(...)
+
+Calculate optimal periods for all masts, using clustering for multi-mast projects.
+
+Single-mast projects: Each mast gets its own optimal period.
+Multi-mast projects: Masts are clustered by overlap, and each cluster shares a period.
+"""
+function calculate_mast_periods(
+    available_masts::Vector{String},
+    train_config::TrainMesoConfiguration,
+    meso_by_name::Dict{String, TimeSeriesSource},
+    results::TrainMesoResults,
+    single_outputs_by_mast::Dict{String, TimeSeriesSource},
+    use_cross_mast_data::Bool,
+    cross_outputs_by_mast::Dict{String, TimeSeriesSource},
+    dir::String,
+    cluster_threshold::Float64,
+    threshold_period::Int
+)::Dict{String, TimeRange}
+    # For single mast, no clustering needed
+    if length(available_masts) == 1
+        mast_name = available_masts[1]
+        period = calculate_single_mast_period(
+            mast_name, meso_by_name, results, train_config,
+            single_outputs_by_mast, use_cross_mast_data, cross_outputs_by_mast, dir
+        )
+        return Dict(mast_name => period)
+    end
+
+    # Step 1: Load timeseries data for all masts (needed for timestamp-based overlap calculation)
+    # IMPORTANT: Use reconstruct-single data for clustering, NOT cross-mast data
+    # Cross-mast reconstruction fills gaps and artificially creates identical coverage
+    # We want to cluster based on ACTUAL measurement overlap
+    println("📊 Loading reconstruct-single timeseries data for $(length(available_masts)) masts (for clustering)...")
+    mast_timeseries = Dict{String, TimeSeriesData}()
+    for mast_name in available_masts
+        single_source = get(single_outputs_by_mast, mast_name, nothing)
+        if single_source === nothing
+            error("No reconstruct-single output configured for $(mast_name). Please generate reconstruct-single first.")
+        end
+        mast_timeseries[mast_name] = load_timeseries(single_source, dir)
+    end
+
+    # Step 2: Calculate pairwise overlap matrix using actual timestamp intersection
+    println("📊 Calculating pairwise overlap matrix (using timestamp intersection)...")
+    overlap_matrix = calculate_pairwise_overlap(mast_timeseries, threshold_period)
+
+    # Debug: Print overlap matrix
+    sorted_masts = sort(available_masts)
+    println("\n📊 Overlap Matrix (using timestamp intersection, sorted masts: $(join(sorted_masts, ", "))):")
+    println("        ", join([rpad(m, 8) for m in sorted_masts], " "))
+    for (i, mast_i) in enumerate(sorted_masts)
+        row_values = [rpad(string(round(overlap_matrix[i, j], digits=3)), 8) for j in 1:length(sorted_masts)]
+        println(rpad(mast_i, 7), " ", join(row_values, " "))
+    end
+    println()
+
+    # Step 3: Cluster masts by overlap
+    println("📊 Clustering masts (threshold=$(cluster_threshold), min_period=$(threshold_period) days)...")
+    clusters = cluster_masts_by_overlap(sorted_masts, overlap_matrix, cluster_threshold)
+
+    # Report clustering results
+    n_clusters = length(clusters)
+    single_mast_clusters = count(c -> length(c) == 1, values(clusters))
+    multi_mast_clusters = n_clusters - single_mast_clusters
+    println("📊 Found $(n_clusters) cluster(s): $(multi_mast_clusters) multi-mast, $(single_mast_clusters) single-mast")
+
+    # Step 3.5: Calculate individual periods for single-mast clusters
+    individual_periods = Dict{String, TimeRange}()
+    for (cluster_id, cluster_masts) in clusters
+        if length(cluster_masts) == 1
+            mast_name = cluster_masts[1]
+            individual_periods[mast_name] = calculate_single_mast_period(
+                mast_name, meso_by_name, results, train_config,
+                single_outputs_by_mast, use_cross_mast_data, cross_outputs_by_mast, dir
+            )
+        end
+    end
+
+    # Step 4: Calculate optimal period for each cluster
+    mast_periods = Dict{String, TimeRange}()
+
+    for (cluster_id, cluster_masts) in clusters
+        if length(cluster_masts) == 1
+            # Single-mast cluster: use individual period
+            mast_name = cluster_masts[1]
+            mast_periods[mast_name] = individual_periods[mast_name]
+        else
+            # Multi-mast cluster: calculate shared optimal period
+            println("📊 Calculating shared period for cluster: $(join(cluster_masts, ", "))")
+
+            # Reuse already-loaded timeseries for cluster masts
+            cluster_ts = Dict(name => mast_timeseries[name] for name in cluster_masts)
+
+            # Get meso data for first mast (should be same for all in practice)
+            first_mast = cluster_masts[1]
+            _, meso_source = select_reconstruct_model(train_config, first_mast, meso_by_name, results)
+            meso_ts = load_timeseries(meso_source, dir)
+
+            # Calculate cluster optimal period
+            cluster_period = calculate_cluster_optimal_period(cluster_masts, cluster_ts, meso_ts)
+
+            # Assign same period to all masts in cluster
+            for mast_name in cluster_masts
+                mast_periods[mast_name] = cluster_period
+            end
+
+            println("📊 Cluster period: $(Date(cluster_period.min)) to $(Date(cluster_period.max))")
+        end
+    end
+
+    return mast_periods
+end
+
+"""
+    calculate_single_mast_period(...)
+
+Calculate optimal period for a single mast using the standard algorithm.
+"""
+function calculate_single_mast_period(
+    mast_name::String,
+    meso_by_name::Dict{String, TimeSeriesSource},
+    results::TrainMesoResults,
+    train_config::TrainMesoConfiguration,
+    single_outputs_by_mast::Dict{String, TimeSeriesSource},
+    use_cross_mast_data::Bool,
+    cross_outputs_by_mast::Dict{String, TimeSeriesSource},
+    dir::String
+)::TimeRange
+    _, meso_source = select_reconstruct_model(train_config, mast_name, meso_by_name, results)
+
+    single_source = get(single_outputs_by_mast, mast_name, nothing)
+    if single_source === nothing
+        error("No reconstruct-single output configured for $(mast_name)")
+    end
+    reconstruct_single_ts = load_timeseries(single_source, dir)
+
+    input_source = determine_input_source(
+        mast_name, use_cross_mast_data,
+        single_outputs_by_mast, cross_outputs_by_mast
+    )
+    input_reconstruction_ts = load_timeseries(input_source, dir)
+
+    meso_data = load_timeseries(meso_source, dir)
+
+    return calculate_optimal_measurement_period(
+        reconstruct_single_ts,
+        input_reconstruction_ts,
+        meso_data
+    )
 end
 
 end # module

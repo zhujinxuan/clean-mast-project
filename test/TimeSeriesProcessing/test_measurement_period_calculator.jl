@@ -542,6 +542,117 @@ end
         end
     end
 
+    @testset "Multi-Year Period Support" begin
+        @testset "find_optimal_year_range with 2-year target" begin
+            @testset "2-year period (730 days → rounds to 2 years)" begin
+                daily_scores = [DailyScore(Date(2023, 1, 1) + Day(i), 1.0, 1.0, 2.0) for i in 0:800]
+                earliest_start = Date(2023, 1, 1)
+                latest_end = Date(2025, 3, 1)
+
+                time_range = find_optimal_year_range(daily_scores, earliest_start, latest_end, 730)
+
+                @test verify_month_aligned_start(time_range)
+                @test time_range.min == DateTime(2023, 1, 1, 0, 0, 0)
+                @test time_range.max == DateTime(2023, 1, 1, 0, 0, 0) + Year(2) - Second(1)
+                # Check that period spans exactly 2 years (respecting leap years)
+                days_in_period = (Date(time_range.max) - Date(time_range.min)).value + 1
+                # 2023 (365 days) + 2024 (366 days, leap year) = 731 days
+                @test days_in_period == 731
+            end
+
+            @testset "2-year period with mid-month alignment" begin
+                daily_scores = [DailyScore(Date(2023, 3, 15) + Day(i), 1.0, 1.0, 2.0) for i in 0:800]
+                earliest_start = Date(2023, 3, 15)
+                latest_end = Date(2025, 5, 1)
+
+                time_range = find_optimal_year_range(daily_scores, earliest_start, latest_end, 730)
+
+                @test day(time_range.min) == 1
+                @test month(time_range.min) == 3
+                @test year(time_range.min) == 2023
+                @test time_range.max == DateTime(2023, 3, 1, 0, 0, 0) + Year(2) - Second(1)
+            end
+
+            @testset "Date range too short for 2-year target throws error" begin
+                daily_scores = [DailyScore(Date(2023, 1, 1) + Day(i), 1.0, 1.0, 2.0) for i in 0:500]
+                earliest_start = Date(2023, 1, 1)
+                latest_end = Date(2024, 5, 15)
+
+                @test_throws ErrorException find_optimal_year_range(daily_scores, earliest_start, latest_end, 730)
+            end
+        end
+
+        @testset "find_optimal_year_range with 3-year target" begin
+            @testset "3-year period (1095 days → rounds to 3 years)" begin
+                daily_scores = [DailyScore(Date(2022, 1, 1) + Day(i), 1.0, 1.0, 2.0) for i in 0:1200]
+                earliest_start = Date(2022, 1, 1)
+                latest_end = Date(2025, 5, 1)
+
+                time_range = find_optimal_year_range(daily_scores, earliest_start, latest_end, 1095)
+
+                @test verify_month_aligned_start(time_range)
+                @test time_range.max == DateTime(2022, 1, 1, 0, 0, 0) + Year(3) - Second(1)
+                # Check that period spans exactly 3 years (respecting leap years)
+                days_in_period = (Date(time_range.max) - Date(time_range.min)).value + 1
+                # 2022 (365) + 2023 (365) + 2024 (366 leap) = 1096 days
+                @test days_in_period == 1096
+            end
+
+            @testset "Best 3-year period in middle of range" begin
+                daily_scores = vcat(
+                    [DailyScore(Date(2021, 1, 1) + Day(i), 0.5, 0.5, 1.0) for i in 0:364],
+                    [DailyScore(Date(2022, 1, 1) + Day(i), 1.0, 1.0, 2.0) for i in 0:1094],
+                    [DailyScore(Date(2025, 1, 1) + Day(i), 0.5, 0.5, 1.0) for i in 0:100]
+                )
+                earliest_start = Date(2021, 1, 1)
+                latest_end = Date(2025, 4, 12)
+
+                time_range = find_optimal_year_range(daily_scores, earliest_start, latest_end, 1095)
+
+                @test year(time_range.min) == 2022
+                @test month(time_range.min) == 1
+                @test time_range.max == DateTime(2022, 1, 1, 0, 0, 0) + Year(3) - Second(1)
+            end
+        end
+
+        @testset "calculate_optimal_measurement_period with custom target_days" begin
+            @testset "2-year period integration test" begin
+                single_ts = create_mock_timeseries(
+                    DateTime(2022, 1, 1, 0, 0, 0),
+                    DateTime(2024, 12, 31, 23, 50, 0),
+                    Minute(10),
+                    80.0,
+                    0.9
+                )
+
+                cross_ts = create_mock_timeseries(
+                    DateTime(2022, 1, 1, 0, 0, 0),
+                    DateTime(2024, 12, 31, 23, 50, 0),
+                    Minute(10),
+                    100.0,
+                    0.8
+                )
+
+                meso_ts = create_mock_timeseries(
+                    DateTime(2022, 1, 1, 0, 0, 0),
+                    DateTime(2024, 12, 31, 23, 0, 0),
+                    Hour(1),
+                    100.0,
+                    1.0
+                )
+
+                time_range = calculate_optimal_measurement_period(single_ts, cross_ts, meso_ts, 730)
+
+                @test verify_month_aligned_start(time_range)
+                # Period should span exactly 2 years (respecting leap years)
+                @test time_range.max == time_range.min + Year(2) - Second(1)
+
+                meso_max_end = calculate_max_allowed_end_time(meso_ts)
+                @test time_range.max <= meso_max_end
+            end
+        end
+    end
+
     @testset "Regression Tests" begin
         @testset "Month Alignment Bug Prevention" begin
             @testset "Prevent 396-day period bug" begin

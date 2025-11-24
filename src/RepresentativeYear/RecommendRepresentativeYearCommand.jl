@@ -5,11 +5,55 @@ using Dates
 using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration, RepresentativeYearMast, RepresentativeYearMesoModel
 using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoSource
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration
-using ...Types.MastTimeSeries: TimeSeriesSource
+using ...Types.MastTimeSeries: TimeSeriesSource, TimeRange
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
 
-export execute
+export execute, select_last_year
+
+"""
+    select_last_year(time_range::TimeRange)::TimeRange
+
+Select the last year from a time range for representative year calibration.
+
+Representative year calibration requires exactly 1 year of data. When reconstruct-meso
+spans multiple years, this function extracts the last year.
+
+# Algorithm
+1. If end time is 23:59:59, round to next day (00:00:00)
+2. Subtract 1 year to get start time
+3. Keep original end time
+
+# Examples
+- Input: 2022-01-01 00:00:00 to 2024-12-31 23:59:59 (3 years)
+  Output: 2024-01-01 00:00:00 to 2024-12-31 23:59:59 (last year)
+
+- Input: 2023-06-15 00:00:00 to 2024-06-14 23:59:59 (1 year)
+  Output: 2023-06-15 00:00:00 to 2024-06-14 23:59:59 (unchanged)
+
+# Arguments
+- `time_range::TimeRange`: Time range from reconstruct-meso (can be 1+ years)
+
+# Returns
+- `TimeRange`: Exactly 1 year period (the last year of the input range)
+"""
+function select_last_year(time_range::TimeRange)::TimeRange
+    end_time = time_range.max
+
+    # If end time is within 10 minutes of next day, round to next day for calculation
+    # This handles the common pattern where periods end near midnight (e.g., 23:59:59)
+    rounded_end = if Date(end_time + Minute(10)) != Date(end_time)
+        DateTime(Date(end_time) + Day(1))
+    else
+        end_time
+    end
+
+    # Calculate start as exactly 1 year before rounded end
+    start_time = rounded_end - Year(1)
+
+    # Return with original end time
+    return TimeRange(start_time, end_time)
+end
 
 # Find 16-sector model that uses the same meso source as reconstruct meso operation
 function find_16sectors_meso_models(
@@ -78,6 +122,7 @@ function execute(dir::String)
     end
     
     # Create mast entry for calibration
+    # Representative year requires exactly 1 year - select last year from meso period
     masts = map(reconstruct_config.masts) do mast
         RepresentativeYearMast(
             mast.name,
@@ -86,7 +131,7 @@ function execute(dir::String)
                 joinpath("./representative-year", "$(mast.name).csv"),
                 joinpath("./representative-year", "$(mast.name).sensors.yaml")
             ),
-            mast.time_range,
+            select_last_year(mast.time_range),
             find_16sectors_meso_models(train_config, mast.name, reconstruct_config)
         )
     end

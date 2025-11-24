@@ -19,10 +19,11 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "ParseSensors/test_command_parse_sensors.jl",
         "ParseSensors/test_interpolation_config.jl"
     ],
-    "rules" => [
-        "test_range_rules.jl",
-        "test_icing_rules.jl",
-        "test_layer_diff_rules.jl"
+    "data-clean" => [
+        "DataClean/test_range_rules.jl",
+        "DataClean/test_icing_rules.jl",
+        "DataClean/test_layer_diff_rules.jl",
+        "DataClean/test_availability_rules.jl"
     ],
     "process" => ["process/test_apply_missing.jl"],
     "tower" => ["TowerShading/TowerShading.jl"],
@@ -33,7 +34,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "TimeSeriesProcessing/test_interval_detection.jl"
     ],
     "measurement_period" => [
-        "TimeSeriesProcessing/test_measurement_period_calculator.jl"
+        "TimeSeriesProcessing/test_measurement_period_calculator.jl",
+        "TimeSeriesProcessing/test_mast_period_alignment.jl"
     ],
     "single_mast" => [
         "ReconstructSingleMast/test_apply_reconstruction.jl",
@@ -44,7 +46,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
     ],
     "representative_year" => [
         "RepresentativeYear/test_utils.jl",
-        "RepresentativeYear/test_analysis.jl"
+        "RepresentativeYear/test_analysis.jl",
+        "RepresentativeYear/test_recommend_command.jl"
     ],
     "guess_mast_from_meso" => ["GuessMastFromMeso/test_guess_mast.jl"],
     "wind_models" => [

@@ -27,7 +27,7 @@ Create a summary of correlation analysis results.
 
 # Description
 This function creates summary statistics for wind speed correlation analysis:
-- Counts total and high-elevation sensor pairs (≥120m)
+- Counts total and high-elevation sensor pairs (≥100m)
 - Identifies best correlations overall and for high-elevation pairs
 - Calculates average correlation for high-elevation pairs (most relevant for wind energy)
 """
@@ -67,7 +67,7 @@ Create a summary of direction analysis results.
 
 # Description
 This function creates summary statistics for wind direction analysis:
-- Counts total and high-elevation sensor pairs (≥120m)
+- Counts total and high-elevation sensor pairs (≥100m)
 - Identifies best (minimum) standard deviations overall and for high-elevation pairs
 """
 function summarize_direction_analysis(results::Vector{CrossMastDirectionPair})::DirectionSummary
@@ -93,7 +93,7 @@ end
 """
     get_best_high_elevation_correlation(results::Vector{CrossMastSpeedPair})::Float64
 
-Get the maximum correlation among sensor pairs where both sensors are ≥120m height.
+Get the maximum correlation among sensor pairs where both sensors are ≥100m height.
 
 # Arguments
 - `results::Vector{CrossMastSpeedPair}`: Correlation analysis results
@@ -102,7 +102,7 @@ Get the maximum correlation among sensor pairs where both sensors are ≥120m he
 - `Float64`: Maximum correlation among high-elevation pairs, or 0.0 if none found
 
 # Description
-This function filters correlation results for high-elevation sensors (≥120m) and returns
+This function filters correlation results for high-elevation sensors (≥100m) and returns
 the best (maximum) correlation coefficient. This is used for model selection criteria
 in cross-mast reconstruction.
 """
@@ -110,13 +110,13 @@ function get_best_high_elevation_correlation(results::Vector{CrossMastSpeedPair}
     if isempty(results)
         return 0.0
     end
-    
-    # Filter for high-elevation pairs (both sensors ≥120m)
-    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 && 
+
+    # Filter for high-elevation pairs (both sensors ≥100m)
+    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 &&
                                          r.source_sensor.height >= 100.0, results)
     
     if isempty(high_elevation_results)
-        @debug "No high-elevation (≥120m) sensor pairs found"
+        @debug "No high-elevation (≥100m) sensor pairs found"
         return 0.0
     end
     
@@ -127,7 +127,7 @@ end
 """
     get_best_high_elevation_direction_std(results::Vector{CrossMastDirectionPair})::Float64
 
-Get the minimum standard deviation among sensor pairs where both sensors are ≥120m height.
+Get the minimum standard deviation among sensor pairs where both sensors are ≥100m height.
 
 # Arguments
 - `results::Vector{CrossMastDirectionPair}`: Direction analysis results
@@ -136,22 +136,22 @@ Get the minimum standard deviation among sensor pairs where both sensors are ≥
 - `Float64`: Minimum standard deviation among high-elevation pairs, or Inf if none found
 
 # Description
-This function filters direction analysis results for high-elevation sensors (≥120m) and returns
-the best (minimum) standard deviation. Lower standard deviation indicates more consistent 
-direction relationship, which is better for reconstruction. This is used for model selection 
+This function filters direction analysis results for high-elevation sensors (≥100m) and returns
+the best (minimum) standard deviation. Lower standard deviation indicates more consistent
+direction relationship, which is better for reconstruction. This is used for model selection
 criteria in cross-mast reconstruction.
 """
 function get_best_high_elevation_direction_std(results::Vector{CrossMastDirectionPair})::Float64
     if isempty(results)
         return Inf
     end
-    
-    # Filter for high-elevation pairs (both sensors ≥120m)
-    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 && 
+
+    # Filter for high-elevation pairs (both sensors ≥100m)
+    high_elevation_results = filter(r -> r.target_sensor.height >= 100.0 &&
                                          r.source_sensor.height >= 100.0, results)
     
     if isempty(high_elevation_results)
-        @debug "No high-elevation (≥120m) sensor pairs found"
+        @debug "No high-elevation (≥100m) sensor pairs found"
         return Inf
     end
     
@@ -162,7 +162,7 @@ end
 """
     get_high_elevation_correlations(results::Vector{CrossMastSpeedPair})::Vector{CrossMastSpeedPair}
 
-Get all correlation results for high-elevation sensor pairs (≥120m).
+Get all correlation results for high-elevation sensor pairs (≥100m).
 
 # Arguments
 - `results::Vector{CrossMastSpeedPair}`: All correlation analysis results
@@ -177,7 +177,7 @@ end
 """
     get_high_elevation_direction_results(results::Vector{CrossMastDirectionPair})::Vector{CrossMastDirectionPair}
 
-Get all direction analysis results for high-elevation sensor pairs (≥120m).
+Get all direction analysis results for high-elevation sensor pairs (≥100m).
 
 # Arguments
 - `results::Vector{CrossMastDirectionPair}`: All direction analysis results

@@ -48,11 +48,19 @@ function execute(dir::String)
             # Extract base name without extension for naming
             base_name = splitext(basename(mast_file))[1]
 
+            # Determine sensor format based on filename convention
+            # Lidar files start with 'L' (e.g., L77009, Lidar77009)
+            sensor_format = if startswith(base_name, "L")
+                "formats/sensor/lidar.toml"
+            else
+                "formats/sensor/nrg.toml"
+            end
+
             # Create mast configuration
             mast_config = Dict{String, Any}(
                 "input" => rel_path,
                 "name" => base_name,
-                "sensor" => "formats/sensor/nrg.toml"
+                "sensor" => sensor_format
             )
 
             push!(masts, mast_config)

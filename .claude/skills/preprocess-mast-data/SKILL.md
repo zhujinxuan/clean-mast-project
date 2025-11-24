@@ -1,11 +1,11 @@
 ---
 name: preprocess-mast-data
-description: Automates preprocessing of wind measurement tower data using py-cleanmast-tools pipeline. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and NRG format conversion for meteorological mast data. Use when converting raw mast data files into clean NRG-formatted CSV files.
+description: Automates preprocessing of wind measurement tower data using py-preprocess-tools pipeline. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and standardized format conversion (NRG for mast data, Lidar format for WindCube data). Use when converting raw measurement data files into standardized formats.
 ---
 
 # Preprocess Mast Data Skill
 
-This skill automates the preprocessing of mast data using the py-cleanmast-tools pipeline.
+This skill automates the preprocessing of mast data using the py-preprocess-tools pipeline.
 
 ## Overview
 
@@ -39,14 +39,14 @@ Preprocesses raw mast data files into clean, NRG-formatted CSV files ready for C
 
 ## Tools Used
 
-Located at `py-cleanmast-tools/` in project root:
+Located at `py-preprocess-tools/` in project root:
 
 - **csv-merger**: Merges multiple CSV/TXT files with timestamp normalization
 - **col-name-normalizer**: Renames columns (used for both pre-merge standardization and final NRG formatting)
 - **type-normalizer**: Converts string columns to float types
 - **check-consistency** (planned): Detects inconsistencies across files automatically
 
-See [py-cleanmast-tools/README.md](../py-cleanmast-tools/README.md) and [py-cleanmast-tools/docs/](../py-cleanmast-tools/docs/) for detailed tool documentation.
+See [py-preprocess-tools/README.md](../py-preprocess-tools/README.md) and [py-preprocess-tools/docs/](../py-preprocess-tools/docs/) for detailed tool documentation.
 
 ## Directory Structure
 
@@ -66,6 +66,10 @@ projects/{PROJECT}/
     └── {MAST_ID}.csv              # Final NRG-formatted output
 ```
 
+**Naming Convention**:
+- **Lidar masts**: Directories beginning with `L` or `Lidar` (e.g., `L77009`, `Lidar77009`) contain WindCube lidar data (.sta files)
+- **Traditional masts**: Other directory names (e.g., `M2501`, `W2408260`) contain conventional meteorological tower data
+
 ## Preprocessing Scenarios
 
 ### How to Identify Your Scenario
@@ -80,7 +84,7 @@ head -n 1 projects/{PROJECT}/pre-masts/{MAST_ID}/*.txt
 head -n 1 file1.txt file2.txt | grep -v "^$"
 ```
 
-**Future**: Use `uv run check-consistency` (see [py-cleanmast-tools/TODO.md](../py-cleanmast-tools/TODO.md))
+**Future**: Use `uv run check-consistency` (see [py-preprocess-tools/TODO.md](../py-preprocess-tools/TODO.md))
 
 ### Scenario 1: Ideal Case (Consistent Files)
 
@@ -127,7 +131,7 @@ head -n 1 file1.txt file2.txt | grep -v "^$"
 3. Run csv-merger on type-normalized files
 4. Run col-name-normalizer for final NRG format
 
-**Note**: See [py-cleanmast-tools/docs/commands.md](../py-cleanmast-tools/docs/commands.md#type-normalizer) for type-normalizer configuration.
+**Note**: See [py-preprocess-tools/docs/commands.md](../py-preprocess-tools/docs/commands.md#type-normalizer) for type-normalizer configuration.
 
 ### Scenario 4: Combined Issues
 
@@ -250,10 +254,10 @@ delimiter = ","
 
 ## Running the Pipeline
 
-All commands run from `py-cleanmast-tools/` directory:
+All commands run from `py-preprocess-tools/` directory:
 
 ```bash
-cd py-cleanmast-tools
+cd py-preprocess-tools
 
 # Scenario 1: Simple case
 uv run csv-merger ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/csv-merger.toml
@@ -328,21 +332,25 @@ cd ..
 
 **Config files**: See `projects/baiyang/pre-masts/M2501/configs/` for complete working examples.
 
-## NRG Format Conversions
+## Output Formats
 
-The final NRG format applies these patterns:
+The pipeline converts raw data to standardized formats:
 
-1. **Height Format**: `140m` → `140.00m` (2 decimal places)
-2. **Wind Speed**: `WS_{height}m_{stat}` → `Ch{N}_Anem_{height}.00m_{stat}_m/s`
-3. **Wind Direction**: `WD_{height}m_{stat}` → `Ch{N}_Vane_{height}.00m_{stat}_Deg` (note: `deg` → `Deg`)
-4. **Temperature**: `Temp_{N}_{height}m_{stat}` → `Ch24_Temp_{height}.00m_{stat}_C`
-5. **Humidity**: `RH_{N}_{height}m_{stat}` → `Ch25_RH_{height}.00m_{stat}_%`
-6. **Pressure**: `Pressure_{N}_{height}m_{stat}` → `Ch26_Pressure_{height}.00m_{stat}_kPa` (note: `Kpa` → `kPa`)
-7. **Battery**: `Batt_Volt` → `Battery_V`
+### NRG Format (Mast Data)
 
-Where:
-- `{stat}` = `Avg`, `Std`, `Max`, `Min` (or `SD` for standard deviation in NRG format)
-- Channel numbers (`Ch{N}`) should be consistent for each sensor type
+Standardized format for traditional meteorological mast data.
+
+See [py-preprocess-tools/docs/nrg-format.md](../../py-preprocess-tools/docs/nrg-format.md) for complete specification.
+
+**Example:** `WS_140m_Avg` → `Ch1_Anem_140.00m_Avg_m/s`
+
+### Lidar Format (WindCube Data)
+
+Standardized format for lidar measurement data.
+
+See [py-preprocess-tools/docs/lidar-format.md](../../py-preprocess-tools/docs/lidar-format.md) for complete specification.
+
+**Example:** `40m Wind Speed (m/s)` → `Lidar_40.00m_WindSpeed_Avg_m/s`
 
 ## Tips and Troubleshooting
 
@@ -378,7 +386,7 @@ If files have different sensor abbreviations (AT vs Temp, QY vs Press):
 
 ### Future: Automated Detection
 
-The planned `check-consistency` tool will automatically detect which scenario applies. See [py-cleanmast-tools/TODO.md](../py-cleanmast-tools/TODO.md) for details.
+The planned `check-consistency` tool will automatically detect which scenario applies. See [py-preprocess-tools/TODO.md](../py-preprocess-tools/TODO.md) for details.
 
 ## Data Characteristics
 
