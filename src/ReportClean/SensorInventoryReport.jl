@@ -21,7 +21,7 @@ function generate_sensor_inventory_section(mast_data::Vector{MastReportData}) ::
 
     # Generate report sections
     sections = String[
-        "== 2. 传感器清单",
+        "== 传感器清单",
         "",
         "本节列出各测风塔的传感器配置信息，按传感器类型分组。",
         ""

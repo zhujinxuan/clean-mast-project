@@ -6,6 +6,9 @@ export CleanMastUtils
 include("./TypstUtils.jl")
 export TypstUtils
 
+include("./PandocUtils.jl")
+export PandocUtils
+
 module CleanMastLogging
   include("./Logging/CleanMastLogger.jl")
   using .CleanMastLogger
@@ -326,11 +329,11 @@ module ReportReconstructCross
   include("./ReportReconstructCross/DataVisualization.jl")
   include("./ReportReconstructCross/MonthlyCoverage.jl")
   include("./ReportReconstructCross/ReportGeneration.jl")
-  include("./ReportReconstructCross/CommandAnalyzeReconstructCross.jl")
+  include("./ReportReconstructCross/CommandReportReconstructCross.jl")
   include("./ReportReconstructCross/RecommendAnalyzeReconstructCrossCommand.jl")
   include("./ReportReconstructCross/RecommendCrossMastReportCommand.jl")
   export AnalysisCore, DataVisualization, MonthlyCoverage, ReportGeneration
-  export CommandAnalyzeReconstructCross, RecommendAnalyzeReconstructCrossCommand, RecommendCrossMastReportCommand
+  export CommandReportReconstructCross, RecommendAnalyzeReconstructCrossCommand, RecommendCrossMastReportCommand
 end
 export ReportReconstructCross
 

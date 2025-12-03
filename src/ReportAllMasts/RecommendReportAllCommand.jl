@@ -6,6 +6,7 @@ This command prepares all configurations needed for the 'report all' command.
 """
 module RecommendReportAllCommand
 
+using ...ReportClean.RecommendReportCleanCommand
 using ...ReportRecovery.RecommendReportRecoveryCommand
 using ...ReportReconstructCross.RecommendCrossMastReportCommand
 using ...ReportReconstructSingle.RecommendReportReconstructSingleCommand
@@ -26,14 +27,15 @@ Generate all report TOML configuration files for comprehensive mast analysis.
 # Description
 This command generates all necessary TOML configuration files for the main reports:
 
-1. **report-recovery.toml** - For data recovery status across reconstruction stages
-2. **report-cross-mast.toml** - For cross-mast correlation analysis
-3. **report-reconstruct-single.yaml** - For single-mast reconstruction effectiveness
-4. **report-timeseries-meso.toml** - For time series analysis of meso-reconstructed data
-5. **report-timeseries-rep.toml** - For time series analysis of representative year data
+1. **report-clean.toml** - For clean report (raw vs clean data comparison)
+2. **report-recovery.toml** - For data recovery status across reconstruction stages
+3. **report-cross-mast.toml** - For cross-mast correlation analysis
+4. **report-reconstruct-single.yaml** - For single-mast reconstruction effectiveness
+5. **report-timeseries-meso.toml** - For time series analysis of meso-reconstructed data
+6. **report-timeseries-rep.toml** - For time series analysis of representative year data
+7. **report-reconstruct-meso.toml** - For meso-mast reconstruction quality analysis
 
-Note: Clean report uses process-clean.toml directly, so no additional config needed.
-Representative year report uses representative-year.toml directly, so no additional config needed.
+Note: Representative year report uses representative-year.toml directly, so no additional config needed.
 
 # Generated Files Under report-masts/
 ```
@@ -91,8 +93,27 @@ function execute(project_dir::String)
     println("   Project: $(basename(project_dir))")
     println()
 
-    # 1. Generate report-recovery.toml
-    println("📋 Config 1/6: Report Recovery Configuration")
+    # 1. Generate report-clean.toml
+    println("📋 Config 1/7: Report Clean Configuration")
+    try
+        process_clean_config = joinpath(project_dir, "process-clean.toml")
+        if isfile(process_clean_config)
+            RecommendReportCleanCommand.execute(project_dir)
+            results["clean"] = true
+            println("   ✅ report-clean.toml generated successfully")
+        else
+            println("   ⚠️  Skipping: process-clean.toml not found")
+            results["clean"] = false
+        end
+    catch e
+        results["clean"] = false
+        errors["clean"] = e
+        println("   ❌ Clean config failed: $(e)")
+    end
+    println()
+
+    # 2. Generate report-recovery.toml
+    println("📋 Config 2/7: Report Recovery Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -110,8 +131,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 2. Generate report-cross-mast.toml
-    println("🔗 Config 2/6: Cross-Mast Report Configuration")
+    # 3. Generate report-cross-mast.toml
+    println("🔗 Config 3/7: Cross-Mast Report Configuration")
     try
         reconstruct_single_config = joinpath(project_dir, "reconstruct-single.toml")
         if isfile(reconstruct_single_config)
@@ -129,8 +150,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 3. Generate report-reconstruct-single.yaml
-    println("📈 Config 3/6: Reconstruct Single Report Configuration")
+    # 4. Generate report-reconstruct-single.yaml
+    println("📈 Config 4/7: Reconstruct Single Report Configuration")
     try
         tower_shading_config = joinpath(project_dir, "tower-shading.toml")
         if isfile(tower_shading_config)
@@ -148,8 +169,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 4. Generate report-timeseries-meso.toml
-    println("📊 Config 4/6: Time Series Meso Report Configuration")
+    # 5. Generate report-timeseries-meso.toml
+    println("📊 Config 5/7: Time Series Meso Report Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -167,8 +188,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 5. Generate report-timeseries-rep.toml
-    println("📊 Config 5/6: Time Series Representative Year Report Configuration")
+    # 6. Generate report-timeseries-rep.toml
+    println("📊 Config 6/7: Time Series Representative Year Report Configuration")
     try
         representative_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(representative_year_config)
@@ -186,8 +207,8 @@ function execute(project_dir::String)
     end
     println()
 
-    # 6. Generate report-reconstruct-meso.toml
-    println("🌍 Config 6/6: Reconstruct Meso Report Configuration")
+    # 7. Generate report-reconstruct-meso.toml
+    println("🌍 Config 7/7: Reconstruct Meso Report Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -220,6 +241,7 @@ function execute(project_dir::String)
     for (config_name, success) in results
         status_icon = success ? "✅" : "❌"
         config_display = Dict(
+            "clean" => "Report Clean Configuration",
             "recovery" => "Report Recovery Configuration",
             "cross_mast" => "Cross-Mast Report Configuration",
             "reconstruct_single" => "Reconstruct Single Report Configuration",
@@ -229,6 +251,7 @@ function execute(project_dir::String)
         )[config_name]
 
         output_file = Dict(
+            "clean" => "report-masts/report-clean.toml",
             "recovery" => "report-masts/report-recovery.toml",
             "cross_mast" => "report-masts/report-cross-mast.toml",
             "reconstruct_single" => "report-masts/report-reconstruct-single.yaml",
@@ -248,17 +271,13 @@ function execute(project_dir::String)
 
     # Additional notes about configs that are used directly
     println("📝 Direct Configuration Usage:")
-    process_clean_exists = isfile(joinpath(project_dir, "process-clean.toml"))
     rep_year_exists = isfile(joinpath(project_dir, "representative-year.toml"))
-
-    clean_icon = process_clean_exists ? "✅" : "❌"
     rep_year_icon = rep_year_exists ? "✅" : "❌"
 
-    println("   $clean_icon Clean Report uses process-clean.toml directly")
     println("   $rep_year_icon Representative Year Report uses representative-year.toml directly")
     println()
 
-    if successful_configs > 0 || process_clean_exists || rep_year_exists
+    if successful_configs > 0 || rep_year_exists
         println("✅ Report configuration generation completed!")
         println("   All configurations are organized under: report-masts/")
         println()

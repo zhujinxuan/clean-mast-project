@@ -1113,7 +1113,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
     end
     
     open(typst_path, "w") do io
-        println(io, "== 50年一遇最大风速")
+        println(io, "== 测风塔$(mast_name) 50年一遇最大风速")
         println(io, "")
         println(io, "根据IEC 61400-1标准，50年重现期风速分为两类：")
         println(io, raw"- 50年最大持续风速 $ V_{\"ref\"} $ ：50年重现期10分钟平均风速")
@@ -1370,12 +1370,12 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
         end
         
         # Comparison section if multiple methods have results
-        println(io, "== 方法对比")
+        println(io, "== 测风塔$(mast_name)方法对比")
         println(io, "")
         
         # Create sustained wind speed comparison table
         if (!isempty(method1_results_df) || !isempty(method2_sustained_results_df) || !isempty(method3_sustained_results_df))
-            println(io, "=== 50年最大持续风速对比")
+            println(io, "=== 测风塔$(mast_name) 50年最大持续风速对比")
             println(io, "")
             
             sustained_comparison_df = DataFrame()
@@ -1424,7 +1424,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
         
         # Create extreme wind speed comparison table
         if (!isempty(method1_results_df) || !isempty(method2_extreme_results_df) || !isempty(method3_extreme_results_df))
-            println(io, "=== 50年极大极端风速对比")
+            println(io, "=== 测风塔$(mast_name) 50年极大极端风速对比")
             println(io, "")
             
             extreme_comparison_df = DataFrame()

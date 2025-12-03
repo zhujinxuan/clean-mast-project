@@ -9,6 +9,7 @@ using ...Types.CleanRules: Rule
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
 using ...TypstUtils
+using ...PandocUtils
 using YAML
 using Dates
 
@@ -20,45 +21,57 @@ using ..SensorInventoryReport
 using ..DataCoverageReport
 using ..ViolationAnalysisReport
 using ..MonthlyCoverageTable
-using ..LayerDiffParametersTable
+using ..LayerDiffParametersTable: generate_layer_diff_parameters_for_all_masts
 
 export execute
 
 """
-    execute(project_dir::String)
+    execute(config_path::String)
 
 Generate report from report-clean.toml configuration file.
-User-facing command that loads configuration from report-masts/report-clean.toml.
+
+# Arguments
+- `config_path::String`: Path to report-clean.toml configuration file
+
+# Example
+```bash
+julia bin/CleanMast.jl report clean ./projects/my-project/report-masts/report-clean.toml
+```
+
+# Note
+You must run `recommend report-clean` first to generate the configuration file.
 """
-function execute(project_dir::String)::Nothing
+function execute(config_path::String)::Nothing
     println("Loading report configuration...")
 
-    # Load report-clean.toml
-    config_path = joinpath(project_dir, "report-masts", "report-clean.toml")
     if !isfile(config_path)
-        error("report-clean.toml not found at: $config_path\nPlease run 'recommend report-clean $project_dir' first")
+        error("Configuration file not found: $config_path\nPlease run 'recommend report-clean <project_dir>' first")
     end
+
+    # Config directory is the directory containing the config file
+    config_dir = dirname(config_path)
 
     config_dict = load_dict(config_path)
     config = from_dict(ReportCleanConfiguration, config_dict)
 
     println("✓ Configuration loaded from: $config_path")
 
-    # Generate report
-    execute_internal(config, project_dir)
+    # Generate report using config_dir as base for path resolution
+    execute_internal(config, config_dir)
 end
 
 """
-    execute_internal(config::ReportCleanConfiguration, project_dir::String)
+    execute_internal(config::ReportCleanConfiguration, config_dir::String)
 
 Generate actual Typst report from configuration (internal function).
 Loads data, processes violation summaries, and generates Chinese Typst report.
+Uses config_dir as base directory for resolving relative paths.
 """
-function execute_internal(config::ReportCleanConfiguration, project_dir::String)::Nothing
+function execute_internal(config::ReportCleanConfiguration, config_dir::String)::Nothing
     println("Generating process clean report...")
-    
+
     # Setup report directory
-    report_dir = setup_report_directory(config.output.report_dir, project_dir)
+    report_dir = setup_report_directory(config.output.report_dir, config_dir)
     
     # Setup logging
     log_file = joinpath(report_dir, "generation.log")
@@ -69,7 +82,7 @@ function execute_internal(config::ReportCleanConfiguration, project_dir::String)
         open(err_file, "w") do err_io
             redirect_stdout(log_io) do
                 redirect_stderr(err_io) do
-                    generate_report_content(config, project_dir, report_dir)
+                    generate_report_content(config, config_dir, report_dir)
                 end
             end
         end
@@ -81,16 +94,20 @@ function execute_internal(config::ReportCleanConfiguration, project_dir::String)
     # Compile Typst report if Typst is available
     TypstUtils.typst_try_compile(report_dir, config.output.report_filename)
 
+    # Convert to DOCX if Pandoc is available
+    PandocUtils.pandoc_try_convert(report_dir, config.output.report_filename)
+
 end
 
 """
-    setup_report_directory(report_dir::String, project_dir::String) -> String
+    setup_report_directory(report_dir::String, config_dir::String) -> String
 
 Create report directory and return absolute path.
+Resolves relative paths against config_dir.
 """
-function setup_report_directory(report_dir::String, project_dir::String)::String
-    # Resolve report directory path
-    abs_report_dir = isabspath(report_dir) ? report_dir : joinpath(project_dir, report_dir)
+function setup_report_directory(report_dir::String, config_dir::String)::String
+    # Resolve report directory path relative to config_dir
+    abs_report_dir = isabspath(report_dir) ? report_dir : joinpath(config_dir, report_dir)
     
     # Create directory structure
     mkpath(abs_report_dir)
@@ -100,23 +117,25 @@ function setup_report_directory(report_dir::String, project_dir::String)::String
 end
 
 """
-    generate_report_content(config::ReportCleanConfiguration, project_dir::String, report_dir::String)
+    generate_report_content(config::ReportCleanConfiguration, config_dir::String, report_dir::String)
 
 Main report generation logic. Loads data and generates all report sections.
+Uses config_dir as base directory for resolving paths.
 """
-function generate_report_content(config::ReportCleanConfiguration, project_dir::String, report_dir::String)::Nothing
+function generate_report_content(config::ReportCleanConfiguration, config_dir::String, report_dir::String)::Nothing
     println("Loading data and generating report sections...")
 
     # Collect data for all masts
     mast_data = map(zip(config.raw.masts, config.clean.masts)) do (raw_mast, clean_mast)
         println("Processing mast: $(raw_mast.name)")
 
-        # Load raw and clean data using existing functions (automatic path resolution)
-        raw_data = load_timeseries(raw_mast.input, project_dir)
-        clean_data = load_timeseries(clean_mast.input, project_dir)
+        # Load raw and clean data using config_dir as base for path resolution
+        raw_data = load_timeseries(raw_mast.input, config_dir)
+        clean_data = load_timeseries(clean_mast.input, config_dir)
 
-        # Load violation data from YAML
-        violation_file = joinpath(project_dir, "process-stats", "process-clean-$(raw_mast.name).yaml")
+        # Load violation data from YAML (go up one level from report-masts/ to project root)
+        parent_dir = dirname(config_dir)
+        violation_file = joinpath(parent_dir, "process-stats", "process-clean-$(raw_mast.name).yaml")
         violation_data = load_violation_data(violation_file)
 
         # Detect representative interval and calculate expected points
@@ -224,7 +243,7 @@ function generate_typst_report(mast_data::Vector{MastReportData}, plots_dir::Str
 
 = 数据清洗报告
 
-== 1. 执行摘要
+== 执行摘要
 
 本报告分析了 $(length(mast_data)) 座测风塔的数据清洗结果。
 
@@ -243,10 +262,9 @@ $(join([
     data_coverage_section = generate_data_coverage_section(mast_data, plots_dir)
     monthly_coverage_section = generate_monthly_coverage_table(mast_data)
 
-    # Generate layer difference parameters table (if rules available)
+    # Generate layer difference parameters table for all masts (if rules available)
     layer_diff_section = if !isempty(rules) && !isempty(mast_data)
-        sensors = mast_data[1].clean_data.sensors
-        generate_layer_diff_parameters_section(rules, sensors)
+        generate_layer_diff_parameters_for_all_masts(mast_data, rules)
     else
         ""
     end

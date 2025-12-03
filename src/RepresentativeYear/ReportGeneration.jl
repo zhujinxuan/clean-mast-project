@@ -15,6 +15,7 @@ using DataFrames
 using Printf
 using CSV
 using Statistics
+using JLD2
 
 # Import from project modules
 using ...Types.RepresentativeYear: CalibrationResults, CalibrationEachWSSensor, DirectionalCalibration
@@ -26,7 +27,7 @@ using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
 using ..Analysis: calculate_sector_meso_mean
 using ..Utils: calculate_mean_speed, calculate_climatology_mean, find_representative_year,
-               filter_training_range, find_heighest_meso_sensor
+               filter_training_range, find_heighest_meso_sensor, find_climatology_timerange
 
 export generate_representative_year_report, load_representative_year_analysis_data
 
@@ -72,6 +73,7 @@ struct RepresentativeYearAnalysis
     mast_name::String
     meso_name::String
     climatology_mean::Float64
+    climatology_period::TimeRange  # Date range for climatology calculation
     training_mean::Float64
     representative_year_mean::Union{Float64, Nothing}
     representative_year_start::Union{DateTime, Nothing}
@@ -133,36 +135,36 @@ function load_representative_year_analysis_data(project_dir::String)::Vector{Rep
     for mast_config in config.masts
         println("  📋 Analyzing mast: $(mast_config.name)")
         
-        # Load calibration results if they exist
-        info_file = joinpath(project_dir, "process-stats", "representative-year-info-$(mast_config.name).yaml")
-        calibration_applied = isfile(info_file)
-        
         # Get meso data for this mast
         meso_name = mast_config.meso_model.meso_name
         meso_ts = meso_data[meso_name]
-        
+
         # Find highest meso sensor for analysis
         meso_sensor = find_heighest_meso_sensor(meso_ts)
         if isnothing(meso_sensor)
             @warn "No suitable meso sensor found for $(mast_config.name), skipping..."
             continue
         end
-        
-        # Calculate climatology mean using only complete years
+
+        # Calculate climatology mean and period using only complete years
+        min_timestamp = minimum(meso_ts.df.timestamp)
+        max_timestamp = maximum(meso_ts.df.timestamp)
+        climatology_period = find_climatology_timerange(min_timestamp, max_timestamp)
         climatology_mean = calculate_climatology_mean(meso_ts, meso_sensor)
         training_ts = filter_training_range(meso_ts, mast_config.time_range)
         training_mean = calculate_mean_speed(training_ts, meso_sensor)
-        
-        # Calculate threshold deviation
+
+        # Calculate threshold deviation and determine if calibration is needed
         threshold_deviation = abs(climatology_mean - training_mean) / climatology_mean * 100
+        calibration_needed = threshold_deviation > 2.0
         
         # Initialize variables for representative year analysis
         representative_year_mean = nothing
         representative_year_start = nothing
         sector_analysis_df = DataFrame()
         sensor_analysis = Vector{Dict{String, Any}}()
-        
-        if calibration_applied
+
+        if calibration_needed
             # Load and analyze calibration results
             rep_year_start = find_representative_year(meso_ts, climatology_mean, meso_sensor)
             representative_year_start = rep_year_start
@@ -173,7 +175,8 @@ function load_representative_year_analysis_data(project_dir::String)::Vector{Rep
             
             # Generate sector analysis
             sector_analysis_df = create_sector_analysis_dataframe(
-                meso_ts, mast_config.time_range, rep_year_start, meso_sensor
+                meso_ts, mast_config.time_range, rep_year_start, meso_sensor,
+                project_dir, mast_config.meso_model.model_file
             )
             
             # Load mast data for sensor analysis
@@ -196,10 +199,11 @@ function load_representative_year_analysis_data(project_dir::String)::Vector{Rep
             mast_config.name,
             meso_name,
             climatology_mean,
+            climatology_period,
             training_mean,
             representative_year_mean,
             representative_year_start,
-            calibration_applied,
+            calibration_needed,
             threshold_deviation,
             sector_analysis_df,
             sensor_analysis,
@@ -215,38 +219,43 @@ end
 
 
 """
-    create_sector_analysis_dataframe(meso_ts, training_range, rep_year_start, meso_sensor)::DataFrame
+    create_sector_analysis_dataframe(meso_ts, training_range, rep_year_start, meso_sensor, project_dir, model_file_path)::DataFrame
 
-Create comprehensive 16-sector analysis including calibration data.
+Create comprehensive 16-sector analysis including calibration data with slopes from trained model.
 """
 function create_sector_analysis_dataframe(
     meso_ts::TimeSeriesData,
-    training_range::TimeRange, 
+    training_range::TimeRange,
     rep_year_start::DateTime,
-    meso_sensor::SensorColumn
+    meso_sensor::SensorColumn,
+    project_dir::String,
+    model_file_path::String
 )::DataFrame
-    # Calculate sector means for training and representative year
+    climatology_ts = meso_ts
     training_ts = filter_training_range(meso_ts, training_range)
     rep_year_ts = filter_training_range(meso_ts, TimeRange(rep_year_start, rep_year_start + Year(1) - Second(1)))
-    
+
+    climatology_sectors = calculate_sector_meso_mean(climatology_ts, meso_sensor)
     training_sectors = calculate_sector_meso_mean(training_ts, meso_sensor)
     rep_year_sectors = calculate_sector_meso_mean(rep_year_ts, meso_sensor)
-    
-    # Join and calculate differences
-    sectors_df = innerjoin(training_sectors, rep_year_sectors, on=:sector, makeunique=true)
-    sectors_df.speed_difference = sectors_df.mean_speed_1 .- sectors_df.mean_speed  # rep_year - training
-    
-    # Rename columns for clarity
-    rename!(sectors_df, 
-        :mean_speed => :training_mean,
-        :mean_speed_1 => :representative_mean
+
+    sectors_df = innerjoin(climatology_sectors, training_sectors, on=:sector, makeunique=true)
+    sectors_df = innerjoin(sectors_df, rep_year_sectors, on=:sector, makeunique=true)
+
+    rename!(sectors_df,
+        :mean_speed => :climatology_mean,
+        :mean_speed_1 => :training_mean,
+        :mean_speed_2 => :representative_mean
     )
-    
-    # Add placeholder columns for slope/intercept (would need actual calibration model to fill)
-    sectors_df.slope = fill(missing, nrow(sectors_df))
-    sectors_df.intercept = fill(missing, nrow(sectors_df))
+
+    sectors_df.speed_difference = sectors_df.climatology_mean .- sectors_df.representative_mean
+
+    slopes_df = load_sector_slopes(project_dir, model_file_path)
+    sectors_df = leftjoin(sectors_df, slopes_df, on=:sector)
+
+    sectors_df.adjustment = sectors_df.slope .* sectors_df.speed_difference
     sectors_df.data_points = fill(missing, nrow(sectors_df))
-    
+
     return sectors_df
 end
 
@@ -338,6 +347,45 @@ function calculate_performance_metrics(
     end
     
     return metrics
+end
+
+"""
+    load_sector_slopes(project_dir::String, model_file_path::String)::DataFrame
+
+Load sector slopes from trained SectorizedRegressionModel.
+
+Returns DataFrame with columns: sector, slope, intercept
+"""
+function load_sector_slopes(project_dir::String, model_file_path::String)::DataFrame
+    full_path = joinpath(project_dir, model_file_path)
+    if !isfile(full_path)
+        @warn "Model file not found: $full_path. Slopes will be set to missing."
+        return DataFrame(
+            sector = [s.name for s in DIRECTION_16_SECTORS],
+            slope = fill(missing, 16),
+            intercept = fill(missing, 16)
+        )
+    end
+
+    @load full_path model
+
+    if isempty(model.pairs)
+        @warn "No speed pairs found in model. Slopes will be set to missing."
+        return DataFrame(
+            sector = [s.name for s in DIRECTION_16_SECTORS],
+            slope = fill(missing, 16),
+            intercept = fill(missing, 16)
+        )
+    end
+
+    pair = model.pairs[1]
+    slopes_df = DataFrame(
+        sector = [s.direction_sector.name for s in pair.sectors],
+        slope = [s.slope for s in pair.sectors],
+        intercept = [s.intercept for s in pair.sectors]
+    )
+
+    return slopes_df
 end
 
 """
@@ -450,12 +498,24 @@ $(CHINESE_TEXTS["generated_on"]): #datetime.today().display("[year]年[month]月
 - *$(CHINESE_TEXTS["threshold_status"]):* 在阈值范围内，无需校正
 """)
             end
-            
-            write(io, """
+
+            if result.calibration_applied
+                write(io, """
 
 === $(CHINESE_TEXTS["sector_analysis"])
 
 #include "tables/$(result.mast_name)_$(result.meso_name)_sectors.typ"
+""")
+            else
+                write(io, """
+
+=== $(CHINESE_TEXTS["sector_analysis"])
+
+_注：阈值范围内无显著差异，未生成方向扇区详细分析表_
+""")
+            end
+
+            write(io, """
 
 === $(CHINESE_TEXTS["sensor_analysis"])
 
@@ -478,13 +538,13 @@ Generate individual table files for each mast-meso pair.
 """
 function generate_individual_tables(analysis_results::Vector{RepresentativeYearAnalysis}, report_dir::String)
     tables_dir = joinpath(report_dir, "tables")
-    
+
     for result in analysis_results
-        # Generate sector analysis table
-        sector_table_path = joinpath(tables_dir, "$(result.mast_name)_$(result.meso_name)_sectors.typ")
-        generate_sector_table(result, sector_table_path)
-        
-        # Generate sensor analysis table
+        if result.calibration_applied
+            sector_table_path = joinpath(tables_dir, "$(result.mast_name)_$(result.meso_name)_sectors.typ")
+            generate_sector_table(result, sector_table_path)
+        end
+
         sensor_table_path = joinpath(tables_dir, "$(result.mast_name)_$(result.meso_name)_sensors.typ")
         generate_sensor_table(result, sensor_table_path)
     end
@@ -498,50 +558,40 @@ Generate 16-sector analysis table for a single mast-meso pair.
 function generate_sector_table(result::RepresentativeYearAnalysis, table_path::String)
     open(table_path, "w") do io
         if result.calibration_applied
+            clim_start = Dates.format(result.climatology_period.min, "yyyy-mm-dd")
+            clim_end = Dates.format(result.climatology_period.max, "yyyy-mm-dd")
+            period_text = "_气候学数据期间: $clim_start 至 $clim_end" * "_"
+
             write(io, """
+$period_text
+
 #table(
-  columns: 7,
+  columns: 6,
   align: center + horizon,
   table.header(
-    [$(CHINESE_TEXTS["sector"])], [$(CHINESE_TEXTS["training_period"])], [$(CHINESE_TEXTS["representative_year"])], 
-    [$(CHINESE_TEXTS["speed_difference"])], [$(CHINESE_TEXTS["slope"])], [$(CHINESE_TEXTS["intercept"])], [$(CHINESE_TEXTS["data_points"])]
+    [方向], [气候学平均值], [代表年平均值],
+    [差异 (气候-代表)], [斜率], [调整量]
   ),
 """)
-        else
-            write(io, """
-#table(
-  columns: 3,
-  align: center + horizon,
-  table.header(
-    [$(CHINESE_TEXTS["sector"])], [$(CHINESE_TEXTS["climatology_mean"])], [$(CHINESE_TEXTS["training_mean"])]
-  ),
-""")
-        end
-        
-        # Add data rows
-        for row in eachrow(result.sector_analysis)
-            sector = row.sector
-            if result.calibration_applied && haskey(row, :representative_mean)
-                training = round(row.training_mean, digits=2)
+
+            for row in eachrow(result.sector_analysis)
+                sector = row.sector
+                climatology = round(row.climatology_mean, digits=2)
                 rep_mean = ismissing(row.representative_mean) ? "-" : string(round(row.representative_mean, digits=2))
-                speed_diff = ismissing(row.speed_difference) ? "-" : string(round(row.speed_difference, digits=2))
+                diff = ismissing(row.speed_difference) ? "-" : string(round(row.speed_difference, digits=2))
                 slope = ismissing(row.slope) ? "-" : string(round(row.slope, digits=3))
-                intercept = ismissing(row.intercept) ? "-" : string(round(row.intercept, digits=3))
-                data_pts = ismissing(row.data_points) ? "-" : string(row.data_points)
-                
+                adjustment = ismissing(row.adjustment) ? "-" : string(round(row.adjustment, digits=3))
+
                 write(io, """
-  [$sector], [$training], [$rep_mean], [$speed_diff], [$slope], [$intercept], [$data_pts],
-""")
-            else
-                climatology = haskey(row, :climatology_mean) ? round(row.climatology_mean, digits=2) : round(row.training_mean, digits=2)
-                training = round(row.training_mean, digits=2)
-                
-                write(io, """
-  [$sector], [$climatology], [$training],
+  [$sector], [$climatology], [$rep_mean], [$diff], [$slope], [$adjustment],
 """)
             end
+        else
+            write(io, """
+_校正未应用 - 阈值范围内_
+""")
         end
-        
+
         write(io, ")\n")
     end
 end
@@ -614,11 +664,13 @@ function export_analysis_data(analysis_results::Vector{RepresentativeYearAnalysi
                 mast_name = result.mast_name,
                 meso_name = result.meso_name,
                 sector = row.sector,
+                climatology_mean = something(get(row, :climatology_mean, nothing), missing),
                 training_mean = something(get(row, :training_mean, nothing), missing),
                 representative_mean = something(get(row, :representative_mean, nothing), missing),
                 speed_difference = something(get(row, :speed_difference, nothing), missing),
                 slope = something(get(row, :slope, nothing), missing),
                 intercept = something(get(row, :intercept, nothing), missing),
+                adjustment = something(get(row, :adjustment, nothing), missing),
                 data_points = something(get(row, :data_points, nothing), missing)
             ))
         end

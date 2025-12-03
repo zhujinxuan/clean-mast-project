@@ -831,7 +831,7 @@ Analysis and reporting commands
 Comonicon.@cast module Analyze
     using Comonicon
     using CleanMastProject.Command.AnalyzeEN
-    using CleanMastProject.ReportReconstructCross.CommandAnalyzeReconstructCross
+    using CleanMastProject.ReportReconstructCross.CommandReportReconstructCross
 
 
     """
@@ -881,7 +881,7 @@ Comonicon.@cast module Report
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportRecovery.ReportRecoveryCommand
     using CleanMastProject.RepresentativeYear.ReportRepresentativeYearCommand
-    using CleanMastProject.ReportReconstructCross.CommandAnalyzeReconstructCross
+    using CleanMastProject.ReportReconstructCross.CommandReportReconstructCross
     using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
     using CleanMastProject.ReportReconstructSingle.ReportReconstructSingleCommand
     using CleanMastProject.ReportReconstructMeso.CommandReportReconstructMeso
@@ -890,22 +890,25 @@ Comonicon.@cast module Report
     """
     clean
 
-    Generate process clean report for a project.
+    Generate process clean report from configuration file.
 
     # Arguments
-    - `project_dir`: Path to project directory containing process-clean.toml
+    - `config_path`: Path to report-clean.toml configuration file
 
     # Example
     ```bash
-    julia bin/CleanMast.jl report clean ./projects/my-project
+    # Step 1: Generate configuration
+    julia bin/CleanMast.jl recommend report-clean ./projects/my-project
+
+    # Step 2: Generate report from configuration
+    julia bin/CleanMast.jl report clean ./projects/my-project/report-masts/report-clean.toml
     ```
 
     This command:
-    1. Reads process-clean.toml configuration
-    2. Generates report configuration automatically
-    3. Loads raw and clean data files
-    4. Loads violation summaries from process-stats/
-    5. Generates Chinese Typst report with:
+    1. Loads report-clean.toml configuration file
+    2. Loads raw and clean data files (paths relative to config location)
+    3. Loads violation summaries from process-stats/
+    4. Generates Chinese Typst report with:
        - Executive summary (执行摘要)
        - Sensor inventory (传感器清单)
        - Data coverage comparison (数据覆盖率对比)
@@ -916,9 +919,11 @@ Comonicon.@cast module Report
     - report-masts/clean/generation.log: Generation log
     - report-masts/clean/generation.err: Error log
     - report-masts/clean/plots/: Generated plots
+
+    Note: You must run 'recommend report-clean' first to generate the configuration.
     """
-    Comonicon.@cast function clean(project_dir::String)
-        ReportAllCommand.execute(project_dir)
+    Comonicon.@cast function clean(config_path::String)
+        ReportCleanCommand.execute(config_path)
     end
 
     """
@@ -1068,7 +1073,7 @@ Comonicon.@cast module Report
     - data/: CSV exports for further analysis
     """
     Comonicon.@cast function cross_mast(config_path::String)
-        CommandAnalyzeReconstructCross.execute(config_path)
+        CommandReportReconstructCross.execute(config_path)
     end
 
     """

@@ -302,14 +302,14 @@ function generate_weibull_report(results_df::DataFrame, mast_name::String, outpu
     table = generate_weibull_parameters_table(results_df)
 
     open(typst_path, "w") do io
-        println(io, "== Weibull 拟合结果")
+        println(io, "== 测风塔$(mast_name) Weibull 拟合结果")
         println(io, "表格：测风塔$mast_name 拟合结果")
         show(io, MIME"text/typst"(), table)
         println(io, "")
         println(io, "")
-        
+
         # Add Weibull distribution plots for each height
-        println(io, "== Weibull 分布拟合图")
+        println(io, "== 测风塔$(mast_name) Weibull 分布拟合图")
         for row in eachrow(results_df)
             height = row.height
             svg_filename = "weibull_$(height)m.png"
@@ -317,14 +317,14 @@ function generate_weibull_report(results_df::DataFrame, mast_name::String, outpu
             
             if isfile(svg_path)
                 # Create relative path for the image (relative to the weibull directory)
-                # Since the weibull.typ is included in the main report, 
+                # Since the weibull.typ is included in the main report,
                 # we need the path relative to the weibull subdirectory
                 println(io, "")
-                println(io, "=== $(height)m 高度 Weibull 分布拟合")
+                println(io, "=== 测风塔$(mast_name) $(height)m 高度 Weibull 分布拟合")
                 println(io, "")
                 println(io, "#figure(")
                 println(io, "  image(\"$svg_filename\", width: 80%),")
-                println(io, "  caption: [$(height)m 高度风速 Weibull 分布拟合图]")
+                println(io, "  caption: [测风塔$(mast_name) $(height)m 高度风速 Weibull 分布拟合图]")
                 println(io, ")")
                 println(io, "")
             end

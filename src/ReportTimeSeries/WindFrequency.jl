@@ -241,7 +241,7 @@ function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
             println(io, "")
             
             # Add wind frequency distribution plots for each height
-            println(io, "== 风速与风功率频率分布图")
+            println(io, "== 测风塔$(mast.name)风速与风功率频率分布图")
             for mast_one_height_data in valid_data
                 height = mast_one_height_data.height
                 height_str = format_height(height)
@@ -250,11 +250,11 @@ function generate_wind_frequency_report(config::ReportTimeSeriesConfig)
                 
                 if isfile(svg_path)
                     println(io, "")
-                    println(io, "=== $(height_str)m 高度风速与风功率频率分布")
+                    println(io, "=== 测风塔$(mast.name) $(height_str)m 高度风速与风功率频率分布")
                     println(io, "")
                     println(io, "#figure(")
                     println(io, "  image(\"$svg_filename\", width: 90%),")
-                    println(io, "  caption: [$(height_str)m 高度风速与风功率频率分布图]")
+                    println(io, "  caption: [测风塔$(mast.name) $(height_str)m 高度风速与风功率频率分布图]")
                     println(io, ")")
                     println(io, "")
                 end

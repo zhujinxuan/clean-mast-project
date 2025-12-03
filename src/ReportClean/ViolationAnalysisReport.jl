@@ -235,7 +235,7 @@ Returns a string containing the Typst markup for the violation analysis.
 function generate_violation_analysis_section(mast_data::Vector{MastReportData}, plots_dir::String) :: String
     sections = String[]
 
-    push!(sections, "== 4. 规则违规分析")
+    push!(sections, "== 规则违规分析")
     push!(sections, "")
 
     for mast in mast_data

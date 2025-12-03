@@ -3,6 +3,7 @@ module ReportMesoTimeSeriesCommand
 using Logging
 using ...Types.ReportMesoTimeSeriesConfiguration: load_report_meso_timeseries_config
 using ...TypstUtils
+using ...PandocUtils
 using ...CleanMastLogging: create_cleanmast_logger
 using ..AnnualClimatology: analyze_all
 
@@ -55,6 +56,7 @@ function execute(config_path::String)
 
     @info "Compiling Typst reports..."
     TypstUtils.typst_try_compile_all(config.output.path)
+    PandocUtils.pandoc_try_convert_all(config.output.path)
 
     @info "Analysis complete. Results saved to: $(config.output.path)"
 

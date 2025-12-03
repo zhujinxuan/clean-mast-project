@@ -10,8 +10,9 @@ module LayerDiffParametersTable
 using DataFrames
 using ....Types.CleanRules: Rule, LayerDifferenceCriteria, RangeCriteria
 using ....Types.SensorColumns: SensorColumn
+using ....Types.ReportCleanData: MastReportData
 
-export generate_layer_diff_parameters_section
+export generate_layer_diff_parameters_for_all_masts
 
 """
     LayerComparisonRow
@@ -196,32 +197,46 @@ function generate_typst_table(rows::Vector{LayerComparisonRow})::String
 end
 
 """
-    generate_layer_diff_parameters_section(
-        rules::Vector{Rule},
-        sensors::Vector{SensorColumn}
+    generate_layer_diff_parameters_for_all_masts(
+        mast_data::Vector{MastReportData},
+        rules::Vector{Rule}
     )::String
 
-Generate the complete layer difference parameters section in Typst format.
-Returns a string containing the Typst markup.
+Generate layer difference parameters section with subsections for each mast.
+Returns a string containing the Typst markup for all masts.
 """
-function generate_layer_diff_parameters_section(
-    rules::Vector{Rule},
-    sensors::Vector{SensorColumn}
+function generate_layer_diff_parameters_for_all_masts(
+    mast_data::Vector{MastReportData},
+    rules::Vector{Rule}
 )::String
-    rows = create_comparison_rows(rules, sensors)
-    sorted_rows = sort_comparison_rows(rows)
+    if isempty(mast_data) || isempty(rules)
+        return ""
+    end
 
-    table_markup = generate_typst_table(sorted_rows)
-
-    section = """
-=== 2.4 层差检查参数
+    # Generate header section
+    header = """
+=== 层差检查参数
 
 以下表格列出了数据清洗过程中使用的层差检查参数及其合理相关性范围。
 
-$(table_markup)
 """
 
-    return section
+    # Generate table for each mast
+    mast_sections = map(mast_data) do mast
+        sensors = mast.clean_data.sensors
+        rows = create_comparison_rows(rules, sensors)
+        sorted_rows = sort_comparison_rows(rows)
+        table_markup = generate_typst_table(sorted_rows)
+
+        """
+==== $(mast.name)
+
+$(table_markup)
+"""
+    end
+
+    # Combine header and all mast sections
+    return header * join(mast_sections, "\n")
 end
 
 end # module

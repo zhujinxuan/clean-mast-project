@@ -23,7 +23,8 @@ Configuration for a single mast in cross-mast analysis.
 """
 @with_kw struct ReportReconstructCrossMast
     name::String
-    input::TimeSeriesSource
+    before_reconstruction::TimeSeriesSource
+    after_reconstruction::TimeSeriesSource
 end
 
 """
@@ -59,8 +60,9 @@ end
 # from_dict implementations
 function from_dict(::Type{ReportReconstructCrossMast}, dict::Dict{String, Any})::ReportReconstructCrossMast
     name = dict["name"]
-    input = from_dict(TimeSeriesSource, dict["input"])
-    return ReportReconstructCrossMast(name, input)
+    before_reconstruction = from_dict(TimeSeriesSource, dict["before_reconstruction"])
+    after_reconstruction = from_dict(TimeSeriesSource, dict["after_reconstruction"])
+    return ReportReconstructCrossMast(name, before_reconstruction, after_reconstruction)
 end
 
 function from_dict(::Type{ReportReconstructCrossSettings}, dict::Dict{String, Any})::ReportReconstructCrossSettings
@@ -83,7 +85,8 @@ end
 function to_dict(mast::ReportReconstructCrossMast)::Dict{String, Any}
     return Dict{String, Any}(
         "name" => mast.name,
-        "input" => to_dict(mast.input)
+        "before_reconstruction" => to_dict(mast.before_reconstruction),
+        "after_reconstruction" => to_dict(mast.after_reconstruction)
     )
 end
 

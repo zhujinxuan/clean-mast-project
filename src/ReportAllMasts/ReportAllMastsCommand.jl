@@ -14,10 +14,10 @@ Provides a single command to generate complete mast analysis documentation.
 """
 module ReportAllMastsCommand
 
-using ...ReportClean.ReportAllCommand
+using ...ReportClean.ReportCleanCommand
 using ...ReportRecovery.ReportRecoveryCommand
 using ...RepresentativeYear.ReportRepresentativeYearCommand
-using ...ReportReconstructCross.CommandAnalyzeReconstructCross
+using ...ReportReconstructCross.CommandReportReconstructCross
 using ...ReportTimeSeries.ReportTimeSeriesCommand
 using ...ReportReconstructMeso
 using ...ReportReconstructSingle.ReportReconstructSingleCommand
@@ -166,13 +166,14 @@ function execute(project_dir::String)
     # 1. Generate Clean Report
     println("📋 Report 1/8: Clean Report (Raw vs Clean Data)")
     try
-        process_clean_config = joinpath(project_dir, "process-clean.toml")
-        if isfile(process_clean_config)
-            ReportAllCommand.execute(project_dir)
+        report_clean_config = joinpath(project_dir, "report-masts", "report-clean.toml")
+        if isfile(report_clean_config)
+            ReportCleanCommand.execute(report_clean_config)
             results["clean"] = true
             println("   ✅ Clean report generated successfully")
         else
-            println("   ⚠️  Skipping: process-clean.toml not found")
+            println("   ⚠️  Skipping: report-clean.toml not found in report-masts/")
+            println("      Run 'recommend report-clean' first to generate configuration")
             results["clean"] = false
         end
     catch e
@@ -227,7 +228,7 @@ function execute(project_dir::String)
     try
         cross_mast_config = joinpath(project_dir, "report-masts", "report-cross-mast.toml")
         if isfile(cross_mast_config)
-            CommandAnalyzeReconstructCross.execute(cross_mast_config)
+            CommandReportReconstructCross.execute(cross_mast_config)
             results["cross_mast"] = true
             println("   ✅ Cross-mast report generated successfully")
         else

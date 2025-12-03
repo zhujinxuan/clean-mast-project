@@ -721,7 +721,7 @@ function generate_consolidated_turbulence_typst_report(
     
     # Write consolidated Typst report
     open(typst_path, "w") do io
-        println(io, "== 湍流强度分析报告")
+        println(io, "== 测风塔$(mast_name)湍流强度分析报告")
         println(io)
         println(io, "== 基本信息")
         println(io, "- 测风塔：$(mast_name)")
@@ -731,7 +731,7 @@ function generate_consolidated_turbulence_typst_report(
         
         # Generate sections for each height
         for height in sort(heights, rev=true)
-            println(io, "== $(height)m高度湍流强度分析")
+            println(io, "== 测风塔$(mast_name) $(height)m高度湍流强度分析")
             println(io)
             
             # Load CSV files for this height
@@ -755,7 +755,7 @@ function generate_consolidated_turbulence_typst_report(
             
             # Sector statistics
             println(io, "=== 各风向扇区湍流强度统计")
-            println(io, "表格：$(height)m高度各风向扇区的湍流强度统计结果")
+            println(io, "表格：测风塔$(mast_name) $(height)m高度各风向扇区的湍流强度统计结果")
             println(io)
             sector_table = prepare_and_format_table(sector_stats_df, "sector")
             show(io, MIME"text/typst"(), sector_table)
@@ -764,7 +764,7 @@ function generate_consolidated_turbulence_typst_report(
             
             # TI by wind speed
             println(io, "=== 各风速区间湍流强度统计")
-            println(io, "表格：$(height)m高度不同风速区间的湍流强度统计结果")
+            println(io, "表格：测风塔$(mast_name) $(height)m高度不同风速区间的湍流强度统计结果")
             println(io)
             ti_ws_table = prepare_and_format_table(ti_by_ws_df, "wind_speed")
             show(io, MIME"text/typst"(), ti_ws_table)
@@ -774,7 +774,7 @@ function generate_consolidated_turbulence_typst_report(
         
         # Consolidated summary for all heights
         if length(heights) > 1
-            println(io, "== 全高度湍流强度汇总")
+            println(io, "== 测风塔$(mast_name)全高度湍流强度汇总")
             println(io)
             
             # Combine all report data
@@ -788,7 +788,7 @@ function generate_consolidated_turbulence_typst_report(
             end
             
             if nrow(all_report_data) > 0
-                println(io, "表格：全高度不同风速范围的湍流强度汇总统计")
+                println(io, "表格：测风塔$(mast_name)全高度不同风速范围的湍流强度汇总统计")
                 println(io)
                 summary_table = prepare_and_format_table(all_report_data, "summary")
                 show(io, MIME"text/typst"(), summary_table)
@@ -796,8 +796,8 @@ function generate_consolidated_turbulence_typst_report(
                 println(io)
             end
         end
-        
-        println(io, "== 湍流强度与IEC标准对比")
+
+        println(io, "== 测风塔$(mast_name)湍流强度与IEC标准对比")
         println(io)
         
         # Check if combined plot exists
@@ -805,7 +805,7 @@ function generate_consolidated_turbulence_typst_report(
         if isfile(combined_plot_path)
             println(io, "#figure(")
             println(io, "  image(\"iec_comparison_combined.png\", width: 100%),")
-            println(io, "  caption: [测风塔湍流强度与IEC 61400-1标准对比 (高度 ≥ $(min_plot_height)m)]")
+            println(io, "  caption: [测风塔$(mast_name)湍流强度与IEC 61400-1标准对比 (高度 ≥ $(min_plot_height)m)]")
             println(io, ")")
             println(io)
         end

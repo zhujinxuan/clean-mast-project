@@ -7,7 +7,9 @@ and 16-sector performance metrics with detailed Typst report generation.
 """
 module ReportRepresentativeYearCommand
 
+using Statistics
 using ...TypstUtils
+using ...PandocUtils
 using ..ReportGeneration: load_representative_year_analysis_data, generate_representative_year_report
 
 export execute
@@ -123,6 +125,7 @@ function execute(project_dir::String)
         report_dir = dirname(report_path)
         report_filename = basename(report_path)
         TypstUtils.typst_try_compile(report_dir, report_filename)
+        PandocUtils.pandoc_try_convert(report_dir, report_filename)
 
         println()
         println("✅ Representative year analysis report generated successfully!")

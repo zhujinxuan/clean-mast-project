@@ -15,6 +15,7 @@ using ...Types.ReportReconstructMesoConfig: ReportReconstructMesoConfiguration, 
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
 using ...TypstUtils
+using ...PandocUtils
 using ...CleanMastLogging: create_cleanmast_logger, WorkerLoggerManager, get_logger
 using ...CleanMastLogging.CleanMastLogger.LogRotation: archive_all_worker_logs
 
@@ -98,6 +99,7 @@ function execute(config_path::String)
 
     @info "Compiling Typst report"
     TypstUtils.typst_try_compile(output_dir, "report.typ")
+    PandocUtils.pandoc_try_convert(output_dir, "report.typ")
 
     @info "Meso-mast reconstruction quality analysis completed successfully"
 end

@@ -1,11 +1,12 @@
 module ReportCleanConfig
 
 import ..Utils: from_dict, to_dict
-using ..MastTimeSeries: TimeSeriesSource
+using ..MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths
+using ..ProcessCleanConfig: ProcessCleanConfiguration, load_rules
 using ..CleanRules: Rule, RangeCriteria, LayerDifferenceCriteria, IcingCriteria, AvailabilityCriteria
 using Parameters
 
-export ReportCleanMast, ReportCleanMastGroup, ReportCleanOutput, ReportCleanConfiguration
+export ReportCleanMast, ReportCleanMastGroup, ReportCleanOutput, ReportCleanConfiguration, to_report_clean_config
 
 @with_kw struct ReportCleanMast
     name::String
@@ -18,7 +19,7 @@ end
 end
 
 @with_kw struct ReportCleanOutput
-    report_dir::String = "./report-masts/clean"
+    report_dir::String = "./clean"
     report_filename::String = "report.typ"
 end
 
@@ -161,6 +162,67 @@ function to_dict(config::ReportCleanConfiguration)
         "raw" => to_dict(config.raw),
         "clean" => to_dict(config.clean),
         "output" => to_dict(config.output)
+    )
+end
+
+"""
+    to_report_clean_config(process_config::ProcessCleanConfiguration, config_dir::String, path_prefix::String) -> ReportCleanConfiguration
+
+Convert ProcessCleanConfiguration to ReportCleanConfiguration.
+
+# Arguments
+- `process_config::ProcessCleanConfiguration`: The process-clean configuration to convert
+- `config_dir::String`: Base directory for resolving relative rule file paths
+- `path_prefix::String`: Prefix to prepend to relative paths (e.g., "../" for report-masts/)
+
+# Returns
+- `ReportCleanConfiguration`: The converted report clean configuration
+
+# Description
+This function converts a ProcessCleanConfiguration (from process-clean.toml) into a
+ReportCleanConfiguration (for report-clean.toml). It:
+
+1. Creates raw masts from process_config.masts[].input with adjusted paths
+2. Creates clean masts from process_config.masts[].output with adjusted paths
+3. Loads and parses rules for each mast
+4. Applies path prefix adjustment for configs saved in subdirectories
+
+# Example
+```julia
+process_config = from_dict(ProcessCleanConfiguration, load_dict("process-clean.toml"))
+report_config = to_report_clean_config(process_config, "/path/to/project", "../")
+```
+"""
+function to_report_clean_config(
+    process_config::ProcessCleanConfiguration,
+    config_dir::String,
+    path_prefix::String
+)::ReportCleanConfiguration
+    # Create raw masts from process_config.masts[].input with adjusted paths
+    raw_masts = [
+        ReportCleanMast(
+            name = mast.name,
+            input = adjust_timeseries_source_paths(mast.input, path_prefix)
+        )
+        for mast in process_config.masts
+    ]
+
+    # Create clean masts from process_config.masts[].output with adjusted paths
+    # Load and parse rules for each mast
+    clean_masts = [
+        ReportCleanMast(
+            name = mast.name,
+            input = adjust_timeseries_source_paths(mast.output, path_prefix),
+            rules = load_rules(mast.rules, config_dir)
+        )
+        for mast in process_config.masts
+    ]
+
+    # Create configuration with default output settings
+    return ReportCleanConfiguration(
+        raw = ReportCleanMastGroup(masts = raw_masts),
+        clean = ReportCleanMastGroup(masts = clean_masts),
+        output = ReportCleanOutput()  # Uses defaults: "./report-masts/clean", "report.typ"
     )
 end
 

@@ -232,7 +232,7 @@ Generate the complete data coverage section in Typst format.
 Returns a string containing the Typst markup for the data coverage analysis.
 """
 function generate_data_coverage_section(mast_data::Vector{MastReportData}, plots_dir::String)::String
-    header_sections = ["== 3. 数据覆盖率对比", ""]
+    header_sections = ["== 数据覆盖率对比", ""]
 
     mast_sections = map(mast_data) do mast
         # Calculate time range and expected points using detected interval

@@ -3,6 +3,7 @@ module ReportTimeSeriesCommand
 using Logging
 using ...Types.ReportTimeSeriesConfiguration: load_report_timeseries_config
 using ...TypstUtils
+using ...PandocUtils
 using ...CleanMastLogging: create_cleanmast_logger
 using ..TimeSeriesAnalysis: analyze_all, generate_comprehensive_report
 
@@ -63,6 +64,7 @@ function execute(config_path::String)
     results["report_path"] = report_path
 
     TypstUtils.typst_try_compile_all(config.output.path)
+    PandocUtils.pandoc_try_convert_all(config.output.path)
 
     @info "Analysis complete. Results saved to: $(config.output.path)"
 

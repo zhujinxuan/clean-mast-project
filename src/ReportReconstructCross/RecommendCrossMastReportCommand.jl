@@ -80,7 +80,8 @@ function execute(project_dir::String)
     analyze_masts = map(reconstruct_config.masts) do mast
         ReportReconstructCrossMast(
             name = mast.name,
-            input = adjust_timeseries_source(mast.output)  # Adjust paths to be relative to report-masts/
+            before_reconstruction = adjust_timeseries_source(mast.input),   # Before reconstruction data
+            after_reconstruction = adjust_timeseries_source(mast.output)     # After reconstruction data
         )
     end
 

@@ -71,43 +71,65 @@ end
 """
     write_typst_summary_section(io, analysis_results)
 
-Write summary section with table of all meso-mast pairs.
+Write summary section with separate tables for each mast.
 """
 function write_typst_summary_section(io, analysis_results::Vector)
     println(io, "= 重构质量汇总")
     println(io, "")
     println(io, "本节总结所有测风塔与中尺度数据对的重构质量指标。")
     println(io, "")
-    println(io, "#figure(")
-    println(io, "  table(")
-    println(io, "    columns: 6,")
-    println(io, "    align: (center, center, center, center, center, center),")
-    println(io, "    [*测风塔*], [*中尺度数据*], [*重叠天数*], [*传感器对数*], [*最佳相关系数*], [*最佳RMSE (m/s)*],")
 
+    # Group results by mast name
+    mast_groups = Dict{String, Vector}()
     for result in analysis_results
         mast = result.mast_name
-        meso = result.meso_name
-        overlap_days = @sprintf "%.1f" result.overlap_days
-        n_sensors = length(result.sensor_metrics)
-
-        best_idx = argmax([m.correlation for m in result.sensor_metrics])
-        best_metrics = result.sensor_metrics[best_idx]
-        best_corr = @sprintf "%.3f" best_metrics.correlation
-        best_rmse = @sprintf "%.2f" best_metrics.rmse
-
-        println(io, "    [$mast], [$meso], [$overlap_days], [$n_sensors], [$best_corr], [$best_rmse],")
+        if !haskey(mast_groups, mast)
+            mast_groups[mast] = []
+        end
+        push!(mast_groups[mast], result)
     end
 
-    println(io, "  ),")
-    println(io, "  caption: [测风塔-中尺度数据对重构质量汇总表]")
-    println(io, ")")
-    println(io, "")
+    # Sort mast names for consistent ordering
+    mast_names = sort(collect(keys(mast_groups)))
+
+    # Create one table per mast
+    for (idx, mast_name) in enumerate(mast_names)
+        mast_results = mast_groups[mast_name]
+
+        # Add section header for each mast
+        println(io, "== 测风塔$(mast_name)重构质量")
+        println(io, "")
+
+        println(io, "#figure(")
+        println(io, "  table(")
+        println(io, "    columns: 5,")
+        println(io, "    align: (center, center, center, center, center),")
+        println(io, "    [*中尺度数据*], [*重叠天数*], [*传感器对数*], [*最佳相关系数*], [*最佳RMSE (m/s)*],")
+
+        for result in mast_results
+            meso = result.meso_name
+            overlap_days = @sprintf "%.1f" result.overlap_days
+            n_sensors = length(result.sensor_metrics)
+
+            best_idx = argmax([m.correlation for m in result.sensor_metrics])
+            best_metrics = result.sensor_metrics[best_idx]
+            best_corr = @sprintf "%.3f" best_metrics.correlation
+            best_rmse = @sprintf "%.2f" best_metrics.rmse
+
+            println(io, "    [$meso], [$overlap_days], [$n_sensors], [$best_corr], [$best_rmse],")
+        end
+
+        println(io, "  ),")
+        println(io, "  caption: [测风塔$(mast_name)与中尺度数据重构质量汇总表]")
+        println(io, ")")
+        println(io, "")
+    end
 end
 
 """
     write_typst_sensor_pairs_section(io, analysis_results)
 
-Write detailed sensor pairs table showing all individual sensor comparisons.
+Write detailed sensor pairs table showing all individual sensor comparisons, divided by mast.
 """
 function write_typst_sensor_pairs_section(io, analysis_results::Vector)
     println(io, "#pagebreak()")
@@ -137,28 +159,48 @@ function write_typst_sensor_pairs_section(io, analysis_results::Vector)
     # Sort by mast, meso, mast height, meso height
     sort!(all_pairs, by = x -> (x.mast_name, x.meso_name, x.mast_height, x.meso_height))
 
-    println(io, "#breakable-figure(")
-    println(io, "  table(")
-    println(io, "    columns: 7,")
-    println(io, "    align: (center, center, center, center, center, center, center),")
-    println(io, "    [*测风塔*], [*中尺度数据*], [*测风塔风速高度 (m)*], [*中尺度高度 (m)*], [*相关系数*], [*RMSE (m/s)*], [*重叠天数*],")
-
+    # Group pairs by mast name
+    mast_groups = Dict{String, Vector}()
     for pair in all_pairs
         mast = pair.mast_name
-        meso = pair.meso_name
-        mast_h = @sprintf "%.0f" pair.mast_height
-        meso_h = @sprintf "%.0f" pair.meso_height
-        corr = @sprintf "%.3f" pair.correlation
-        rmse_val = @sprintf "%.2f" pair.rmse
-        overlap = @sprintf "%.1f" pair.overlap_days
-
-        println(io, "    [$mast], [$meso], [$mast_h], [$meso_h], [$corr], [$rmse_val], [$overlap],")
+        if !haskey(mast_groups, mast)
+            mast_groups[mast] = []
+        end
+        push!(mast_groups[mast], pair)
     end
 
-    println(io, "  ),")
-    println(io, "  caption: [所有传感器对详细指标表]")
-    println(io, ")")
-    println(io, "")
+    # Sort mast names for consistent ordering
+    mast_names = sort(collect(keys(mast_groups)))
+
+    # Create one table per mast
+    for mast_name in mast_names
+        mast_pairs = mast_groups[mast_name]
+
+        println(io, "== 测风塔$(mast_name)传感器对详细指标")
+        println(io, "")
+
+        println(io, "#breakable-figure(")
+        println(io, "  table(")
+        println(io, "    columns: 6,")
+        println(io, "    align: (center, center, center, center, center, center),")
+        println(io, "    [*中尺度数据*], [*测风塔风速高度 (m)*], [*中尺度高度 (m)*], [*相关系数*], [*RMSE (m/s)*], [*重叠天数*],")
+
+        for pair in mast_pairs
+            meso = pair.meso_name
+            mast_h = @sprintf "%.0f" pair.mast_height
+            meso_h = @sprintf "%.0f" pair.meso_height
+            corr = @sprintf "%.3f" pair.correlation
+            rmse_val = @sprintf "%.2f" pair.rmse
+            overlap = @sprintf "%.1f" pair.overlap_days
+
+            println(io, "    [$meso], [$mast_h], [$meso_h], [$corr], [$rmse_val], [$overlap],")
+        end
+
+        println(io, "  ),")
+        println(io, "  caption: [测风塔$(mast_name)传感器对详细指标表]")
+        println(io, ")")
+        println(io, "")
+    end
 end
 
 """

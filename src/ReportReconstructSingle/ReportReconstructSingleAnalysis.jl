@@ -5,6 +5,7 @@ using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeRange
 using ...Types.ReportReconstructSingleConfiguration: ReportReconstructSingleConfig, ProcessedMastReconstructConfig
 using ...TimeSeriesProcessing.Regularization: ensure_regular_intervals
 using ...TimeSeriesProcessing.IntervalDetection: detect_representative_interval
+using ...TypstUtils
 
 # Import functions from sub-modules
 import ..DataCoverage: analyze_data_coverage
@@ -108,6 +109,10 @@ function analyze_reconstruction_comparison(config::ReportReconstructSingleConfig
     @info "Generating comprehensive Typst report..."
     report_path = generate_reconstruction_report(config, results)
     results["report_path"] = report_path
+
+    # Compile Typst report to PDF if Typst is available
+    report_filename = basename(report_path)
+    TypstUtils.typst_try_compile(config.outputDir, report_filename)
 
     @info "Reconstruction comparison analysis complete"
 

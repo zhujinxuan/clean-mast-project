@@ -581,10 +581,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
         
         # Write Typst report
         open(typst_path, "w") do io
-            println(io, "== 风速时序分析报告")
-            
+            println(io, "== 测风塔$(mast.name)风速时序分析报告")
+
             # Include all available SVG figures
-            println(io, "== 图表分析")
+            println(io, "== 测风塔$(mast.name)图表分析")
             
             # Monthly wind speed pattern
             monthly_pattern_svg = joinpath(output_dir, "monthly_pattern.png")
@@ -651,8 +651,8 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
                     println(io)
                 end
             end
-            
-            println(io, "== 数据表格")
+
+            println(io, "== 测风塔$(mast.name)数据表格")
             println(io, "表格：$(mast.name)各月份不同高度平均风速")
             # Write speed table in Typst format
             show(io, MIME"text/typst"(), speed_table)
@@ -671,10 +671,10 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
                 # Write daily power table in Typst format
                 show(io, MIME"text/typst"(), daily_power_table)
             end
-            
+
             # Add summary statistics
-            println(io, "== 统计摘要")
-            
+            println(io, "== 测风塔$(mast.name)统计摘要")
+
             # Calculate annual averages
             speed_sensors = filter(s -> s.sensorType == "WindSpeed" && s.statType == "avg", mast.timeSeriesData.sensors)
             sort!(speed_sensors, by = s -> s.height, rev=true)

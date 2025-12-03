@@ -12,6 +12,7 @@ using Printf
 using CSV
 using Statistics
 
+using ...Types.MastTimeSeries: TimeSeriesData
 using ..MonthlyCoverage: generate_monthly_coverage_tables
 
 export generate_typst_report, export_csv_data
@@ -49,7 +50,7 @@ const CHINESE_TEXTS = Dict(
 )
 
 """
-    generate_typst_report(analysis_results, config, output_dir, mast_data)
+    generate_typst_report(analysis_results, config, output_dir, mast_data_with_before)
 
 Generate comprehensive Chinese Typst report with individual tables for each mast pair.
 
@@ -57,25 +58,30 @@ Generate comprehensive Chinese Typst report with individual tables for each mast
 - `analysis_results::Vector`: Array of AnalyzePairResult
 - `config`: ReportReconstructCrossConfiguration
 - `output_dir::String`: Output directory path
-- `mast_data::Dict{String, TimeSeriesData}`: Dictionary mapping mast names to time series data
+- `mast_data_with_before::Dict{String, @NamedTuple{data::TimeSeriesData, before_data::TimeSeriesData}}`: Dictionary mapping mast names to NamedTuples with data and before_data fields
 
 # Description
 Creates:
 - Main report.typ with embedded plots and tables
 - Individual table files in tables/ subdirectory
 - CSV data exports in data/ subdirectory
-- Monthly coverage tables for all masts
+- Monthly coverage tables for all masts with before/after comparison
 """
-function generate_typst_report(analysis_results::Vector, config, output_dir::String, mast_data::Dict)::Nothing
+function generate_typst_report(
+    analysis_results::Vector,
+    config,
+    output_dir::String,
+    mast_data_with_before::Dict{String, @NamedTuple{data::TimeSeriesData, before_data::TimeSeriesData}}
+)::Nothing
     println("📄 Generating Chinese Typst report...")
 
     # Create directory structure
     tables_dir = joinpath(output_dir, "tables")
     mkpath(tables_dir)
 
-    # Generate monthly coverage tables for all masts
+    # Generate monthly coverage tables for all masts (with before/after comparison)
     println("  📊 Generating monthly coverage tables...")
-    monthly_coverage_content = generate_monthly_coverage_tables(mast_data)
+    monthly_coverage_content = generate_monthly_coverage_tables(mast_data_with_before)
 
     # Generate individual table files for each mast pair
     table_files = map(analysis_results) do result

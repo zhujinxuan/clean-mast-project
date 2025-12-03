@@ -1,10 +1,10 @@
 """
-    CommandAnalyzeReconstructCross.jl
+    CommandReportReconstructCross.jl
 
-Main command implementation for analyze-reconstruct-cross.
+Main command implementation for report cross-mast.
 Orchestrates complete workflow: data loading → analysis → visualization → Chinese report generation.
 """
-module CommandAnalyzeReconstructCross
+module CommandReportReconstructCross
 
 using DataFrames
 using Dates
@@ -12,8 +12,11 @@ using Statistics
 
 # Import configuration types
 using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, from_dict
+using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries
 using ...Types.Utils: from_dict, to_dict
 using ...CleanMastUtils: load_dict
+using ...TypstUtils
+using ...PandocUtils
 
 # Import analysis modules
 using ..AnalysisCore: load_all_mast_data, analyze_mast_pair, filter_valid_results
@@ -25,10 +28,10 @@ export execute
 """
     execute(config_path::String)
 
-Execute the analyze-reconstruct-cross command.
+Execute the report cross-mast command.
 
 # Arguments
-- `config_path::String`: Path to analyze-reconstruct-cross.toml configuration file
+- `config_path::String`: Path to report-cross-mast.toml configuration file
 
 # Workflow
 1. Load and validate configuration
@@ -41,7 +44,7 @@ Execute the analyze-reconstruct-cross command.
 
 # Example
 ```bash
-julia bin/CleanMast.jl analyze reconstruct-cross analyze-reconstruct-cross.toml
+julia bin/CleanMast.jl report cross-mast report-cross-mast.toml
 ```
 
 This generates:
@@ -70,9 +73,10 @@ function execute(config_path::String)
     output_dir = joinpath(config_dir, config.analyze.output_dir)
     create_output_directories(output_dir, config.analyze.include_plots)
 
-    # 3. Load all mast time series data
+    # 3. Load all mast time series data (including optional before data)
     println("\n📊 Loading mast time series data...")
-    mast_data = load_all_mast_data(config, config_dir)
+    mast_data_with_before = load_all_mast_data_with_before(config, config_dir)
+    mast_data = Dict(name => entry.data for (name, entry) in mast_data_with_before)
     println("✅ Loaded data for $(length(mast_data)) masts")
     
     # 4. Analyze all mast pairs (N² combinations)
@@ -99,8 +103,12 @@ function execute(config_path::String)
     
     # 7. Generate comprehensive report
     println("\n📄 Generating report...")
-    generate_typst_report(valid_results, config, output_dir, mast_data)
-    
+    generate_typst_report(valid_results, config, output_dir, mast_data_with_before)
+
+    # Compile Typst report to PDF if Typst is available
+    TypstUtils.typst_try_compile(output_dir, "report.typ")
+    PandocUtils.pandoc_try_convert(output_dir, "report.typ")
+
     # 8. Print completion summary
     print_completion_summary(valid_results, output_dir, config)
     
@@ -171,6 +179,29 @@ function analyze_all_mast_pairs(masts, mast_data::Dict)
     end
     
     return analysis_results
+end
+
+"""
+    load_all_mast_data_with_before(config, config_dir)
+
+Load all mast time series data, including before-reconstruction data.
+Returns Dict{String, NamedTuple{(:data, :before_data), Tuple{TimeSeriesData, TimeSeriesData}}}
+"""
+function load_all_mast_data_with_before(config, config_dir)::Dict{String, @NamedTuple{data::TimeSeriesData, before_data::TimeSeriesData}}
+    mast_data_dict = Dict{String, @NamedTuple{data::TimeSeriesData, before_data::TimeSeriesData}}()
+
+    for mast_config in config.masts
+        # Load before and after reconstruction data
+        before_data = load_timeseries(mast_config.before_reconstruction, config_dir)
+        data = load_timeseries(mast_config.after_reconstruction, config_dir)
+
+        mast_data_dict[mast_config.name] = (
+            data = data,
+            before_data = before_data
+        )
+    end
+
+    return mast_data_dict
 end
 
 """

@@ -44,7 +44,68 @@ function to_dict(source::TimeSeriesSource) :: Dict{String, Any}
     )
 end
 
-export TimeSeriesData, TimeRange, TimeSeriesSource, load_timeseries, save_timeseries, slice_timeseries_by_range
+"""
+    adjust_relative_path(path::String, prefix::String)::String
+
+Adjust a relative path by prepending a prefix.
+Absolute paths are returned unchanged.
+
+# Arguments
+- `path::String`: Original path (relative or absolute)
+- `prefix::String`: Prefix to prepend to relative paths (e.g., "../")
+
+# Returns
+- `String`: Adjusted path
+
+# Examples
+```julia
+adjust_relative_path("./data/file.csv", "../")  # → "../data/file.csv"
+adjust_relative_path("data/file.csv", "../")    # → "../data/file.csv"
+adjust_relative_path("C:/abs/file.csv", "../")  # → "C:/abs/file.csv" (unchanged)
+adjust_relative_path("/abs/file.csv", "../")    # → "/abs/file.csv" (unchanged)
+```
+"""
+function adjust_relative_path(path::String, prefix::String)::String
+    # Return absolute paths unchanged
+    isabspath(path) && return path
+
+    # For relative paths, prepend prefix
+    if startswith(path, "./")
+        return prefix * path[3:end]
+    else
+        return prefix * path
+    end
+end
+
+"""
+    adjust_timeseries_source_paths(source::TimeSeriesSource, prefix::String)::TimeSeriesSource
+
+Adjust paths in a TimeSeriesSource by prepending prefix to relative paths.
+Absolute paths are preserved.
+
+# Arguments
+- `source::TimeSeriesSource`: TimeSeriesSource with data and sensors paths
+- `prefix::String`: Prefix to prepend (e.g., "../" for report-masts)
+
+# Returns
+- `TimeSeriesSource`: New TimeSeriesSource with adjusted paths
+
+# Examples
+```julia
+source = TimeSeriesSource("./data/raw.csv", "./data/sensors.toml")
+adjusted = adjust_timeseries_source_paths(source, "../")
+# adjusted.data == "../data/raw.csv"
+# adjusted.sensors == "../data/sensors.toml"
+```
+"""
+function adjust_timeseries_source_paths(source::TimeSeriesSource, prefix::String)::TimeSeriesSource
+    return TimeSeriesSource(
+        adjust_relative_path(source.data, prefix),
+        adjust_relative_path(source.sensors, prefix)
+    )
+end
+
+export TimeSeriesData, TimeRange, TimeSeriesSource, load_timeseries, save_timeseries, slice_timeseries_by_range, adjust_relative_path, adjust_timeseries_source_paths
 
 function resolve_absolute_path(source::TimeSeriesSource, base_dir::String) :: TimeSeriesSource
     return TimeSeriesSource(joinpath(base_dir, source.data), joinpath(base_dir, source.sensors))

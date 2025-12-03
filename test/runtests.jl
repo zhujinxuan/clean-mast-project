@@ -31,7 +31,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
     "sensor_naming" => ["test_sensor_naming.jl"],
     "time_series_processing" => [
         "TimeSeriesProcessing/test_time_series_processing.jl",
-        "TimeSeriesProcessing/test_interval_detection.jl"
+        "TimeSeriesProcessing/test_interval_detection.jl",
+        "TimeSeriesProcessing/test_mast_timeseries_path_utils.jl"
     ],
     "measurement_period" => [
         "TimeSeriesProcessing/test_measurement_period_calculator.jl",
@@ -75,6 +76,15 @@ const TEST_SETS = Dict{String, Vector{String}}(
     ],
     "turbulence" => [
         "ReportTimeSeries/test_turbulence_nan_fix.jl"
+    ],
+    "wind_rose" => [
+        "ReportTimeSeries/test_wind_rose_directions.jl"
+    ],
+    "types" => [
+        "Types/test_process_clean_config_utils.jl"
+    ],
+    "pandoc_utils" => [
+        "PandocUtils/test_pandoc_utils.jl"
     ]
 )
 

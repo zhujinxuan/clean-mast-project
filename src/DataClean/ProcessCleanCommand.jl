@@ -1,7 +1,7 @@
 module ProcessCleanCommand
 
 using CSV, YAML, DataFrames, Dates, TOML
-using ...Types.ProcessCleanConfig: ProcessCleanConfiguration
+using ...Types.ProcessCleanConfig: ProcessCleanConfiguration, load_rules
 using ...Types.CleanRules: Rule, RuleViolation
 using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries, save_timeseries
 using ...Types.SensorColumns: SensorColumn
@@ -185,9 +185,7 @@ function execute(config_path::String)
         
         time_series = load_timeseries(mast_config.input, project_dir)
 
-        rules_config = mast_config.rules
-        rules_dict = isa(rules_config, String) ? load_dict(joinpath(project_dir, rules_config)) : rules_config
-        rules = [from_dict(Rule, r) for r in rules_dict["rules"]]
+        rules = load_rules(mast_config.rules, project_dir)
 
         println("Processing clean data for mast: $name...")
         result, violations = process_clean_data!(rules, time_series)
