@@ -583,6 +583,13 @@ function generate_typst_monthly_report(config::ReportTimeSeriesConfig)
         open(typst_path, "w") do io
             println(io, "== 测风塔$(mast.name)风速时序分析报告")
 
+            # Add time range information
+            timestamps = mast.timeSeriesData.df.timestamp
+            time_start = minimum(timestamps)
+            time_end = maximum(timestamps)
+            println(io, "数据时间范围: $(Dates.format(time_start, "yyyy-mm-dd HH:MM")) 至 $(Dates.format(time_end, "yyyy-mm-dd HH:MM"))")
+            println(io)
+
             # Include all available SVG figures
             println(io, "== 测风塔$(mast.name)图表分析")
             
