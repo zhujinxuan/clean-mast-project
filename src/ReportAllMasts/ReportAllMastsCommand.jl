@@ -21,6 +21,7 @@ using ...ReportReconstructCross.CommandReportReconstructCross
 using ...ReportTimeSeries.ReportTimeSeriesCommand
 using ...ReportReconstructMeso
 using ...ReportReconstructSingle.ReportReconstructSingleCommand
+using ...ReportFrozenPeriod.ReportFrozenPeriodCommand
 
 export execute
 
@@ -33,7 +34,7 @@ Generate all comprehensive mast reports for a project.
 - `project_dir::String`: Project directory containing all necessary configurations
 
 # Description
-This command generates eight comprehensive reports:
+This command generates nine comprehensive reports:
 
 1. **Clean Report** (`report-masts/clean/`)
    - Raw vs clean data comparison
@@ -75,6 +76,11 @@ This command generates eight comprehensive reports:
    - Meso-mast reconstruction quality analysis
    - Comparison of mesoscale vs reconstructed mast data
 
+9. **Frozen Period Report** (`report-masts/frozen-period/`)
+   - Sensor frozen period detection analysis
+   - Temperature, wind speed, and wind direction stability analysis
+   - Frozen period statistics and visualization
+
 # Requirements
 The project directory must contain the following configurations:
 - `process-clean.toml` - For clean report generation
@@ -85,6 +91,7 @@ The project directory must contain the following configurations:
 - `report-masts/report-timeseries-meso.toml` - For time series meso report generation
 - `report-masts/report-timeseries-rep.toml` - For time series representative year report generation
 - `report-masts/report-reconstruct-meso.toml` - For reconstruct meso report generation
+- `report-masts/report-frozen-period.toml` - For frozen period report generation
 
 Generate these configurations first using:
 ```bash
@@ -164,7 +171,7 @@ function execute(project_dir::String)
     println()
 
     # 1. Generate Clean Report
-    println("📋 Report 1/8: Clean Report (Raw vs Clean Data)")
+    println("📋 Report 1/9: Clean Report (Raw vs Clean Data)")
     try
         report_clean_config = joinpath(project_dir, "report-masts", "report-clean.toml")
         if isfile(report_clean_config)
@@ -184,7 +191,7 @@ function execute(project_dir::String)
     println()
 
     # 2. Generate Recovery Report
-    println("📈 Report 2/8: Recovery Report (Data Coverage Across Stages)")
+    println("📈 Report 2/9: Recovery Report (Data Coverage Across Stages)")
     try
         recovery_config_path = joinpath(project_dir, "report-masts", "report-recovery.toml")
         if isfile(recovery_config_path)
@@ -204,7 +211,7 @@ function execute(project_dir::String)
     println()
 
     # 3. Generate Reconstruct Single Report
-    println("🔄 Report 3/8: Reconstruct Single Report (Single-Mast Reconstruction)")
+    println("🔄 Report 3/9: Reconstruct Single Report (Single-Mast Reconstruction)")
     try
         reconstruct_single_config = joinpath(project_dir, "report-masts", "report-reconstruct-single.yaml")
         if isfile(reconstruct_single_config)
@@ -224,7 +231,7 @@ function execute(project_dir::String)
     println()
 
     # 4. Generate Cross-Mast Report
-    println("🔗 Report 4/8: Cross-Mast Report (Correlation Analysis)")
+    println("🔗 Report 4/9: Cross-Mast Report (Correlation Analysis)")
     try
         cross_mast_config = joinpath(project_dir, "report-masts", "report-cross-mast.toml")
         if isfile(cross_mast_config)
@@ -251,7 +258,7 @@ function execute(project_dir::String)
     println()
 
     # 5. Generate Representative Year Report
-    println("📅 Report 5/8: Representative Year Report (Calibration Analysis)")
+    println("📅 Report 5/9: Representative Year Report (Calibration Analysis)")
     try
         rep_year_config = joinpath(project_dir, "representative-year.toml")
         if isfile(rep_year_config)
@@ -270,7 +277,7 @@ function execute(project_dir::String)
     println()
 
     # 6. Generate Time Series Meso Report
-    println("📊 Report 6/8: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
+    println("📊 Report 6/9: Time Series Meso Report (Meso-Reconstructed Data Analysis)")
     try
         timeseries_meso_config = joinpath(project_dir, "report-masts", "report-timeseries-meso.toml")
         if isfile(timeseries_meso_config)
@@ -290,7 +297,7 @@ function execute(project_dir::String)
     println()
 
     # 7. Generate Time Series Representative Year Report
-    println("📊 Report 7/8: Time Series Representative Year Report (Rep Year Data Analysis)")
+    println("📊 Report 7/9: Time Series Representative Year Report (Rep Year Data Analysis)")
     try
         timeseries_rep_config = joinpath(project_dir, "report-masts", "report-timeseries-rep.toml")
         if isfile(timeseries_rep_config)
@@ -310,7 +317,7 @@ function execute(project_dir::String)
     println()
 
     # 8. Generate Reconstruct Meso Report
-    println("🌍 Report 8/8: Reconstruct Meso Report (Meso-Mast Reconstruction Quality)")
+    println("🌍 Report 8/9: Reconstruct Meso Report (Meso-Mast Reconstruction Quality)")
     try
         reconstruct_meso_config = joinpath(project_dir, "report-masts", "report-reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -326,6 +333,26 @@ function execute(project_dir::String)
         results["reconstruct_meso"] = false
         errors["reconstruct_meso"] = e
         println("   ❌ Reconstruct meso report failed: $(e)")
+    end
+    println()
+
+    # 9. Generate Frozen Period Report
+    println("❄️  Report 9/9: Frozen Period Report (Sensor Frozen Period Detection)")
+    try
+        frozen_period_config = joinpath(project_dir, "report-masts", "report-frozen-period.toml")
+        if isfile(frozen_period_config)
+            ReportFrozenPeriodCommand.execute(frozen_period_config)
+            results["frozen_period"] = true
+            println("   ✅ Frozen period report generated successfully")
+        else
+            println("   ⚠️  Skipping: report-frozen-period.toml not found in report-masts/")
+            println("      Run 'recommend report-all' first to generate configurations")
+            results["frozen_period"] = false
+        end
+    catch e
+        results["frozen_period"] = false
+        errors["frozen_period"] = e
+        println("   ❌ Frozen period report failed: $(e)")
     end
     println()
 
@@ -351,7 +378,8 @@ function execute(project_dir::String)
             "representative_year" => "Representative Year Report",
             "timeseries_meso" => "Time Series Meso Report",
             "timeseries_rep" => "Time Series Representative Year Report",
-            "reconstruct_meso" => "Reconstruct Meso Report"
+            "reconstruct_meso" => "Reconstruct Meso Report",
+            "frozen_period" => "Frozen Period Report"
         )[report_name]
 
         output_path = Dict(
@@ -362,7 +390,8 @@ function execute(project_dir::String)
             "representative_year" => "report-masts/representative-year/report.typ",
             "timeseries_meso" => "report-masts/timeseries-meso/",
             "timeseries_rep" => "report-masts/timeseries-rep/",
-            "reconstruct_meso" => "report-masts/reconstruct-meso/report.typ"
+            "reconstruct_meso" => "report-masts/reconstruct-meso/report.typ",
+            "frozen_period" => "report-masts/frozen-period/"
         )[report_name]
 
         println("   $status_icon $report_display")

@@ -345,6 +345,7 @@ end
     using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
     using CleanMastProject.ReportClean.RecommendReportCleanCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
+    using CleanMastProject.ReportFrozenPeriod.RecommendReportFrozenCommand
     using CleanMastProject.ReportReconstructSingle.RecommendReportReconstructSingleCommand
     using CleanMastProject.ReportReconstructMeso.RecommendReportReconstructMesoCommand
     using CleanMastProject.ReportAllMasts.RecommendReportAllCommand
@@ -628,6 +629,26 @@ end
     end
 
     """
+    report-frozen-period
+
+    Recommend a report-frozen-period.toml configuration file for frozen sensor period detection.
+
+    # Arguments
+    - `dir`: Project directory containing parse-sensors.toml
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl recommend report-frozen-period ./projects/my-project
+    ```
+
+    Generates report-frozen-period.toml in report-masts/ for detecting frozen sensor periods.
+    The configuration includes multiple threshold sets (加热型 and 非加热型) for different sensor types.
+    """
+    @cast function report_frozen_period(dir::String)
+        RecommendReportFrozenCommand.execute(dir)
+    end
+
+    """
     report-cross-mast
 
     Recommend a report-cross-mast.toml configuration file for cross-mast correlation reports.
@@ -880,6 +901,7 @@ Comonicon.@cast module Report
     using CleanMastProject.ReportAllMasts.ReportAllMastsCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportRecovery.ReportRecoveryCommand
+    using CleanMastProject.ReportFrozenPeriod.ReportFrozenPeriodCommand
     using CleanMastProject.RepresentativeYear.ReportRepresentativeYearCommand
     using CleanMastProject.ReportReconstructCross.CommandReportReconstructCross
     using CleanMastProject.ReportTimeSeries.ReportTimeSeriesCommand
@@ -997,6 +1019,38 @@ Comonicon.@cast module Report
     """
     Comonicon.@cast function recovery(config_path::String)
         ReportRecoveryCommand.execute(config_path)
+    end
+
+    """
+    frozen-period
+
+    Generate frozen sensor period detection report.
+
+    # Arguments
+    - `config_path`: Path to report-frozen-period.toml configuration file
+
+    # Example
+    ```bash
+    julia bin/CleanMast.jl report frozen-period ./projects/my-project/report-masts/report-frozen-period.toml
+    ```
+
+    This command:
+    1. Loads report-frozen-period.toml configuration
+    2. For each mast, loads raw data and detects frozen periods using ALL threshold sets
+    3. Detects frozen periods based on multi-condition criteria (temperature, wind stability, duration)
+    4. Generates Chinese Typst report with:
+       - Monthly frozen duration tables for each threshold set (加热型, 非加热型)
+       - Monthly missing data duration table
+       - RH sensor availability status
+       - Detection methodology documentation
+
+    Output:
+    - report-masts/frozen-period/frozen-period-report.typ: Main Chinese report
+    - Tables showing monthly frozen days and missing days for each sensor
+    - Separate analysis for heated and non-heated sensor thresholds
+    """
+    Comonicon.@cast function frozen_period(config_path::String)
+        ReportFrozenPeriodCommand.execute(config_path)
     end
 
     """

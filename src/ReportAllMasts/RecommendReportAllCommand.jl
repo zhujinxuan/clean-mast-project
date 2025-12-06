@@ -13,6 +13,7 @@ using ...ReportReconstructSingle.RecommendReportReconstructSingleCommand
 using ...ReportReconstructMeso.RecommendReportReconstructMesoCommand
 using ...ReportTimeSeries.RecommendReportTimeSeriesMesoCommand
 using ...ReportTimeSeries.RecommendReportTimeSeriesRepCommand
+using ...ReportFrozenPeriod.RecommendReportFrozenCommand
 
 export execute
 
@@ -34,6 +35,7 @@ This command generates all necessary TOML configuration files for the main repor
 5. **report-timeseries-meso.toml** - For time series analysis of meso-reconstructed data
 6. **report-timeseries-rep.toml** - For time series analysis of representative year data
 7. **report-reconstruct-meso.toml** - For meso-mast reconstruction quality analysis
+8. **report-frozen-period.toml** - For frozen period detection analysis
 
 Note: Representative year report uses representative-year.toml directly, so no additional config needed.
 
@@ -208,7 +210,7 @@ function execute(project_dir::String)
     println()
 
     # 7. Generate report-reconstruct-meso.toml
-    println("🌍 Config 7/7: Reconstruct Meso Report Configuration")
+    println("🌍 Config 7/8: Reconstruct Meso Report Configuration")
     try
         reconstruct_meso_config = joinpath(project_dir, "reconstruct-meso.toml")
         if isfile(reconstruct_meso_config)
@@ -223,6 +225,19 @@ function execute(project_dir::String)
         results["reconstruct_meso"] = false
         errors["reconstruct_meso"] = e
         println("   ❌ Reconstruct meso config failed: $(e)")
+    end
+    println()
+
+    # 8. Generate report-frozen-period.toml
+    println("❄️  Config 8/8: Frozen Period Report Configuration")
+    try
+        RecommendReportFrozenCommand.execute(project_dir)
+        results["frozen_period"] = true
+        println("   ✅ report-frozen-period.toml generated successfully")
+    catch e
+        results["frozen_period"] = false
+        errors["frozen_period"] = e
+        println("   ❌ Frozen period config failed: $(e)")
     end
     println()
 
@@ -247,7 +262,8 @@ function execute(project_dir::String)
             "reconstruct_single" => "Reconstruct Single Report Configuration",
             "timeseries_meso" => "Time Series Meso Report Configuration",
             "timeseries_rep" => "Time Series Representative Year Report Configuration",
-            "reconstruct_meso" => "Reconstruct Meso Report Configuration"
+            "reconstruct_meso" => "Reconstruct Meso Report Configuration",
+            "frozen_period" => "Frozen Period Report Configuration"
         )[config_name]
 
         output_file = Dict(
@@ -257,7 +273,8 @@ function execute(project_dir::String)
             "reconstruct_single" => "report-masts/report-reconstruct-single.yaml",
             "timeseries_meso" => "report-masts/report-timeseries-meso.toml",
             "timeseries_rep" => "report-masts/report-timeseries-rep.toml",
-            "reconstruct_meso" => "report-masts/report-reconstruct-meso.toml"
+            "reconstruct_meso" => "report-masts/report-reconstruct-meso.toml",
+            "frozen_period" => "report-masts/report-frozen-period.toml"
         )[config_name]
 
         println("   $status_icon $config_display")

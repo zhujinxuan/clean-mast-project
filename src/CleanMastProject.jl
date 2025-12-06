@@ -102,6 +102,10 @@ module Types
   export ViolationData
   include("./Types/ReportCleanData.jl")
   export ReportCleanData
+  include("./Types/ReportFrozenPeriodConfig.jl")
+  export ReportFrozenPeriodConfig
+  include("./Types/ReportFrozenPeriodData.jl")
+  export ReportFrozenPeriodData
 end
 
 export Types
@@ -167,6 +171,18 @@ module ReportRecovery
   export RecommendReportRecoveryCommand, ReportRecoveryCommand
 end
 export ReportRecovery
+
+module ReportFrozenPeriod
+  include("./ReportFrozenPeriod/PeriodOperations.jl")
+  include("./ReportFrozenPeriod/FrozenDetection.jl")
+  include("./ReportFrozenPeriod/MonthlyStatistics.jl")
+  include("./ReportFrozenPeriod/ReportGeneration.jl")
+  include("./ReportFrozenPeriod/ReportFrozenPeriodCommand.jl")
+  include("./ReportFrozenPeriod/RecommendReportFrozenCommand.jl")
+  export PeriodOperations, FrozenDetection, MonthlyStatistics, ReportGeneration
+  export ReportFrozenPeriodCommand, RecommendReportFrozenCommand
+end
+export ReportFrozenPeriod
 
 module ReportReconstructSingle
   include("./ReportReconstructSingle/DataCoverage.jl")

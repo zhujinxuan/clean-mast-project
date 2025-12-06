@@ -85,6 +85,11 @@ const TEST_SETS = Dict{String, Vector{String}}(
     ],
     "pandoc_utils" => [
         "PandocUtils/test_pandoc_utils.jl"
+    ],
+    "report_frozen_period" => [
+        "ReportFrozenPeriod/test_period_operations.jl",
+        "ReportFrozenPeriod/test_component_detection.jl",
+        "ReportFrozenPeriod/test_missing_data_stats.jl"
     ]
 )
 
