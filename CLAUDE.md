@@ -20,20 +20,48 @@ CleanMast processes wind measurement data through a multi-stage pipeline:
 ## Architecture Overview
 
 ```
-src/
-├── Types/                     # Core type definitions and configurations
-├── ParseSensors/             # Data parsing and column mapping
-├── DataClean/                # Data cleaning rules and validation
-├── ReconstructSingleMast/    # Single-mast data reconstruction
-├── ReconstructMeso/          # Mesoscale data reconstruction
-├── ReconstructCross/         # Cross-mast reconstruction (in development)
-├── AnalyzeTimeSeries/        # Wind resource analysis
-├── AnalyzeEN/                # EN standard compliance analysis
-├── RepresentativeYear/       # Long-term calibration
-├── TowerShading/             # Tower shadow detection/correction
-├── Command/                  # CLI command implementations
-└── CleanMastUtils.jl        # Shared utilities
+CleanMastProject/
+├── src/
+│   ├── Types/                     # Core type definitions and configurations
+│   ├── ParseSensors/             # Data parsing and column mapping
+│   ├── DataClean/                # Data cleaning rules and validation
+│   ├── ReconstructSingleMast/    # Single-mast data reconstruction
+│   ├── ReconstructMeso/          # Mesoscale data reconstruction
+│   ├── ReconstructCross/         # Cross-mast reconstruction (in development)
+│   ├── AnalyzeTimeSeries/        # Wind resource analysis
+│   ├── AnalyzeEN/                # EN standard compliance analysis
+│   ├── RepresentativeYear/       # Long-term calibration
+│   ├── TowerShading/             # Tower shadow detection/correction
+│   ├── Command/                  # CLI command implementations
+│   └── CleanMastUtils.jl        # Shared utilities
+├── test/                         # Test suite
+├── docs/                         # Documentation
+└── Project.toml                  # Package dependencies
 ```
+
+## Workspace Structure
+
+The project uses Julia's workspace feature for better organization:
+
+**Root Structure:**
+```
+clean-mast-project/
+├── Project.toml           # Workspace configuration: [workspace] members = ["CleanMastProject"]
+├── bin/
+│   └── CleanMast.jl      # Entry point that activates CleanMastProject environment
+└── CleanMastProject/     # The actual Julia package
+    ├── Project.toml       # Package dependencies and metadata
+    ├── src/               # Source code
+    ├── test/              # Test suite
+    └── docs/              # Documentation
+```
+
+**Key Points:**
+- The root `Project.toml` defines the workspace with `CleanMastProject` as a member
+- All source code, tests, and documentation live under `CleanMastProject/`
+- `bin/CleanMast.jl` activates the `CleanMastProject` environment before loading the package
+- When running tests, use: `julia CleanMastProject/test/runtests.jl [test_set]`
+- All file paths in code should be relative to the package root (`CleanMastProject/`)
 
 ## Coding Standards
 
@@ -170,7 +198,7 @@ processed_pairs = map(((h, s),) -> process_measurement(h, s), height_speed_pairs
 ### Domain-Specific Guidelines
 
 #### Wind Energy Data Context
-Based on the `SensorColumn` definition (see `src/Types/SensorColumns.jl`), the system supports multiple sensor types, but **primary focus is on WindSpeed and WindDirection** for wind energy analysis:
+Based on the `SensorColumn` definition (see `CleanMastProject/src/Types/SensorColumns.jl`), the system supports multiple sensor types, but **primary focus is on WindSpeed and WindDirection** for wind energy analysis:
 - **Primary Sensor Types**: WindSpeed, WindDirection (most analysis focuses on these)
 - **Secondary Sensor Types**: Temperature, Pressure
 - **Critical StatType**: `avg` (average) - this is the primary statistic used for wind analysis
@@ -193,15 +221,15 @@ Based on the `SensorColumn` definition (see `src/Types/SensorColumns.jl`), the s
 
 ### Testing Conventions
 
-For comprehensive testing documentation, see **[docs/development/tests.md](docs/development/tests.md)**.
+For comprehensive testing documentation, see **[CleanMastProject/docs/development/tests.md](CleanMastProject/docs/development/tests.md)**.
 
 **Quick Reference:**
-- **Run tests**: `julia test/runtests.jl [test_set]`
-- **List test sets**: `julia test/runtests.jl --help`
-- **Fixtures**: Use `test/{Module}/fixtures/` for complex scenarios
+- **Run tests**: `julia CleanMastProject/test/runtests.jl [test_set]`
+- **List test sets**: `julia CleanMastProject/test/runtests.jl --help`
+- **Fixtures**: Use `CleanMastProject/test/{Module}/fixtures/` for complex scenarios
 - **Inline data**: Use for simple unit tests and temp file tests
 
-Always run relevant tests after code changes: `julia test/runtests.jl [module_name]`
+Always run relevant tests after code changes: `julia CleanMastProject/test/runtests.jl [module_name]`
 
 ### Visualization Standards
 
@@ -277,7 +305,7 @@ wind_data |>
 - **Source-Code Constrained**: Only document what can be verified from actual code files
 - **No Hallucination**: Never invent configuration parameters, examples, or explanations not found in source code
 - **Reference-First**: Base all documentation on:
-  - Julia struct definitions in `src/Types/`
+  - Julia struct definitions in `CleanMastProject/src/Types/`
   - Actual configuration files in `projects/pn-masts/`
   - Code comments and docstrings
   - Do NOT use general domain knowledge to fill gaps
@@ -343,7 +371,7 @@ end
 
 #### Sensor Column Handling
 ```julia
-# Working with SensorColumn types (defined in src/Types/SensorColumns.jl)
+# Working with SensorColumn types (defined in CleanMastProject/src/Types/SensorColumns.jl)
 # Focus on WindSpeed/WindDirection with avg statType
 function find_wind_speed_sensor(sensors::Vector{SensorColumn}, height::Float64)::Union{SensorColumn, Nothing}
     return find_nearest_height_sensor(height, sensors, "WindSpeed", "avg")

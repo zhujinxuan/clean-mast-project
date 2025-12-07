@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
 
-# Activate the project environment
+# Activate the CleanMastProject environment
 using Pkg
-project_path = abspath(joinpath(@__DIR__, ".."))
+project_path = abspath(joinpath(@__DIR__, "..", "CleanMastProject"))
 Pkg.activate(project_path)
 
 using CleanMastProject.CleanMastCli: command_main
