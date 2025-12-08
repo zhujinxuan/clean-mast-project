@@ -1,0 +1,12 @@
+# Test configuration for column name normalizer
+input_path = "../csv_files/different_columns.csv"
+output_path = "../../normalized_columns.csv"
+skip_rows = 0
+keep_unmapped = true
+delimiter = ","
+
+[column_mappings]
+"time_stamp" = "Timestamp"
+"ws_80m" = "WindSpeed_80m"
+"wd_80m" = "WindDirection_80m"
+"temp_amb" = "Temperature"

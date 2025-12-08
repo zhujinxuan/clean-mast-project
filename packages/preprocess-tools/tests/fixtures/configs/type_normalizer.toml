@@ -1,0 +1,7 @@
+# Test configuration for type normalizer
+input_path = "../csv_files/wrong_types.csv"
+output_path = "../../normalized_types.csv"
+skip_rows = 0
+delimiter = ","
+
+float_columns = ["WindSpeed", "WindDirection"]

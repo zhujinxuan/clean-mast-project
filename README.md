@@ -1,6 +1,19 @@
 # CleanMast
 
-CleanMast 是一个用于处理风能测风塔数据的 Julia 项目，专门设计用于解析、清理和重构来自气象测风塔 CSV 文件的数据。它提供强大的数据验证、清理规则和重构能力。
+Wind energy meteorological tower data processing toolkit.
+
+## 🚧 Migration Status
+
+This project is currently being migrated from Julia to Python.
+
+- **Julia (Current - Stable)**: Full-featured, production-ready
+- **Python (In Development)**: Preprocessing tools available, main features in progress
+
+See [Migration Status](docs/migration/status.md) for details.
+
+---
+
+CleanMast 是一个用于处理风能测风塔数据的项目，专门设计用于解析、清理和重构来自气象测风塔 CSV 文件的数据。它提供强大的数据验证、清理规则和重构能力。
 
 ## 主要功能
 
@@ -19,6 +32,8 @@ CleanMast 是一个用于处理风能测风塔数据的 Julia 项目，专门设
 
 ## 安装
 
+### Julia Version (生产环境推荐)
+
 1. 克隆代码仓库
 2. 安装 Julia 1.11.7 或更高版本
 3. 在项目目录中从 Julia REPL 运行：
@@ -29,7 +44,23 @@ Pkg.activate(".")
 Pkg.instantiate()
 ```
 
+### Python Version (开发中)
+
+1. 安装 Python 3.11 或更高版本
+2. 安装 [uv](https://github.com/astral-sh/uv)
+3. 从项目根目录运行：
+
+```bash
+uv sync
+```
+
+Python 版本包含：
+- ✅ **preprocess-tools**: 数据预处理工具（可用）
+- 🚧 **cleanmast**: 主分析工具包（开发中）
+
 ## 使用方法
+
+### Julia Version
 
 通过命令行进行基本使用：
 
@@ -37,7 +68,23 @@ Pkg.instantiate()
 julia bin/CleanMast.jl <命令> <选项>
 ```
 
-对于一般使用者，见 [docs/user/quick-start.md](docs/user/quick-start.md)
+对于一般使用者，见 [CleanMastProject/docs/](CleanMastProject/docs/)
+
+### Python Version
+
+```bash
+# Preprocessing tools (unified CLI)
+uv run preprocess csv-merge config.toml
+uv run preprocess col-normalizer config.toml
+uv run preprocess type-normalizer config.toml
+uv run preprocess timestamp config.toml
+
+# CleanMast (coming soon)
+uv run cleanmast parse-sensors --config config.toml
+uv run cleanmast process --config config.toml
+```
+
+See [packages/preprocess-tools/README.md](packages/preprocess-tools/README.md) for preprocessing documentation.
 
 ### 主要命令分类
 
@@ -65,24 +112,24 @@ julia bin/CleanMast.jl <命令> <选项>
 
 ## 文档
 
-CleanMast 提供三层文档结构，面向不同的用户群体：
+### 📖 Documentation Navigation
 
-### 📚 用户文档 (docs/user/)
-面向系统用户和风能工程师：
-- [快速开始](docs/user/quick-start.md) - 完整的入门教程
-- [命令参考](docs/user/commands/) - 详细的命令文档
-- [配置指南](docs/user/configuration/) - 配置文件说明
+- **[Documentation Hub](docs/README.md)** - 文档导航中心
 
-### 💻 技术文档 (docs/technical/)
-面向技术专家：
-- [算法实现](docs/technical/algorithms/) - 数据处理算法的具体实现细节
+### Julia Documentation (Current Production)
 
-### 💻 开发文档 (docs/development/)
-面向开发者和贡献者：
-- [系统架构](docs/development/architecture/) - 代码结构和设计
-- [贡献指南](docs/development/contribution/) - 开发环境和规范
-- [API 文档](docs/development/api/) - 核心接口和类型
-- [部署指南](docs/development/deployment/) - 构建和发布
+CleanMast Julia 版本提供三层文档结构：
+
+- **📚 用户文档**: [CleanMastProject/docs/user/](CleanMastProject/docs/user/)
+- **💻 技术文档**: [CleanMastProject/docs/technical/](CleanMastProject/docs/technical/)
+- **💻 开发文档**: [CleanMastProject/docs/development/](CleanMastProject/docs/development/)
+
+### Python Documentation (In Development)
+
+- **[Migration Status](docs/migration/status.md)** - 迁移状态
+- **[Migration Guide](docs/migration/julia-to-python.md)** - Julia → Python 迁移指南
+- **[Preprocess Tools](docs/python/preprocess-tools/)** - 预处理工具文档
+- **[CleanMast Python](docs/python/cleanmast/)** - Python 版本文档（开发中）
 
 ## 配置
 
@@ -99,23 +146,37 @@ CleanMast 使用 TOML 配置文件来控制不同的处理步骤：
 ## 项目结构
 
 ```
-CleanMast/
-├── src/                    # 主要源代码
-│   ├── CleanMastCli.jl   # 命令行接口
-│   ├── Types/            # 核心类型定义
-│   ├── ParseSensors/     # 数据解析和列映射
-│   ├── DataClean/        # 数据清理规则和处理
-│   ├── ReconstructSingleMast/ # 单测风塔重构
-│   ├── ReconstructMeso/  # 中尺度重构
-│   ├── AnalyzeTimeSeries/ # 分析和报告
-│   └── ...               # 其他处理模块
-├── test/               # 测试套件
-├── docs/               # 详细文档
-│   ├── user/           # 用户文档
-│   ├── scientific/     # 科学文档
-│   └── development/    # 开发文档
-├── example_project/    # 示例配置
-└── bin/CleanMast.jl   # 主要可执行文件
+clean-mast-project/
+├── Project.toml               # Julia workspace
+├── pyproject.toml             # Python workspace
+│
+├── CleanMastProject/          # Julia implementation (production)
+│   ├── src/                   # 主要源代码
+│   ├── test/                  # 测试套件
+│   └── docs/                  # Julia 文档
+│
+├── packages/                  # Python implementation (in development)
+│   ├── preprocess-tools/      # 数据预处理工具
+│   │   ├── src/preprocess_tools/
+│   │   ├── tests/
+│   │   └── docs/
+│   └── cleanmast/             # 主分析工具包
+│       ├── src/cleanmast/
+│       │   ├── types/         # 核心类型定义
+│       │   ├── parse_sensors/ # 数据解析和列映射
+│       │   ├── process/       # 数据清理规则
+│       │   ├── reconstruct/   # 数据重构
+│       │   ├── analyze/       # 分析模块
+│       │   └── reports/       # 报告生成
+│       ├── tests/
+│       └── docs/
+│
+├── docs/                      # 共享文档
+│   ├── migration/             # 迁移指南
+│   └── python/                # Python 文档
+│
+├── projects/                  # 项目数据
+└── bin/                       # 可执行文件
 ```
 
 ## 开发状态

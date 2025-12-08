@@ -1,0 +1,19 @@
+# Test configuration for CSV merger with separate date/time columns
+output = "../../merged_output_separate.csv"
+duplicate_handling = "keep_first"
+
+[input]
+dir = "../csv_files"
+delim = ","
+patterns = ["separate_datetime.csv"]
+
+[input.date]
+format = "%Y-%m-%d"
+col = "Date"
+
+[input.time]
+format = "%H:%M:%S"
+col = "Time"
+
+[input.headline]
+number = 0

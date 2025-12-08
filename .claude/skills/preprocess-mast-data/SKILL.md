@@ -1,11 +1,11 @@
 ---
 name: preprocess-mast-data
-description: Automates preprocessing of wind measurement tower data using py-preprocess-tools pipeline. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and standardized format conversion (NRG for mast data, Lidar format for WindCube data). Use when converting raw measurement data files into standardized formats.
+description: Automates preprocessing of wind measurement tower data using preprocess-tools package. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and standardized format conversion (NRG for mast data, Lidar format for WindCube data). Use when converting raw measurement data files into standardized formats.
 ---
 
 # Preprocess Mast Data Skill
 
-This skill automates the preprocessing of mast data using the py-preprocess-tools pipeline.
+This skill automates the preprocessing of mast data using the preprocess-tools package (packages/preprocess-tools/).
 
 ## Overview
 
@@ -39,14 +39,15 @@ Preprocesses raw mast data files into clean, NRG-formatted CSV files ready for C
 
 ## Tools Used
 
-Located at `py-preprocess-tools/` in project root:
+The `preprocess-tools` package (located at `packages/preprocess-tools/`) provides:
 
-- **csv-merger**: Merges multiple CSV/TXT files with timestamp normalization
-- **col-name-normalizer**: Renames columns (used for both pre-merge standardization and final NRG formatting)
+- **csv-merge**: Merges multiple CSV/TXT files with timestamp normalization
+- **col-normalizer**: Renames columns (used for both pre-merge standardization and final NRG/Lidar formatting)
 - **type-normalizer**: Converts string columns to float types
+- **timestamp**: Normalizes timestamp formats
 - **check-consistency** (planned): Detects inconsistencies across files automatically
 
-See [py-preprocess-tools/README.md](../py-preprocess-tools/README.md) and [py-preprocess-tools/docs/](../py-preprocess-tools/docs/) for detailed tool documentation.
+See [packages/preprocess-tools/README.md](../../packages/preprocess-tools/README.md) and [packages/preprocess-tools/docs/](../../packages/preprocess-tools/docs/) for detailed tool documentation.
 
 ## Directory Structure
 
@@ -84,7 +85,7 @@ head -n 1 projects/{PROJECT}/pre-masts/{MAST_ID}/*.txt
 head -n 1 file1.txt file2.txt | grep -v "^$"
 ```
 
-**Future**: Use `uv run check-consistency` (see [py-preprocess-tools/TODO.md](../py-preprocess-tools/TODO.md))
+**Future**: Use `uv run preprocess check-consistency` (planned feature)
 
 ### Scenario 1: Ideal Case (Consistent Files)
 
@@ -131,7 +132,7 @@ head -n 1 file1.txt file2.txt | grep -v "^$"
 3. Run csv-merger on type-normalized files
 4. Run col-name-normalizer for final NRG format
 
-**Note**: See [py-preprocess-tools/docs/commands.md](../py-preprocess-tools/docs/commands.md#type-normalizer) for type-normalizer configuration.
+**Note**: See [packages/preprocess-tools/docs/commands.md](../../packages/preprocess-tools/docs/commands.md#type-normalizer) for type-normalizer configuration.
 
 ### Scenario 4: Combined Issues
 
@@ -254,25 +255,21 @@ delimiter = ","
 
 ## Running the Pipeline
 
-All commands run from `py-preprocess-tools/` directory:
+All commands run from project root using the unified `preprocess` CLI:
 
 ```bash
-cd py-preprocess-tools
-
 # Scenario 1: Simple case
-uv run csv-merger ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/csv-merger.toml
-uv run col-name-normalizer ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/nrg-format.toml
+uv run preprocess csv-merge projects/{PROJECT}/pre-masts/{MAST_ID}/configs/csv-merger.toml
+uv run preprocess col-normalizer projects/{PROJECT}/pre-masts/{MAST_ID}/configs/nrg-format.toml
 
 # Scenario 2: Column name inconsistencies
 # Step 1: Rename each file
-uv run col-name-normalizer ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/rename-file1.toml
-uv run col-name-normalizer ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/rename-file2.toml
+uv run preprocess col-normalizer projects/{PROJECT}/pre-masts/{MAST_ID}/configs/rename-file1.toml
+uv run preprocess col-normalizer projects/{PROJECT}/pre-masts/{MAST_ID}/configs/rename-file2.toml
 # Step 2: Merge renamed files
-uv run csv-merger ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/csv-merger.toml
+uv run preprocess csv-merge projects/{PROJECT}/pre-masts/{MAST_ID}/configs/csv-merger.toml
 # Step 3: Apply NRG format
-uv run col-name-normalizer ../projects/{PROJECT}/pre-masts/{MAST_ID}/configs/nrg-format.toml
-
-cd ..
+uv run preprocess col-normalizer projects/{PROJECT}/pre-masts/{MAST_ID}/configs/nrg-format.toml
 ```
 
 ## Real-World Examples
@@ -340,7 +337,7 @@ The pipeline converts raw data to standardized formats:
 
 Standardized format for traditional meteorological mast data.
 
-See [py-preprocess-tools/docs/nrg-format.md](../../py-preprocess-tools/docs/nrg-format.md) for complete specification.
+See [packages/preprocess-tools/docs/nrg-format.md](../../packages/preprocess-tools/docs/nrg-format.md) for complete specification.
 
 **Example:** `WS_140m_Avg` → `Ch1_Anem_140.00m_Avg_m/s`
 
@@ -348,7 +345,7 @@ See [py-preprocess-tools/docs/nrg-format.md](../../py-preprocess-tools/docs/nrg-
 
 Standardized format for lidar measurement data.
 
-See [py-preprocess-tools/docs/lidar-format.md](../../py-preprocess-tools/docs/lidar-format.md) for complete specification.
+See [packages/preprocess-tools/docs/lidar-format.md](../../packages/preprocess-tools/docs/lidar-format.md) for complete specification.
 
 **Example:** `40m Wind Speed (m/s)` → `Lidar_40.00m_WindSpeed_Avg_m/s`
 
@@ -386,7 +383,7 @@ If files have different sensor abbreviations (AT vs Temp, QY vs Press):
 
 ### Future: Automated Detection
 
-The planned `check-consistency` tool will automatically detect which scenario applies. See [py-preprocess-tools/TODO.md](../py-preprocess-tools/TODO.md) for details.
+The planned `check-consistency` tool will automatically detect which scenario applies. This will be added as a new subcommand: `uv run preprocess check-consistency`.
 
 ## Data Characteristics
 

@@ -1,0 +1,73 @@
+[project]
+name = "clean-mast-workspace"
+version = "0.1.0"
+description = "Wind energy meteorological tower data processing toolkit"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "CleanMast Team"}
+]
+
+[tool.uv.workspace]
+members = [
+    "packages/preprocess-tools",
+    "packages/cleanmast"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8",
+    "pyright>=1.1",
+]
+
+# Shared tool configurations
+[tool.ruff]
+line-length = 92
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start lenient, tighten later
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"  # Can be "off", "basic", or "strict"
+reportMissingImports = true
+reportMissingTypeStubs = false
+exclude = [
+    "**/__pycache__",
+    "**/.*",
+    "**/node_modules",
+    "**/.venv",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/cleanmast/tests",
+    "packages/preprocess-tools/tests"
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers"
+
+[tool.coverage.run]
+source = ["packages/*/src"]
+omit = ["*/tests/*", "*/.venv/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

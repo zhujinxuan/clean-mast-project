@@ -1,0 +1,15 @@
+# Test configuration for CSV merger
+output = "../../merged_output.csv"
+duplicate_handling = "keep_last"
+
+[input]
+dir = "../csv_files/multiple"
+delim = ","
+patterns = ["file*.csv"]
+
+[input.datetime]
+format = "%Y-%m-%d %H:%M:%S"
+col = "DateTime"
+
+[input.headline]
+number = 0

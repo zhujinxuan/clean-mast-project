@@ -1,0 +1,8 @@
+# Test configuration for timestamp normalizer
+input_path = "../csv_files/simple.csv"
+output_path = "../../normalized_timestamp.csv"
+timestamp_column = "DateTime"
+input_format = "%Y-%m-%d %H:%M:%S"
+output_format = "%Y-%m-%d %H:%M:%S"
+skip_rows = 0
+delimiter = ","

@@ -4,6 +4,27 @@
 *.ji
 .julia/
 .vscode/
+ 
+# Python-specific ignores
+*.py[cod]
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+*.utf8_temp
+.venv/
+venv/
+*.pyc
+.Python
+
 
 # Project-specific ignores
 logs/
