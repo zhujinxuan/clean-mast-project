@@ -137,8 +137,69 @@ def find_header_line(file_path: str, headline_config: HeadlineConfig) -> int:
     raise ValueError(f"Header line not found using regex: {headline_config.regex}")
 
 
-def read_csv_file(file_path: str, config: CsvMergerConfig) -> pl.DataFrame:
-    """Read a single CSV file with proper encoding and header detection."""
+def read_csv_file_robust(file_path: str, config: CsvMergerConfig, utf8_file_path: str, header_line: int) -> pl.DataFrame:
+    """Read CSV with whitespace stripping and robust type inference.
+
+    This is the slow but robust path that handles leading/trailing whitespace
+    in numeric values which confuses polars' schema inference.
+
+    Args:
+        file_path: Original file path (for error messages)
+        config: CSV merger configuration
+        utf8_file_path: UTF-8 converted file path
+        header_line: Header line number
+
+    Returns:
+        DataFrame with cleaned data and proper types
+    """
+    # Read as all strings first
+    df = pl.read_csv(
+        utf8_file_path,
+        separator=config.input.delim,
+        skip_rows=header_line,
+        infer_schema_length=0,  # Read all as strings
+    )
+
+    # Strip leading/trailing whitespace from all string columns
+    for col in df.columns:
+        if df[col].dtype == pl.Utf8:
+            df = df.with_columns(pl.col(col).str.strip_chars())
+
+    # Replace empty strings with null
+    df = df.with_columns([
+        pl.when(pl.col(col).str.strip_chars() == "")
+        .then(None)
+        .otherwise(pl.col(col))
+        .alias(col)
+        for col in df.columns
+    ])
+
+    # Re-infer types by attempting Float64 cast
+    for col in df.columns:
+        try:
+            test_cast = df[col].cast(pl.Float64, strict=False)
+            # Only keep cast if <50% nulls (indicates numeric column)
+            if test_cast.null_count() <= len(df) * 0.5:
+                df = df.with_columns(test_cast.alias(col))
+        except:
+            pass
+
+    return df
+
+
+def read_csv_file(file_path: str, config: CsvMergerConfig, force_whitespace_strip: bool = False) -> pl.DataFrame:
+    """Read a single CSV file with proper encoding and header detection.
+
+    Args:
+        file_path: Path to CSV file
+        config: CSV merger configuration
+        force_whitespace_strip: If True, always use slow path with whitespace stripping.
+                               Use this for the first file to ensure a robust baseline schema.
+
+    Tries normal polars inference first (fast). If that produces inconsistent types
+    due to leading/trailing whitespace in values, falls back to stripping whitespace
+    before type inference (slow but robust).
+    """
     # Detect and convert encoding if needed
     detected_encoding = detect_encoding(file_path)
     utf8_file_path = convert_to_utf8(file_path, detected_encoding)
@@ -147,15 +208,55 @@ def read_csv_file(file_path: str, config: CsvMergerConfig) -> pl.DataFrame:
         # Find header line
         header_line = find_header_line(utf8_file_path, config.input.headline)
 
-        # Read CSV with polars
-        df = pl.read_csv(
-            utf8_file_path,
-            separator=config.input.delim,
-            skip_rows=header_line,
-            infer_schema_length=10000,
-        )
+        # Use robust method if forced (e.g., for first file to ensure good baseline)
+        if force_whitespace_strip:
+            return read_csv_file_robust(file_path, config, utf8_file_path, header_line)
 
-        return df
+        # Try fast path first: Normal polars inference (works for most files)
+        try:
+            df = pl.read_csv(
+                utf8_file_path,
+                separator=config.input.delim,
+                skip_rows=header_line,
+                infer_schema_length=10000,
+                null_values=["", " ", "  ", "   ", "    "],
+            )
+
+            # Quick validation: check if any string columns look like they should be numeric
+            # by testing if first non-null value has leading/trailing whitespace
+            needs_whitespace_fix = False
+            for col in df.columns:
+                if df[col].dtype == pl.Utf8:
+                    # Get first non-null value
+                    first_values = df[col].drop_nulls().head(10)
+                    if len(first_values) > 0:
+                        for val in first_values:
+                            # Check if value has leading/trailing space and looks numeric after strip
+                            if val != val.strip():
+                                try:
+                                    float(val.strip())
+                                    needs_whitespace_fix = True
+                                    break
+                                except ValueError:
+                                    pass
+                    if needs_whitespace_fix:
+                        break
+
+            if not needs_whitespace_fix:
+                return df  # Fast path succeeded
+
+            # Fall through to slow path if whitespace detected
+            click.echo(
+                f"  Note: Detected whitespace in numeric values, re-reading with cleanup...",
+                err=True
+            )
+
+        except Exception:
+            # If fast path fails for any reason, try slow path
+            pass
+
+        # Slow path: Use robust method
+        return read_csv_file_robust(file_path, config, utf8_file_path, header_line)
 
     finally:
         # Clean up temp file if created
@@ -329,13 +430,32 @@ def merge_csv_files(config: CsvMergerConfig, config_dir: Path) -> pl.DataFrame:
 
     # Read all CSV files
     dataframes = []
-    for file_path in csv_files:
+    baseline_schema = None
+
+    for idx, file_path in enumerate(csv_files):
         click.echo(f"Processing: {Path(file_path).name}")
-        df = read_csv_file(file_path, config)
+
+        # Always use robust method for first file to ensure good baseline schema
+        force_robust = (idx == 0)
+        df = read_csv_file(file_path, config, force_whitespace_strip=force_robust)
         df = create_timestamp_column(df, config)
+
+        # Store baseline schema from first file
+        if baseline_schema is None:
+            baseline_schema = df.schema
+
+        # Align schema to baseline - cast columns to match baseline types
+        # This handles cases where polars infers different types for the same column
+        # across files (e.g., String vs Float64 due to sampling differences)
+        if df.schema != baseline_schema:
+            for col_name, expected_dtype in baseline_schema.items():
+                if col_name in df.columns and df[col_name].dtype != expected_dtype:
+                    # Cast to baseline type (strict=False allows nulls for invalid conversions)
+                    df = df.with_columns(pl.col(col_name).cast(expected_dtype, strict=False))
+
         dataframes.append(df)
 
-    # Validate column consistency
+    # Validate column consistency (check column names match)
     validate_column_consistency(dataframes, csv_files)
 
     # Merge all dataframes
