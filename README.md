@@ -36,19 +36,20 @@ CleanMast 是一个用于处理风能测风塔数据的项目，专门设计用�
 
 1. 克隆代码仓库
 2. 安装 Julia 1.11.7 或更高版本
-3. 在项目目录中从 Julia REPL 运行：
+3. 在项目根目录中从 Julia REPL 运行：
 
 ```julia
 using Pkg
-Pkg.activate(".")
+Pkg.activate("CleanMastProject")
 Pkg.instantiate()
 ```
 
+注意：本项目使用 Julia 工作空间 (workspace) 结构，源代码位于 `CleanMastProject/` 子目录中。
+
 ### Python Version (开发中)
 
-1. 安装 Python 3.11 或更高版本
-2. 安装 [uv](https://github.com/astral-sh/uv)
-3. 从项目根目录运行：
+1. 安装 [uv](https://github.com/astral-sh/uv)
+2. 从项目根目录运行：
 
 ```bash
 uv sync
