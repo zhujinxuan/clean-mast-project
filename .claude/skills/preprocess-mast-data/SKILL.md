@@ -1,6 +1,6 @@
 ---
 name: preprocess-mast-data
-description: Automates preprocessing of wind measurement tower data using preprocess-tools package. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and standardized format conversion (NRG for mast data, Lidar format for WindCube data). Use when converting raw measurement data files into standardized formats.
+description: Automates preprocessing of wind measurement tower data using preprocess-tools package. Handles encoding conversion, CSV merging with duplicate detection, column name normalization, type conversion, and standardized format conversion (NRG for mast data, Lidar format for WindCube data). Use when converting raw measurement data files into standardized formats. (project)
 ---
 
 # Preprocess Mast Data Skill

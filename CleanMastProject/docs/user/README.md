@@ -70,22 +70,126 @@ julia bin/CleanMast.jl <命令> <选项>
 
 ### 典型工作流程
 
-1. **初始化项目**：
-```bash
+#### 1. 初始化项目
+
+```nu
 julia bin/CleanMast.jl project init projects/my-windfarm
 ```
 
-2. **准备数据**：将原始数据文件放入项目目录
+#### 2. 准备数据文件
 
-3. **解析传感器**：
-```bash
-julia bin/CleanMast.jl project parse-sensors projects/my-windfarm
+##### 测风塔数据预处理
+
+原始测风塔数据需要先放入 `pre-masts/` 进行预处理，再输出到 `masts/`：
+
+1. 为每个测风塔创建目录并放入原始文件：
+
+```nu
+# 创建测风塔目录
+mkdir projects/my-windfarm/pre-masts/M01
+
+# 将原始数据放入对应目录（激光雷达目录名需以 L 开头，如 L01）
+mv tower1-*.txt projects/my-windfarm/pre-masts/M01/
 ```
 
-4. **运行完整处理**：
-```bash
+2. 使用 Claude Code 的 `preprocess-mast-data` skill 进行预处理：
+
+```
+请预处理 projects/my-windfarm/pre-masts/M01 的数据，使用 preprocess-mast-data skill
+```
+
+Claude Code 会调用 skill 自动完成：
+- 检查原始数据格式和一致性
+- 生成合并配置（`csv-merger.toml`）和格式转换配置（`nrg-format.toml`）
+- 执行 CSV 合并和 NRG 标准格式转换
+- 输出最终文件到 `masts/M01.csv`
+
+##### 中尺度数据
+
+中尺度数据直接放入 `mesos/` 目录：
+
+```nu
+mv era5-tower1.txt projects/my-windfarm/mesos/
+mv era5-tower2.txt projects/my-windfarm/mesos/
+```
+
+#### 3. 生成解析配置
+
+```nu
+julia bin/CleanMast.jl recommend parse-sensors projects/my-windfarm
+```
+
+#### 4. 解析原始数据
+
+```nu
+julia bin/CleanMast.jl project parse-sensors.toml projects/my-windfarm
+```
+
+#### 5. 运行完整处理
+
+```nu
 julia bin/CleanMast.jl process steps --all projects/my-windfarm
 ```
+
+这将依次执行所有 18 个处理步骤：
+- 步骤 1-2: 数据清理配置和执行
+- 步骤 3-4: 塔影校正配置和执行
+- 步骤 5-6: 单塔重构配置和执行
+- 步骤 7-10: 跨塔模型训练和重构
+- 步骤 11-14: 中尺度模型训练和重构
+- 步骤 15-16: 代表年校准
+- 步骤 17-18: 风机时间序列生成
+
+##### 灵活的步骤控制
+
+如果需要分步骤执行或调试特定环节：
+
+```nu
+# 查看所有可用步骤
+julia bin/CleanMast.jl process steps --list
+
+# 仅执行数据准备步骤 (1-6)
+julia bin/CleanMast.jl process steps --from 1 --to 6 projects/my-windfarm
+
+# 从步骤 10 开始执行到结束
+julia bin/CleanMast.jl process steps --from 10 projects/my-windfarm
+
+# 仅执行中尺度相关步骤 (11-14)
+julia bin/CleanMast.jl process steps --from 11 --to 14 projects/my-windfarm
+```
+
+#### 6. 生成报告配置
+
+```nu
+julia bin/CleanMast.jl recommend report-all projects/my-windfarm
+```
+
+#### 7. 生成分析报告
+
+```nu
+julia bin/CleanMast.jl report all projects/my-windfarm
+```
+
+#### 8. 查看报告
+
+使用 Typst 编译查看报告：
+
+```nu
+# 进入报告目录
+cd projects/my-windfarm/report-masts
+
+# 编译并查看报告（具体报告文件名以生成结果为准）
+typst compile data-quality-report.typ data-quality-report.pdf
+```
+
+### 输出结果
+
+处理完成后，您将获得：
+
+- **原始数据** (`raw/`) - 标准化后的时间序列数据
+- **清理数据** (`clean/`) - 去除异常值后的数据
+- **重构数据** (`reconstruct-meso/`) - 完整的长期数据序列
+- **分析报告** (`report-masts/`) - 专业的风资源评估报告
 
 ## 配置
 
@@ -101,9 +205,7 @@ CleanMast 为不同的处理步骤使用 TOML 配置文件：
 
 ## 详细文档
 
-- [快速开始教程](quick-start.md) - 完整的入门指南
 - [命令参考](commands/) - 详细的命令文档
-- [工作流程](workflows/) - 常见处理流程
 - [配置指南](configuration/) - 配置文件说明
 
 ## 项目结构
