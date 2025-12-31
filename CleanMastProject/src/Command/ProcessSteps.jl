@@ -34,19 +34,15 @@ function is_single_mast_project(dir::String)::Bool
     parse_sensors_path = joinpath(dir, "parse-sensors.toml")
     reconstruct_single_path = joinpath(dir, "reconstruct-single.toml")
 
-    # First try to check parse-sensors.toml
+    # Check parse-sensors.toml to determine project type
     if isfile(parse_sensors_path)
         config_dict = load_dict(parse_sensors_path)
         config = from_dict(ParseSensorsConfiguration, config_dict)
         # Single mast project if there's exactly one mast and no mesos
         return length(config.masts) == 1 && length(config.mesos) == 0
     else
-        error("pares-sensors.toml doesn't exists")
+        error("parse-sensors.toml not found. Run `recommend parse-sensors` first to generate it.")
     end
-
-
-    # If neither file exists or reconstruct-single failed to parse, assume it's not a single mast project
-    return false
 end
 
 """

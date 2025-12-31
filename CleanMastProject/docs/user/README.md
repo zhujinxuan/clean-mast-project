@@ -44,7 +44,7 @@ julia bin/CleanMast.jl <命令> <选项>
 ### 主要命令分类
 
 **项目设置**
-- `project init` - 创建带有示例配置的新项目
+- `cleanmast init` (Python) - 创建带有示例配置的新项目
 - `project parse-sensors` - 将传感器数据解析为结构化格式
 
 **数据处理**
@@ -72,8 +72,8 @@ julia bin/CleanMast.jl <命令> <选项>
 
 #### 1. 初始化项目
 
-```nu
-julia bin/CleanMast.jl project init projects/my-windfarm
+```bash
+uv run cleanmast init projects/my-windfarm
 ```
 
 #### 2. 准备数据文件
@@ -211,12 +211,15 @@ CleanMast 为不同的处理步骤使用 TOML 配置文件：
 ## 项目结构
 
 ```
-CleanMast/
-├── src/                    # 主要源代码
-├── test/                   # 测试套件
-├── docs/                   # 文档
-├── example_project/        # 示例配置
-└── bin/CleanMast.jl       # 主要可执行文件
+clean-mast-project/
+├── CleanMastProject/       # Julia 实现
+│   ├── src/                # 主要源代码
+│   ├── test/               # 测试套件
+│   └── docs/               # 文档
+├── packages/cleanmast/     # Python 实现
+│   └── src/cleanmast/
+│       └── scaffold/       # 项目初始化模板
+└── bin/CleanMast.jl        # Julia 入口
 ```
 
 ## 支持

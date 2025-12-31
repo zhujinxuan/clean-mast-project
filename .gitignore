@@ -29,15 +29,6 @@ venv/
 # Project-specific ignores
 logs/
 *.csv
-!example_project/config.yaml
-!example_project/formats/*
-!example_project/formats/*.toml
-!example_project/parse-sensors.toml
-example_project/*.txt
-example_project/*.yaml
-example_project/*.toml
-!example_project/parse-sensors.toml
-example_project/*.csv
 projects
 Manifest.toml
 

@@ -1,5 +1,0 @@
-[[rules]]
-name = "Lidar Availability Check"
-sensorType = "DataAvailability"
-[rules.availability]
-low_threshold = 80.0

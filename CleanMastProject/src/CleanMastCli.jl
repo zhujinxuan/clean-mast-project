@@ -5,24 +5,11 @@ using Comonicon
 """
 project
 
-Project setup and management commands
+Project management commands
 """
 Comonicon.@cast module Project
     using Comonicon
-    using CleanMastProject.Command.QuickStart
     using CleanMastProject.ParseSensors.CommandParseSensors
-
-    """
-    init
-
-    Create a new project with example config.
-
-    # Arguments
-    - `dir`: Project directory
-    """
-    Comonicon.@cast function init(dir::String)
-        QuickStart.execute(dir)
-    end
 
     """
     parse-sensors

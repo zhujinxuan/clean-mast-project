@@ -58,6 +58,7 @@ uv sync
 Python 版本包含：
 - ✅ **preprocess-tools**: 数据预处理工具（可用）
 - 🚧 **cleanmast**: 主分析工具包（开发中）
+  - ✅ `cleanmast init` - 项目初始化（可用）
 
 ## 使用方法
 
@@ -74,6 +75,9 @@ julia bin/CleanMast.jl <命令> <选项>
 ### Python Version
 
 ```bash
+# Project initialization
+uv run cleanmast init projects/my-windfarm
+
 # Preprocessing tools (unified CLI)
 uv run preprocess csv-merge config.toml
 uv run preprocess col-normalizer config.toml
@@ -90,8 +94,8 @@ See [packages/preprocess-tools/README.md](packages/preprocess-tools/README.md) f
 ### 主要命令分类
 
 **项目设置**
-- `project init` - 创建带有示例配置的新项目
-- `project parse-sensors` - 将传感器数据解析为 csv 和对应的传感器描述 toml 文件
+- `cleanmast init` (Python) - 创建带有示例配置的新项目
+- `project parse-sensors` (Julia) - 将传感器数据解析为 csv 和对应的传感器描述 toml 文件
 
 **数据处理**
 - `process steps --all` - 执行完整的处理流水线(包含生成各步骤配置文件)

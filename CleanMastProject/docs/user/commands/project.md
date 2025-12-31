@@ -2,35 +2,11 @@
 
 ## 概览
 
-`project` 命令组用于项目设置和管理，包括初始化新项目和解析传感器数据。
+`project` 命令组用于项目管理，主要提供传感器数据解析功能。
+
+> **注意**: 项目初始化功能已迁移到 Python CLI，请使用 `uv run cleanmast init` 命令。
 
 ## 命令列表
-
-### project init
-
-创建一个带有示例配置的新项目。
-
-#### 语法
-```bash
-julia bin/CleanMast.jl project init <项目目录>
-```
-
-#### 参数
-- `项目目录`: 要创建的新项目目录路径
-
-#### 功能
-- 创建项目目录结构
-- 生成示例配置文件
-- 设置必要的子目录
-
-#### 示例
-```bash
-julia bin/CleanMast.jl project init projects/windfarm-170
-```
-
-这将创建一个名为 `windfarm-170` 的新项目，包含所有必要的目录和示例配置文件。
-
----
 
 ### project parse-sensors
 
@@ -87,9 +63,9 @@ output = { data = "raw/era5.csv", sensors = "raw/era5.sensors.toml" }
 
 ## 典型工作流程
 
-1. **初始化项目**：
+1. **初始化项目**（使用 Python CLI）：
    ```bash
-   julia bin/CleanMast.jl project init projects/my-project
+   uv run cleanmast init projects/my-project
    ```
 
 2. **准备数据**：
