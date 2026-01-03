@@ -223,7 +223,7 @@ statType = "avg"
 
 ```bash
 # 创建新项目，自动生成示例配置
-julia bin/CleanMast.jl project init projects/my-windfarm
+uv run cleanmast init projects/my-windfarm
 ```
 
 然后编辑生成的 `parse-sensors.toml` 文件以匹配您的数据。

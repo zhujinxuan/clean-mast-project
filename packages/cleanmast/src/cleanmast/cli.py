@@ -1,5 +1,8 @@
 """CleanMast CLI entry point."""
 
+import shutil
+from pathlib import Path
+
 import click
 
 
@@ -11,31 +14,45 @@ def main():
 
 
 @main.command()
-def parse_sensors():
-    """Parse sensor data from raw files."""
-    click.echo("Parse sensors - Not yet implemented")
-    click.echo("This will be migrated from Julia CleanMastProject")
+@click.argument("project_dir", type=click.Path())
+def init(project_dir: str):
+    """Initialize a new project with template structure.
 
+    Creates project directory with formats/, pre-masts/, and mesos/ subdirectories.
+    """
+    project_path = Path(project_dir)
 
-@main.command()
-def process():
-    """Process and clean mast data."""
-    click.echo("Process - Not yet implemented")
-    click.echo("This will be migrated from Julia CleanMastProject")
+    # Create project directory if it doesn't exist
+    if not project_path.exists():
+        project_path.mkdir(parents=True)
+        click.echo(f"Created project directory: {project_path}")
+    else:
+        click.echo(f"Project directory exists: {project_path}")
 
+    # Get scaffold directory path
+    scaffold_dir = Path(__file__).parent / "scaffold"
 
-@main.command()
-def analyze():
-    """Analyze wind resource data."""
-    click.echo("Analyze - Not yet implemented")
-    click.echo("This will be migrated from Julia CleanMastProject")
+    # Copy scaffold contents to project
+    for item in scaffold_dir.iterdir():
+        # Skip __pycache__ directories
+        if item.name == "__pycache__":
+            continue
+        target = project_path / item.name
+        if not target.exists():
+            if item.is_dir():
+                shutil.copytree(item, target)
+            else:
+                shutil.copy2(item, target)
+            click.echo(f"Created: {target}")
+        else:
+            click.echo(f"Exists: {target}")
 
-
-@main.command()
-def report():
-    """Generate analysis reports."""
-    click.echo("Report - Not yet implemented")
-    click.echo("This will be migrated from Julia CleanMastProject")
+    click.echo(f"\nProject initialized at: {project_path}")
+    click.echo("\nNext steps:")
+    click.echo(f"  1. Add raw mast data (see {project_path}/pre-masts/README.md)")
+    click.echo(f"  2. Download meso data (see {project_path}/mesos/README.md)")
+    click.echo(f"  3. Run preprocessing in Claude Code: /preprocess-mast-data {project_path}/pre-masts")
+    click.echo("  4. Generate config: julia bin/CleanMast.jl recommend parse-sensors")
 
 
 if __name__ == "__main__":

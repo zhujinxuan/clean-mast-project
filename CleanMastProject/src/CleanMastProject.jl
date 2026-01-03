@@ -368,11 +368,9 @@ end
 export ReconstructCross
 
 module Command
-  include("./Command/QuickStart.jl")
   include("./Command/ProcessSteps.jl")
   include("./Command/AnalyzeEN.jl")
-  export  QuickStart, ProcessSteps,
-         AnalyzeEN
+  export ProcessSteps, AnalyzeEN
 end
 export Command
 include("./CleanMastCli.jl")
