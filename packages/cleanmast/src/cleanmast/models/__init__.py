@@ -7,6 +7,12 @@ from .reconstruct_meso import (
     ReconstructMesoModelSpec,
     ReconstructMesoModels,
 )
+from .representative_year import (
+    RepresentativeYearConfiguration,
+    RepresentativeYearMast,
+    RepresentativeYearMesoModel,
+    load_representative_year_config,
+)
 from .sensor import SensorColumn
 from .timeseries import TimeRange, TimeSeriesData, TimeSeriesSource
 
@@ -20,4 +26,8 @@ __all__ = [
     "MesoSource",
     "ReconstructMesoMast",
     "ReconstructMesoConfiguration",
+    "RepresentativeYearMesoModel",
+    "RepresentativeYearMast",
+    "RepresentativeYearConfiguration",
+    "load_representative_year_config",
 ]

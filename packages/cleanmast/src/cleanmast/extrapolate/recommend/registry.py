@@ -1,10 +1,10 @@
 """Base classes and registry for recommend strategies."""
 
 from abc import ABC, abstractmethod
-from typing import Protocol
 
 from ..config import ExtrapolateConfiguration
 from ...models.reconstruct_meso import ReconstructMesoConfiguration
+from ...models.representative_year import RepresentativeYearConfiguration
 
 
 class RecommendStrategy(ABC):
@@ -18,16 +18,22 @@ class RecommendStrategy(ABC):
         reconstruct_config: ReconstructMesoConfiguration,
         base_dir: str,
         extrapolate_heights: list[float],
-    ) -> ExtrapolateConfiguration:
-        """Generate extrapolation configuration.
+        representative_year_config: RepresentativeYearConfiguration | None = None,
+    ) -> dict[str, ExtrapolateConfiguration]:
+        """Generate extrapolation configuration(s).
 
         Args:
             reconstruct_config: ReconstructMeso configuration (provides mast outputs)
             base_dir: Base directory for resolving relative paths
             extrapolate_heights: Target heights for extrapolation (m)
+            representative_year_config: Optional RepresentativeYear configuration.
+                If provided, generates config for representative-year data as well.
 
         Returns:
-            ExtrapolateConfiguration ready to execute
+            Dict mapping config filename to ExtrapolateConfiguration.
+            Always includes "vertical-extrapolate-reconstruct-meso.toml".
+            If representative_year_config provided, also includes
+            "vertical-extrapolate-representative-year.toml".
         """
         pass
 

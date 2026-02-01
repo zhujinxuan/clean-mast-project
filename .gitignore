@@ -4,7 +4,7 @@
 *.ji
 .julia/
 .vscode/
- 
+
 # Python-specific ignores
 *.py[cod]
 __pycache__/
@@ -44,3 +44,4 @@ tmp/
 *.pdf
 *.docx
 nul
+tmpclaude*

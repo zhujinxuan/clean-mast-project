@@ -3,11 +3,14 @@
 Uses the top 3 measurement heights to fit a constant power law shear exponent.
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 import polars as pl
 
 from ...io.timeseries_io import load_timeseries
 from ...models.reconstruct_meso import ReconstructMesoConfiguration
+from ...models.representative_year import RepresentativeYearConfiguration
 from ...models.sensor import SensorColumn
 from ...models.timeseries import TimeSeriesSource
 from ..config import (
@@ -22,6 +25,16 @@ from ..config import (
 )
 from ..shear import fit_shear_from_heights
 from .registry import RecommendStrategy, register_strategy
+
+
+@dataclass
+class FittedShearProfile:
+    """Fitted shear parameters for a mast."""
+
+    shear: float
+    deg_diff_per_m: float
+    existing_ws_heights: list[float]
+    existing_wd_heights: list[float]
 
 
 @register_strategy
@@ -43,45 +56,105 @@ class Top3ConstantShearStrategy(RecommendStrategy):
         reconstruct_config: ReconstructMesoConfiguration,
         base_dir: str,
         extrapolate_heights: list[float],
-    ) -> ExtrapolateConfiguration:
-        """Generate extrapolation configuration using top-3 constant shear.
+        representative_year_config: RepresentativeYearConfiguration | None = None,
+    ) -> dict[str, ExtrapolateConfiguration]:
+        """Generate extrapolation configuration(s) using top-3 constant shear.
 
         Args:
             reconstruct_config: ReconstructMeso configuration
             base_dir: Base directory for resolving paths
             extrapolate_heights: Target heights for extrapolation (m)
+            representative_year_config: Optional RepresentativeYear configuration
 
         Returns:
-            ExtrapolateConfiguration with fitted shear values
+            Dict mapping config filename to ExtrapolateConfiguration.
+            Always includes "vertical-extrapolate-reconstruct-meso.toml".
+            If representative_year_config provided, also includes
+            "vertical-extrapolate-representative-year.toml".
         """
-        mast_configs: list[MastExtrapolateConfig] = []
-
-        # Process each mast individually for per-mast shear
+        # Fit shear profiles from reconstruct-meso data (always)
+        shear_profiles: dict[str, FittedShearProfile] = {}
         for mast in reconstruct_config.masts:
             timeseries = load_timeseries(mast.output, base_dir)
-
-            # Calculate shear from this mast's top 3 wind speed sensors
             shear = self._fit_wind_speed_shear(timeseries.sensors, timeseries.df)
-
-            # Calculate wind direction deg_diff_per_m for this mast
             deg_diff_per_m = self._fit_wind_direction_change(
                 timeseries.sensors, timeseries.df
             )
-
-            # Get existing heights for this mast
             existing_ws_heights = sorted(
                 self._get_all_heights(timeseries.sensors, "WindSpeed")
             )
             existing_wd_heights = sorted(
                 self._get_all_heights(timeseries.sensors, "WindDirection")
             )
+            shear_profiles[mast.name] = FittedShearProfile(
+                shear=shear,
+                deg_diff_per_m=deg_diff_per_m,
+                existing_ws_heights=existing_ws_heights,
+                existing_wd_heights=existing_wd_heights,
+            )
 
-            # Filter out heights that already exist in this mast
+        configs: dict[str, ExtrapolateConfiguration] = {}
+
+        # Generate reconstruct-meso config
+        meso_mast_configs = self._build_mast_configs(
+            masts=[(m.name, m.output) for m in reconstruct_config.masts],
+            shear_profiles=shear_profiles,
+            extrapolate_heights=extrapolate_heights,
+            output_dir="extrapolated-reconstruct-meso",
+        )
+        configs["vertical-extrapolate-reconstruct-meso.toml"] = ExtrapolateConfiguration(
+            strategy=self.name,
+            masts=meso_mast_configs,
+        )
+
+        # Generate representative-year config if provided
+        if representative_year_config is not None:
+            rep_year_mast_configs = self._build_mast_configs(
+                masts=[(m.name, m.output) for m in representative_year_config.masts],
+                shear_profiles=shear_profiles,
+                extrapolate_heights=extrapolate_heights,
+                output_dir="extrapolated-representative-year",
+            )
+            configs["vertical-extrapolate-representative-year.toml"] = ExtrapolateConfiguration(
+                strategy=self.name,
+                masts=rep_year_mast_configs,
+            )
+
+        return configs
+
+    def _build_mast_configs(
+        self,
+        masts: list[tuple[str, TimeSeriesSource]],
+        shear_profiles: dict[str, FittedShearProfile],
+        extrapolate_heights: list[float],
+        output_dir: str,
+    ) -> list[MastExtrapolateConfig]:
+        """Build mast configs using pre-fitted shear profiles.
+
+        Args:
+            masts: List of (mast_name, input_source) tuples
+            shear_profiles: Pre-fitted shear profiles by mast name
+            extrapolate_heights: Target heights for extrapolation
+            output_dir: Output directory name
+
+        Returns:
+            List of MastExtrapolateConfig
+        """
+        mast_configs: list[MastExtrapolateConfig] = []
+
+        for mast_name, input_source in masts:
+            # Skip masts without shear profile (not in reconstruct-meso)
+            if mast_name not in shear_profiles:
+                continue
+
+            profile = shear_profiles[mast_name]
+
+            # Filter out heights that already exist
             ws_target_heights = [
-                h for h in extrapolate_heights if h not in set(existing_ws_heights)
+                h for h in extrapolate_heights if h not in set(profile.existing_ws_heights)
             ]
             wd_target_heights = [
-                h for h in extrapolate_heights if h not in set(existing_wd_heights)
+                h for h in extrapolate_heights if h not in set(profile.existing_wd_heights)
             ]
 
             # Build wind speed config with weighted references
@@ -89,7 +162,7 @@ class Top3ConstantShearStrategy(RecommendStrategy):
                 WindSpeedHeightConfig(
                     height=target_height,
                     references=self._build_weighted_ws_references(
-                        target_height, existing_ws_heights, shear
+                        target_height, profile.existing_ws_heights, profile.shear
                     ),
                 )
                 for target_height in ws_target_heights
@@ -100,30 +173,26 @@ class Top3ConstantShearStrategy(RecommendStrategy):
                 WindDirectionHeightConfig(
                     height=target_height,
                     references=self._build_weighted_wd_references(
-                        target_height, existing_wd_heights, deg_diff_per_m
+                        target_height, profile.existing_wd_heights, profile.deg_diff_per_m
                     ),
                 )
                 for target_height in wd_target_heights
             ]
 
-            # Build mast config with embedded windspeed/winddirection
             mast_configs.append(
                 MastExtrapolateConfig(
-                    name=mast.name,
-                    input=mast.output,  # Input comes from reconstruct-meso output
+                    name=mast_name,
+                    input=input_source,
                     output=TimeSeriesSource(
-                        data=f"./extrapolated/{mast.name}.csv",
-                        sensors=f"./extrapolated/{mast.name}.sensors.yaml",
+                        data=f"./{output_dir}/{mast_name}.csv",
+                        sensors=f"./{output_dir}/{mast_name}.sensors.yaml",
                     ),
                     windspeed=WindSpeedConfig(heights=ws_heights),
                     winddirection=WindDirectionConfig(heights=wd_heights),
                 )
             )
 
-        return ExtrapolateConfiguration(
-            strategy=self.name,
-            masts=mast_configs,
-        )
+        return mast_configs
 
     def _get_avg_sensors(
         self, sensors: list[SensorColumn], sensor_type: str

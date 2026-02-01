@@ -18,6 +18,11 @@ from cleanmast.models.reconstruct_meso import (
     ReconstructMesoModelSpec,
     ReconstructMesoModels,
 )
+from cleanmast.models.representative_year import (
+    RepresentativeYearConfiguration,
+    RepresentativeYearMast,
+    RepresentativeYearMesoModel,
+)
 from cleanmast.models.timeseries import TimeRange, TimeSeriesSource
 
 
@@ -208,12 +213,17 @@ class TestTop3ConstantShearStrategy:
 
     def test_recommend_generates_config(self, strategy, sample_reconstruct_config, temp_project):
         """Test that recommend generates a valid configuration."""
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[120.0, 140.0, 160.0],
         )
 
+        # Should generate one config (reconstruct-meso only, no rep-year provided)
+        assert "vertical-extrapolate-reconstruct-meso.toml" in configs
+        assert "vertical-extrapolate-representative-year.toml" not in configs
+
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         assert config.strategy == "top3-constant-shear"
         assert len(config.masts) == 1
         assert config.masts[0].name == "M01"
@@ -229,12 +239,13 @@ class TestTop3ConstantShearStrategy:
 
     def test_shear_calculated_from_top3_heights(self, strategy, sample_reconstruct_config, temp_project):
         """Test that shear is calculated from top 3 avg sensors only."""
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[160.0],
         )
 
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         # Get the reference - should use top height (100m) as reference
         ws_ref = config.masts[0].windspeed.heights[0].references[0]
         assert ws_ref.height == 100.0
@@ -246,47 +257,51 @@ class TestTop3ConstantShearStrategy:
         """Test that only avg stat_type sensors are used for shear fitting."""
         # This is validated by the fact that shear ~0.14
         # If max/sd sensors were included, the shear would be different
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[160.0],
         )
 
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         ws_ref = config.masts[0].windspeed.heights[0].references[0]
         # True shear is 0.14, if non-avg sensors were used it would be wrong
         assert abs(ws_ref.shear - 0.14) < 0.01
 
     def test_wind_direction_deg_per_m(self, strategy, sample_reconstruct_config, temp_project):
         """Test that wind direction deg_diff_per_m is calculated correctly."""
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[160.0],
         )
 
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         wd_ref = config.masts[0].winddirection.heights[0].references[0]
         # Our test data: 180->182 over 40m = 0.05 deg/m
         assert abs(wd_ref.deg_diff_per_m - 0.05) < 0.01
 
     def test_output_paths_relative_to_project(self, strategy, sample_reconstruct_config, temp_project):
         """Test that output paths are relative to project directory."""
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[160.0],
         )
 
-        assert config.masts[0].output.data == "./extrapolated/M01.csv"
-        assert config.masts[0].output.sensors == "./extrapolated/M01.sensors.yaml"
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
+        assert config.masts[0].output.data == "./extrapolated-reconstruct-meso/M01.csv"
+        assert config.masts[0].output.sensors == "./extrapolated-reconstruct-meso/M01.sensors.yaml"
 
     def test_input_from_reconstruct_meso_output(self, strategy, sample_reconstruct_config, temp_project):
         """Test that input paths come from reconstruct-meso output."""
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[160.0],
         )
 
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         # Input should match reconstruct-meso output
         assert config.masts[0].input.data == "./reconstruct-meso/M01.csv"
         assert config.masts[0].input.sensors == "./reconstruct-meso/M01.sensors.yaml"
@@ -294,12 +309,13 @@ class TestTop3ConstantShearStrategy:
     def test_skips_existing_heights_per_mast(self, strategy, sample_reconstruct_config, temp_project):
         """Test that existing heights are skipped per-mast during recommend."""
         # Request heights that include existing ones (60, 80, 100) and new ones (120, 160)
-        config = strategy.recommend(
+        configs = strategy.recommend(
             reconstruct_config=sample_reconstruct_config,
             base_dir=str(temp_project),
             extrapolate_heights=[60.0, 80.0, 100.0, 120.0, 160.0],
         )
 
+        config = configs["vertical-extrapolate-reconstruct-meso.toml"]
         # Only non-existing heights should be in config (60, 80, 100 exist in test data)
         ws_target_heights = [h.height for h in config.masts[0].windspeed.heights]
         wd_target_heights = [h.height for h in config.masts[0].winddirection.heights]
@@ -402,7 +418,8 @@ class TestTop3ConstantShearEdgeCases:
         )
 
         # Should still work and calculate shear from 2 heights
-        assert abs(config.masts[0].windspeed.heights[0].references[0].shear - true_shear) < 0.02
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        assert abs(meso_config.masts[0].windspeed.heights[0].references[0].shear - true_shear) < 0.02
 
     def test_multiple_masts(self, strategy, tmp_path):
         """Test strategy handles multiple masts."""
@@ -463,15 +480,16 @@ class TestTop3ConstantShearEdgeCases:
             extrapolate_heights=[160.0],
         )
 
-        assert len(config.masts) == 2
-        assert config.masts[0].name == "M01"
-        assert config.masts[1].name == "M02"
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        assert len(meso_config.masts) == 2
+        assert meso_config.masts[0].name == "M01"
+        assert meso_config.masts[1].name == "M02"
 
         # Each mast should have its own windspeed/winddirection config
-        assert len(config.masts[0].windspeed.heights) == 1
-        assert len(config.masts[1].windspeed.heights) == 1
-        assert config.masts[0].windspeed.heights[0].height == 160.0
-        assert config.masts[1].windspeed.heights[0].height == 160.0
+        assert len(meso_config.masts[0].windspeed.heights) == 1
+        assert len(meso_config.masts[1].windspeed.heights) == 1
+        assert meso_config.masts[0].windspeed.heights[0].height == 160.0
+        assert meso_config.masts[1].windspeed.heights[0].height == 160.0
 
     def test_wind_direction_across_360_boundary(self, strategy, tmp_path):
         """Test that deg_diff_per_m is calculated correctly when crossing 0/360 boundary."""
@@ -532,7 +550,8 @@ class TestTop3ConstantShearEdgeCases:
 
         # Should correctly calculate ~0.15 deg/m (positive, increasing direction)
         # Not a large negative value from naive 1 - 355 = -354
-        wd_ref = config.masts[0].winddirection.heights[0].references[0]
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        wd_ref = meso_config.masts[0].winddirection.heights[0].references[0]
         assert wd_ref.deg_diff_per_m > 0  # Should be positive (direction increasing)
         assert abs(wd_ref.deg_diff_per_m - 0.15) < 0.02  # Should be ~0.15 deg/m
 
@@ -599,7 +618,8 @@ class TestTop3ConstantShearEdgeCases:
         # 60m->80m: all +2 deg at Δh=20m
         # 60m->100m: all +4 deg at Δh=40m
         # slope = (20*2*4 + 40*4*4) / (20²*4 + 40²*4) = (160 + 640) / (1600 + 6400) = 800/8000 = 0.1
-        wd_ref = config.masts[0].winddirection.heights[0].references[0]
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        wd_ref = meso_config.masts[0].winddirection.heights[0].references[0]
         assert abs(wd_ref.deg_diff_per_m - 0.1) < 0.01
 
     def test_weighted_references_interpolation(self, strategy, tmp_path):
@@ -672,9 +692,10 @@ class TestTop3ConstantShearEdgeCases:
             extrapolate_heights=[120.0],
         )
 
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
         # Should have one height config for 120m
-        assert len(config.masts[0].windspeed.heights) == 1
-        ws_height_config = config.masts[0].windspeed.heights[0]
+        assert len(meso_config.masts[0].windspeed.heights) == 1
+        ws_height_config = meso_config.masts[0].windspeed.heights[0]
         assert ws_height_config.height == 120.0
 
         # Should have TWO references (100m and 140m)
@@ -761,7 +782,8 @@ class TestTop3ConstantShearEdgeCases:
             extrapolate_heights=[120.0],
         )
 
-        ws_height_config = config.masts[0].windspeed.heights[0]
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        ws_height_config = meso_config.masts[0].windspeed.heights[0]
         refs_by_height = {r.height: r for r in ws_height_config.references}
 
         # Weights: 100m gets 2/3, 160m gets 1/3
@@ -826,9 +848,216 @@ class TestTop3ConstantShearEdgeCases:
             extrapolate_heights=[160.0],
         )
 
-        ws_height_config = config.masts[0].windspeed.heights[0]
+        meso_config = config["vertical-extrapolate-reconstruct-meso.toml"]
+        ws_height_config = meso_config.masts[0].windspeed.heights[0]
 
         # Should have only ONE reference (100m, the highest existing)
         assert len(ws_height_config.references) == 1
         assert ws_height_config.references[0].height == 100.0
         assert ws_height_config.references[0].weight == 1.0
+
+
+class TestDualConfigGeneration:
+    """Tests for dual config generation (reconstruct-meso + representative-year)."""
+
+    @pytest.fixture
+    def strategy(self):
+        return Top3ConstantShearStrategy()
+
+    @pytest.fixture
+    def temp_project_with_rep_year(self, tmp_path):
+        """Create a temporary project with reconstruct-meso data."""
+        rm_dir = tmp_path / "reconstruct-meso"
+        rm_dir.mkdir()
+
+        sensors = [
+            {"columnName": "WS_60m_avg", "sensorType": "WindSpeed", "sensorDirection": "", "height": 60.0, "statType": "avg", "unit": "m/s"},
+            {"columnName": "WS_80m_avg", "sensorType": "WindSpeed", "sensorDirection": "", "height": 80.0, "statType": "avg", "unit": "m/s"},
+            {"columnName": "WS_100m_avg", "sensorType": "WindSpeed", "sensorDirection": "", "height": 100.0, "statType": "avg", "unit": "m/s"},
+            {"columnName": "WD_60m_avg", "sensorType": "WindDirection", "sensorDirection": "", "height": 60.0, "statType": "avg", "unit": "deg"},
+            {"columnName": "WD_80m_avg", "sensorType": "WindDirection", "sensorDirection": "", "height": 80.0, "statType": "avg", "unit": "deg"},
+            {"columnName": "WD_100m_avg", "sensorType": "WindDirection", "sensorDirection": "", "height": 100.0, "statType": "avg", "unit": "deg"},
+        ]
+
+        with open(rm_dir / "M01.sensors.yaml", "w") as f:
+            yaml.dump({"sensors": sensors}, f)
+
+        timestamps = pl.datetime_range(
+            start=pl.datetime(2023, 1, 1),
+            end=pl.datetime(2023, 1, 1, 1),
+            interval="10m",
+            eager=True,
+        )
+
+        true_shear = 0.14
+        df = pl.DataFrame({
+            "timestamp": timestamps,
+            "WS_60m_avg": [7.0] * len(timestamps),
+            "WS_80m_avg": [7.0 * (80/60)**true_shear] * len(timestamps),
+            "WS_100m_avg": [7.0 * (100/60)**true_shear] * len(timestamps),
+            "WD_60m_avg": [180.0] * len(timestamps),
+            "WD_80m_avg": [181.0] * len(timestamps),
+            "WD_100m_avg": [182.0] * len(timestamps),
+        })
+        df.write_csv(rm_dir / "M01.csv")
+
+        return tmp_path
+
+    @pytest.fixture
+    def sample_reconstruct_config(self):
+        return ReconstructMesoConfiguration(
+            masts=[
+                ReconstructMesoMast(
+                    name="M01",
+                    input=TimeSeriesSource(data="./clean/M01.csv", sensors="./clean/M01.sensors.yaml"),
+                    output=TimeSeriesSource(data="./reconstruct-meso/M01.csv", sensors="./reconstruct-meso/M01.sensors.yaml"),
+                    time_range=TimeRange(min="2023-01-01T00:00:00", max="2023-12-31T23:50:00"),
+                    models=ReconstructMesoModels(
+                        windspeed=ReconstructMesoModelSpec(method="1-sector", meso_name="era5", model_file="./m.json"),
+                        winddirection=ReconstructMesoModelSpec(method="constant-offset", meso_name="era5", model_file="./m.json"),
+                    ),
+                )
+            ],
+            mesos=[MesoSource(name="era5", input=TimeSeriesSource(data="./meso/era5.csv", sensors="./meso/era5.sensors.yaml"))],
+        )
+
+    @pytest.fixture
+    def sample_rep_year_config(self):
+        return RepresentativeYearConfiguration(
+            masts=[
+                RepresentativeYearMast(
+                    name="M01",
+                    input=TimeSeriesSource(data="./reconstruct-meso/M01.csv", sensors="./reconstruct-meso/M01.sensors.yaml"),
+                    output=TimeSeriesSource(data="./representative-year/M01.csv", sensors="./representative-year/M01.sensors.yaml"),
+                    time_range=TimeRange(min="2023-01-01T00:00:00", max="2023-12-31T23:50:00"),
+                    meso_model=RepresentativeYearMesoModel(
+                        method="16-sector",
+                        meso_name="era5",
+                        model_file="./models/rep_year_model.jld2",
+                    ),
+                )
+            ],
+            mesos=[MesoSource(name="era5", input=TimeSeriesSource(data="./meso/era5.csv", sensors="./meso/era5.sensors.yaml"))],
+        )
+
+    def test_generates_both_configs_when_rep_year_provided(
+        self, strategy, sample_reconstruct_config, sample_rep_year_config, temp_project_with_rep_year
+    ):
+        """Test that both configs are generated when representative-year config is provided."""
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[120.0, 160.0],
+            representative_year_config=sample_rep_year_config,
+        )
+
+        assert "vertical-extrapolate-reconstruct-meso.toml" in configs
+        assert "vertical-extrapolate-representative-year.toml" in configs
+
+    def test_both_configs_use_same_shear(
+        self, strategy, sample_reconstruct_config, sample_rep_year_config, temp_project_with_rep_year
+    ):
+        """Test that both configs use the same shear values (fitted from reconstruct-meso)."""
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[160.0],
+            representative_year_config=sample_rep_year_config,
+        )
+
+        meso_config = configs["vertical-extrapolate-reconstruct-meso.toml"]
+        rep_year_config = configs["vertical-extrapolate-representative-year.toml"]
+
+        # Both should have same shear value
+        meso_shear = meso_config.masts[0].windspeed.heights[0].references[0].shear
+        rep_year_shear = rep_year_config.masts[0].windspeed.heights[0].references[0].shear
+
+        assert meso_shear == rep_year_shear
+        assert abs(meso_shear - 0.14) < 0.01  # Should be ~0.14 from test data
+
+    def test_rep_year_config_uses_rep_year_input_paths(
+        self, strategy, sample_reconstruct_config, sample_rep_year_config, temp_project_with_rep_year
+    ):
+        """Test that representative-year config uses input paths from representative-year.toml."""
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[160.0],
+            representative_year_config=sample_rep_year_config,
+        )
+
+        rep_year_config = configs["vertical-extrapolate-representative-year.toml"]
+
+        # Input should come from representative-year output
+        assert rep_year_config.masts[0].input.data == "./representative-year/M01.csv"
+        assert rep_year_config.masts[0].input.sensors == "./representative-year/M01.sensors.yaml"
+
+    def test_rep_year_config_uses_correct_output_dir(
+        self, strategy, sample_reconstruct_config, sample_rep_year_config, temp_project_with_rep_year
+    ):
+        """Test that representative-year config outputs to extrapolated-representative-year/."""
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[160.0],
+            representative_year_config=sample_rep_year_config,
+        )
+
+        rep_year_config = configs["vertical-extrapolate-representative-year.toml"]
+
+        assert rep_year_config.masts[0].output.data == "./extrapolated-representative-year/M01.csv"
+        assert rep_year_config.masts[0].output.sensors == "./extrapolated-representative-year/M01.sensors.yaml"
+
+    def test_meso_config_uses_correct_output_dir(
+        self, strategy, sample_reconstruct_config, sample_rep_year_config, temp_project_with_rep_year
+    ):
+        """Test that reconstruct-meso config outputs to extrapolated-reconstruct-meso/."""
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[160.0],
+            representative_year_config=sample_rep_year_config,
+        )
+
+        meso_config = configs["vertical-extrapolate-reconstruct-meso.toml"]
+
+        assert meso_config.masts[0].output.data == "./extrapolated-reconstruct-meso/M01.csv"
+        assert meso_config.masts[0].output.sensors == "./extrapolated-reconstruct-meso/M01.sensors.yaml"
+
+    def test_skips_masts_not_in_reconstruct_meso(
+        self, strategy, sample_reconstruct_config, temp_project_with_rep_year
+    ):
+        """Test that masts in representative-year but not in reconstruct-meso are skipped."""
+        # Create rep-year config with an extra mast not in reconstruct-meso
+        rep_year_config = RepresentativeYearConfiguration(
+            masts=[
+                RepresentativeYearMast(
+                    name="M01",
+                    input=TimeSeriesSource(data="./reconstruct-meso/M01.csv", sensors="./reconstruct-meso/M01.sensors.yaml"),
+                    output=TimeSeriesSource(data="./representative-year/M01.csv", sensors="./representative-year/M01.sensors.yaml"),
+                    time_range=TimeRange(min="2023-01-01T00:00:00", max="2023-12-31T23:50:00"),
+                    meso_model=RepresentativeYearMesoModel(method="16-sector", meso_name="era5", model_file="./m.jld2"),
+                ),
+                RepresentativeYearMast(
+                    name="M02",  # This mast is NOT in reconstruct-meso
+                    input=TimeSeriesSource(data="./reconstruct-meso/M02.csv", sensors="./reconstruct-meso/M02.sensors.yaml"),
+                    output=TimeSeriesSource(data="./representative-year/M02.csv", sensors="./representative-year/M02.sensors.yaml"),
+                    time_range=TimeRange(min="2023-01-01T00:00:00", max="2023-12-31T23:50:00"),
+                    meso_model=RepresentativeYearMesoModel(method="16-sector", meso_name="era5", model_file="./m.jld2"),
+                ),
+            ],
+            mesos=[MesoSource(name="era5", input=TimeSeriesSource(data="./meso/era5.csv", sensors="./meso/era5.sensors.yaml"))],
+        )
+
+        configs = strategy.recommend(
+            reconstruct_config=sample_reconstruct_config,
+            base_dir=str(temp_project_with_rep_year),
+            extrapolate_heights=[160.0],
+            representative_year_config=rep_year_config,
+        )
+
+        rep_year_extrapolate = configs["vertical-extrapolate-representative-year.toml"]
+
+        # Should only have M01, not M02 (since M02 has no shear profile from reconstruct-meso)
+        assert len(rep_year_extrapolate.masts) == 1
+        assert rep_year_extrapolate.masts[0].name == "M01"

@@ -10,6 +10,10 @@ import tomli_w
 from .extrapolate import execute_extrapolation, get_strategy, list_strategies
 from .extrapolate.config import load_extrapolate_config
 from .models.reconstruct_meso import ReconstructMesoConfiguration
+from .models.representative_year import (
+    RepresentativeYearConfiguration,
+    load_representative_year_config,
+)
 
 
 @click.group()
@@ -85,18 +89,26 @@ def recommend():
     help=f"Strategy name. Available: {', '.join(list_strategies())}",
 )
 @click.option(
-    "--output",
-    "-o",
-    default="vertical-extrapolate.toml",
-    help="Output config filename (relative to project_dir)",
+    "--representative-year-config",
+    "-r",
+    default=None,
+    help="Path to representative-year.toml (default: representative-year.toml in project_dir)",
 )
 def recommend_extrapolate_wind(
-    project_dir: str, extrapolate_heights: str, strategy: str, output: str
+    project_dir: str,
+    extrapolate_heights: str,
+    strategy: str,
+    representative_year_config: str | None,
 ):
     """Generate vertical wind extrapolation configuration.
 
     Reads reconstruct-meso.toml to get mast output paths, then generates
-    vertical-extrapolate.toml with shear parameters fitted from top measurement layers.
+    two config files with shear parameters fitted from top measurement layers:
+
+    1. vertical-extrapolate-reconstruct-meso.toml - for reconstruct-meso output
+    2. vertical-extrapolate-representative-year.toml - for representative-year output
+
+    Both configs use shear values fitted from reconstruct-meso data.
 
     Example:
 
@@ -121,43 +133,65 @@ def recommend_extrapolate_wind(
     reconstruct_config = ReconstructMesoConfiguration(**reconstruct_data)
     click.echo(f"Loaded {len(reconstruct_config.masts)} mast(s) from reconstruct-meso.toml")
 
-    # Get strategy and generate config
+    # Load representative-year config (optional)
+    rep_year_config: RepresentativeYearConfiguration | None = None
+    if representative_year_config:
+        rep_year_path = Path(representative_year_config)
+    else:
+        rep_year_path = project_path / "representative-year.toml"
+
+    if rep_year_path.exists():
+        rep_year_config = load_representative_year_config(str(rep_year_path))
+        click.echo(
+            f"Loaded {len(rep_year_config.masts)} mast(s) from {rep_year_path.name}"
+        )
+    else:
+        click.echo(
+            f"Warning: {rep_year_path.name} not found. "
+            "Only generating reconstruct-meso extrapolation config."
+        )
+
+    # Get strategy and generate configs
     click.echo(f"Using strategy: {strategy}")
     strategy_class = get_strategy(strategy)
     strategy_instance = strategy_class()
 
-    extrapolate_config = strategy_instance.recommend(
+    configs = strategy_instance.recommend(
         reconstruct_config=reconstruct_config,
         base_dir=str(project_path),
         extrapolate_heights=heights,
+        representative_year_config=rep_year_config,
     )
 
-    # Write config to TOML
-    output_path = project_path / output
-    config_dict = extrapolate_config.model_dump()
+    # Write config files
+    for config_name, extrapolate_config in configs.items():
+        output_path = project_path / config_name
+        config_dict = extrapolate_config.model_dump()
 
-    with open(output_path, "wb") as f:
-        tomli_w.dump(config_dict, f)
+        with open(output_path, "wb") as f:
+            tomli_w.dump(config_dict, f)
 
-    click.echo(f"\nGenerated: {output_path}")
-    click.echo(f"  Strategy: {extrapolate_config.strategy}")
-    click.echo(f"  Masts: {len(extrapolate_config.masts)}")
+        click.echo(f"\nGenerated: {output_path}")
+        click.echo(f"  Strategy: {extrapolate_config.strategy}")
+        click.echo(f"  Masts: {len(extrapolate_config.masts)}")
 
-    # Show per-mast parameters
-    for mast in extrapolate_config.masts:
-        ws_heights = [h.height for h in mast.windspeed.heights]
-        wd_heights = [h.height for h in mast.winddirection.heights]
-        click.echo(f"\n  {mast.name}:")
-        click.echo(f"    Wind speed heights: {ws_heights}")
-        click.echo(f"    Wind direction heights: {wd_heights}")
-        if mast.windspeed.heights:
-            shear = mast.windspeed.heights[0].references[0].shear
-            click.echo(f"    Fitted shear: {shear:.4f}")
-        if mast.winddirection.heights:
-            deg_diff = mast.winddirection.heights[0].references[0].deg_diff_per_m
-            click.echo(f"    Fitted deg_diff_per_m: {deg_diff:.4f}")
+        # Show per-mast parameters
+        for mast in extrapolate_config.masts:
+            ws_heights = [h.height for h in mast.windspeed.heights]
+            wd_heights = [h.height for h in mast.winddirection.heights]
+            click.echo(f"\n  {mast.name}:")
+            click.echo(f"    Wind speed heights: {ws_heights}")
+            click.echo(f"    Wind direction heights: {wd_heights}")
+            if mast.windspeed.heights:
+                shear = mast.windspeed.heights[0].references[0].shear
+                click.echo(f"    Fitted shear: {shear:.4f}")
+            if mast.winddirection.heights:
+                deg_diff = mast.winddirection.heights[0].references[0].deg_diff_per_m
+                click.echo(f"    Fitted deg_diff_per_m: {deg_diff:.4f}")
 
-    click.echo(f"\nNext step: uv run cleanmast extrapolate {output_path}")
+    click.echo("\nNext steps:")
+    for config_name in configs:
+        click.echo(f"  uv run cleanmast extrapolate {project_path / config_name}")
 
 
 # === Extrapolate command ===
