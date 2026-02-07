@@ -1,12 +1,15 @@
 # Preprocess Mast Agent
 
-An LLM-powered agent for preprocessing wind measurement tower data directly to
-parsed files (data CSV and sensors TOML).
+An LLM-powered agent for preprocessing wind measurement tower data directly to parsed files (data CSV and sensors TOML).
+
+---
 
 ## Project Structure
 
 - Package location: `packages/preprocess-mast-agent/`
 - New workspace member in the monorepo
+
+---
 
 ## Coding Standards
 
@@ -14,6 +17,8 @@ parsed files (data CSV and sensors TOML).
 - Use `ty` instead of `pyright` for type checking
 - Use Pydantic AI for LLM communication
 - Use `.env` for OpenAI-compatible API configuration
+
+---
 
 ## Domain Context
 
@@ -51,144 +56,279 @@ longitude = 116.4074    # Optional
 geohash = "wx4g0b"      # Optional, ~meter accuracy (geohash precision 8+)
 ```
 
-## Subagents and Tools
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Preprocess Mast Agent                     │
+└─────────────────────────────────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│  Subagents    │    │     Tools     │    │   Pipeline    │
+│  (LLM-powered)│    │ (Deterministic)│   │   Orchestrator│
+└───────────────┘    └───────────────┘    └───────────────┘
+        │                     │                     │
+        ▼                     ▼                     ▼
+• Header Recognizer    • Encoding Converter    • File discovery
+• Location Extractor   • Data Range Detector   • State management
+                       • Format Matcher        • Error handling
+• Warning Collector    • CSV Merger            • Phase tracking
+• Summary Generator    • Column Normalizer     • User interaction
+                       • Type Normalizer
+                       • Timestamp Normalizer
+                       • Format Converter
+                       • Sensors TOML Writer
+```
+
+---
+
+## Workflow
+
+### Overview
+
+The agent processes each mast directory through a 7-phase pipeline:
+
+```
+Phase 1: File Discovery
+    └── Scan pre-masts/{mast-name}/ for all files
+
+Phase 2: Encoding Check & Conversion
+    ├── UTF-8 files → keep in place
+    ├── Non-UTF8 → move to quarantine/encoding/{charset}/, convert to UTF-8
+    └── Binary → move to quarantine/binary/, log warning
+
+Phase 3: Data Range Detection
+    ├── Success → proceed with data_beginning_linenum, delimiter
+    └── Fail → move to quarantine/data-range-failed/, log warning
+
+Phase 4: Format Grouping (Iterative, max 10 iterations)
+    ├── Pick random file from ungrouped
+    ├── LLM Subagent: Extract format signature (header only)
+    ├── Tool: Match other files by header signature
+    │   └── Match criteria: header_hash + column_count + delimiter (exact)
+    ├── Move matched files to groups/group-{signature}/
+    └── Iterate until all grouped or max iterations reached
+        └── If max iterations reached → group-manual-review/
+    
+    Note: Location is extracted for reference but NOT used for grouping
+
+Phase 5: Intra-Group Merging
+    └── For each group: merge files using existing tools
+
+Phase 6: Inter-Group Merging
+    └── Smart merge: analyze timestamp overlap and sensor complementarity
+        ├── Same time period, different sensors → Horizontal join
+        ├── Different time periods, same sensors → Vertical concat
+        └── Overlapping time + different sensors → Complex merge
+
+Phase 7: Output Generation & Summary
+    ├── Generate data.parquet + data.csv
+    ├── Generate sensors.toml
+    ├── Move outputs to masts/{mast-name}/
+    └── Generate processing report with warnings summary
+```
+
+### Directory Structure (Working + Quarantine)
+
+```
+pre-masts/{mast-name}/
+├── .workflow/                    # Hidden state directory
+│   ├── state.json               # Resumable state (phase tracking)
+│   ├── processing.log           # Structured logs (JSONL format)
+│   └── report.json              # Final summary report
+├── quarantine/                  # Failed/problematic files
+│   ├── encoding/
+│   │   ├── gb2312/
+│   │   ├── latin1/
+│   │   └── ...
+│   ├── binary/
+│   └── data-range-failed/
+├── groups/                      # Grouped files for processing
+│   ├── group-{signature1}/
+│   ├── group-{signature2}/
+│   └── group-manual-review/     # Ungrouped after max iterations
+└── [working UTF-8 files]        # Files ready for processing
+```
+
+### State Management
+
+Each mast maintains independent state for resumability:
+
+```json
+{
+  "phase": "grouping",
+  "completed_phases": ["discovery", "encoding", "data-range"],
+  "processed_files": ["file1.csv", "file2.csv"],
+  "quarantined_files": [
+    {"file": "binary.dat", "reason": "BINARY_FILE", "location": "quarantine/binary/"}
+  ],
+  "groups": {
+    "group-abc123": ["file1.csv", "file2.csv"],
+    "group-def456": ["file3.csv"]
+  },
+  "warnings": [],
+  "start_time": "2026-02-03T10:00:00Z",
+  "last_update": "2026-02-03T10:05:00Z"
+}
+```
+
+### Error Handling Strategy
+
+| Scenario | Action | Continue? |
+|----------|--------|-----------|
+| Binary file detected | Quarantine to `quarantine/binary/`, log warning | ✅ Yes |
+| Non-UTF8 encoding | Convert to UTF-8, move original to `quarantine/encoding/{charset}/` | ✅ Yes |
+| Data range detection fails | Quarantine to `quarantine/data-range-failed/`, log warning | ✅ Yes |
+| Max grouping iterations reached | Create `group-manual-review/`, log error | ✅ Yes |
+| Header recognition fails | Log error, skip file | ✅ Yes |
+| Critical tool failure | Log error, stop mast processing | ❌ No |
+
+### Warning Collection
+
+Structured warning format (JSONL):
+
+```json
+{"timestamp": "2026-02-03T10:00:00Z", "level": "WARNING", "category": "BINARY_FILE", "file": "mast-A/data.bin", "message": "Binary file detected, moved to quarantine"}
+{"timestamp": "2026-02-03T10:00:01Z", "level": "ERROR", "category": "MAX_GROUPING_ITERATIONS", "file": "mast-A/", "message": "10 iterations reached, 3 files require manual review"}
+```
+
+Categories:
+- `BINARY_FILE`: Binary files detected
+- `ENCODING_CONVERSION`: Non-UTF8 files converted
+- `DATA_RANGE_FAILED`: Could not detect data boundaries
+- `MAX_GROUPING_ITERATIONS`: Grouping did not converge
+- `HEADER_RECOGNITION_FAILED`: Could not parse header
+- `LOCATION_EXTRACTION_LOW_CONFIDENCE`: Location found but low confidence
+- `MULTIPLE_LOCATIONS`: Different locations found in file group
+
+---
+
+## Components
 
 ### Subagents (LLM-powered)
 
-#### 1. Header & Sensor Format Recognizer
+Intelligent agents that analyze and interpret data:
 
-Analyze file header region to extract column names and sensor metadata.
+| Subagent | Purpose | Status |
+|----------|---------|--------|
+| [Header & Sensor Format Recognizer](subagents.md#header--sensor-format-recognizer) | Extract column names and sensor metadata from headers | ✅ Defined |
+| [Location Extractor](subagents.md#location-extractor) | Extract geographic coordinates | ⏳ To be defined |
+| [Warning Collector](subagents.md#warning-collector) | Aggregate and categorize warnings | ⏳ To be defined |
+| [Summary Generator](subagents.md#summary-generator) | Generate final processing report | ⏳ To be defined |
 
-**Input:**
-- Single file path
-- `data_beginning_linenum` from Data Range Detector
-
-**Process:**
-- Read 5 lines above `data_beginning_linenum` + 2 data lines
-- Send these lines to LLM (not full content to avoid overwhelming)
-- Prompt includes common sensor type aliases (WS, WD, T, P, etc.)
-
-**Output:**
-```toml
-header_linenum = 2              # Where column names are (often data_line - 1)
-                                # But may differ if unit/annotation lines exist
-
-timestamp_column = "Date Time"
-timestamp_format = "%Y-%m-%d %H:%M:%S"
-
-[[columns]]
-name = "Anem 80m Mean"          # Original column name (no renaming)
-sensor_type = "WindSpeed"
-height = 80.0
-stat_type = "avg"
-unit = "m/s"
-sensor_direction = "N/A"
-
-[[columns]]
-name = "Vane 80m Mean"
-sensor_type = "WindDirection"
-height = 80.0
-stat_type = "avg"
-unit = "deg"
-sensor_direction = "N/A"
-
-[[columns]]
-name = "Pressure"
-sensor_type = "Pressure"
-height = 2.0
-stat_type = "avg"
-# unit can be missing/null (e.g., for Pressure - normalization handled later)
-sensor_direction = "N/A"
-
-# ... more columns
-```
-
-**Notes:**
-- Header line is normally `data_beginning_linenum - 1`, but sometimes there are
-  unit rows or annotation rows between header and data
-- A separate tool will handle grouping similar data files (to be discussed)
-
-#### 2. Location Extractor
-
-(To be discussed)
+**→ See [subagents.md](subagents.md) for detailed specifications**
 
 ### Tools (Deterministic)
 
-#### 1. Encoding Converter
+Reliable CLI tools for data transformation:
 
-Convert file encoding to UTF-8 using chardet for detection.
+| Tool | Purpose | Status |
+|------|---------|--------|
+| [Encoding Converter](tools.md#encoding-converter) | Convert files to UTF-8 | ✅ Defined |
+| [Data Range Detector](tools.md#data-range-detector) | Detect data boundaries | ✅ Defined |
+| [Format Matcher](tools.md#format-match) | Group files by format signature | ✅ Defined |
+| [CSV Merger](tools.md#csv-merger) | Merge multiple CSV files | ✅ Exists in preprocess-tools |
+| [Column Name Normalizer](tools.md#column-name-normalizer) | Standardize column names | ✅ Exists in preprocess-tools |
+| [Type Normalizer](tools.md#type-normalizer) | Convert to numeric types | ✅ Exists in preprocess-tools |
+| [Timestamp Normalizer](tools.md#timestamp-normalizer) | Normalize timestamps | ✅ Exists in preprocess-tools |
+| [Format Converter](tools.md#format-converter) | Convert to standard format | ⏳ To be defined |
+| [Sensors TOML Writer](tools.md#sensors-toml-writer) | Generate sensors.toml | ⏳ To be defined |
+| [Smart Group Merger](tools.md#smart-group-merger) | Merge groups based on time/sensor analysis | ⏳ To be defined |
 
-#### 2. Data Range Detector
+**→ See [tools.md](tools.md) for detailed specifications**
 
-CLI tool to detect where data begins and ends in CSV-like files.
+### Test Data
 
-**Detection Logic:**
-- Data begins: First continuous 10 lines starting with 4 digits (normal timestamp
-  like `2024-...`), OR first continuous 50 lines starting with 1 digit (weird
-  formats like `m-d-yy` or numeric first column)
-- Data ends: Detect trailing non-data lines
-- Delimiter guess: Check frequency of comma, tab, semicolon, pipe
+**→ See [test-data-reference.md](test-data-reference.md) for test files and projects**
 
-**Input (TOML/YAML/JSON):**
-```toml
-files = [
-  "C:/path/to/file1.csv",
-  "C:/path/to/file2.csv"
-]
-```
+---
 
-**Output (TOML/YAML/JSON):**
-```toml
-[[results]]
-file = "C:/path/to/file1.csv"
-data_beginning_linenum = 3      # 0-indexed (polars convention)
-count_of_lines_after_data_ends = 0  # 0 = last line is data
-delimiter = ","
+## Integration with Existing Tools
 
-[[results]]
-file = "C:/path/to/file2.csv"
-data_beginning_linenum = 5
-count_of_lines_after_data_ends = 2  # 2 trailing lines to skip
-delimiter = "\t"
-```
+Four tools are already implemented in [`packages/preprocess-tools/`](../packages/preprocess-tools/):
 
-**CLI Usage:**
-```bash
-data-range-detect input.toml --output result.json
-# Output format auto-detected from extension (.toml/.yaml/.json)
-```
+- CSV Merger
+- Column Name Normalizer
+- Type Normalizer
+- Timestamp Normalizer
 
-#### 3. CSV Merger
+**Strategy:** Import and wrap these tools rather than reimplementing. See [tools.md](tools.md#tool-integration-strategy) for integration options.
 
-(To be discussed)
+---
 
-#### 4. Column Name Normalizer
+## Design Decisions
 
-(To be discussed)
+### Grouping Strategy
 
-#### 5. Type Normalizer
+**Approach**: Iterative random sampling with convergence detection
 
-(To be discussed)
+1. Randomly select file from ungrouped set
+2. LLM extracts format signature (header columns + location fingerprint)
+3. Deterministic tool matches remaining files
+4. Repeat until all grouped or max iterations (10) reached
+5. Ungrouped files after max iterations → `group-manual-review/`
 
-#### 6. Timestamp Normalizer
+**Rationale**: 
+- Random sampling avoids bias toward dominant format
+- Max iterations prevents infinite loops
+- Manual review group allows human intervention without failing workflow
 
-(To be discussed)
+### Output Format
 
-#### 7. Format Converter
+**Primary**: Parquet (efficient, typed, compressed)
+**Secondary**: CSV (compatibility with external tools)
+**Metadata**: TOML (human-readable sensor configuration)
 
-(To be discussed)
+### Parallelization
 
-#### 8. Sensors TOML Writer
+**Per mast**: Sequential (maintain state, handle errors gracefully)
+**Across masts**: Parallel (independent processing)
 
-(To be discussed)
+### Resumability
+
+Resume from last completed **phase**, not individual files:
+- If interrupted during Phase 4 (grouping), restart from Phase 4
+- Don't re-run completed phases (encoding, data-range detection)
+
+---
 
 ## Next Steps
 
-(To be discussed in future sessions)
+### Design Phase (Current)
 
-- Tool details and implementation
-- Tool composition / pipeline design
-- Pydantic AI agent configuration
-- Error handling and retry logic
-- User interaction points (confirmation, manual override)
-- Testing strategy
+- [x] Define workflow phases and directory structure
+- [x] Define state management approach
+- [x] Define error handling and quarantine strategy
+- [x] Define warning collection format
+- [ ] Define Location Extractor subagent
+- [ ] Define Warning Collector subagent
+- [ ] Define Summary Generator subagent
+- [ ] Define Smart Group Merger tool
+- [ ] Define Format Converter tool
+- [ ] Define Sensors TOML Writer tool
+- [ ] Design Pydantic AI agent integration patterns
+
+### Implementation Phase (Future)
+
+- [ ] Create `packages/preprocess-mast-agent/` structure
+- [ ] Implement Encoding Converter
+- [ ] Implement Data Range Detector
+- [ ] Implement Format Matcher
+- [ ] Set up Pydantic AI agent configuration
+- [ ] Implement Header & Sensor Format Recognizer
+- [ ] Implement Location Extractor
+- [ ] Implement Warning Collector
+- [ ] Implement Summary Generator
+- [ ] Implement Smart Group Merger
+- [ ] Implement Sensors TOML Writer
+
+### Polish Phase (Future)
+
+- [ ] Error handling and retry logic
+- [ ] User interaction points (confirmation, manual override)
+- [ ] Testing strategy
+- [ ] Documentation and examples
