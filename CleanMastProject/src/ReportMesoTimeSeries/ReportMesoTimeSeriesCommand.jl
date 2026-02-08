@@ -1,13 +1,18 @@
 module ReportMesoTimeSeriesCommand
 
 using Logging
-using ...Types.ReportMesoTimeSeriesConfiguration: load_report_meso_timeseries_config
+using ...Types.ReportMesoTimeSeriesConfiguration: ReportMesoTimeSeriesConfig, ReportMesoTimeSeriesConfigYAML,
+                                                    MesoReportMesoTimeSeriesConfig, MesoReportMesoTimeSeriesConfigYAML,
+                                                    OutputConfig, resolve_path
+using ...Types.MastTimeSeries: load_timeseries, TimeSeriesData
+using ...Types.Utils: from_dict
+using ...CleanMastUtils: load_dict
 using ...TypstUtils
 using ...PandocUtils
 using ...CleanMastLogging: create_cleanmast_logger
 using ..AnnualClimatology: analyze_all
 
-export execute
+export execute, process_meso_config, load_report_meso_timeseries_config
 
 """
     execute(config_path::String)
@@ -61,6 +66,60 @@ function execute(config_path::String)
     @info "Analysis complete. Results saved to: $(config.output.path)"
 
     return results
+end
+
+"""
+    process_meso_config(meso_yaml::MesoReportMesoTimeSeriesConfigYAML, config_dir::String) -> MesoReportMesoTimeSeriesConfig
+
+Process a single meso configuration by loading time series data.
+Uses load_timeseries which handles path resolution, format auto-detection (CSV/Parquet),
+and embedded metadata for Parquet files.
+"""
+function process_meso_config(meso_yaml::MesoReportMesoTimeSeriesConfigYAML, config_dir::String)::MesoReportMesoTimeSeriesConfig
+    timeseries_data = load_timeseries(meso_yaml.input, config_dir)
+
+    return MesoReportMesoTimeSeriesConfig(
+        meso_yaml.name,
+        timeseries_data
+    )
+end
+
+"""
+    load_report_meso_timeseries_config(config_path::String) -> ReportMesoTimeSeriesConfig
+
+Load and process report meso-timeseries configuration from a YAML, TOML, or JSON file.
+Resolves all paths relative to the configuration file location and loads time series data.
+"""
+function load_report_meso_timeseries_config(config_path::String)::ReportMesoTimeSeriesConfig
+    if !isfile(config_path)
+        error("Configuration file not found: $config_path")
+    end
+
+    config_dir = dirname(abspath(config_path))
+
+    config_dict = load_dict(config_path)
+    config_yaml = from_dict(ReportMesoTimeSeriesConfigYAML, config_dict)
+
+    processed_mesos = MesoReportMesoTimeSeriesConfig[]
+    for meso_yaml in config_yaml.mesos
+        try
+            push!(processed_mesos, process_meso_config(meso_yaml, config_dir))
+            @info "Loaded meso configuration: $(meso_yaml.name)"
+        catch e
+            @error "Failed to load meso $(meso_yaml.name): $e"
+            rethrow(e)
+        end
+    end
+
+    output_config = OutputConfig(
+        resolve_path(config_yaml.output.path, config_dir)
+    )
+
+    return ReportMesoTimeSeriesConfig(
+        processed_mesos,
+        output_config,
+        config_dir
+    )
 end
 
 end # module

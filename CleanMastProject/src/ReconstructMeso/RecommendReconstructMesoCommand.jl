@@ -7,7 +7,7 @@ using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration, ReconstructCrossSettings
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, ReconstructMesoMast, ReconstructMesoModels, ReconstructMesoModelSpec
 using ...Types.MastTimeSeries: load_timeseries, TimeSeriesSource, TimeSeriesData, TimeRange
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 using ...TimeSeriesProcessing.MeasurementPeriodCalculator: calculate_optimal_measurement_period
 using ...TimeSeriesProcessing.MastPeriodAlignment:
@@ -216,12 +216,12 @@ function create_mast_configuration(mast_name::String, train_config::TrainMesoCon
         )
     end
 
-    return ReconstructMesoMast(
+        return ReconstructMesoMast(
         mast_name,
         input_source,
         TimeSeriesSource(
-            joinpath("./reconstruct-meso", "$(mast_name).csv"),
-            joinpath("./reconstruct-meso", "$(mast_name).sensors.yaml")
+            joinpath("./reconstruct-meso", "$(mast_name).parquet"),
+            nothing
         ),
         optimal_time_range,
         reconstruct_model,
@@ -295,7 +295,7 @@ function execute(
         println(io, "# Mesoscale Reconstruction Configuration")
         println(io, "# Uses trained models to fill remaining gaps with mesoscale data")
         println(io)
-        TOML.print(io, to_dict(output_config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(output_config))))
     end
 
     # Print summary

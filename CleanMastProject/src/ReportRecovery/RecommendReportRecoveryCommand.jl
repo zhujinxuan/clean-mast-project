@@ -1,41 +1,25 @@
 module RecommendReportRecoveryCommand
 
 using TOML
+using ...Types.MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths_to_parquet
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, from_dict
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.TowerShadingConfig: TowerShadingConfiguration
 using ...Types.ReportRecoveryConfig: ReportRecoveryConfiguration, ReportRecoveryMast, ReportRecoveryOutput, to_dict
-using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict
+using ...Types.Utils: from_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
 
 """
-    adjust_path_for_report_masts(path::String)::String
-
-Adjust a project-relative path to be relative to report-masts/ directory.
-Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
-"""
-function adjust_path_for_report_masts(path::String)::String
-    if startswith(path, "./")
-        return "../" * path[3:end]
-    else
-        return "../" * path
-    end
-end
-
-"""
     adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
 
-Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory.
+Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory
+and convert to Parquet format.
 """
 function adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
-    return TimeSeriesSource(
-        adjust_path_for_report_masts(source.data),
-        adjust_path_for_report_masts(source.sensors)
-    )
+    return adjust_timeseries_source_paths_to_parquet(source, "../")
 end
 
 """
@@ -119,7 +103,7 @@ function execute(project_dir::String)
 
     output_file = joinpath(report_masts_dir, "report-recovery.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(config))))
     end
     
     println("✓ Generated report-recovery.toml with $(length(valid_masts)) masts")

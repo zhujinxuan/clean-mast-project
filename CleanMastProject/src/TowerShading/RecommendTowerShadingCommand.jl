@@ -2,7 +2,7 @@ module RecommendTowerShadingCommand
 
 using TOML
 using ...Types.ProcessCleanConfig: ProcessCleanConfiguration
-using ...Types.Utils: from_dict
+using ...Types.Utils: from_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -35,8 +35,8 @@ function execute(dir::String)
                 "sensors" => mast.output.sensors
             ),
             "output" => Dict(
-                "data" => "./tower-shading/$(mast.name).csv",
-                "sensors" => "./tower-shading/$(mast.name).sensors.yaml"
+                "data" => "./tower-shading/$(mast.name).parquet",
+                "sensors" => nothing
             )
         )
     end
@@ -50,7 +50,7 @@ function execute(dir::String)
         println(io, "# Tower Shading Configuration")
         println(io, "# Merges wind speed sensors at nearby heights (within 2m) to handle tower shading effects")
         println(io)
-        TOML.print(io, output_config)
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(output_config)))
     end
     
     println("Generated tower-shading.toml at: $output_path")

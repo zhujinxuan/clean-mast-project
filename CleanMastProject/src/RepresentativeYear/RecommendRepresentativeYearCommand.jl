@@ -6,7 +6,7 @@ using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration, Repres
 using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoSource
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration
 using ...Types.MastTimeSeries: TimeSeriesSource, TimeRange
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute, select_last_year
@@ -127,10 +127,10 @@ function execute(dir::String)
         RepresentativeYearMast(
             mast.name,
             mast.output,
-             TimeSeriesSource(
-                joinpath("./representative-year", "$(mast.name).csv"),
-                joinpath("./representative-year", "$(mast.name).sensors.yaml")
-            ),
+                 TimeSeriesSource(
+                    joinpath("./representative-year", "$(mast.name).parquet"),
+                    nothing
+                ),
             select_last_year(mast.time_range),
             find_16sectors_meso_models(train_config, mast.name, reconstruct_config)
         )
@@ -149,7 +149,7 @@ function execute(dir::String)
         println(io, "# Calibrates data to a representative year using mesoscale patterns")
         println(io, "# Note: Prefers 16-sector windspeed model for directional calibration")
         println(io)
-        TOML.print(io, to_dict(output_config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(output_config))))
     end
     
     println("Generated representative-year.toml at: $output_path")

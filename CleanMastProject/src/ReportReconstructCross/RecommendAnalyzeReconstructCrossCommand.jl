@@ -9,7 +9,7 @@ module RecommendAnalyzeReconstructCrossCommand
 using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, ReportReconstructCrossMast, ReportReconstructCrossSettings
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -58,7 +58,7 @@ function execute(dir::String)
     config_dict = to_dict(analyze_config)
     
     open(output_path, "w") do io
-        TOML.print(io, config_dict)
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(config_dict)))
     end
     
     println("✅ Generated analyze-reconstruct-cross.toml at: $output_path")
@@ -77,10 +77,13 @@ Create analyze-reconstruct-cross configuration from reconstruct-single configura
 """
 function create_analyze_config(reconstruct_config::ReconstructSingleConfiguration)::ReportReconstructCrossConfiguration
     # Convert each mast's output to input for analysis
+    # Update file extension from .csv to .parquet
     masts = map(reconstruct_config.masts) do mast
+        output_path = mast.output
+        input_path = replace(output_path, r"\.csv$" => ".parquet")
         ReportReconstructCrossMast(
             name = mast.name,
-            input = mast.output  # Output from reconstruct-single becomes input for analysis
+            input = input_path  # Output from reconstruct-single becomes input for analysis
         )
     end
     

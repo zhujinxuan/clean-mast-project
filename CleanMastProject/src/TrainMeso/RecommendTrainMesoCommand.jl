@@ -6,11 +6,11 @@ using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoMast, TrainMeso
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, ParseSensorsFileConfig
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration
 using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...ParseSensors.CommandParseSensors: load_and_normalize_config
 using ...CleanMastUtils: load_dict
 using ...TimeSeriesProcessing.IntervalDetection: get_interval_statistics
-using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries
+using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries, adjust_timeseries_source_paths_to_parquet
 
 export execute
 
@@ -125,20 +125,25 @@ function execute(dir::String)
     reconstruct_cross_source_dict = load_reconstruct_cross_source(dir)
     
     # Build masts array with intelligent input source selection
+    # Convert input sources to Parquet format
     masts = map(tower_shading_config.masts) do mast
         cross_source = isnothing(reconstruct_cross_source_dict) ? nothing : get(reconstruct_cross_source_dict, mast.name, nothing)
         input_source = choose_train_mast_input_source(dir, mast.output, cross_source)
+        # Convert CSV to Parquet for training input
+        parquet_input = adjust_timeseries_source_paths_to_parquet(input_source, "./")
 
         TrainMesoMast(
             mast.name,
-            input_source,
+            parquet_input,
         )
     end
 
     mesos = map(parse_sensors_config.mesos) do meso
+        # Convert CSV to Parquet for meso input
+        parquet_output = adjust_timeseries_source_paths_to_parquet(meso.output, "./")
         TrainMesoSource(
             meso.name,
-            meso.output,
+            parquet_output,
         )
     end
     
@@ -167,7 +172,7 @@ function execute(dir::String)
     # Write to train-meso.toml
     output_path = joinpath(dir, "train-meso.toml")
     open(output_path, "w") do io
-        TOML.print(io, output_dict)
+        TOML.print(io, strip_nothing_values(output_dict))
     end
     
     println("Generated train-meso.toml at: $output_path")

@@ -4,8 +4,9 @@ using TOML
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, from_dict
 using ...Types.ReportTimeSeriesConfiguration: ReportTimeSeriesConfigYAML, MastReportTimeSeriesConfigYAML, OutputConfig, to_dict, AirDensityConfig
 using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict
+using ...Types.Utils: from_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
+using CleanMastProject.ReportUtils: adjust_path_for_report_masts
 using ..CalculateAirDensity: calculate_air_density_from_data
 
 export execute
@@ -42,29 +43,24 @@ function execute(project_dir::String)
     # 2. Create mast configurations for time series analysis
     analyze_masts = map(meso_config.masts) do meso_mast
         # Adjust paths to be relative to report-masts/ directory
-        adjusted_data_path = if startswith(meso_mast.output.data, "./")
-            "../" * meso_mast.output.data[3:end]  # Remove "./" and add "../"
-        else
-            "../" * meso_mast.output.data
-        end
-
-        adjusted_sensors_path = if startswith(meso_mast.output.sensors, "./")
-            "../" * meso_mast.output.sensors[3:end]  # Remove "./" and add "../"
-        else
-            "../" * meso_mast.output.sensors
-        end
+        adjusted_data_path = adjust_path_for_report_masts(meso_mast.output.data)
+        adjusted_sensors_path = adjust_path_for_report_masts(meso_mast.output.sensors)
 
         adjusted_output = TimeSeriesSource(adjusted_data_path, adjusted_sensors_path)
 
         # Calculate air density from data if temperature and pressure sensors are available
         # Resolve paths relative to project directory for loading
         absolute_data_path = joinpath(project_dir, meso_mast.output.data)
-        absolute_sensors_path = joinpath(project_dir, meso_mast.output.sensors)
+        absolute_sensors_path = !isnothing(meso_mast.output.sensors) ? joinpath(project_dir, meso_mast.output.sensors) : nothing
 
-        air_density = try
-            calculate_air_density_from_data(absolute_data_path, absolute_sensors_path)
-        catch e
-            @warn "Failed to calculate air density for $(meso_mast.name): $e"
+        air_density = if !isnothing(absolute_sensors_path)
+            try
+                calculate_air_density_from_data(absolute_data_path, absolute_sensors_path)
+            catch e
+                @warn "Failed to calculate air density for $(meso_mast.name): $e"
+                nothing
+            end
+        else
             nothing
         end
 
@@ -98,7 +94,7 @@ function execute(project_dir::String)
 
     output_file = joinpath(report_masts_dir, "report-timeseries-meso.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(analyze_config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(analyze_config))))
     end
 
     println("✅ Generated report-timeseries-meso.toml with $(length(analyze_masts)) masts")

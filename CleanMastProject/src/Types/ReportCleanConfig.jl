@@ -1,7 +1,7 @@
 module ReportCleanConfig
 
 import ..Utils: from_dict, to_dict
-using ..MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths
+using ..MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths, adjust_timeseries_source_paths_to_parquet
 using ..ProcessCleanConfig: ProcessCleanConfiguration, load_rules
 using ..CleanRules: Rule, RangeCriteria, LayerDifferenceCriteria, IcingCriteria, AvailabilityCriteria
 using Parameters
@@ -208,11 +208,12 @@ function to_report_clean_config(
     ]
 
     # Create clean masts from process_config.masts[].output with adjusted paths
+    # Convert CSV to Parquet for clean output (which is now in Parquet format)
     # Load and parse rules for each mast
     clean_masts = [
         ReportCleanMast(
             name = mast.name,
-            input = adjust_timeseries_source_paths(mast.output, path_prefix),
+            input = adjust_timeseries_source_paths_to_parquet(mast.output, path_prefix),
             rules = load_rules(mast.rules, config_dir)
         )
         for mast in process_config.masts

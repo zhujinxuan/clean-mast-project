@@ -6,7 +6,7 @@ using ...Types.WtTimeSeriesConfig: WtTimeSeriesConfiguration, WtTimeSeriesMast
 using ...Types.RepresentativeYearConfig: RepresentativeYearConfiguration, RepresentativeYearMast
 using ...Types.MastTimeSeries: TimeSeriesSource, load_timeseries
 using ...Types.SensorColumns: SensorColumn
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -71,7 +71,7 @@ function execute(dir::String)
         println(io, "# Processes representative year data for wind turbine analysis")
         println(io, "# Generated automatically from rep_year_calibration/ directory")
         println(io)
-        TOML.print(io, to_dict(config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(config))))
     end
     
     println("\nGenerated wt-timeseries.toml at: $output_path")

@@ -184,7 +184,7 @@ class Top3ConstantShearStrategy(RecommendStrategy):
                     name=mast_name,
                     input=input_source,
                     output=TimeSeriesSource(
-                        data=f"./{output_dir}/{mast_name}.csv",
+                        data=f"./{output_dir}/{mast_name}.parquet",
                         sensors=f"./{output_dir}/{mast_name}.sensors.yaml",
                     ),
                     windspeed=WindSpeedConfig(heights=ws_heights),

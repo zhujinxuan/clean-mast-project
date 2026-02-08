@@ -2,7 +2,7 @@ module RecommendReconstructSingleCommand
 
 using TOML
 using ...Types.TowerShadingConfig: TowerShadingConfiguration
-using ...Types.Utils: from_dict
+using ...Types.Utils: from_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -35,8 +35,8 @@ function execute(dir::String)
                 "sensors" => mast.output.sensors
             ),
             "output" => Dict(
-                "data" => "./reconstruct-single/$(mast.name).csv",
-                "sensors" => "./reconstruct-single/$(mast.name).sensors.yaml"
+                "data" => "./reconstruct-single/$(mast.name).parquet",
+                "sensors" => nothing
             )
         )
     end
@@ -50,7 +50,7 @@ function execute(dir::String)
         println(io, "# Single Mast Reconstruction Configuration")
         println(io, "# Fills gaps using correlations between sensors on the same mast")
         println(io)
-        TOML.print(io, output_config)
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(output_config)))
     end
     
     println("Generated reconstruct-single.toml at: $output_path")

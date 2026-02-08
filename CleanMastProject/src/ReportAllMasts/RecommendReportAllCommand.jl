@@ -3,6 +3,12 @@
 
 Generates all necessary TOML configuration files for comprehensive mast reporting.
 This command prepares all configurations needed for the 'report all' command.
+
+All report configurations reference Parquet input files from previous processing stages:
+- process-clean output (Parquet) for clean report
+- tower-shading output (Parquet) for recovery and reconstruct reports
+- reconstruct-meso output (Parquet) for meso-related reports
+- representative-year output (Parquet) for rep-year reports
 """
 module RecommendReportAllCommand
 

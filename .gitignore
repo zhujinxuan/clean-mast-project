@@ -1,4 +1,4 @@
-﻿# Julia-specific ignores
+# Julia-specific ignores
 *.jl.cov
 *.jl.*
 *.ji
@@ -45,3 +45,4 @@ tmp/
 *.docx
 nul
 tmpclaude*
+.sisyphus

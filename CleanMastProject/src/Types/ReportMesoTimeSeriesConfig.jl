@@ -149,79 +149,10 @@ function load_sensor_config(sensor_config_path::String)::Vector{SensorColumn}
     return sensors
 end
 
-"""
-    load_timeseries_data(csv_path::String, sensor_config_path::String) -> TimeSeriesData
-
-Load time series data from CSV and sensor configuration from YAML or TOML.
-"""
-function load_timeseries_data(csv_path::String, sensor_config_path::String)::TimeSeriesData
-    if !isfile(csv_path)
-        error("CSV file not found: $csv_path")
-    end
-
-    df = CSV.read(csv_path, DataFrame)
-    sensors = load_sensor_config(sensor_config_path)
-
-    return TimeSeriesData(df, sensors)
-end
-
-"""
-    process_meso_config(meso_yaml::MesoReportMesoTimeSeriesConfigYAML, config_dir::String) -> MesoReportMesoTimeSeriesConfig
-
-Process a single meso configuration by resolving paths and loading data.
-"""
-function process_meso_config(meso_yaml::MesoReportMesoTimeSeriesConfigYAML, config_dir::String)::MesoReportMesoTimeSeriesConfig
-    csv_path = resolve_path(meso_yaml.input.data, config_dir)
-    sensor_config_path = resolve_path(meso_yaml.input.sensors, config_dir)
-
-    timeseries_data = load_timeseries_data(csv_path, sensor_config_path)
-
-    return MesoReportMesoTimeSeriesConfig(
-        meso_yaml.name,
-        timeseries_data
-    )
-end
-
-"""
-    load_report_meso_timeseries_config(config_path::String) -> ReportMesoTimeSeriesConfig
-
-Load and process report meso-timeseries configuration from a YAML, TOML, or JSON file.
-Resolves all paths relative to the configuration file location and loads time series data.
-"""
-function load_report_meso_timeseries_config(config_path::String)::ReportMesoTimeSeriesConfig
-    if !isfile(config_path)
-        error("Configuration file not found: $config_path")
-    end
-
-    config_dir = dirname(abspath(config_path))
-
-    config_dict = load_dict(config_path)
-    config_yaml = from_dict(ReportMesoTimeSeriesConfigYAML, config_dict)
-
-    processed_mesos = MesoReportMesoTimeSeriesConfig[]
-    for meso_yaml in config_yaml.mesos
-        try
-            push!(processed_mesos, process_meso_config(meso_yaml, config_dir))
-            @info "Loaded meso configuration: $(meso_yaml.name)"
-        catch e
-            @error "Failed to load meso $(meso_yaml.name): $e"
-            rethrow(e)
-        end
-    end
-
-    output_config = OutputConfig(
-        resolve_path(config_yaml.output.path, config_dir)
-    )
-
-    return ReportMesoTimeSeriesConfig(
-        processed_mesos,
-        output_config,
-        config_dir
-    )
-end
-
 # Export helper functions
-export resolve_path, load_sensor_config, load_timeseries_data,
-       process_meso_config, load_report_meso_timeseries_config
+# Note: process_meso_config and load_report_meso_timeseries_config have been moved to
+# ReportMesoTimeSeriesCommand module to avoid circular dependencies with MastTimeSeries
+# load_timeseries_data removed - use load_timeseries(TimeSeriesSource(...), base_dir) directly
+export resolve_path, load_sensor_config
 
 end # module

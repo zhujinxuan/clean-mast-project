@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 import polars as pl
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from .sensor import SensorColumn
 
@@ -16,11 +17,19 @@ class TimeSeriesSource(BaseModel):
 
     Attributes:
         data: Path to CSV file containing time series data
-        sensors: Path to sensor metadata file (YAML/TOML/JSON)
+        sensors: Path to sensor metadata file (YAML/TOML/JSON). Optional for Parquet files.
     """
 
     data: str
-    sensors: str
+    sensors: Optional[str] = None
+
+    @field_validator("sensors")
+    @classmethod
+    def sensors_required_for_csv(cls, v: Optional[str], info) -> Optional[str]:
+        """Ensure sensors is provided when data is a CSV file."""
+        if v is None and info.data.get("data", "").endswith(".csv"):
+            raise ValueError("sensors field is required when data is a CSV file")
+        return v
 
 
 class TimeRange(BaseModel):

@@ -12,7 +12,7 @@ using ...Types.CrossMastAnalysisResults: MastPairAnalysisResult, from_dict
 using ...Types.ReconstructCrossConfig: ReconstructCrossConfiguration, ReconstructCrossSettings, 
                                        ReconstructionJob, ReconstructionPriority, ReconstructCrossMast, to_dict
 using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -96,7 +96,7 @@ function execute(train_results_path::String, output_dir::String, min_coverage_da
         println(io, "# Generated from training results: $train_results_path")
         println(io, "# Generated on: $(now())")
         println(io)
-        TOML.print(io, config_dict)
+        TOML.print(io, strip_nothing_values(config_dict))
     end
     
     # 7. Print summary
@@ -345,18 +345,19 @@ function create_mast_configurations(train_results::Vector{MastPairAnalysisResult
         # We need to infer the input paths from the training results
         # Since training results don't store the original input paths directly,
         # we'll create reasonable defaults based on the mast names
+        # Use Parquet format with embedded metadata (sensors = nothing)
 
         if !haskey(mast_inputs, result.target_mast)
             mast_inputs[result.target_mast] = TimeSeriesSource(
-                "./reconstruct-single/$(result.target_mast).csv",
-                "./reconstruct-single/$(result.target_mast).sensors.yaml"
+                "./reconstruct-single/$(result.target_mast).parquet",
+                nothing
             )
         end
 
         if !haskey(mast_inputs, result.source_mast)
             mast_inputs[result.source_mast] = TimeSeriesSource(
-                "./reconstruct-single/$(result.source_mast).csv",
-                "./reconstruct-single/$(result.source_mast).sensors.yaml"
+                "./reconstruct-single/$(result.source_mast).parquet",
+                nothing
             )
         end
     end
@@ -365,8 +366,8 @@ function create_mast_configurations(train_results::Vector{MastPairAnalysisResult
     masts = ReconstructCrossMast[]
     for (mast_name, input_source) in mast_inputs
         output_source = TimeSeriesSource(
-            "./reconstruct-cross/$(mast_name)_reconstructed.csv",
-            "./reconstruct-cross/$(mast_name)_reconstructed.sensors.yaml"
+            "./reconstruct-cross/$(mast_name)_reconstructed.parquet",
+            nothing
         )
 
         push!(masts, ReconstructCrossMast(

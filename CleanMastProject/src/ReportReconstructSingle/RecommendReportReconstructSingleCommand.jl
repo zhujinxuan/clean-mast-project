@@ -5,22 +5,9 @@ using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.TowerShadingConfig: TowerShadingConfiguration
 using ...Types.Utils: from_dict
 using ...CleanMastUtils: load_dict
+using CleanMastProject.ReportUtils: adjust_path_for_report_masts
 
 export execute
-
-"""
-    adjust_path_for_report_masts(path::String)::String
-
-Adjust a project-relative path to be relative to report-masts/ directory.
-Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
-"""
-function adjust_path_for_report_masts(path::String)::String
-    if startswith(path, "./")
-        return "../" * path[3:end]
-    else
-        return "../" * path
-    end
-end
 
 """
     execute(project_dir::String)

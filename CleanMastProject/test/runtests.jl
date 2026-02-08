@@ -1,4 +1,4 @@
-﻿# 文件：./test/runtests.jl
+# 文件：./test/runtests.jl
 
 using Test
 using Pkg
@@ -81,7 +81,8 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "ReportTimeSeries/test_wind_rose_directions.jl"
     ],
     "types" => [
-        "Types/test_process_clean_config_utils.jl"
+        "Types/test_process_clean_config_utils.jl",
+        "Types/test_parquet_io.jl"
     ],
     "pandoc_utils" => [
         "PandocUtils/test_pandoc_utils.jl"
@@ -90,6 +91,9 @@ const TEST_SETS = Dict{String, Vector{String}}(
         "ReportFrozenPeriod/test_period_operations.jl",
         "ReportFrozenPeriod/test_component_detection.jl",
         "ReportFrozenPeriod/test_missing_data_stats.jl"
+    ],
+    "report_utils" => [
+        "test_report_utils.jl"
     ]
 )
 

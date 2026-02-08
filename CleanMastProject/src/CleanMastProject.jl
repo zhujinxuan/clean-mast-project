@@ -110,6 +110,9 @@ end
 
 export Types
 
+include("./ReportUtils.jl")
+export ReportUtils
+
 module TimeSeriesProcessing
   include("./TimeSeriesProcessing/Interpolation.jl")
   include("./TimeSeriesProcessing/Regularization.jl")

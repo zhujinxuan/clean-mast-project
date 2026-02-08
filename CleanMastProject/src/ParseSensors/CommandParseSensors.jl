@@ -9,7 +9,7 @@ using Dates
 using ...Types.Utils: to_dict, from_dict, strip_nothing_values
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, SensorFormatConfig, ParseSensorsFileConfig,
                                   ParseSensorsConfigurationNormalized, ParseSensorsFileConfigNormalized, InterpolationConfig
-using ...Types.MastTimeSeries: TimeSeriesSource, TimeSeriesData, TimeRange
+using ...Types.MastTimeSeries: TimeSeriesSource, TimeSeriesData, TimeRange, save_timeseries
 using ...Types.SensorColumns: ParsedSensor, SensorColumn
 using ...CleanMastUtils: load_dict
 using ..ColumnParser: parse_column_name
@@ -49,7 +49,7 @@ function load_and_normalize_config(config_path::String)::ParseSensorsConfigurati
         normalized_output = if file_config.output isa TimeSeriesSource
             file_config.output
         else
-            TimeSeriesSource("./raw/$(name).csv", "./raw/$(name).sensors.toml")
+            TimeSeriesSource("./raw/$(name).parquet", nothing)  # Use Parquet with embedded metadata
         end
 
         # Create normalized config using from_dict for consistency
@@ -183,28 +183,29 @@ end
 """
     save_outputs(df::DataFrame, sensors::Vector{ParsedSensor}, file_config::ParseSensorsFileConfigNormalized)
 
-Saves the processed DataFrame and sensor metadata to their destination files.
+Saves the processed DataFrame and sensor metadata to Parquet format with embedded metadata.
 """
 function save_outputs(df::DataFrame, sensors::Vector{ParsedSensor}, file_config::ParseSensorsFileConfigNormalized, config_path::String)
     project_dir = dirname(config_path)
-    output_data_path = joinpath(project_dir, file_config.output.data)
-    output_sensor_path = joinpath(project_dir, file_config.output.sensors)
-    
-    # Ensure output directories exist
-    mkpath(dirname(output_data_path))
-    mkpath(dirname(output_sensor_path))
-    
-    # Save data
-    CSV.write(output_data_path, df)
-    println("✓ Saved processed data to: $output_data_path")
-    
-    # Save sensor metadata, stripping nothing values for TOML compatibility
-    # TOML does not support null values, so we must remove them before writing.
-    open(output_sensor_path, "w") do io
-        cleaned_sensors = map(s -> strip_nothing_values(to_dict(s)), sensors)
-        TOML.print(io, Dict("sensors" => cleaned_sensors))
-    end
-    println("✓ Saved sensor metadata to: $output_sensor_path")
+
+    # Convert ParsedSensor to SensorColumn for TimeSeriesData
+    sensor_columns = [
+        SensorColumn(
+            Symbol(sensor.columnName),
+            sensor.sensorType,
+            sensor.sensorDirection,
+            sensor.height,
+            sensor.statType,
+            sensor.unit
+        ) for sensor in sensors
+    ]
+
+    # Create TimeSeriesData
+    ts_data = TimeSeriesData(df, sensor_columns)
+
+    # Save using save_timeseries (auto-detects Parquet from extension and embeds metadata)
+    save_timeseries(file_config.output, project_dir, ts_data)
+    println("✓ Saved processed data to: $(joinpath(project_dir, file_config.output.data))")
 end
 
 end # end module 

@@ -10,36 +10,11 @@ using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.ReportReconstructCrossConfig: ReportReconstructCrossConfiguration, ReportReconstructCrossMast, ReportReconstructCrossSettings
 using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
+using CleanMastProject.ReportUtils: adjust_timeseries_source_for_report_masts
 
 export execute
-
-"""
-    adjust_path_for_report_masts(path::String)::String
-
-Adjust a project-relative path to be relative to report-masts/ directory.
-Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
-"""
-function adjust_path_for_report_masts(path::String)::String
-    if startswith(path, "./")
-        return "../" * path[3:end]
-    else
-        return "../" * path
-    end
-end
-
-"""
-    adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
-
-Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory.
-"""
-function adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
-    return TimeSeriesSource(
-        adjust_path_for_report_masts(source.data),
-        adjust_path_for_report_masts(source.sensors)
-    )
-end
 
 """
     execute(project_dir::String)
@@ -80,8 +55,8 @@ function execute(project_dir::String)
     analyze_masts = map(reconstruct_config.masts) do mast
         ReportReconstructCrossMast(
             name = mast.name,
-            before_reconstruction = adjust_timeseries_source(mast.input),   # Before reconstruction data
-            after_reconstruction = adjust_timeseries_source(mast.output)     # After reconstruction data
+            before_reconstruction = adjust_timeseries_source_for_report_masts(mast.input),   # Before reconstruction data
+            after_reconstruction = adjust_timeseries_source_for_report_masts(mast.output)     # After reconstruction data
         )
     end
 
@@ -108,7 +83,7 @@ function execute(project_dir::String)
     # Save configuration to report-masts directory
     output_file = joinpath(report_masts_dir, "report-cross-mast.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(config))))
     end
 
     println("✓ Generated report-cross-mast.toml with $(length(analyze_masts)) masts")

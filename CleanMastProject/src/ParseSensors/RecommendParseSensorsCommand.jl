@@ -56,11 +56,14 @@ function execute(dir::String)
                 "formats/sensor/nrg.toml"
             end
 
-            # Create mast configuration
+            # Create mast configuration with Parquet output
             mast_config = Dict{String, Any}(
                 "input" => rel_path,
                 "name" => base_name,
-                "sensor" => sensor_format
+                "sensor" => sensor_format,
+                "output" => Dict{String, Any}(
+                    "data" => "./raw/$(base_name).parquet"
+                )
             )
 
             push!(masts, mast_config)
@@ -78,11 +81,14 @@ function execute(dir::String)
             # Extract base name without extension for naming
             base_name = splitext(basename(meso_file))[1]
 
-            # Create meso configuration
+            # Create meso configuration with Parquet output
             meso_config = Dict{String, Any}(
                 "input" => rel_path,
                 "name" => base_name,
-                "sensor" => "formats/sensor/freemeso-meso.toml"
+                "sensor" => "formats/sensor/freemeso-meso.toml",
+                "output" => Dict{String, Any}(
+                    "data" => "./raw/$(base_name).parquet"
+                )
             )
 
             push!(mesos, meso_config)
@@ -97,6 +103,7 @@ function execute(dir::String)
         # Write header comment
         println(io, "# Parse Sensors Configuration")
         println(io, "# This file defines which data files to process and their sensor formats")
+        println(io, "# Output data is stored as Parquet files in the raw/ directory")
         println(io, "")
 
         TOML.print(io, config)

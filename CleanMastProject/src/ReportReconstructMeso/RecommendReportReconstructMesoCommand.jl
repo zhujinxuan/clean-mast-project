@@ -11,36 +11,11 @@ using TOML
 using ...Types.ReconstructMesoConfig: ReconstructMesoConfiguration, from_dict
 using ...Types.ReportReconstructMesoConfig: ReportReconstructMesoConfiguration, ReportReconstructMesoMast, ReportReconstructMesoMeso, ReportReconstructMesoAnalysisSettings, to_dict
 using ...Types.MastTimeSeries: load_timeseries, TimeSeriesSource
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
+using CleanMastProject.ReportUtils: adjust_path_for_report_masts, adjust_timeseries_source_for_report_masts
 
 export execute
-
-"""
-    adjust_path_for_report_masts(path::String)::String
-
-Adjust a project-relative path to be relative to report-masts/ directory.
-Converts "./some/path" to "../some/path" for use in configs saved in report-masts/.
-"""
-function adjust_path_for_report_masts(path::String)::String
-    if startswith(path, "./")
-        return "../" * path[3:end]
-    else
-        return "../" * path
-    end
-end
-
-"""
-    adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
-
-Adjust paths in a TimeSeriesSource to be relative to report-masts/ directory.
-"""
-function adjust_timeseries_source(source::TimeSeriesSource)::TimeSeriesSource
-    return TimeSeriesSource(
-        adjust_path_for_report_masts(source.data),
-        adjust_path_for_report_masts(source.sensors)
-    )
-end
 
 """
     execute(project_dir::String)
@@ -98,7 +73,7 @@ function execute(project_dir::String)
 
         push!(report_masts, ReportReconstructMesoMast(
             mast.name,
-            adjust_timeseries_source(mast.input),
+            adjust_timeseries_source_for_report_masts(mast.input),
             top_3_heights
         ))
     end
@@ -118,7 +93,7 @@ function execute(project_dir::String)
 
         push!(report_mesos, ReportReconstructMesoMeso(
             meso.name,
-            adjust_timeseries_source(meso.input),
+            adjust_timeseries_source_for_report_masts(meso.input),
             [highest_height]
         ))
     end
@@ -142,7 +117,7 @@ function execute(project_dir::String)
         println(io, "# Meso-Mast Reconstruction Quality Analysis Configuration")
         println(io, "# Analyzes RMSE and correlation between mesoscale and mast data")
         println(io)
-        TOML.print(io, to_dict(report_config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(report_config))))
     end
 
     println("\n✅ Configuration generated successfully!")

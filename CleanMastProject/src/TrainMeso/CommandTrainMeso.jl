@@ -10,7 +10,7 @@ using Logging
 using ...Types.TrainMesoConfig: TrainMesoConfiguration, TrainMesoModel
 using ...Types.MastTimeSeries: TimeSeriesData, load_timeseries, SensorColumn
 using ...Types.MastReferenceModel: AbstractMastReferenceModel, AbstractSpeedReferenceModel, AbstractDirectionReferenceModel, getModelName
-using ...Types.Utils: from_dict,to_dict
+using ...Types.Utils: from_dict,to_dict,strip_nothing_values
 using ...CleanMastUtils: load_dict
 using ..Core: train_meso_windspeed_sectorized, train_meso_winddirection_directionoffset
 using ..Core: prepare_training_data
@@ -278,7 +278,7 @@ function execute(config_path::String)
     results_path = joinpath(project_dir, "meso-models", "train-meso-results.toml")
     mkpath(dirname(results_path))
     open(results_path, "w") do io
-        TOML.print(io, to_dict(results))
+        TOML.print(io, strip_nothing_values(to_dict(results)))
     end
     @info "Saved training metrics" path=results_path
 

@@ -4,7 +4,7 @@ using TOML
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration
 using ...Types.ReportMesoTimeSeriesConfiguration: ReportMesoTimeSeriesConfigYAML, MesoReportMesoTimeSeriesConfigYAML, OutputConfig
 using ...Types.MastTimeSeries: TimeSeriesSource
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -62,7 +62,7 @@ function execute(project_dir::String)
 
     output_file = joinpath(report_masts_dir, "report-meso-timeseries.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(analyze_config))
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(to_dict(analyze_config))))
     end
 
     println("✅ Generated report-meso-timeseries.toml with $(length(meso_sources)) meso dataset(s)")
@@ -92,7 +92,7 @@ end
 
 Extract meso configurations from parse-sensors configuration.
 If output is not explicitly defined, generates standard output paths based on meso name:
-- Data: raw/{name}.csv
+- Data: raw/{name}.parquet
 - Sensors: raw/{name}.sensors.toml
 Adjusts paths to be relative to report-masts/ directory.
 """
@@ -104,7 +104,7 @@ function extract_mesos_from_parse_sensors(parse_config::ParseSensorsConfiguratio
             adjusted_data_path = joinpath("..", meso.output.data)
             adjusted_sensors_path = joinpath("..", meso.output.sensors)
         else
-            adjusted_data_path = joinpath("..", "raw", "$(meso_name).csv")
+            adjusted_data_path = joinpath("..", "raw", "$(meso_name).parquet")
             adjusted_sensors_path = joinpath("..", "raw", "$(meso_name).sensors.toml")
         end
 

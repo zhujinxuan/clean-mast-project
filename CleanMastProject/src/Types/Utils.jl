@@ -45,7 +45,7 @@ function strip_nothing_values(d::Dict{String, Any}) :: Dict{String, Any}
     clean_dict = Dict{String, Any}()
     for (k, v) in d
         if v isa Dict
-            clean_dict[k] = strip_nothing_values(v)
+            clean_dict[k] = strip_nothing_values(Dict{String, Any}(v))
         elseif v isa Vector
             # Process each item in the vector, stripping nothing from nested dicts
             clean_dict[k] = [item isa Dict ? strip_nothing_values(Dict{String, Any}(item)) : item for item in v]

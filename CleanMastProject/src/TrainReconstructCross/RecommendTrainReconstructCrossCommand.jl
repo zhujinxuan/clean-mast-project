@@ -10,8 +10,9 @@ using Dates
 using TOML
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...Types.TrainReconstructCrossConfig: TrainReconstructCrossConfiguration, TrainCrossMast, TrainCrossSettings
-using ...Types.Utils: from_dict, to_dict
+using ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
+using ...Types.MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths_to_parquet
 
 export execute
 
@@ -40,7 +41,7 @@ function execute(project_dir::String)
     # 3. Save configuration file
     output_file = joinpath(project_dir, "train-reconstruct-cross.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(config))
+        TOML.print(io, strip_nothing_values(to_dict(config)))
     end
     
     println("💾 Saved configuration to: $output_file")
@@ -76,7 +77,7 @@ end
 Create train-reconstruct-cross configuration dictionary.
 """
 function create_train_config(reconstruct_config::ReconstructSingleConfiguration)::TrainReconstructCrossConfiguration
-    masts = map(m -> TrainCrossMast(m.name, m.output), reconstruct_config.masts)
+    masts = map(m -> TrainCrossMast(m.name, adjust_timeseries_source_paths_to_parquet(m.output, "./")), reconstruct_config.masts)
     return TrainReconstructCrossConfiguration(
         masts,
         TrainCrossSettings(

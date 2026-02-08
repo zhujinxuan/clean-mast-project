@@ -2,7 +2,7 @@ module RecommendReportCleanCommand
 
 using ...Types.ProcessCleanConfig: ProcessCleanConfiguration
 using ...Types.ReportCleanConfig: ReportCleanConfiguration, to_report_clean_config
-import ...Types.Utils: from_dict, to_dict
+import ...Types.Utils: from_dict, to_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 using TOML
 
@@ -48,7 +48,7 @@ function execute(project_dir::String)::Nothing
 
     config_dict = to_dict(report_config)
     open(output_path, "w") do io
-        TOML.print(io, config_dict)
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(config_dict)))
     end
 
     println("✓ Report clean configuration saved to: $output_path")

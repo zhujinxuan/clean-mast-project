@@ -7,7 +7,9 @@ using ...Types.ReportFrozenPeriodConfig: ReportFrozenPeriodConfiguration,
                                           FrozenDetectionSettings,
                                           FrozenThresholdSet,
                                           to_dict
+using ...Types.ProcessCleanConfig: ProcessCleanConfiguration
 using ...Types.MastTimeSeries: TimeSeriesSource, adjust_timeseries_source_paths
+using ...Types.Utils: from_dict, strip_nothing_values
 using ...CleanMastUtils: load_dict
 
 export execute
@@ -15,46 +17,48 @@ export execute
 """
     execute(project_dir::String)
 
-Generate report-frozen-period.toml configuration from parse-sensors.toml.
+Generate report-frozen-period.toml configuration from process-clean.toml.
 Creates configuration with default threshold sets for frozen period detection.
 
 # Arguments
-- `project_dir::String`: Project directory containing parse-sensors.toml
+- `project_dir::String`: Project directory containing process-clean.toml
 
 # Algorithm
-1. Read parse-sensors.toml to get mast names and sensor formats
-2. Create TimeSeriesSource pointing to raw/ directory for each mast
-3. Generate configuration with BOTH threshold sets (加热型, 非加热型)
-4. Adjust paths for report-masts/ directory
-5. Save to report-masts/report-frozen-period.toml
+1. Read process-clean.toml to get mast configurations
+2. Use mast input paths (pointing to raw/ directory) for each mast
+3. Filter out lidar masts (names starting with 'L')
+4. Generate configuration with BOTH threshold sets (加热型, 非加热型)
+5. Adjust paths for report-masts/ directory
+6. Save to report-masts/report-frozen-period.toml
 """
 function execute(project_dir::String)
     println("🔍 Generating report-frozen-period configuration...")
 
-    # Read parse-sensors.toml
-    parse_sensors_config = load_parse_sensors_config(project_dir)
+    # Read process-clean.toml to get mast configurations
+    process_clean_path = joinpath(project_dir, "process-clean.toml")
+    if !isfile(process_clean_path)
+        error("process-clean.toml not found in $project_dir. Please run 'recommend process-clean' first.")
+    end
 
-    if !haskey(parse_sensors_config, "masts") || isempty(parse_sensors_config["masts"])
-        error("No masts found in parse-sensors.toml")
+    config_dict = load_dict(process_clean_path)
+    process_clean_config = from_dict(ProcessCleanConfiguration, config_dict)
+
+    if isempty(process_clean_config.masts)
+        error("No masts found in process-clean.toml")
     end
 
     # Create frozen period masts configuration
     # Filter out lidar masts (names starting with 'L')
-    frozen_masts = map(filter(m -> !startswith(m["name"], "L"), parse_sensors_config["masts"])) do mast_dict
-        mast_name = mast_dict["name"]
+    frozen_masts = map(filter(m -> !startswith(m.name, "L"), process_clean_config.masts)) do mast
+        # Use mast input paths from process-clean.toml
+        # These point to the raw/ directory with parsed sensor data
+        raw_source = mast.input
 
-        # Create TimeSeriesSource pointing to raw/ directory
-        # Raw data is in ./raw/{mast_name}.csv
-        # Sensors metadata is in ./raw/{mast_name}.sensors.toml
-        raw_data_path = "./raw/$(mast_name).csv"
-        raw_sensors_path = "./raw/$(mast_name).sensors.toml"
-
-        # Adjust paths for report-masts/ directory (convert "./raw/" to "../raw/")
-        raw_source = TimeSeriesSource(raw_data_path, raw_sensors_path)
+        # Adjust paths for report-masts/ directory
         adjusted_source = adjust_timeseries_source_paths(raw_source, "../")
 
         ReportFrozenPeriodMast(
-            name = mast_name,
+            name = mast.name,
             input = adjusted_source
         )
     end
@@ -106,7 +110,7 @@ function execute(project_dir::String)
 
     output_file = joinpath(report_masts_dir, "report-frozen-period.toml")
     open(output_file, "w") do io
-        TOML.print(io, to_dict(config))
+        TOML.print(io, strip_nothing_values(to_dict(config)))
     end
 
     println("✓ Generated report-frozen-period.toml with $(length(frozen_masts)) masts")
@@ -114,20 +118,6 @@ function execute(project_dir::String)
     println("📁 Configuration saved to: $output_file")
 
     return config
-end
-
-"""
-    load_parse_sensors_config(project_dir::String)::Dict{String, Any}
-
-Load and parse parse-sensors.toml configuration.
-"""
-function load_parse_sensors_config(project_dir::String)::Dict{String, Any}
-    parse_sensors_path = joinpath(project_dir, "parse-sensors.toml")
-    if !isfile(parse_sensors_path)
-        error("parse-sensors.toml not found in $project_dir")
-    end
-
-    return load_dict(parse_sensors_path)
 end
 
 end # module

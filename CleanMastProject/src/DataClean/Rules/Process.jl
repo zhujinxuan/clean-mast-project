@@ -1,4 +1,4 @@
-﻿# src/DataClean/Rules/Process.jl
+# src/DataClean/Rules/Process.jl
 module Process
 
 using DataFrames
@@ -53,6 +53,9 @@ function apply_missing!(violations::Vector{RuleViolation}, data::TimeSeriesData)
     # Set missing values column by column
     for (col, timestamps) in by_column
         if col in symbols
+            # Allow missing values in column if not already allowed
+            allowmissing!(df, col)
+            # Set matching rows to missing
             df[in.(df.timestamp, Ref(timestamps)), col] .= missing
         else
             @warn "Column $col not found in DataFrame"

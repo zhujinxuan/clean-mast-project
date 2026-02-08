@@ -206,12 +206,13 @@ end
 export get_output_path
 
 """
-    resolve_path(path::String, base_dir::String) -> String
+    resolve_path(path::Union{String, Nothing}, base_dir::String) -> Union{String, Nothing}
 
 Resolve a path relative to a base directory. If the path is absolute, return it as-is.
-Otherwise, join it with the base directory.
+Otherwise, join it with the base directory. Returns nothing if input is nothing.
 """
-function resolve_path(path::String, base_dir::String)::String
+function resolve_path(path::Union{String, Nothing}, base_dir::String)::Union{String, Nothing}
+    isnothing(path) && return nothing
     isabspath(path) ? path : normpath(joinpath(base_dir, path))
 end
 
@@ -237,99 +238,10 @@ function load_sensor_config(sensor_config_path::String)::Vector{SensorColumn}
     return sensors
 end
 
-"""
-    load_timeseries_data(csv_path::String, sensor_config_path::String) -> TimeSeriesData
-
-Load time series data from CSV and sensor configuration from YAML or TOML.
-"""
-function load_timeseries_data(csv_path::String, sensor_config_path::String)::TimeSeriesData
-    if !isfile(csv_path)
-        error("CSV file not found: $csv_path")
-    end
-    
-    # Load CSV data
-    df = CSV.read(csv_path, DataFrame)
-    
-    # Load sensor configuration
-    sensors = load_sensor_config(sensor_config_path)
-    
-    return TimeSeriesData(df, sensors)
-end
-
-"""
-    process_mast_config(mast_yaml::MastReportTimeSeriesConfigYAML, config_dir::String) -> MastReportTimeSeriesConfig
-
-Process a single mast configuration by resolving paths and loading data.
-"""
-function process_mast_config(mast_yaml::MastReportTimeSeriesConfigYAML, config_dir::String)::MastReportTimeSeriesConfig
-    # Resolve paths relative to config directory
-    csv_path = resolve_path(mast_yaml.input.data, config_dir)
-    sensor_config_path = resolve_path(mast_yaml.input.sensors, config_dir)
-
-    # Load time series data
-    timeseries_data = load_timeseries_data(csv_path, sensor_config_path)
-
-    return MastReportTimeSeriesConfig(
-        mast_yaml.name,
-        timeseries_data,
-        mast_yaml.airDensity
-    )
-end
-
-"""
-    load_report_timeseries_config(config_path::String) -> ReportTimeSeriesConfig
-
-Load and process report timeseries configuration from a YAML, TOML, or JSON file.
-Resolves all paths relative to the configuration file location and loads time series data.
-"""
-function load_report_timeseries_config(config_path::String)::ReportTimeSeriesConfig
-    if !isfile(config_path)
-        error("Configuration file not found: $config_path")
-    end
-
-    # Get the directory containing the config file
-    config_dir = dirname(abspath(config_path))
-
-    # Load configuration using load_dict (supports YAML, TOML, JSON)
-    config_dict = load_dict(config_path)
-    config_yaml = from_dict(ReportTimeSeriesConfigYAML, config_dict)
-
-    # Process each mast configuration
-    processed_masts = MastReportTimeSeriesConfig[]
-    for mast_yaml in config_yaml.masts
-        try
-            push!(processed_masts, process_mast_config(mast_yaml, config_dir))
-            @info "Loaded mast configuration: $(mast_yaml.name)"
-        catch e
-            @error "Failed to load mast $(mast_yaml.name): $e"
-            rethrow(e)
-        end
-    end
-
-    # Create output config with resolved path
-    output_config = OutputConfig(
-        resolve_path(config_yaml.output.path, config_dir)
-    )
-
-    # Set default min_plot_height if not specified
-    min_plot_height = isnothing(config_yaml.min_plot_height) ? 100.0 : config_yaml.min_plot_height
-
-    # Set default analysis toggles if not specified (all true)
-    analysis_toggles = isnothing(config_yaml.analysis) ?
-        AnalysisToggles(true, true, true, true, true, true, true) :
-        config_yaml.analysis
-
-    return ReportTimeSeriesConfig(
-        processed_masts,
-        output_config,
-        config_dir,
-        min_plot_height,
-        analysis_toggles
-    )
-end
-
 # Export helper functions
-export resolve_path, load_sensor_config, load_timeseries_data,
-       process_mast_config, load_report_timeseries_config
+# Note: process_mast_config and load_report_timeseries_config have been moved to
+# ReportTimeSeriesCommand module to avoid circular dependencies with MastTimeSeries
+# load_timeseries_data removed - use load_timeseries(TimeSeriesSource(...), base_dir) directly
+export resolve_path, load_sensor_config
 
 end # module 

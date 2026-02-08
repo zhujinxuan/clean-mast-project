@@ -11,6 +11,7 @@ authors = [
 dependencies = [
     "preprocess-tools", # Internal workspace dependency
     "polars>=0.20",
+    "pyarrow>=15.0",
     "pandas>=2.0",
     "click>=8.0",
     "pydantic>=2.0",

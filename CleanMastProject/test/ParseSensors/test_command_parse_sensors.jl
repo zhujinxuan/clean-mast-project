@@ -2,7 +2,7 @@
 
 using Test
 using CleanMastProject.ParseSensors.CommandParseSensors
-using CSV, TOML, DataFrames
+using CSV, TOML, DataFrames, Parquet2, DataAPI
 
 @testset "CommandParseSensors Integration Tests" begin
 
@@ -63,24 +63,35 @@ using CSV, TOML, DataFrames
             # 4. Run the command
             CommandParseSensors.execute(config_path)
 
-            # 5. Check the output files
-            output_csv_path = joinpath(temp_dir, "raw", "test_data.csv")
-            output_toml_path = joinpath(temp_dir, "raw", "test_data.sensors.toml")
+            # 5. Check the output files (now Parquet with embedded metadata)
+            output_parquet_path = joinpath(temp_dir, "raw", "test_data.parquet")
 
-            @test isfile(output_csv_path)
-            @test isfile(output_toml_path)
+            @test isfile(output_parquet_path)
 
-            # 6. Verify CSV content
-            df = CSV.read(output_csv_path, DataFrame)
+            # 6. Verify Parquet content
+            ds = Parquet2.readfile(output_parquet_path)
+            df = DataFrame(ds)
             @test names(df) == ["timestamp", "WindSpeed_80m_N_avg_mps", "Pressure_avg_Pa"]
             @test df[1, "Pressure_avg_Pa"] == 101200.0 # Check multiplier
 
-            # 7. Verify TOML content
-            sensors_toml = TOML.parsefile(output_toml_path)
-            @test length(sensors_toml["sensors"]) == 2
-            
-            ws_sensor = first(filter(s -> s["sensorType"] == "WindSpeed", sensors_toml["sensors"]))
-            @test ws_sensor["height"] == 80.0
+            # 7. Verify embedded sensor metadata in Parquet column metadata
+            # Extract sensors from column metadata
+            sensors = []
+            for col in ds[1]
+                col_name = Parquet2.name(col)
+                if col_name == "timestamp"
+                    continue
+                end
+                col_meta = DataAPI.metadata(col)
+                if !isnothing(col_meta) && haskey(col_meta, "sensorType")
+                    push!(sensors, col_meta)
+                end
+            end
+
+            @test length(sensors) == 2
+
+            ws_sensor = first(filter(s -> s["sensorType"] == "WindSpeed", sensors))
+            @test ws_sensor["height"] == "80.0"
             @test ws_sensor["sensorDirection"] == "N"
         end
     end

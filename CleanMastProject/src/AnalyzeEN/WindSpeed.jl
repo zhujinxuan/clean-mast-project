@@ -3,8 +3,7 @@ module WindSpeed
 using DataFrames
 using Statistics
 using ...Types.AnalyzeENConfiguration: ENMastWindSpeedResult, ENMastConfig
-using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn
-using ...Types.ReportTimeSeriesConfiguration: load_timeseries_data, resolve_path
+using ...Types.MastTimeSeries: TimeSeriesData, SensorColumn, TimeSeriesSource, load_timeseries
 
 export analyze_single_mast, create_direction_sectors
 
@@ -197,12 +196,10 @@ end
 Analyze wind data for a single mast.
 """
 function analyze_single_mast(mast_config::ENMastConfig, config_dir::String)::ENMastWindSpeedResult
-    # Resolve paths
-    data_path = resolve_path(mast_config.input.data_path, config_dir)
-    sensor_path = resolve_path(mast_config.input.sensor_path, config_dir)
-    
-    # Load time series data
-    timeseries = load_timeseries_data(data_path, sensor_path)
+    # Create TimeSeriesSource and load data
+    # load_timeseries handles path resolution, format auto-detection, and embedded metadata
+    source = TimeSeriesSource(mast_config.input.data_path, mast_config.input.sensor_path)
+    timeseries = load_timeseries(source, config_dir)
     
     # Find wind columns at specified height
     ws_col, wd_col = find_wind_columns(timeseries, mast_config.H)

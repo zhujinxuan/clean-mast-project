@@ -5,6 +5,7 @@ using Dates
 using DataFrames
 using CSV
 using ...ParseSensors.CommandParseSensors: load_and_normalize_config
+using ...Types.Utils: strip_nothing_values
 
 function execute(dir::String)
     config_path = joinpath(dir, "parse-sensors.toml")
@@ -17,8 +18,9 @@ function execute(dir::String)
         input_data = mast_file_config.output.data
         input_sensors = mast_file_config.output.sensors
 
-        output_data = joinpath("./clean", "$(mast_name).csv")
-        output_sensors = joinpath("./clean", "$(mast_name).sensors.yaml")
+        output_data = joinpath("./clean", "$(mast_name).parquet")
+        # For Parquet output, sensors metadata is embedded, so no separate sensors file needed
+        output_sensors = nothing
 
         # Determine clean rules based on mast name convention
         # Lidar masts start with 'L' (e.g., L77009, Lidar77009)
@@ -40,7 +42,7 @@ function execute(dir::String)
     output_path = joinpath(dir, "process-clean.toml")
 
     open(output_path, "w") do io
-        TOML.print(io, output_config)
+        TOML.print(io, strip_nothing_values(Dict{String, Any}(output_config)))
     end
 
     println("Generated process-clean.toml at: $output_path")
