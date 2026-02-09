@@ -1,532 +1,263 @@
-# 中尺度数据重构算法
+# 中尺度数据重构
+
+## 算法
+
+Mesoscale Reconstruction（中尺度重构）
 
 ## 概述
 
-中尺度数据重构算法利用数值天气预报模型（如ERA5、MERRA-2等）的再分析数据来填补测风塔观测数据的缺失。该方法通过建立中尺度数据与测风塔观测之间的统计关系，实现长时间序列的数据重构，特别适用于需要长期代表性数据的风能评估项目。
+中尺度数据重构算法利用训练好的统计模型，将中尺度再分析数据（如ERA5、MERRA-2等）转换为与测风塔观测相匹配的数值，填补测风塔数据中的长期缺失。该方法基于前期训练阶段建立的转换关系，将大尺度气象模型数据降尺度到具体测风塔位置，实现长时间序列的数据重构。
 
-## 理论基础
+## 核心原理
 
-### 中尺度数据特征
+中尺度重构建立在「训练-应用」两阶段范式之上。训练阶段利用测风塔完整观测期数据与同期中尺度数据，建立两者之间的统计转换关系。这种关系能够捕捉大尺度气象场与局地测风塔之间的系统性偏差，包括地形效应、高度差异、局地环流特征等。
 
-**空间分辨率**
-```
-典型中尺度数据分辨率：
-- ERA5: 0.25° × 0.25° (约28km × 28km)
-- MERRA-2: 0.5° × 0.625° (约55km × 69km)
-- CFSR: 0.3° × 0.3° (约38km × 38km)
-```
+重构阶段则将这一转换关系应用于任意时间点的中尺度数据，生成与测风塔等效的观测值。当测风塔传感器出现故障或数据质量不达标时，系统自动调用中尺度重构数据进行填补，确保时间序列的完整性。
 
-**时间分辨率**
-```
-时间采样频率：
-- ERA5: 小时数据
-- MERRA-2: 小时数据
-- CFSR: 6小时数据
-```
+## 实现细节
 
-**垂直分辨率**
-```
-大气层高度：
-- 地面层: 10m, 50m, 100m
-- 低层大气: 200m, 500m, 1000m
-- 边界层: 根据模型配置
-```
+### 源代码位置
 
-### 尺度差异问题
+- **核心逻辑**: `CleanMastProject/src/ReconstructMeso/Core.jl`
+- **配置定义**: `CleanMastProject/src/Types/ReconstructMesoConfig.jl`
+- **模型抽象**: `CleanMastProject/src/Types/MastReferenceModel.jl`
+- **具体实现**: `CleanMastProject/src/WindSpeedModels/SectorizedRegression*.jl`
 
-**空间尺度匹配**
-```
-问题：中尺度网格 (25-50km) vs 测风塔点观测 (10m)
-解决方案：
-1. 双线性插值到测风塔位置
-2. 地形修正和降尺度
-3. 局地效应参数化
+### 数据准备与时间对齐
+
+**函数**: `prepare_merge_data(mast_ts, meso_ts, reconstruction_time_range)` (`Core.jl:31-43`)
+
+处理步骤:
+1. **检测代表性时间间隔**: 调用 `detect_representative_interval(mast_ts)` 从测风塔数据中识别原始采样间隔
+2. **确保测风塔数据规则化**: 调用 `ensure_regular_intervals(mast_ts, reconstruction_time_range, representative_interval)` 将测风塔数据重采样到规则间隔
+3. **中尺度数据插值对齐**: 调用 `interpolate_timeseries(meso_ts, mast_ts.df.timestamp)` 将中尺度数据时间戳与测风塔完全对齐
+
+```julia
+# Core.jl 第31-43行
+function prepare_merge_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData, 
+                            reconstruction_time_range::TimeRange)::Tuple{TimeSeriesData, TimeSeriesData}
+    representative_interval = detect_representative_interval(mast_ts)
+    mast_ts = ensure_regular_intervals(mast_ts, reconstruction_time_range, representative_interval)
+    meso_ts = interpolate_timeseries(meso_ts, mast_ts.df.timestamp)  # 关键：时间戳完全对齐
+    return mast_ts, meso_ts
+end
 ```
 
-**时间尺度匹配**
-```
-问题：中尺度平均场 vs 测风塔瞬时观测
-解决方案：
-1. 时间插值到测风塔采样频率
-2. 亚网格变异性建模
-3. 高频成分重构
-```
+### 模型加载与重建应用
 
-## 中尺度数据预处理
+**函数**: `merge_reconstruct_meso(mast_payload, meso, model, reconstruction_time_range)` (`Core.jl:49-60`)
 
-### 1. 空间插值降尺度
-```
-算法：中尺度数据空间降尺度
-输入：中尺度网格数据, 测风塔坐标, 高分辨率地形数据
+处理步骤:
+1. **准备合并数据**: 调用 `prepare_merge_data` 对齐时间序列
+2. **应用重建模型**: 调用 `reconstruct(model, prepared_meso)` 生成重建后的测风塔等效值
+3. **创建载荷对象**: `ReconstructionPayload(prepared_mast, mast_payload.reconstruction_sources)`
+4. **合并数据并追踪来源**: 调用 `merge_reconstruct!(mast_payload, reconstructed_meso, "meso", getModelName(model))`
 
-步骤1：网格点识别
-    确定包含测风塔的网格：
-    grid_indices = find_grid_cell(mast_lat, mast_lon, grid_coords)
-
-    获取周围4个网格点数据：
-    surrounding_grids = get_4_neighbors(grid_indices)
-
-步骤2：双线性插值
-    计算插值权重：
-    w_ij = distance_weight(mast_position, grid_ij_position)
-
-    双线性插值：
-    meso_at_mast = Σ(w_ij × meso_grid_ij)
-
-步骤3：地形修正
-    高程修正（假设对数风廓线）：
-    WS_corrected = WS_meso × ln(h_mast/z0) / ln(h_meso/z0)
-
-    其中：
-    - h_mast: 测风塔高度
-    - h_meso: 中尺度模型高度
-    - z0: 粗糙度长度
-
-步骤4：粗糙度修正
-    基于局地土地利用类型：
-    roughness_ratio = z0_local / z0_meso
-
-    粗糙度修正：
-    WS_final = WS_corrected × f_roughness(roughness_ratio)
+```julia
+# Core.jl 第49-60行
+function merge_reconstruct_meso(mast_payload::ReconstructionPayload, meso::TimeSeriesData, 
+    model::AbstractMastReferenceModel, reconstruction_time_range::TimeRange)::ReconstructionPayload
+    prepared_mast, prepared_meso = prepare_merge_data(mast_payload.data, meso, reconstruction_time_range)
+    reconstructed_meso = reconstruct(model, prepared_meso)  # 应用训练好的模型
+    mast_payload = ReconstructionPayload(prepared_mast, mast_payload.reconstruction_sources)
+    merge_reconstruct!(mast_payload, reconstructed_meso, "meso", getModelName(model))
+    return mast_payload
+end
 ```
 
-### 2. 时间插值和频率匹配
-```
-算法：中尺度数据时间降尺度
-输入：小时/6小时中尺度数据, 目标时间频率
+### 数据合并策略
 
-步骤1：时间对齐
-    将中尺度数据时间戳对齐到UTC：
-    meso_time_utc = convert_timezone(meso_time, 'UTC')
+**函数**: `merge_reconstruct!(mast_payload, reconstructed, source_id, model_id)` (`MastReferenceModel.jl:160-193`)
 
-    与测风塔时间戳匹配：
-    common_timebase = intersect(meso_time, mast_time)
+**核心合并逻辑**:
+1. **时间戳验证**: 确保重建数据与测风塔数据长度相同且时间戳完全一致，否则抛出 `ArgumentError`
+2. **查找公共传感器**: 筛选测风塔与重建数据中共同的传感器列
+3. **填充缺失值**: 仅对测风塔数据中 `ismissing` 的行进行填充，保留原始有效值
+4. **向量化操作**: 使用 `df[missing_mask, col] .= reconstructed.df[missing_mask, col]` 进行高效批量赋值
+5. **来源追踪**: 为每个填充的值创建 `ReconstructionSource` 记录
 
-步骤2：时间插值
-    对缺失时间点进行插值：
-    if 目标频率 > 中尺度频率:
-        # 线性插值到更高频率
-        interp_data = linear_interpolate(meso_data, target_timebase)
-
-        # 添加高频变异性
-        high_freq_noise = generate_realistic_noise(interp_data)
-        final_data = interp_data + high_freq_noise
-
-步骤3：周期性保持
-    保持日循环和季节循环特征：
-    diurnal_cycle = extract_diurnal_pattern(meso_data)
-    seasonal_cycle = extract_seasonal_pattern(meso_data)
-
-    应用周期性模式：
-    enhanced_data = apply_cycles(interp_data, diurnal_cycle, seasonal_cycle)
-
-步骤4：统计特性匹配
-    匹配高阶统计量：
-    target_std = match_standard_deviation(enhanced_data, reference_std)
-    target_skew = match_skewness(target_std, reference_skew)
-```
-
-### 3. 多变量数据整合
-```
-算法：多变量中尺度数据整合
-输入：风速、风向、温度、气压等多变量数据
-
-步骤1：变量一致性检查
-    检查物理一致性：
-    # 地转风关系检查
-    geostrophic_balance = check_geostrophic(u_wind, v_wind, pressure_gradient)
-
-    # 热力学一致性
-    thermal_balance = check_thermal(temperature, pressure, humidity)
-
-步骤2：变量间相关性建模
-    计算变量间相关结构：
-    correlation_matrix = compute_correlation(wind_speed, wind_dir, temperature, pressure)
-
-    建立多变量模型：
-    multivariate_model = fit_copula(correlation_matrix)
-
-步骤3：协同降尺度
-    利用变量间关系改善降尺度：
-    # 温度梯度信息改善风速估计
-    enhanced_wind = wind_base + α × temperature_gradient
-
-    # 气压梯度信息改善风向估计
-    enhanced_dir = wind_dir_base + β × pressure_gradient_direction
-
-步骤4：物理约束应用
-    应用物理定律约束：
-    # 能量守恒
-    total_energy = kinetic_energy + potential_energy = constant
-
-    # 动量守恒
-    momentum_flux = ρ × u × v = conserved
+```julia
+# MastReferenceModel.jl 第160-193行
+function merge_reconstruct!(mast_payload::ReconstructionPayload, reconstructed::TimeSeriesData, 
+                            source_id::String, model_id::String)::ReconstructionPayload
+    # 验证时间戳对齐
+    if !(length(reconstructed.df.timestamp) == length(mast_payload.data.df.timestamp) &&
+         all(reconstructed.df.timestamp .== mast_payload.data.df.timestamp))
+        throw(ArgumentError("Mismatched timestamps..."))
+    end
+    
+    df = mast_payload.data.df
+    common_sensors = filter(s -> any(rs -> rs.columnName == s.columnName, reconstructed.sensors), 
+                           mast_payload.data.sensors)
+    
+    for sensor in common_sensors
+        col = sensor.columnName
+        missing_mask = ismissing.(df[!, col])
+        
+        if any(missing_mask)
+            df[missing_mask, col] .= reconstructed.df[missing_mask, col]  # 向量化填充
+            timestamps = df.timestamp[missing_mask]
+            push!(mast_payload.reconstruction_sources, 
+                map(timestamp -> ReconstructionSource(timestamp, col, source_id, model_id), 
+                    timestamps)...)
+        end
+    end
+    return mast_payload
+end
 ```
 
-## 统计关系建模
+### 具体模型示例：分扇区回归模型
 
-### 1. 线性回归建模
-```
-算法：中尺度-测风塔线性关系建模
-输入：同期中尺度数据和测风塔观测数据
+**训练阶段** (`SectorizedRegressionTraining.jl:25-71`):
+- 按风向扇区划分数据（如0-30°, 30-60°等）
+- 对每个扇区独立拟合线性回归: `mast_speed = slope * meso_speed + intercept`
+- 若某扇区样本不足 (< 5条)，使用全局回归参数作为后备
 
-步骤1：数据准备
-    提取重叠时间段：
-    overlap_period = intersect(meso_dates, mast_dates)
+**重建阶段** (`SectorizedRegressionReconstruction.jl:21-51`):
+- 对每个时间点，根据中尺度风向确定所属扇区
+- 应用对应扇区的回归公式计算重建值
+- 结果限制在 [0.5, 25.0] m/s 物理范围内
 
-    数据质量控制：
-    valid_pairs = filter_valid_data(meso_data, mast_data)
-
-步骤2：相关性分析
-    计算线性相关系数：
-    r = correlation(meso_wind, mast_wind)
-
-    if r < min_correlation_threshold:
-        return "相关性不足，建议使用其他方法"
-
-步骤3：回归建模
-    简单线性回归：
-    mast_wind = a × meso_wind + b + ε
-
-    参数估计：
-    a = cov(meso_wind, mast_wind) / var(meso_wind)
-    b = mean(mast_wind) - a × mean(meso_wind)
-
-步骤4：模型诊断
-    计算拟合统计量：
-    R² = 1 - SS_residual / SS_total
-    RMSE = sqrt(mean(residuals²))
-    Bias = mean(residuals)
-
-    残差分析：
-    plot_residuals_vs_fitted()
-    check_residual_normality()
-    check_residual_autocorrelation()
-
-步骤5：模型验证
-    交叉验证：
-    for k_fold in cross_validation:
-        train_subset, test_subset = split_data(k_fold)
-        model_k = fit_regression(train_subset)
-        error_k = predict_and_evaluate(model_k, test_subset)
-
-    validation_RMSE = mean(cross_validation_errors)
+```julia
+# SectorizedRegressionReconstruction.jl 第31-45行
+result_df[!, pair.mast_speed_sensor.columnName] = map(zip(meso_speed, meso_dir)) do (speed, dir)
+    if ismissing(speed) || ismissing(dir)
+        return missing
+    end
+    sector_model = get_sector_model(dir, pair.sectors)
+    if isnothing(sector_model)
+        return missing
+    end
+    reconstructed = speed * sector_model.slope + sector_model.intercept
+    clamp(reconstructed, 0.5, 25.0)  # 物理范围限制
+end
 ```
 
-### 2. 非线性回归建模
-```
-算法：非线性中尺度-测风塔关系建模
-输入：中尺度数据, 测风塔数据, 环境变量
+### 来源追踪机制
 
-步骤1：非线性关系探索
-    散点图分析：
-    plot(meso_wind, mast_wind)
+**数据结构**: `ReconstructionSource` (`MastReferenceModel.jl:103-108`)
 
-    识别非线性模式：
-    - 阈值效应（低风速饱和）
-    - 上限效应（高风速截断）
-    - 季节性变化（不同斜率）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `timestamp` | DateTime | 重建值的时间戳 |
+| `sensor_column` | Symbol | 重建的传感器列名 |
+| `reference_name` | String | 数据来源标识（如 `"meso"`） |
+| `model_id` | String | 使用的模型标识（如 `"8-sector"`） |
 
-步骤2：分段回归建模
-    确定分段点：
-    breakpoints = find_breakpoints(meso_wind, mast_wind)
+**输出格式**: 可通过 `show_as_dataframe(sources)` 转换为 DataFrame 用于分析报告
 
-    分段线性拟合：
-    for each segment:
-        segment_data = data[breakpoint[i]:breakpoint[i+1]]
-        a_i, b_i = linear_fit(segment_data)
+## 配置示例
 
-步骤3：平滑非线性拟合
-    样条回归：
-    spline_model = fit_smoothing_spline(meso_wind, mast_wind, smoothing_param)
+```toml
+# reconstruct-meso.toml
 
-    或多项式回归：
-    polynomial_model = fit_polynomial(meso_wind, mast_wind, degree=3)
+# 测风塔配置
+[[masts]]
+name = "PN01"
 
-步骤4：模型选择
-    AIC模型选择：
-    AIC = n × ln(MSE) + 2k
+# 输入数据源
+[masts.input]
+type = "csv"
+path = "projects/pn-masts/outputs/cleaned/PN01_cleaned_10min.parquet"
 
-    其中：
-    - n: 样本数量
-    - MSE: 均方误差
-    - k: 参数数量
+# 输出数据源
+[masts.output]
+type = "parquet"
+path = "projects/pn-masts/outputs/reconstructed_meso/PN01_reconstructed_meso.parquet"
 
-    选择AIC最小的模型
+# 重构时间范围
+[masts.time_range]
+start = "2020-01-01T00:00:00"
+end = "2023-12-31T23:50:00"
 
-步骤5：非线性预测
-    应用最优模型进行预测：
-    mast_predicted = optimal_model.predict(meso_new)
+# 模型配置 - 风速
+[masts.models.windspeed]
+method = "SectorizedRegression"      # 分扇区回归方法
+meso_name = "ERA5"                   # 中尺度数据源名称
+model_file = "models/PN01_windspeed_era5_model.jls"
 
-    不确定度传播：
-    prediction_intervals = compute_prediction_intervals(optimal_model, meso_new)
-```
+# 模型配置 - 风向
+[masts.models.winddirection]
+method = "DirectionOffset"           # 方向偏移方法
+meso_name = "ERA5"
+model_file = "models/PN01_winddirection_era5_model.jls"
 
-### 3. 机器学习建模
-```
-算法：机器学习中尺度重构建模
-输入：多维中尺度特征, 测风塔目标变量
-
-步骤1：特征工程
-    基础特征：
-    features_basic = [wind_speed, wind_direction, temperature, pressure]
-
-    衍生特征：
-    features_derived = [
-        wind_speed_squared,           # 非线性项
-        wind_speed × temperature,     # 交互项
-        rolling_mean(wind_speed, 24), # 时间滞后
-        gradient(pressure),           # 空间梯度
-        season_indicator,             # 季节指示
-        hour_of_day                   # 时间指示
-    ]
-
-    特征标准化：
-    features_normalized = (features - mean) / std
-
-步骤2：模型训练
-    随机森林：
-    rf_model = RandomForest(
-        n_estimators=100,
-        max_depth=10,
-        min_samples_split=5
-    )
-
-    神经网络：
-    nn_model = NeuralNetwork(
-        hidden_layers=[64, 32, 16],
-        activation='relu',
-        dropout=0.2
-    )
-
-    梯度提升：
-    gbm_model = GradientBoosting(
-        n_estimators=100,
-        learning_rate=0.1,
-        max_depth=6
-    )
-
-步骤3：超参数优化
-    网格搜索：
-    param_grid = {
-        'n_estimators': [50, 100, 200],
-        'max_depth': [5, 10, 15],
-        'learning_rate': [0.01, 0.1, 0.2]
-    }
-
-    交叉验证网格搜索：
-    best_params = grid_search_cv(model, param_grid, cv=5)
-
-步骤4：模型集成
-    集成多个模型：
-    ensemble_prediction = w1×rf_pred + w2×nn_pred + w3×gbm_pred
-
-    权重优化：
-    weights = optimize_ensemble_weights(models, validation_data)
-
-步骤5：特征重要性分析
-    分析特征对预测的贡献：
-    feature_importance = model.feature_importances_
-
-    SHAP值分析：
-    shap_values = compute_shap_values(model, features)
+# 中尺度数据源
+[[mesos]]
+name = "ERA5"
+type = "csv"
+path = "data/era5/era5_pn_region_2020_2023.csv"
 ```
 
-## 长期重构与代表年校准
+## 默认推荐值
 
-### 1. 长期数据重构
-```
-算法：基于中尺度数据的长期重构
-输入：短期测风塔数据, 长期中尺度数据, 训练好的转换模型
+| 参数 | 推荐值 | 说明 |
+|------|--------|------|
+| `method` | `SectorizedRegression` | 分扇区回归，对复杂地形风向效应更鲁棒 |
+| 扇区数量 | 8-12 | 根据风向玫瑰图特征分布调整 |
+| 最小扇区样本数 | 5 | 低于此值使用全局回归参数 |
+| 重建值下限 | 0.5 m/s | 避免零风速或负值 |
+| 重建值上限 | 25.0 m/s | 过滤异常高值 |
+| 时间对齐容差 | 精确匹配 | 使用 `interpolate_timeseries` 确保时间戳完全一致 |
 
-步骤1：重构策略
-    确定重构目标：
-    - 目标年份范围（如1980-2020）
-    - 目标时间分辨率（如10分钟）
-    - 目标参数（风速、风向、温度等）
+## 适用场景
 
-步骤2：模型应用
-    批量应用训练模型：
-    for year in target_years:
-        meso_year_data = load_meso_data(year)
-        mast_year_reconstructed = model.predict(meso_year_data)
+**数据缺口较大时**：当测风塔存在连续数周甚至数月的长期数据缺失，传统的插值方法已无法有效填补，此时中尺度重构是唯一可行的解决方案。
 
-        # 质量控制
-        qc_data = quality_control(mast_year_reconstructed)
+**长期代表性评估时**：风能项目需要进行20-30年的长期风能资源评估，而实际观测期通常仅有1-2年。通过中尺度重构，可以将短期观测「延长」至与再分析数据等长的历史时期。
 
-步骤3：时间一致性检查
-    检查长期趋势一致性：
-    meso_trend = calculate_trend(meso_long_term)
-    reconstructed_trend = calculate_trend(reconstructed_long_term)
+**多年度对比分析时**：需要比较不同年份的风能特征时，可利用中尺度数据重构各年度的完整时间序列，支持年际变化分析。
 
-    if |meso_trend - reconstructed_trend| > threshold:
-        apply_trend_correction()
+**与历史工程数据衔接时**：当项目需要与多年前的历史测风数据进行对比分析，但原始数据已不可获取时，中尺度重构可以提供合理的历史参考值。
 
-步骤4：统计特性保持
-    保持观测期统计特性：
-    # 均值保持
-    adjust_mean(reconstructed_data, observed_mean)
+## 输入数据
 
-    # 方差保持
-    adjust_variance(reconstructed_data, observed_variance)
+**测风塔时间序列数据**：包含待填补缺失的原始测风塔观测数据，时间戳和关键变量（风速、风向等）需完整记录。数据应经过清理阶段处理，移除了明显异常值。
 
-    # 极值分布保持
-    adjust_extremes(reconstructed_data, observed_extremes)
+**训练好的中尺度转换模型**：由`train-meso`命令生成并保存的统计模型文件。模型封装了中尺度数据与测风塔数据之间的转换规则。
 
-步骤5：不确定度量化
-    传播重构不确定度：
-    model_uncertainty = estimate_model_uncertainty()
-    reconstruction_uncertainty = propagate_uncertainty(model_uncertainty, input_data)
+**中尺度再分析数据**：目标时间段的中尺度网格数据，包含风速、风向、温度、气压等气象变量。数据来源可为ERA5、MERRA-2、CFSR等公开再分析数据集。
 
-    置信区间：
-    CI_lower = reconstructed_value - 1.96 × reconstruction_uncertainty
-    CI_upper = reconstructed_value + 1.96 × reconstruction_uncertainty
-```
+**重构配置参数**：指定目标时间范围、重构变量、重构高度层等控制参数。
 
-### 2. 代表年校准
-```
-算法：代表年识别与校准
-输入：长期重构数据, 观测数据
+## 输出数据
 
-步骤1：代表性评估指标
-    风能密度指标：
-    WPD_annual = mean(0.5 × ρ × WS³) for each year
+**重构后的测风塔时间序列**：原始数据中的缺失时段被中尺度重构数据填补，其余时段保持原始观测不变。输出数据保留完整的时间序列结构。
 
-    风速分布指标：
-    weibull_params = fit_weibull(WS_annual) for each year
-    shape_parameter, scale_parameter = weibull_params
+**重构来源标记**：系统自动记录每个数据点的来源（原始观测或中尺度重构），便于后续质量评估和不确定性分析。
 
-    极值指标：
-    extreme_wind = annual_maximum(WS) for each year
+**重构质量报告**：包含重构结果的统计摘要，如重构数据覆盖率、与原始数据的统计特征对比等信息。
 
-步骤2：代表年筛选
-    多指标综合评估：
-    representativeness_score = w1×WPD_score + w2×distribution_score + w3×extreme_score
+## 处理流程
 
-    where:
-    WPD_score = 1 - |WPD_year - WPD_longterm| / WPD_longterm
-    distribution_score = correlation(monthly_WPD_year, monthly_WPD_longterm)
-    extreme_score = 1 - |extreme_year - extreme_longterm| / extreme_longterm
+**第一步：数据准备与时间对齐**
 
-    候选代表年：
-    representative_years = top_N_years(representativeness_score)
+加载测风塔时间序列数据和中尺度数据，确保两者时间戳对齐到统一时区。将中尺度数据的时间分辨率调整为与测风塔一致（如从小时数据插值到10分钟数据）。
 
-步骤3：代表年验证
-    与观测期对比验证：
-    for candidate_year in representative_years:
-        validation_metrics = compare_with_observations(candidate_year, obs_period)
+**第二步：应用转换模型**
 
-        # 月度变化一致性
-        monthly_correlation = corr(monthly_pattern_year, monthly_pattern_obs)
+将处理后的中尺度数据输入训练好的转换模型，生成重构后的测风塔等效值。模型基于训练阶段学习的转换规则，将网格尺度的中尺度数值转换为符合测风塔局地特征的估计值。
 
-        # 日变化一致性
-        diurnal_correlation = corr(diurnal_pattern_year, diurnal_pattern_obs)
+**第三步：数据合并**
 
-        # 风向分布一致性
-        wind_rose_similarity = compare_wind_roses(year_data, obs_data)
+将重构数据与原始测风塔数据合并，缺失时段使用重构值填充。系统追踪并记录每个数据点的来源信息。
 
-步骤4：校准修正
-    如需要，对代表年进行微调：
-    # 偏差修正
-    bias_correction = mean(obs_data) - mean(representative_year_data)
-    corrected_data = representative_year_data + bias_correction
+**第四步：质量检验**
 
-    # 方差修正
-    variance_correction = std(obs_data) / std(representative_year_data)
-    final_data = corrected_data × variance_correction
+对重构结果进行基本的质量检验，包括统计特征对比（如均值、方差）、时间连续性检查等。识别并标记可能的重构异常值。
 
-步骤5：不确定度评估
-    代表性不确定度：
-    inter_annual_variability = std(annual_WPD_all_years)
-    representativeness_uncertainty = inter_annual_variability / sqrt(n_years)
+## 质量影响因素
 
-    总不确定度：
-    total_uncertainty = sqrt(model_uncertainty² + representativeness_uncertainty²)
-```
+**模型质量**：转换模型是重构效果的核心决定因素。训练数据越丰富、统计关系越稳定，重构结果越可靠。模型在训练期表现不佳时，重构结果的质量也会受到影响。
 
-## 质量控制与验证
+**中尺度数据准确性**：不同再分析数据集在特定地区和时段的表现存在差异。ERA5通常在陆地区域表现较好，MERRA-2在海洋区域有独特优势。选择适合项目区域的中尺度数据源很重要。
 
-### 重构数据质量评估
-```
-算法：中尺度重构质量评估
+**缺失时段特征**：重构质量还取决于缺失时段的气象条件。极端天气事件（如台风、暴雪）期间，中尺度模型与实际观测的偏差可能增大，重构不确定性也相应提高。
 
-1. 统计一致性检验：
-   # 基本统计量对比
-   mean_bias = mean(reconstructed) - mean(observed)
-   variance_ratio = var(reconstructed) / var(observed)
-   correlation = corr(reconstructed, observed)
+**时间跨度匹配**：重构时段与训练期的重叠程度影响结果可靠性。若重构时段与训练期的气候特征差异较大（如季节偏差），可能需要额外的校准调整。
 
-2. 分布一致性检验：
-   # Kolmogorov-Smirnov检验
-   ks_statistic, p_value = ks_test(reconstructed, observed)
+## 与训练阶段的衔接
 
-   # 韦伯分布参数对比
-   weibull_params_recon = fit_weibull(reconstructed)
-   weibull_params_obs = fit_weibull(observed)
+`reconstruct-meso`是`train-meso`的后续步骤。训练阶段建立的转换模型需要在重构阶段被正确加载和应用。两者的配置参数（如目标变量、高度层、统计类型）必须保持一致，否则会导致重构失败或结果错误。
 
-3. 时间序列特性检验：
-   # 自相关结构
-   autocorr_recon = compute_autocorrelation(reconstructed)
-   autocorr_obs = compute_autocorrelation(observed)
-
-   # 频谱特性
-   psd_recon = power_spectral_density(reconstructed)
-   psd_obs = power_spectral_density(observed)
-
-4. 极值特性检验：
-   # 年最大值分布
-   annual_maxima_recon = extract_annual_maxima(reconstructed)
-   annual_maxima_obs = extract_annual_maxima(observed)
-
-   # 超阈值分布
-   threshold = percentile(observed, 95)
-   peaks_over_threshold_comparison(reconstructed, observed, threshold)
-```
-
-## 应用指导
-
-### 算法选择策略
-```
-选择决策树：
-
-if 观测期 < 6个月:
-    建议延长观测期或使用其他方法
-
-elif 观测期 6个月-1年:
-    使用简单线性回归 + 季节调整
-
-elif 观测期 1-2年:
-    使用非线性回归或浅层机器学习
-
-elif 观测期 > 2年:
-    使用深度学习或复杂集成模型
-
-地形条件考虑：
-if 地形复杂度高:
-    增加地形特征和降尺度修正
-
-if 海上或简单地形:
-    可使用相对简单的模型
-```
-
-### 参数推荐值
-```
-通用参数：
-- 最小观测期：6个月（包含完整季节变化）
-- 最小相关系数：0.7（风速），0.6（风向）
-- 交叉验证折数：5-10折
-- 特征选择阈值：重要性 > 0.01
-
-质量控制阈值：
-- 均值偏差：< ±10%
-- 方差比：0.8-1.2
-- 相关系数：> 0.8
-- KS检验p值：> 0.05
-
-不确定度量化：
-- 95%置信区间
-- 模型不确定度 + 数据不确定度
-- 长期变异性考虑
-```
-
-通过系统化的中尺度数据重构算法，可以实现长期、连续的风能数据序列重构，为风能资源长期评估和风电场设计提供可靠的数据基础。
+典型的工作流程是：首先运行`train-meso`生成模型，然后配置`reconstruct-meso`并执行重构。重构可以针对训练期内的数据进行验证，也可以扩展到训练期外的任意历史时段。

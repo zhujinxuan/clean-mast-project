@@ -2,627 +2,152 @@
 
 ## 概述
 
-数据清理是风能数据处理的基础环节，旨在识别和处理测量数据中的异常值、错误和不一致性。CleanMast 采用基于规则的数据清理系统，通过可配置的清理规则检测各种类型的数据异常。
-
-**核心实现位置**：
-- 主要清理命令：`src/DataClean/ProcessCleanCommand.jl`
-- 配置类型定义：`src/Types/ProcessCleanConfig.jl`
-- 规则类型定义：`src/Types/CleanRules.jl`
-- 具体规则实现：`src/DataClean/Rules/` 目录下各文件
-
-## 系统架构
-
-### 清理规则系统
-
-CleanMast 采用基于规则的清理系统，每个规则包含：
-- **规则类型**：范围检查、层差检查、结冰检测等
-- **适用条件**：传感器类型、高度过滤、方向过滤
-- **判断标准**：具体的阈值和算法参数
-- **处理动作**：标记违规、数据质量分级
-
-**规则定义结构** (`src/Types/CleanRules.jl`)：
-```julia
-struct Rule
-    name::String
-    description::String
-    sensor_type::String      # "WindSpeed", "WindDirection", "Temperature"
-    height_filter::Union{Nothing, Float64}
-    direction_filter::Union{Nothing, String}
-    criteria::RuleCriteria   # 具体判断标准
-end
-```
-
-### 处理流程
-
-**数据清理主流程** (`src/DataClean/ProcessCleanCommand.jl`)：
-1. 加载清理配置文件 (`process-clean.toml`)
-2. 解析清理规则列表
-3. 逐一应用每个规则到时间序列数据
-4. 收集所有规则违规记录
-5. 生成数据质量报告和统计
-6. 输出清理后的数据和质量标记
-
-## 具体清理规则实现
-
-### 1. 范围检查规则 (`src/DataClean/Rules/ProcessRange.jl`)
-
-#### 实现原理
-检查数据值是否在预设的最小值和最大值范围内。对于缺失值会自动跳过，只检查有效数值。
-
-#### 配置参数
-```toml
-[[rules]]
-name = "风速范围检查"
-sensor_type = "WindSpeed"
-criteria_type = "Range"
-min = 0.0      # 物理最小值
-max = 80.0     # 合理最大值（可根据地区调整）
-
-[[rules]]
-name = "风向范围检查"
-sensor_type = "WindDirection"
-criteria_type = "Range"
-min = 0.0
-max = 360.0
-
-[[rules]]
-name = "温度范围检查"
-sensor_type = "Temperature"
-criteria_type = "Range"
-min = -50.0    # 极地最低温
-max = 60.0     # 沙漠最高温
-```
-
-#### 核心算法实现
-```julia
-# src/DataClean/Rules/ProcessRange.jl
-function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
-    columns = filter_applicable_columns(rule, data.sensors)
-    criteria = rule.criteria
-
-    violations = RuleViolation[]
-    for col in columns
-        violation_indices = Int[]
-        # 检查最小值违规
-        if !isnothing(criteria.min)
-            append!(violation_indices,
-                   findall(x -> !ismissing(x) && x < criteria.min, data.df[!, col]))
-        end
-        # 检查最大值违规
-        if !isnothing(criteria.max)
-            append!(violation_indices,
-                   findall(x -> !ismissing(x) && x > criteria.max, data.df[!, col]))
-        end
-        # 生成违规记录
-        unique_timestamps = sort(unique(data.df[unique(violation_indices), :timestamp]))
-        append!(violations, map(x -> RuleViolation(rule, x, col), unique_timestamps))
-    end
-    return violations
-end
-```
-
-#### 推荐阈值
-**风速范围** (依据高度和地区调整)：
-- 平原地区：0-60 m/s
-- 沿海地区：0-70 m/s
-- 山地地区：0-80 m/s
-- 极地地区：0-90 m/s
-
-**温度范围** (依据地理位置调整)：
-- 温带地区：-30°C 到 45°C
-- 热带地区：5°C 到 50°C
-- 极地地区：-60°C 到 30°C
-- 沙漠地区：-10°C 到 60°C
-
-### 2. 结冰检测规则 (`src/DataClean/Rules/ProcessIcing.jl`)
-
-#### 检测原理
-结冰会导致传感器响应变慢或完全停止，表现为数值在较长时间内变化极小。通过监测指定时间窗口内的数值变化幅度来识别潜在的结冰影响。
-
-#### 配置参数
-```toml
-[[rules]]
-name = "风速传感器结冰检测"
-sensor_type = "WindSpeed"
-criteria_type = "Icing"
-max_change = 0.02      # 最大允许变化量 (m/s)
-time_range = 7200      # 检测时间窗口 (秒，2小时)
-
-[[rules]]
-name = "风向传感器结冰检测"
-sensor_type = "WindDirection"
-criteria_type = "Icing"
-max_change = 0.5       # 最大允许变化量 (度)
-time_range = 7200      # 检测时间窗口 (秒)
-```
-
-#### 核心算法实现
-```julia
-# src/DataClean/Rules/ProcessIcing.jl
-function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
-    columns = filter_applicable_columns(rule, data.sensors)
-    criteria = rule.criteria
-
-    violations = RuleViolation[]
-    for col in columns
-        values = data.df[!, col]
-        timestamps = data.df[!, :timestamp]
-
-        window_start = 1
-        while window_start <= length(timestamps)
-            value_start = values[window_start]
-            if ismissing(value_start)
-                window_start += 1
-                continue
-            end
-
-            # 寻找变化量小于阈值的连续窗口
-            window_end = window_start + 1
-            while window_end <= length(timestamps)
-                value_end = values[window_end]
-                if !ismissing(value_end) &&
-                   abs(value_end - value_start) > criteria.max_change
-                    break
-                end
-                window_end += 1
-            end
-
-            # 检查窗口持续时间是否超过阈值
-            window_duration = timestamps[window_end-1] - timestamps[window_start]
-            if window_duration >= Second(criteria.time_range)
-                # 标记整个窗口为结冰影响
-                for i in window_start:(window_end-1)
-                    if !ismissing(values[i])
-                        push!(violations, RuleViolation(rule, timestamps[i], col))
-                    end
-                end
-            end
-
-            window_start = window_end
-        end
-    end
-    return violations
-end
-```
-
-#### 结冰检测标准
-**风速传感器结冰**：
-- 检测窗口：2小时 (7200秒)
-- 变化阈值：≤ 0.02 m/s
-- 环境条件：温度 ≤ 2°C 且相对湿度 ≥ 85%
-
-**风向传感器结冰**：
-- 检测窗口：2小时 (7200秒)
-- 变化阈值：≤ 0.5°
-- 排除条件：对应风速 < 1 m/s (静风条件下风向本身就稳定)
-
-**温度传感器结冰**：
-- 检测窗口：1小时 (3600秒)
-- 变化阈值：≤ 0.1°C
-- 环境条件：温度在冰点附近 (-2°C 到 2°C)
-
-### 3. 层差检查规则 (`src/DataClean/Rules/ProcessLayerDiff.jl`)
-
-#### 检测原理
-比较不同高度间同类型传感器的测量值，检测是否存在不合理的层间差异。对于风向使用圆形差异计算，考虑 0°/360° 边界效应。
-
-#### 配置参数
-```toml
-[[rules]]
-name = "风速层差检查"
-sensor_type = "WindSpeed"
-criteria_type = "LayerDifference"
-max_diff = 15.0           # 最大允许层差 (m/s)
-height_diff = 100.0       # 最大检查高度差 (m)
-min_lower_wind_speed = 1.0  # 下层最小风速要求
-
-[[rules]]
-name = "风向层差检查"
-sensor_type = "WindDirection"
-criteria_type = "LayerDifference"
-max_diff = 45.0           # 最大允许层差 (度)
-height_diff = 100.0       # 最大检查高度差 (m)
-min_lower_wind_speed = 3.0  # 避免静风条件的最小风速
-```
-
-#### 核心算法实现
-```julia
-# src/DataClean/Rules/ProcessLayerDiff.jl
-function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
-    target_sensors = filter_applicable_columns(rule, data.sensors)
-    criteria = rule.criteria
-    violations = RuleViolation[]
-
-    for target_col_symbol in target_sensors
-        target_sensor = findfirst(s -> s.columnName == target_col_symbol, data.sensors)
-        lower_comparisons = find_lower_layer_columns(
-            data.sensors[target_sensor], data.sensors, criteria.height_diff
-        )
-
-        for comparison in lower_comparisons
-            # 检查每个时间点的层差
-            for row in eachrow(data.df)
-                upper_val = row[target_col_symbol]
-                lower_val = row[comparison.lower_col]
-
-                # 跳过缺失值
-                if ismissing(upper_val) || ismissing(lower_val)
-                    continue
-                end
-
-                # 检查风速条件（如果需要）
-                if !isnothing(comparison.wind_speed_col) &&
-                   !isnothing(criteria.min_lower_wind_speed)
-                    wind_speed = row[comparison.wind_speed_col]
-                    if ismissing(wind_speed) || wind_speed < criteria.min_lower_wind_speed
-                        continue
-                    end
-                end
-
-                # 计算层差
-                diff = calc_difference(upper_val, lower_val,
-                                     data.sensors[target_sensor].sensorType)
-
-                # 检查是否超过阈值
-                if diff > criteria.max_diff
-                    push!(violations, RuleViolation(rule, row.timestamp, target_col_symbol))
-                end
-            end
-        end
-    end
-    return violations
-end
-
-# 差异计算函数
-function calc_difference(upper_val::Float64, lower_val::Float64, sensor_type::String)::Float64
-    if sensor_type == "WindDirection"
-        return abs_degree_diff(upper_val, lower_val)  # 圆形差异
-    else
-        return abs(upper_val - lower_val)  # 普通差异
-    end
-end
-```
-
-#### 层差检查标准
-**风速层差**：
-- 最大层差：15 m/s (100m 高度差内)
-- 风切变指数范围：0.05 - 0.6
-- 检查条件：下层风速 ≥ 1.0 m/s
-
-**风向层差**：
-- 最大层差：45° (100m 高度差内)
-- 检查条件：下层风速 ≥ 3.0 m/s (避免静风)
-- 圆形计算：考虑 350° 与 10° 的实际差异为 20°
-
-**温度层差**：
-- 最大层差：5°C (100m 高度差内)
-- 理论梯度：6.5°C/km (干绝热递减率)
-- 逆温检查：温度随高度增加的异常情况
-
-### 4. 数据可用性规则 (`src/DataClean/Rules/ProcessAvailability.jl`)
-
-#### 检测原理
-统计指定时间窗口内的数据可用率，识别数据缺失严重的时间段。这有助于评估数据质量和后续分析的可靠性。
-
-#### 配置参数
-```toml
-[[rules]]
-name = "数据可用性检查"
-sensor_type = "WindSpeed"
-criteria_type = "Availability"
-min_availability = 0.8    # 最小可用率 (80%)
-time_window = 3600        # 统计时间窗口 (秒，1小时)
-```
-
-#### 算法流程
-```julia
-# 伪代码：数据可用性检查
-function check_availability(data, time_window, min_availability)
-    for each time_window in data:
-        total_points = expected_points_in_window
-        valid_points = count_non_missing_points
-        availability_rate = valid_points / total_points
-
-        if availability_rate < min_availability:
-            mark_as_low_availability_period
-        end
-    end
-end
-```
-
-### 5. 统计异常检测（计划中的规则）
-
-虽然当前系统主要基于物理规则，但计划扩展统计异常检测功能：
-
-#### Z-Score 异常检测
-```toml
-# 计划中的配置
-[[rules]]
-name = "风速统计异常检测"
-sensor_type = "WindSpeed"
-criteria_type = "Statistical"
-method = "zscore"
-threshold = 3.0           # Z-Score 阈值
-window_size = 24          # 计算窗口 (小时)
-```
-
-#### IQR 异常检测
-```toml
-# 计划中的配置
-[[rules]]
-name = "风速四分位数异常检测"
-sensor_type = "WindSpeed"
-criteria_type = "Statistical"
-method = "iqr"
-factor = 1.5              # IQR 倍数因子
-window_size = 168         # 计算窗口 (小时，一周)
-```
-
-### 6. 塔影检测（独立处理命令）
-
-塔影检测有独立的处理命令 `process tower-shading`，不在常规清理规则中。
-
-#### 实现位置
-- 命令实现：`src/TowerShading/ProcessTowerShadingCommand.jl`
-- 配置类型：`src/Types/TowerShadingConfig.jl`
-
-#### 检测原理
-```toml
-# tower-shading.toml 配置示例
-[tower_position]
-lat = 40.0
-lon = 116.0
-
-[shading_params]
-shadow_angle_range = 15.0     # 塔影角度范围 (度)
-wind_speed_reduction = 0.3    # 风速衰减比例
-min_wind_speed = 3.0          # 最小检测风速
-```
-
-### 7. 质量控制输出
-
-#### 违规记录结构
-```julia
-# src/Types/CleanRules.jl
-struct RuleViolation
-    rule::Rule              # 违规的规则
-    timestamp::DateTime     # 违规时间戳
-    column::Symbol         # 违规的数据列
-end
-```
-
-#### 清理统计报告
-处理完成后系统会自动生成：
-1. **总体统计**：总数据点数、有效数据数、违规数据数、数据可用率
-2. **规则统计**：每个规则的违规次数和比例
-3. **传感器统计**：每个传感器/高度的数据质量评分
-4. **时间分布**：违规数据的时间分布模式
-
-#### 输出文件
-- `cleaned_data.csv`: 清理后的时间序列数据
-- `violations.csv`: 详细的违规记录列表
-- `cleaning_statistics.json`: 清理统计和质量评估
-- `data_quality_flags.csv`: 每个数据点的质量标记
-
-### 8. 配置文件管理
-
-#### 配置生成命令
-使用 `recommend process-clean` 命令可以自动生成配置模板：
-
-```bash
-julia bin/CleanMast.jl recommend process-clean --project-dir /path/to/project
-```
-
-#### 标准配置模板
-```toml
-# process-clean.toml 完整示例
-[input]
-data_file = "parsed_data.csv"
-sensors_file = "sensors.toml"
-
-[output]
-data_file = "cleaned_data.csv"
-violations_file = "violations.csv"
-statistics_file = "cleaning_statistics.json"
-flags_file = "data_quality_flags.csv"
-
-# 风速范围检查
-[[rules]]
-name = "WindSpeed Range Check"
-sensor_type = "WindSpeed"
-criteria_type = "Range"
-min = 0.0
-max = 80.0
-
-# 风向范围检查
-[[rules]]
-name = "WindDirection Range Check"
-sensor_type = "WindDirection"
-criteria_type = "Range"
-min = 0.0
-max = 360.0
-
-# 风速结冰检测
-[[rules]]
-name = "WindSpeed Icing Detection"
-sensor_type = "WindSpeed"
-criteria_type = "Icing"
-max_change = 0.02
-time_range = 7200
-
-# 风速层差检查
-[[rules]]
-name = "WindSpeed Layer Difference"
-sensor_type = "WindSpeed"
-criteria_type = "LayerDifference"
-max_diff = 15.0
-height_diff = 100.0
-min_lower_wind_speed = 1.0
-
-# 风向层差检查
-[[rules]]
-name = "WindDirection Layer Difference"
-sensor_type = "WindDirection"
-criteria_type = "LayerDifference"
-max_diff = 45.0
-height_diff = 100.0
-min_lower_wind_speed = 3.0
-
-# 数据可用性检查
-[[rules]]
-name = "Data Availability Check"
-sensor_type = "WindSpeed"
-criteria_type = "Availability"
-min_availability = 0.8
-time_window = 3600
-```
-
-## 数据质量分级和处理策略
-
-### 质量标记系统
-
-CleanMast 不删除数据，而是为每个数据点分配质量标记：
-
-```julia
-# 质量等级定义
-enum DataQuality
-    EXCELLENT = 1    # 优质：无任何违规
-    GOOD = 2         # 良好：轻微违规
-    ACCEPTABLE = 3   # 可接受：中等违规，可用但需谨慎
-    SUSPICIOUS = 4   # 可疑：严重违规，建议排除
-    INVALID = 5      # 无效：极严重违规，不应使用
-end
-```
-
-### 违规严重性评估
-
-不同规则的违规对数据质量的影响程度不同：
-
-| 规则类型 | 轻微违规 | 中等违规 | 严重违规 |
-|----------|----------|----------|----------|
-| 范围检查 | 超出 5% | 超出 20% | 超出 50% |
-| 层差检查 | 超出阈值 10% | 超出阈值 50% | 超出阈值 100% |
-| 结冰检测 | 1-2小时持续 | 2-6小时持续 | >6小时持续 |
-| 可用性检查 | 75-80% 可用 | 50-75% 可用 | <50% 可用 |
-
-### 多规则综合评估
-
-当多个规则同时违规时，系统采用加权评分方式：
-
-```julia
-# 伪代码：质量等级计算
-function calculate_quality_level(violations_for_timestamp)
-    total_penalty = 0
-
-    for violation in violations_for_timestamp
-        rule_weight = get_rule_weight(violation.rule)
-        severity = calculate_severity(violation)
-        total_penalty += rule_weight * severity
-    end
-
-    return classify_quality_level(total_penalty)
-end
-```
-
-## 参数调优指导
-
-### 环境特定参数调整
-
-不同环境条件需要调整相应的阈值参数：
-
-**海上风场**：
-- 风速上限：提高到 90 m/s
-- 层差阈值：适当放宽 (±20%)
-- 结冰检测：禁用或调整阈值
-
-**山地地形**：
-- 风速上限：提高到 100 m/s
-- 层差阈值：显著放宽 (±50%)
-- 风向层差：放宽到 60°
-
-**城市环境**：
-- 风速上限：降低到 60 m/s
-- 层差阈值：收紧 (-20%)
-- 增加湍流强度检查
-
-**极地地区**：
-- 温度范围：扩展到 -60°C 到 30°C
-- 结冰检测：降低阈值，延长时间窗口
-- 风速层差：考虑极地逆温层
-
-### 季节性参数调整
-
-```toml
-# 季节性配置示例
-[[rules]]
-name = "Temperature Range Check - Winter"
-sensor_type = "Temperature"
-height_filter = 10.0
-criteria_type = "Range"
-min = -40.0     # 冬季更低的最低温度
-max = 25.0      # 冬季更低的最高温度
-season_filter = "winter"    # 计划中的功能
-
-[[rules]]
-name = "Temperature Range Check - Summer"
-sensor_type = "Temperature"
-height_filter = 10.0
-criteria_type = "Range"
-min = -10.0     # 夏季较高的最低温度
-max = 50.0      # 夏季更高的最高温度
-season_filter = "summer"    # 计划中的功能
-```
-
-## 扩展开发指导
-
-### 添加新的清理规则
-
-1. **定义新的判断标准类型** (`src/Types/CleanRules.jl`)：
-```julia
-struct NewCriteria <: RuleCriteria
-    parameter1::Float64
-    parameter2::Int
-    # 其他参数
-end
-```
-
-2. **实现规则处理模块** (`src/DataClean/Rules/ProcessNewRule.jl`)：
-```julia
-module ProcessNewRule
-using ....Types.CleanRules: Rule, RuleViolation, NewCriteria
-
-function apply(rule::Rule, data::TimeSeriesData)::Vector{RuleViolation}
-    @assert rule.criteria isa NewCriteria
-    # 实现具体的检测逻辑
-    return violations
-end
-
-export apply
-end
-```
-
-3. **在主处理模块中注册** (`src/DataClean/Rules/Process.jl`)：
-```julia
-if criteria isa NewCriteria
-    return ProcessNewRule.apply(rule, data)
-end
-```
-
-### 性能优化建议
-
-1. **大数据集处理**：
-   - 使用 `@threads` 并行处理多个传感器
-   - 分批加载和处理数据
-   - 利用 Julia 的向量化操作
-
-2. **内存优化**：
-   - 及时释放不需要的中间结果
-   - 使用 `missing` 而不是 `NaN` 表示缺失值
-   - 考虑使用更紧凑的数据类型
-
-3. **算法优化**：
-   - 预先过滤适用的列，减少重复计算
-   - 缓存重复使用的计算结果
-   - 使用早期退出策略减少不必要的检查
-
-通过基于规则的清理系统，CleanMast 提供了灵活、可配置、可扩展的数据质量控制方案，确保风能数据分析的可靠性和准确性。
+数据清理是风能数据处理的基础环节，旨在识别和处理测量数据中的异常值、错误和不一致性。原始测量数据可能包含设备故障、环境干扰、通信错误等原因导致的问题数据，这些问题如果不被识别和处理，将严重影响后续分析的准确性和可靠性。
+
+CleanMast 采用基于规则的数据清理系统，通过可配置的清理规则检测各种类型的数据异常。系统不直接删除或修改问题数据，而是为每个数据点分配质量标记，保留数据处理过程的可追溯性。
+
+## 清理规则系统
+
+### 系统原则
+
+清理规则系统基于两个核心设计原则：第一，规则应该是可配置的，允许用户根据具体项目环境和需求调整判断标准；第二，系统应该保持数据处理的透明性，所有质量标记和违规记录都应该被保存和报告。
+
+每个清理规则定义了针对特定传感器类型和测量条件的质量判断标准。规则可以限定适用的传感器高度范围，也可以设定特定的风向扇区条件。这种灵活性使得系统能够适应不同地形、不同气候条件和不同传感器配置的项目需求。
+
+### 规则类型
+
+CleanMast 支持多种类型的清理规则，每种规则针对特定类型的数据质量问题：
+
+**范围检查规则**用于验证测量值是否处于物理合理的区间内。任何超出合理范围的测量值都可能表示传感器故障或环境异常。
+
+**结冰检测规则**用于识别传感器可能受到结冰影响的时段。结冰会导致传感器响应特性改变，表现为测量值异常稳定或变化模式异常。
+
+**层差检查规则**用于验证同一气象要素在不同高度传感器之间的一致性。大气边界层中，风速和风向随高度变化遵循一定的物理规律，违反这些规律的测量值可能存在问题。
+
+**可用性检查规则**用于统计特定时间段内的有效数据比例，识别数据缺失严重的时段。
+
+## 范围检查规则
+
+### 概念与原理
+
+范围检查是最基础的数据质量验证手段，其原理基于风能测量中各物理量的合理取值范围。风速不可能为负值，方向应该在圆周内循环，温度受当地气候条件约束，这些都是可以通过物理原理推导的合理边界。
+
+范围检查的本质是识别那些在物理上不可能或极其不可能出现的测量值。这类问题通常由传感器故障、编码错误或数据传输错误导致。需要注意的是，范围检查无法识别那些虽然在合理范围内但实际上错误的测量值，例如中等风速下的突变。
+
+### 适用场景
+
+范围检查适用于所有数据清理项目的第一道验证环节。对于任何新获取的测量数据，都应该首先应用范围检查来识别明显的异常值。这一步骤能够在数据处理流程的最早阶段发现问题，避免无效数据进入更复杂的分析环节。
+
+在配置范围检查规则时，应该根据项目所在地区的气候条件进行调整。沿海地区和内陆平原可能需要不同的风速上限，极地项目和热带项目需要不同的温度范围。
+
+### 输入要求
+
+范围检查规则需要以下输入数据：待检验的时间序列数据文件，包含时间戳和各传感器测量值；传感器配置描述文件，定义各列对应的传感器类型和高度信息；规则配置文件，指定各传感器类型的最小值和最大值限制。
+
+### 输出结果
+
+范围检查产生以下输出：违规记录列表，记录每个超出范围的数据点的时间戳、传感器列和违反的规则；数据质量标记，为每个数据点标记范围检查的通过状态；统计摘要，汇总各传感器的违规比例和问题分布情况。
+
+## 结冰检测规则
+
+### 概念与原理
+
+结冰检测规则基于结冰环境下传感器响应特性变化的原理。当传感器表面结冰时，其机械转动部件（如风速计的旋杯或风向标的尾翼）会受到冰层的影响，导致测量响应变慢或完全停止。这种物理变化表现为测量值在较长时间内几乎不发生变化。
+
+大气结冰条件通常发生在温度接近冰点且湿度较高的环境中。当气温降至零度以下且空气中的过冷水滴接触到传感器表面时，会在传感器上凝结成冰。结冰过程一旦开始，即使温度略有回升，只要在冰点附近，冰层也可能持续存在甚至增厚。
+
+### 检测原理
+
+结冰检测算法监测指定时间窗口内测量值的变化幅度。当某个传感器在预设的时间窗口内始终保持极小的变化量时，系统判定该时段可能存在结冰影响。这种方法的依据是：正常大气条件下，风速和风向在数小时内不可能保持完全稳定。
+
+算法需要区分真正的结冰和自然稳定条件。例如，在强风稳定吹拂且风向单一的情况下，风速可能表现出较低的变异性，但这并非结冰导致。因此，某些结冰检测配置会结合风速阈值进行判断。
+
+### 适用场景
+
+结冰检测规则适用于可能发生大气结冰的项目，特别是位于寒冷气候区、高海拔地区或海洋环境的测风塔。这些环境中的传感器暴露在零度以下的低温和高湿度条件下，结冰风险显著增加。
+
+对于热带和亚热带地区的项目，结冰检测可能不是必需的，或者可以采用更宽松的参数配置。但即使在这些地区，冬季或寒潮期间仍可能发生结冰，保留结冰检测功能可以应对极端天气事件。
+
+### 输入要求
+
+结冰检测规则需要：完整的连续时间序列数据，窗口检测算法要求数据具有较高的时间连续性；传感器类型和统计方式信息，用于确定适用的检测规则；检测时间窗口和变化阈值参数，定义判断结冰的条件。
+
+### 输出结果
+
+结冰检测识别出的时间段将被标记为可能受结冰影响。这些时段的测量数据在后续分析中应该被谨慎使用或考虑替代数据源。对于严重的长期结冰情况，可能需要使用其他高度的传感器数据或中尺度数据作为替代。
+
+## 层差检查规则
+
+### 概念与原理
+
+层差检查规则基于大气边界层中气象要素垂直分布的物理规律。在大气边界层内，风速通常随高度增加而增大，这一现象由地表摩擦效应随高度减弱所致。风向也随高度发生变化，但变化幅度通常小于风速。
+
+风速随高度变化的规律可以用对数律或幂律描述。对数律更准确地描述了接近地表的风速廓线，而幂律在工程应用中更为简便。无论采用哪种描述，层间变化的幅度受到大气稳定性和地表粗糙度的共同影响。
+
+层差检查的原理是比较相邻高度传感器测量值的差异。如果差异超出合理范围，可能表示某一层的传感器存在问题，或者存在局部的异常大气现象（如逆温层或特殊地形效应）。
+
+### 风向层差的特殊性
+
+风向层差检查需要特殊处理，因为方向值具有周期性。359 度和 1 度之间的算术差为 358 度，但实际方向差异仅为 2 度。层差检查算法使用圆形差分计算，正确处理 0 度和 360 度的边界情况。
+
+### 适用场景
+
+层差检查对于具有多个高度传感器的测风塔尤为重要。标准测风塔通常在多个高度层（如 10 米、40 米、60 米、80 米、100 米）配置传感器，层差检查可以验证各层数据之间的一致性。
+
+层差检查可以帮助识别特定高度层的传感器问题。当某一层的测量值与其邻层明显不一致时，往往表明该层传感器存在故障或校准偏差。这种问题通过单点范围检查可能无法发现。
+
+### 输入要求
+
+层差检查规则需要：至少两个高度层的同类传感器数据，用于比较垂直差异；传感器高度信息，用于确定比较的上下层关系；最大允许层差阈值，定义判断标准；以及可选的下限风速条件，用于排除静风条件下的误判。
+
+### 输出结果
+
+层差检查识别出的数据点将被标记为存在层间不一致性问题。报告将指出哪些高度层的传感器与其他层存在显著差异，帮助定位可能的传感器问题。
+
+## 可用性检查规则
+
+### 概念与原理
+
+可用性检查规则评估特定时间段内的有效数据比例。大气测量数据可能因为传感器故障、通信中断或维护期间等原因出现缺失。可用性检查帮助识别那些有效数据不足的时间段，这些时间段的数据代表性可能存在问题。
+
+可用性的判断基于预期数据点数和实际有效数据点的比例。预期数据点数由时间窗口长度和数据采样间隔决定。有效数据点排除缺失值和已被其他规则标记为异常的数据点。
+
+### 适用场景
+
+可用性检查对于长期数据分析和统计可靠性评估非常重要。当某个时间段的有效数据比例过低时，基于该时段的统计分析可能存在较大的不确定性。这种情况下，可能需要延长观测周期或使用替代数据源。
+
+在风资源评估中，通常要求关键风向和风速区间的数据可用性达到一定水平（如 90% 以上）。可用性检查帮助验证数据是否满足这些要求。
+
+### 输入要求
+
+可用性检查需要：连续的时间序列数据；采样间隔信息，用于计算预期数据点数；时间窗口长度定义；最小可用率阈值。
+
+## 规则应用流程
+
+### 处理顺序
+
+清理规则按照配置顺序依次应用到数据上。每个规则独立检查数据的某个方面，所有规则的违规记录被汇总后生成最终的数据质量评估。
+
+先应用范围检查等基础规则，再应用结冰检测等依赖于时间序列特性的规则，最后计算综合的数据可用性和质量分数。这种顺序安排可以提高处理效率，因为后续规则可以在已有标记的基础上跳过明显异常的数据。
+
+### 结果汇总
+
+各规则的违规记录被汇总到统一的报告中。报告不仅列出每个违规的具体信息，还提供各传感器、各时间段的数据质量统计摘要。这些信息帮助用户理解数据质量的整体状况和主要问题类型。
+
+## 配置与调优
+
+### 参数配置原则
+
+清理规则的参数应该根据项目所在地区的特点进行调整。气候条件、地形特征和传感器配置都会影响合理的阈值范围。用户在使用系统前，应该理解各参数的含义并根据实际情况配置。
+
+参数的调整应该基于对历史数据的分析和验证。过于严格的参数会产生过多的误报，增加后续处理的复杂度；过于宽松的参数则可能遗漏真实的数据问题。建议使用已知的正常数据和异常数据样本进行参数验证。
+
+### 质量等级划分
+
+系统为每个数据点分配质量等级，综合考虑各规则的违规情况。等级划分帮助用户快速识别需要特别关注的数据段，同时保留详细的信息供深入分析使用。
+
+## 相关文档
+
+- [数据清理命令](../user/commands/process/clean.md)
+- [清理配置说明](../user/configuration/config-files/process-clean.md)
+- [数据清理组件](../c4/03-component/data-clean.md)
