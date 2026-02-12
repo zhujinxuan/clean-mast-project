@@ -1,3 +1,5 @@
+<!-- NOTE: CLAUDE.md and AGENTS.md must be kept in sync! -->
+
 # CleanMast Project Guide for Claude Code
 
 CleanMast is a comprehensive Julia toolkit for processing wind energy meteorological tower data. This guide provides Claude Code agents with essential context, coding standards, and domain expertise for working effectively with this codebase.
@@ -231,6 +233,184 @@ For comprehensive testing documentation, see **[CleanMastProject/docs/developmen
 
 Always run relevant tests after code changes: `julia CleanMastProject/test/runtests.jl [module_name]`
 
+### Python Type Checking
+
+**Run type check:** `uv run ty check packages/cleanmast`
+**Check specific module:** `uv run ty check packages/cleanmast/src/cleanmast/fill_heights`
+
+Type errors should be fixed before committing. The project uses Pyright for type checking.
+
+### Polars Best Practices (Python)
+
+Polars is built on a lazy, expression-based engine. The key insight is to **build expressions first, then apply them**. This enables query optimization, parallel execution, and memory efficiency.
+
+#### Core Principle: Build Expressions, Not Series
+
+```python
+# ❌ Wrong: Eagerly materialize intermediate Series
+speed = df["wind_speed"]
+direction = df["wind_direction"]
+result = speed * pl.cos(direction * pl.pi / 180)
+df = df.with_columns(result.alias("u_component"))
+
+# ✅ Right: Build an expression, then apply it in one shot
+u_expr = pl.col("wind_speed") * pl.cos(pl.col("wind_direction") * pl.pi / 180)
+df = df.with_columns(u_expr.alias("u_component"))
+```
+
+#### 1. Expressions Over Loops (The Polars Way)
+
+**Mindset shift**: Think in expressions, not iterations.
+
+```python
+# ❌ Wrong: Loop-based accumulation
+weighted_sum = pl.lit(0.0)
+for ref in references:
+    weighted_sum = weighted_sum + pl.col(ref.source_column) * ref.weight
+df = df.with_columns(weighted_sum.alias("result"))
+
+# ✅ Right: Build expression with sum()
+expr = sum(
+    pl.col(ref.source_column) * ref.weight
+    for ref in references
+)
+df = df.with_columns(expr.alias("result"))
+```
+
+#### 2. Composable Expression Building
+
+Build complex logic by composing smaller expressions:
+
+```python
+# Build reusable expression components
+speed_col = pl.col("wind_speed")
+dir_col = pl.col("wind_direction")
+
+# Convert to radians
+rad_expr = dir_col * pl.pi / 180
+
+# Calculate wind components
+u_expr = speed_col * rad_expr.cos()
+v_expr = speed_col * rad_expr.sin()
+
+# Apply all at once
+df = df.with_columns([
+    u_expr.alias("u_component"),
+    v_expr.alias("v_component"),
+])
+```
+
+#### 3. Conditional Expressions with `when().then().otherwise()`
+
+```python
+# ❌ Wrong: Row-wise Python logic
+for row in df.iter_rows():
+    if row["wind_speed"] < 3:
+        category = "calm"
+    elif row["wind_speed"] < 10:
+        category = "moderate"
+    else:
+        category = "strong"
+
+# ✅ Right: Expression-based conditional
+category_expr = (
+    pl.when(pl.col("wind_speed") < 3).then(pl.lit("calm"))
+    .when(pl.col("wind_speed") < 10).then(pl.lit("moderate"))
+    .otherwise(pl.lit("strong"))
+)
+df = df.with_columns(category_expr.alias("wind_category"))
+```
+
+#### 4. Window Functions with `over()`
+
+```python
+# Calculate deviation from daily mean
+daily_mean_expr = pl.col("wind_speed").mean().over(pl.col("date"))
+deviation_expr = pl.col("wind_speed") - daily_mean_expr
+
+df = df.with_columns([
+    daily_mean_expr.alias("daily_mean_speed"),
+    deviation_expr.alias("speed_deviation"),
+])
+```
+
+#### 5. Aggregation Expressions with `agg()`
+
+```python
+# Complex aggregations in group_by
+result = df.group_by("month").agg([
+    pl.col("wind_speed").mean().alias("avg_speed"),
+    pl.col("wind_speed").std().alias("std_speed"),
+    (pl.col("wind_speed") ** 3).mean().alias("mean_cubed_speed"),
+    pl.col("wind_direction").mode().first().alias("dominant_direction"),
+])
+```
+
+#### 6. Use `pl.col()` for Dynamic Column References
+
+```python
+# When column names are dynamic
+columns = ["wind_speed_10m", "wind_speed_50m", "wind_speed_100m"]
+
+# Build expression for average across heights
+avg_expr = sum(pl.col(c) for c in columns) / len(columns)
+df = df.with_columns(avg_expr.alias("avg_speed_all_heights"))
+```
+
+#### 7. Chain Operations Method-Style
+
+```python
+# ✅ Fluent API for complex pipelines
+clean_data = (
+    raw_df
+    .filter(pl.col("wind_speed").is_between(0, 50))
+    .filter(pl.col("wind_direction").is_between(0, 360))
+    .with_columns([
+        (pl.col("wind_speed") ** 3).alias("wind_power"),
+        pl.col("timestamp").dt.hour().alias("hour"),
+    ])
+    .select([
+        "timestamp",
+        "hour",
+        "wind_speed",
+        "wind_direction",
+        "wind_power",
+    ])
+)
+```
+
+#### 8. Avoid `.to_numpy()` Unless Necessary
+
+```python
+# ❌ Wrong: Converting back and forth
+result = some_numpy_operation(df["col"].to_numpy())
+return pl.Series(result)
+
+# ✅ Right: Stay in Polars expression land
+result = df.with_columns(
+    (pl.col("a") + pl.col("b")).alias("sum")
+)["sum"]
+```
+
+#### 9. Handle Empty Cases with `pl.lit()`
+
+```python
+# ✅ Provide default for empty aggregations
+expr = sum(
+    [pl.col(ref.source_column) * ref.weight for ref in references],
+    pl.lit(0.0)  # Ensures return type is always an expression
+)
+```
+
+#### Summary: The Expression-First Checklist
+
+- [ ] Did I build expressions before calling `with_columns()` or `filter()`?
+- [ ] Did I use `pl.col()` instead of `df["col"]` in transformations?
+- [ ] Did I avoid `iter_rows()` and Python loops?
+- [ ] Did I compose complex logic from simple expressions?
+- [ ] Did I apply all transformations in one `with_columns()` call when possible?
+- [ ] Did I stay in Polars land without `.to_numpy()` conversions?
+
 ### Visualization Standards
 
 #### AlgebraOfGraphics (Preferred)
@@ -387,5 +567,52 @@ wind_sensors = filter(s -> s.sensorType ∈ ["WindSpeed", "WindDirection"] && s.
 # Create standardized sensor names
 sensor_name = create_sensor_short_name(sensor)  # e.g., "WS:80m" or "WD:100m:N"
 ```
+
+#### Accessing DataFrames via SensorColumn (CRITICAL)
+The `SensorColumn` type tracks the actual DataFrame column name after preprocessing. Always use this field to access DataFrame columns, not hardcoded strings or symbols:
+
+- **Julia**: `columnName::Symbol` (camelCase)
+- **Python**: `column_name::str` (snake_case)
+
+**Julia DataFrames:**
+```julia
+# ✅ CORRECT: Access via sensor.columnName (Symbol)
+wind_speed_data = df[:, wind_speed_sensor.columnName]
+
+# ❌ WRONG: Hardcoded column name
+data = df[:, :wind_speed_80m]  # Fragile!
+
+# ✅ CORRECT: Using sensor metadata
+function get_sensor_data(df::DataFrame, sensor::SensorColumn)
+    return df[:, sensor.columnName]
+end
+
+# ✅ CORRECT: Column existence check
+if hasproperty(df, sensor.columnName)
+    data = df[:, sensor.columnName]
+end
+```
+
+**Python Polars:**
+```python
+# ✅ CORRECT: Access via sensor.column_name (already a string)
+wind_speed_col = wind_speed_sensor.column_name
+expr = pl.col(wind_speed_col) * 2
+
+# ✅ CORRECT: Using sensor in expressions
+def get_sensor_expression(sensor: SensorColumn) -> pl.Expr:
+    return pl.col(sensor.column_name)  # column_name is already str
+
+# ✅ CORRECT: Building expressions from sensors
+speed_expr = pl.col(wind_speed_sensor.column_name)
+direction_expr = pl.col(wind_direction_sensor.column_name)
+u_expr = speed_expr * (direction_expr * pl.pi / 180).cos()
+```
+
+**Why this matters:**
+- Sensor columns may be renamed during preprocessing (e.g., merged files)
+- `columnName` tracks the actual DataFrame column name after all transformations
+- Hardcoded column names break when formats change or files are merged
+- Using `sensor.columnName` ensures your code works across all pipeline stages
 
 This guide ensures Claude Code agents can effectively contribute to CleanMast while maintaining code quality, domain accuracy, and user experience standards.

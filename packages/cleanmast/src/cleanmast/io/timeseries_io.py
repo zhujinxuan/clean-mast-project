@@ -153,6 +153,11 @@ def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeri
         sensors = _extract_sensors_from_parquet(data_path)
     except Exception:
         # Fall back to sensors file if embedded metadata fails
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not found: no sensors file specified and "
+                "no embedded metadata found in Parquet file"
+            )
         sensors_path = _resolve_path(source.sensors, base_dir)
         if not sensors_path.exists():
             raise FileNotFoundError(f"Sensors file not found: {sensors_path}")
@@ -244,6 +249,10 @@ def load_timeseries(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
         return load_timeseries_parquet(source, base_dir)
     else:
         # CSV format
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
         sensors_path = _resolve_path(source.sensors, base_dir)
 
         # Check files exist
@@ -294,6 +303,10 @@ def save_timeseries(
         save_timeseries_parquet(source, base_dir, data)
     else:
         # CSV format
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
         sensors_path = _resolve_path(source.sensors, base_dir)
 
         # Ensure parent directories exist

@@ -96,14 +96,8 @@
 
 **1. 传感器选择 (`find_nearest_height_sensor`)**
 
-```julia
-function find_nearest_height_sensor(
-    target_height::Float64, 
-    sensors::Vector{SensorColumn}, 
-    sensor_type::String, 
-    stat_type::String="avg"
-)::Union{SensorColumn, Nothing}
-```
+**功能说明**：
+该函数用于在测风塔的传感器列表中查找距离目标轮毂高度最近的匹配传感器。
 
 **选择逻辑**：
 - 筛选指定类型 (`WindSpeed` 或 `WindDirection`) 和统计类型 (`avg`) 的传感器
@@ -113,26 +107,25 @@ function find_nearest_height_sensor(
 
 **2. 数据提取与格式化**
 
-```julia
-# 创建包含三列的 DataFrame
-wt_df = DataFrame(
-    timestamp = time_series.df.timestamp,
-    wind_speed = time_series.df[:, wind_speed_sensor.columnName],
-    wind_direction = time_series.df[:, wind_dir_sensor.columnName]
-)
+**功能说明**：
+从完整时间序列数据中提取匹配传感器对应的数据列，并按照 WT 软件要求的格式进行整理。
 
-# 格式化时间戳为 yyyy-mm-dd HH:MM:ss
-wt_df.timestamp = Dates.format.(wt_df.timestamp, "yyyy-mm-dd HH:MM:ss")
-```
+**处理步骤**：
+- 从输入时间序列中提取时间戳列
+- 提取最近匹配传感器的风速数据列
+- 提取最近匹配传感器的风向数据列
+- 将三列数据整合为标准输出格式
+- 将时间戳格式化为 `yyyy-mm-dd HH:MM:ss` 标准格式
 
 **3. 文件输出**
 
-```julia
-# 文件名格式：{mast_name}-{height}m.csv
-# 高度中的小数点替换为下划线
-height_str = replace(string(target_height), "." => "_")
-output_filename = "$(mast_name)-$(height_str)m.csv"
-```
+**功能说明**：
+将处理完成的时间序列数据保存为 CSV 格式文件，文件名遵循约定的命名规则。
+
+**文件命名规则**：
+- 格式：`{测风塔名称}-{高度值}m.csv`
+- 高度中的小数点替换为下划线（例如：`120.0m` → `120_0m`）
+- 文件保存至配置的输出目录
 
 #### 关键参数
 

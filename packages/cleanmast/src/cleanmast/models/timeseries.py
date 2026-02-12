@@ -43,6 +43,14 @@ class TimeRange(BaseModel):
     min: datetime
     max: datetime
 
+    @field_validator("min", "max", mode="before")
+    @classmethod
+    def parse_datetime(cls, v: datetime | str) -> datetime:
+        """Parse datetime from ISO string if needed."""
+        if isinstance(v, str):
+            return datetime.fromisoformat(v)
+        return v
+
 
 @dataclass
 class TimeSeriesData:

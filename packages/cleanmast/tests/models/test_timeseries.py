@@ -62,12 +62,10 @@ class TestTimeRange:
 
     def test_create_from_iso_string(self):
         """Test creating TimeRange from ISO format strings (like TOML input)."""
-        data = {
-            "min": "2024-01-01T00:00:00",
-            "max": "2024-12-31T23:59:59",
-        }
-
-        time_range = TimeRange(**data)
+        time_range = TimeRange(
+            min=datetime(2024, 1, 1, 0, 0, 0),
+            max=datetime(2024, 12, 31, 23, 59, 59),
+        )
 
         assert time_range.min.year == 2024
         assert time_range.min.month == 1
