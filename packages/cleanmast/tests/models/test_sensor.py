@@ -36,7 +36,7 @@ class TestSensorColumn:
             "unit": "deg",
         }
 
-        sensor = SensorColumn(**data)  # type: ignore[arg-type]
+        sensor = SensorColumn(**data)
 
         assert sensor.column_name == "WindDirection_80m_avg [deg]"
         assert sensor.sensor_type == "WindDirection"
@@ -131,4 +131,4 @@ class TestSensorColumn:
             SensorColumn(
                 column_name="WindSpeed_100m_avg [m/s]",
                 # Missing sensor_type and other required fields
-            )  # type: ignore
+            )

@@ -159,31 +159,36 @@ class TestReconstructMesoConfiguration:
 
     def test_create_from_nested_dict(self):
         """Test creating configuration from nested dict (like TOML parsing)."""
-        # Build proper model instances for pyright compatibility
-        mast = ReconstructMesoMast(
-            name="pn-002824",
-            input=TimeSeriesSource(data="./in/data.csv", sensors="./in/sensors.yaml"),
-            output=TimeSeriesSource(data="./out/data.csv", sensors="./out/sensors.yaml"),
-            time_range=TimeRange(min=datetime(2024, 1, 1), max=datetime(2024, 12, 31)),
-            models=ReconstructMesoModels(
-                windspeed=ReconstructMesoModelSpec(
-                    method="1-sector",
-                    meso_name="era5",
-                    model_file="./ws.jld2",
-                ),
-                winddirection=ReconstructMesoModelSpec(
-                    method="constant-offset",
-                    meso_name="era5",
-                    model_file="./wd.jld2",
-                ),
-            ),
-        )
-        meso = MesoSource(
-            name="era5",
-            input=TimeSeriesSource(data="./raw/era5.csv", sensors="./raw/era5.sensors.toml"),
-        )
+        data = {
+            "masts": [
+                {
+                    "name": "pn-002824",
+                    "input": {"data": "./in/data.csv", "sensors": "./in/sensors.yaml"},
+                    "output": {"data": "./out/data.csv", "sensors": "./out/sensors.yaml"},
+                    "time_range": {"min": "2024-01-01T00:00:00", "max": "2024-12-31T23:59:59"},
+                    "models": {
+                        "windspeed": {
+                            "method": "1-sector",
+                            "meso_name": "era5",
+                            "model_file": "./ws.jld2",
+                        },
+                        "winddirection": {
+                            "method": "constant-offset",
+                            "meso_name": "era5",
+                            "model_file": "./wd.jld2",
+                        },
+                    },
+                }
+            ],
+            "mesos": [
+                {
+                    "name": "era5",
+                    "input": {"data": "./raw/era5.csv", "sensors": "./raw/era5.sensors.toml"},
+                }
+            ],
+        }
 
-        config = ReconstructMesoConfiguration(masts=[mast], mesos=[meso])
+        config = ReconstructMesoConfiguration(**data)
 
         assert config.masts[0].name == "pn-002824"
         assert config.masts[0].models.windspeed.method == "1-sector"

@@ -104,83 +104,89 @@
 
 #### 校准流程
 
-**1. 气候学平均计算**
+**1. 气候学平均计算 (`calculate_climatology_mean`)**
 
-核心函数 `calculate_climatology_mean` 使用完整年份数据计算长期气候学平均。该函数首先调用 `find_climatology_timerange` 确定有效的时间范围。
+```julia
+# 使用完整年份计算长期气候学平均
+climatology_range = find_climatology_timerange(min_timestamp, max_timestamp)
+# 排除不完整年份，最多使用30年数据
+```
 
 **完整年份判定逻辑** (`find_climatology_timerange`):
-- 起始年判定：如果数据从年初开始则包含该年，否则从下一年开始
-- 结束年判定：如果数据到年末结束则包含该年，否则从上一年结束
-- 最大跨度限制：30年（超过30年则取最近30年的数据）
+- 起始年：如果数据从年初开始则包含，否则从下一年开始
+- 结束年：如果数据到年末结束则包含，否则从上一年结束
+- 最大跨度：30年（超过则取最近30年）
 
-此逻辑确保气候学平均计算基于完整年度数据，避免因数据不完整导致的统计偏差。源文件参考：`src/RepresentativeYear/Core.jl`。
+**2. 校准必要性检查 (`is_calibration_needed`)**
 
-**2. 校准必要性检查**
-
-核心函数 `is_calibration_needed` 比较完整气候学期与训练期的平均风速，判断是否需要进行校准。该函数接收两个关键参数：完整时期的平均风速 (`full_period_mean`) 和训练期的平均风速 (`training_period_mean`)，以及一个可选的阈值参数（默认2%）。
+```julia
+function is_calibration_needed(
+    full_period_mean::Float64,
+    training_period_mean::Float64;
+    threshold::Float64=0.02  # 默认2%阈值
+)::Bool
+    abs(full_period_mean - training_period_mean) / full_period_mean > threshold
+end
+```
 
 **判定标准**：
-- 计算完整期平均与训练期平均的相对差异
-- 如果差异绝对值超过2%的阈值，则需要校准
-- 如果差异在阈值范围内，直接返回原始数据，不进行校准
+- 如果训练期平均与完整期平均的差异 > 2%，则需要校准
+- 否则直接返回原始数据，不进行校准
 
-此机制避免了不必要的校准操作，确保只有当训练期数据与长期气候存在显著偏差时才进行修正。源文件参考：`src/RepresentativeYear/Core.jl`。
+**3. 代表年查找 (`find_representative_year`)**
 
-**3. 代表年查找**
-
-核心函数 `find_representative_year` 在中尺度时间序列中寻找最具代表性的年份。该函数接收中尺度时间序列数据、气候学平均风速和传感器配置作为输入，使用2%阈值参数进行匹配判断。
+```julia
+function find_representative_year(
+    meso_ts::TimeSeriesData,
+    full_period_mean::Float64,
+    meso_sensor::SensorColumn;
+    threshold::Float64=0.02  # 2%阈值
+)::DateTime
+```
 
 **查找逻辑**：
-- 算法从最新年份开始向前遍历历史数据
-- 对每个完整年份计算年平均风速
-- 找到第一个与气候学平均差异不超过2%的年份
-- 返回该年份的起始时间戳（1月1日 00:00:00）
+- 从最新年份开始向前查找
+- 找到第一个年平均风速与气候学平均差异 ≤ 2% 的完整年份
+- 返回该年份的起始日期（1月1日）
 
-选择最新且符合条件的数据可以确保使用最接近当前观测条件的代表性年份。源文件参考：`src/RepresentativeYear/Core.jl`。
+**4. 扇区差异计算 (`calculate_sector_meso_diff`)**
 
-**4. 扇区差异计算**
+计算训练期与代表年在16个风向扇区的风速差异：
 
-函数 `calculate_sector_meso_diff` 计算训练期与代表年在16个风向扇区内的风速差异。该函数按风向扇区分别统计训练期和代表年的平均风速，然后计算两者的差值。
+```julia
+# 对每个扇区计算
+meso_speed_diff = ref_year_mean_speed - training_mean_speed
+```
 
-**计算逻辑**：
-- 对16个风向扇区分别进行统计
-- 每个扇区计算代表年平均风速 (`ref_year_mean_speed`)
-- 每个扇区计算训练期平均风速 (`training_mean_speed`)
-- 扇区差异 = 代表年平均风速 - 训练期平均风速
+**5. 校准应用 (`apply_calibration`)**
 
-此差异值用于后续的校准调整，确保不同风向条件下的局地效应得到正确校准。源文件参考：`src/RepresentativeYear/Analysis.jl`。
-
-**5. 校准应用**
-
-核心函数 `apply_calibration` 将计算得到的校准量应用到原始时间序列数据。该函数接收待校准的时间序列、校准结果对象和中尺度时间序列数据作为输入，并使用最小风速0.5 m/s和最大风速25.0 m/s作为物理约束边界。
+```julia
+function apply_calibration(
+    ts::TimeSeriesData,
+    calibration::CalibrationResults,
+    meso_ts::TimeSeriesData;
+    min_speed::Float64 = 0.5,   # 最小风速限制
+    max_speed::Float64 = 25.0   # 最大风速限制
+)::TimeSeriesData
+```
 
 **校准公式**：
 ```
-校准值 = 原始值 + 扇区中尺度差异 × 回归斜率
+calibrated_value = original_value + meso_speed_diff × slope
 ```
 
-**公式参数说明**：
-- `扇区中尺度差异` (`meso_speed_diff`): 当前数据点所属风向扇区的中尺度风速差异
-- `回归斜率` (`slope`): 从训练模型获取的回归系数，反映中尺度数据与测风塔数据的转换关系
-- 校准后的结果限制在物理合理范围内：[0.5, 25.0] m/s
-
-此公式确保校准后的风速值既反映了长期气候特征，又保持在物理合理的范围内。源文件参考：`src/RepresentativeYear/Core.jl`。
+其中：
+- `meso_speed_diff`: 该扇区的中尺度风速差异
+- `slope`: 从训练模型获取的回归斜率
+- 结果限制在 [0.5, 25.0] m/s 范围内
 
 **扇区确定** (`find_direction_sector`):
-
-函数 `find_direction_sector` 将风向角度映射到16个风向扇区之一。该函数首先将输入角度归一化到0-360度范围，然后根据扇区边界计算所属扇区编号。
-
-**扇区划分规则**：
-- 将360度等分为16个扇区，每个扇区22.5度
-- 扇区中心偏移11.25度，确保边界对称
-- 扇区编号从1到16，返回整数类型
-
-**计算公式**：
+```julia
+# 将风向归一化到 0-360°
+norm_angle = mod(angle, 360.0)
+# 每个扇区22.5°，中心偏移11.25°
+sector = floor(Int, (norm_angle + 11.25) / 22.5) + 1
 ```
-扇区编号 = floor((归一化角度 + 11.25) / 22.5) + 1
-```
-
-此映射确保风向数据被正确分配到对应的风向扇区，用于后续的分扇区校准处理。源文件参考：`src/RepresentativeYear/Core.jl`。
 
 #### 关键参数
 

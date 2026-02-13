@@ -4,12 +4,6 @@
 
 中尺度模型训练算法用于建立测风塔观测数据与中尺度再分析数据之间的统计关联。该训练过程是后续中尺度数据重构的基础，通过分析两种数据源在重叠时间段内的对应关系，构建能够将中尺度数据转换为测风塔等效数据的转换模型。这些模型使得利用长时间序列的中尺度数据进行测风塔数据的长期重构成为可能，特别适用于风能资源评估中对代表性年的分析和长期风况特征的获取。
 
-## 实现参考
-
-- **核心逻辑**: `src/TrainMeso/Core.jl`
-- **配置定义**: `src/Types/TrainMesoConfig.jl`
-- **处理命令**: `src/TrainMeso/CommandTrainMeso.jl`
-
 ## 实现细节
 
 ### 训练算法步骤
@@ -32,14 +26,31 @@
 
 #### 16扇区定义
 
-风向被划分为16个等宽扇区，每个扇区覆盖22.5度的风向范围。这种划分基于传统气象16风向方位体系，能够有效区分不同风向条件下的风速转换关系。
+```julia
+DIRECTION_16_SECTORS = [
+    DirectionSector("N", 0.0, 22.5),      # 北 (0° ± 11.25°)
+    DirectionSector("NNE", 22.5, 22.5),   # 北北东
+    DirectionSector("NE", 45.0, 22.5),    # 东北
+    DirectionSector("ENE", 67.5, 22.5),   # 东北东
+    DirectionSector("E", 90.0, 22.5),     # 东
+    DirectionSector("ESE", 112.5, 22.5),  # 东南东
+    DirectionSector("SE", 135.0, 22.5),   # 东南
+    DirectionSector("SSE", 157.5, 22.5),  # 南南东
+    DirectionSector("S", 180.0, 22.5),    # 南
+    DirectionSector("SSW", 202.5, 22.5),  # 南南西
+    DirectionSector("SW", 225.0, 22.5),   # 西南
+    DirectionSector("WSW", 247.5, 22.5),  # 西南西
+    DirectionSector("W", 270.0, 22.5),    # 西
+    DirectionSector("WNW", 292.5, 22.5),  # 西北西
+    DirectionSector("NW", 315.0, 22.5),   # 西北
+    DirectionSector("NNW", 337.5, 22.5)   # 北北西
+]
+```
 
-每个扇区包含三个属性：
-- **扇区名称**：采用标准气象方位名称（N、NNE、NE、ENE、E、ESE、SE、SSE、S、SSW、SW、WSW、W、WNW、NW、NNW）
-- **中心角度**：扇区的中心风向值（0-360度）
-- **扇区宽度**：每个扇区的角度范围（22.5度）
-
-例如，北风扇区（N）的中心角度为0度，覆盖范围为348.75度至11.25度（0° ± 11.25°）。东北风扇区（NE）的中心角度为45度，覆盖范围为33.75度至56.25度，以此类推。
+每个扇区定义为：`DirectionSector(name, center_angle, width)`，其中：
+- `name`：扇区名称（如"N"、"NE"）
+- `center`：扇区中心角度（0-360度）
+- `width`：扇区宽度（22.5度）
 
 ### 回归方法
 
@@ -78,34 +89,39 @@ offset = mean(degree_diff(mast_direction, meso_direction))
 
 #### SectorizedRegressionModel（风速）
 
-风速模型采用分扇区回归结构，将中尺度风速转换为测风塔等效风速。模型包含三个核心概念组件：
+```julia
+struct SectorizedRegressionModel <: AbstractSpeedReferenceModel
+    pairs::Vector{SpeedPair}
+    sectors::Vector{DirectionSector}
+end
 
-**整体模型结构（SectorizedRegressionModel）**：
-- **pairs**：传感器配对列表，每个配对关联一个测风塔风速传感器与一个中尺度风速传感器
-- **sectors**：使用的风向扇区定义（16扇区或1扇区）
+struct SpeedPair
+    mast_speed_sensor::SensorColumn      # 测风塔风速传感器
+    meso_speed_sensor::SensorColumn      # 中尺度风速传感器
+    meso_direction_sensor::SensorColumn  # 中尺度风向传感器（用于扇区判定）
+    sectors::Vector{SpeedSector}         # 各扇区回归参数
+end
 
-**传感器配对（SpeedPair）**：
-- **mast_speed_sensor**：测风塔风速传感器的列标识
-- **meso_speed_sensor**：中尺度风速传感器的列标识
-- **meso_direction_sensor**：中尺度风向传感器的列标识（用于判定数据所属扇区）
-- **sectors**：该配对在各风向扇区内的回归系数集合
-
-**扇区回归参数（SpeedSector）**：
-- **direction_sector**：该组回归参数对应的风向扇区定义
-- **slope**：回归斜率系数（k值），表示中尺度风速与测风塔风速的比例关系
-- **intercept**：回归截距系数（b值），用于校正系统偏差
+struct SpeedSector
+    direction_sector::DirectionSector
+    slope::Union{Float64, Missing}        # 回归斜率k
+    intercept::Union{Float64, Missing}   # 回归截距b
+end
+```
 
 #### DirectionOffsetModel（风向）
 
-风向模型采用恒定偏移结构，建立中尺度风向与测风塔风向之间的角度转换关系。模型包含两个核心概念组件：
+```julia
+struct DirectionOffsetModel <: AbstractDirectionReferenceModel
+    pairs::Vector{DirectionPair}
+end
 
-**整体模型结构（DirectionOffsetModel）**：
-- **pairs**：传感器配对列表，每个配对关联一个测风塔风向传感器与一个中尺度风向传感器
-
-**传感器配对（DirectionPair）**：
-- **mast_sensor**：测风塔风向传感器的列标识
-- **meso_sensor**：中尺度风向传感器的列标识
-- **offset**：角度偏移值（度），表示中尺度风向需要校正的角度差值
+struct DirectionPair
+    mast_sensor::SensorColumn
+    meso_sensor::SensorColumn
+    offset::Float64  # 角度偏移值（度）
+end
+```
 
 ### 模型输出
 
