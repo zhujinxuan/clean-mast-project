@@ -22,6 +22,58 @@ using TOML
 export execute
 
 """
+    validate_utf8_encoding(filepath::String)
+
+Validates that a file is UTF-8 or ASCII encoded using chardetect.
+Errors with a helpful message if the encoding is not acceptable.
+
+Only accepts "utf-8" or "ascii" from chardetect --minimal output.
+All other encodings (ISO-8859-1, Windows-1252, GBK, etc.) are rejected.
+"""
+function validate_utf8_encoding(filepath::String)
+    # Check if file exists first
+    if !isfile(filepath)
+        error("File not found: $(filepath)")
+    end
+
+    try
+        # Run chardetect with --minimal flag to get just the encoding name
+        # Use Cmd array to properly handle paths with spaces
+        detected_encoding = readchomp(`uv run chardetect --minimal $(filepath)`)
+
+        # Only accept "utf-8" or "ascii" - case insensitive match
+        # chardetect may return "utf-8", "UTF-8", "ascii", "ASCII", etc.
+        encoding_lower = lowercase(detected_encoding)
+
+        if encoding_lower ∉ ["utf-8", "ascii"]
+            error("""
+            Encoding error in file: $(basename(filepath))
+
+            Detected encoding: $(detected_encoding)
+            Only UTF-8 and ASCII encodings are supported.
+
+            To fix this, convert the file to UTF-8:
+              iconv -f $(detected_encoding) -t utf-8 "$(filepath)" > "$(filepath).utf8"
+              mv "$(filepath).utf8" "$(filepath)"
+
+            Or use your text editor's "Save As" feature with UTF-8 encoding.
+            """)
+        end
+
+        return true
+    catch e
+        # If it's our encoding error, rethrow it
+        if isa(e, ErrorException) && occursin("Encoding error", e.msg)
+            rethrow(e)
+        end
+
+        # For other errors (chardetect not found, etc.), warn but don't fail
+        @warn "Could not verify file encoding for $(basename(filepath)): chardetect not available or failed" exception=e
+        return true  # Allow processing to continue
+    end
+end
+
+"""
     load_and_normalize_config(config_path::String)
 
 Loads and normalizes the parse-sensors configuration.
@@ -104,6 +156,9 @@ Processes a single data file according to its normalized configuration.
 """
 function process_single_file(file_config::ParseSensorsFileConfigNormalized, config_path::String)
     try
+        # Validate UTF-8 encoding before processing
+        validate_utf8_encoding(file_config.input)
+        
         # 1. Generate CSV options
         csv_opts = generate_csv_opts(file_config.sensor, file_config.input)
         

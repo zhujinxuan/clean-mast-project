@@ -2,9 +2,34 @@
 
 using Test
 using CleanMastProject.ParseSensors.CommandParseSensors
+using CleanMastProject.ParseSensors.CommandParseSensors: validate_utf8_encoding
 using CSV, TOML, DataFrames, Parquet2, DataAPI
 
 @testset "CommandParseSensors Integration Tests" begin
+
+    @testset "Encoding Validation" begin
+        mktempdir() do temp_dir
+            # Test 1: UTF-8 file passes validation
+            utf8_path = joinpath(temp_dir, "utf8_test.txt")
+            write(utf8_path, "Timestamp\tWindSpeed\n2024-01-01 00:00:00\t10.5\n")
+            @test validate_utf8_encoding(utf8_path) == true
+
+            # Test 2: ASCII file passes validation (subset of UTF-8)
+            ascii_path = joinpath(temp_dir, "ascii_test.txt")
+            write(ascii_path, "Timestamp,Value\n1,2\n3,4\n")
+            @test validate_utf8_encoding(ascii_path) == true
+
+            # Test 3: Missing file throws error
+            missing_path = joinpath(temp_dir, "nonexistent.txt")
+            @test_throws ErrorException validate_utf8_encoding(missing_path)
+
+            # Test 4: Non-UTF-8 encoding (Latin-1 with 0xFC) fails with ErrorException
+            latin1_path = joinpath(temp_dir, "latin1_test.txt")
+            # 0xFC is ü in Latin-1, not valid UTF-8
+            write(latin1_path, "Timestamp\tValue\n2024-01-01\t\xFC\n")
+            @test_throws ErrorException validate_utf8_encoding(latin1_path)
+        end
+    end
 
     # Note: These tests will require creating a temporary project structure
     # with data files and a parse-sensors.toml to be effective.

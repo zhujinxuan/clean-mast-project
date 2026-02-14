@@ -27,21 +27,15 @@ Mesoscale Reconstruction（中尺度重构）
 
 **函数**: `prepare_merge_data(mast_ts, meso_ts, reconstruction_time_range)` (`Core.jl:31-43`)
 
-处理步骤:
-1. **检测代表性时间间隔**: 调用 `detect_representative_interval(mast_ts)` 从测风塔数据中识别原始采样间隔
-2. **确保测风塔数据规则化**: 调用 `ensure_regular_intervals(mast_ts, reconstruction_time_range, representative_interval)` 将测风塔数据重采样到规则间隔
-3. **中尺度数据插值对齐**: 调用 `interpolate_timeseries(meso_ts, mast_ts.df.timestamp)` 将中尺度数据时间戳与测风塔完全对齐
+**处理逻辑**:
 
-```julia
-# Core.jl 第31-43行
-function prepare_merge_data(mast_ts::TimeSeriesData, meso_ts::TimeSeriesData, 
-                            reconstruction_time_range::TimeRange)::Tuple{TimeSeriesData, TimeSeriesData}
-    representative_interval = detect_representative_interval(mast_ts)
-    mast_ts = ensure_regular_intervals(mast_ts, reconstruction_time_range, representative_interval)
-    meso_ts = interpolate_timeseries(meso_ts, mast_ts.df.timestamp)  # 关键：时间戳完全对齐
-    return mast_ts, meso_ts
-end
-```
+该函数负责将测风塔时间序列与中尺度数据进行时间对齐，确保后续处理的数据一致性。实现位于 `CleanMastProject/src/ReconstructMeso/Core.jl`。
+
+1. **检测代表性时间间隔**: 从测风塔数据中识别原始采样间隔（如10分钟）
+2. **规则化测风塔数据**: 将测风塔数据重采样到指定的规则时间间隔
+3. **插值对齐中尺度数据**: 将中尺度数据的时间戳与测风塔完全对齐，生成与测风塔等长的时间序列
+
+**关键要求**: 时间戳必须完全一致，否则后续的合并操作将失败。
 
 ### 模型加载与重建应用
 
@@ -53,17 +47,14 @@ end
 3. **创建载荷对象**: `ReconstructionPayload(prepared_mast, mast_payload.reconstruction_sources)`
 4. **合并数据并追踪来源**: 调用 `merge_reconstruct!(mast_payload, reconstructed_meso, "meso", getModelName(model))`
 
-```julia
-# Core.jl 第49-60行
-function merge_reconstruct_meso(mast_payload::ReconstructionPayload, meso::TimeSeriesData, 
-    model::AbstractMastReferenceModel, reconstruction_time_range::TimeRange)::ReconstructionPayload
-    prepared_mast, prepared_meso = prepare_merge_data(mast_payload.data, meso, reconstruction_time_range)
-    reconstructed_meso = reconstruct(model, prepared_meso)  # 应用训练好的模型
-    mast_payload = ReconstructionPayload(prepared_mast, mast_payload.reconstruction_sources)
-    merge_reconstruct!(mast_payload, reconstructed_meso, "meso", getModelName(model))
-    return mast_payload
-end
-```
+**处理逻辑**:
+
+该函数是中尺度重构的核心入口，负责协调数据准备、模型应用和数据合并的全过程。实现位于 `CleanMastProject/src/ReconstructMeso/Core.jl`。
+
+1. **准备合并数据**: 调用 `prepare_merge_data` 函数对齐测风塔与中尺度数据的时间序列
+2. **应用重建模型**: 将对齐后的中尺度数据输入训练好的统计模型，生成重构后的测风塔等效值
+3. **创建载荷对象**: 封装处理后的测风塔数据和重建来源信息
+4. **合并数据并追踪来源**: 调用 `merge_reconstruct!` 函数将重构数据合并到测风塔数据，并记录每个重构值的数据来源
 
 ### 数据合并策略
 
@@ -76,35 +67,14 @@ end
 4. **向量化操作**: 使用 `df[missing_mask, col] .= reconstructed.df[missing_mask, col]` 进行高效批量赋值
 5. **来源追踪**: 为每个填充的值创建 `ReconstructionSource` 记录
 
-```julia
-# MastReferenceModel.jl 第160-193行
-function merge_reconstruct!(mast_payload::ReconstructionPayload, reconstructed::TimeSeriesData, 
-                            source_id::String, model_id::String)::ReconstructionPayload
-    # 验证时间戳对齐
-    if !(length(reconstructed.df.timestamp) == length(mast_payload.data.df.timestamp) &&
-         all(reconstructed.df.timestamp .== mast_payload.data.df.timestamp))
-        throw(ArgumentError("Mismatched timestamps..."))
-    end
-    
-    df = mast_payload.data.df
-    common_sensors = filter(s -> any(rs -> rs.columnName == s.columnName, reconstructed.sensors), 
-                           mast_payload.data.sensors)
-    
-    for sensor in common_sensors
-        col = sensor.columnName
-        missing_mask = ismissing.(df[!, col])
-        
-        if any(missing_mask)
-            df[missing_mask, col] .= reconstructed.df[missing_mask, col]  # 向量化填充
-            timestamps = df.timestamp[missing_mask]
-            push!(mast_payload.reconstruction_sources, 
-                map(timestamp -> ReconstructionSource(timestamp, col, source_id, model_id), 
-                    timestamps)...)
-        end
-    end
-    return mast_payload
-end
-```
+**实现逻辑**:
+
+该函数负责将重构数据合并到测风塔载荷中，并记录数据来源。实现位于 `CleanMastProject/src/Types/MastReferenceModel.jl`。
+
+1. **时间戳验证**: 验证重建数据与测风塔数据长度相同且时间戳完全一致，若不匹配则抛出 `ArgumentError`
+2. **查找公共传感器**: 筛选测风塔与重建数据中共同的传感器列
+3. **向量化缺失值填充**: 构造缺失值掩码，对测风塔数据中 `ismissing` 的行进行向量化批量赋值
+4. **来源追踪记录**: 为每个填充的重构值创建 `ReconstructionSource` 记录，包含时间戳、传感器列名、数据来源和模型标识
 
 ### 具体模型示例：分扇区回归模型
 
@@ -118,20 +88,15 @@ end
 - 应用对应扇区的回归公式计算重建值
 - 结果限制在 [0.5, 25.0] m/s 物理范围内
 
-```julia
-# SectorizedRegressionReconstruction.jl 第31-45行
-result_df[!, pair.mast_speed_sensor.columnName] = map(zip(meso_speed, meso_dir)) do (speed, dir)
-    if ismissing(speed) || ismissing(dir)
-        return missing
-    end
-    sector_model = get_sector_model(dir, pair.sectors)
-    if isnothing(sector_model)
-        return missing
-    end
-    reconstructed = speed * sector_model.slope + sector_model.intercept
-    clamp(reconstructed, 0.5, 25.0)  # 物理范围限制
-end
-```
+**重建算法逻辑**:
+
+该分扇区回归重建算法位于 `CleanMastProject/src/WindSpeedModels/SectorizedRegressionReconstruction.jl`。
+
+1. **输入处理**: 同时接收中尺度风速和风向数据
+2. **缺失值检查**: 若任一输入值为 `missing`，直接返回 `missing`
+3. **扇区模型选择**: 根据风向调用 `get_sector_model()` 获取对应扇区的回归模型
+4. **回归计算**: 应用扇区特定的线性回归公式：`重构值 = slope × 中尺度风速 + intercept`
+5. **物理范围约束**: 使用 `clamp()` 函数将结果限制在 [0.5, 25.0] m/s 范围内，确保物理合理性
 
 ### 来源追踪机制
 

@@ -60,67 +60,86 @@ def _load_sensors_from_file(filepath: Path) -> list[SensorColumn]:
 
 
 def _extract_sensors_from_parquet(filepath: Path) -> list[SensorColumn]:
-    """Extract sensor metadata from Parquet file metadata.
+    """Extract sensor metadata from Parquet file-level metadata.
 
-    Reads the serialized sensors from the Parquet file's metadata section.
+    Reads sensor metadata from file-level metadata in Parquet files.
+    Uses JSON format under key "cleanmast_sensors".
 
     Args:
         filepath: Path to Parquet file with embedded sensor metadata
 
     Returns:
         List of SensorColumn objects
+
+    Raises:
+        ValueError: If no sensor metadata found in file-level metadata
     """
-    # Read Parquet metadata from schema's custom metadata
-    table = pq.read_table(filepath)
-    metadata = table.schema.metadata
+    pf = pq.ParquetFile(filepath)
+    file_meta = pf.metadata.metadata  # Dict[bytes, bytes]
 
-    # Check if our custom metadata exists
-    if metadata is None or b"cleanmast_sensors" not in metadata:
-        raise ValueError("No sensor metadata found in Parquet file")
+    if b"cleanmast_sensors" not in file_meta:
+        raise ValueError(f"No sensor metadata in {filepath}")
 
-    # Extract sensors from metadata (stored as JSON bytes)
-    sensors_bytes = metadata[b"cleanmast_sensors"]
-    sensors_data = json.loads(sensors_bytes.decode("utf-8"))
+    # Parse JSON
+    sensors_json = json.loads(file_meta[b"cleanmast_sensors"].decode("utf-8"))
 
     # Convert to SensorColumn objects
     sensors = []
-    for sensor_dict in sensors_data.get("sensors", []):
-        sensors.append(SensorColumn(**sensor_dict))
+    for s in sensors_json["sensors"]:
+        sensor = SensorColumn(
+            column_name=s["columnName"],  # camelCase from JSON
+            sensor_type=s["sensorType"],
+            sensor_direction=s["sensorDirection"],
+            height=s["height"],
+            stat_type=s["statType"],
+            unit=s["unit"],
+        )
+        sensors.append(sensor)
 
     return sensors
 
 
 def _write_parquet_with_metadata(
-    df: pl.DataFrame, filepath: Path, sensors: list[SensorColumn]
+    df: pl.DataFrame,
+    filepath: Path,
+    sensors: list[SensorColumn],
 ) -> None:
-    """Write DataFrame to Parquet with embedded sensor metadata.
+    """Write DataFrame with sensor metadata to Parquet (file-level).
 
-    Embeds sensor metadata in the Parquet file's schema metadata for
-    interoperability with the Julia implementation.
+    Embeds sensor metadata at the file level using JSON format.
+    Both Python and Julia can read this metadata format.
 
     Args:
         df: Polars DataFrame to write
         filepath: Output Parquet file path
         sensors: List of SensorColumn metadata to embed
     """
-    # Ensure parent directory exists
+    import json
+
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    # Convert sensors to dicts with camelCase keys
-    sensors_data = {
-        "sensors": [sensor.model_dump(by_alias=True) for sensor in sensors]
-    }
+    # Serialize sensors to JSON (camelCase keys)
+    sensors_list = [
+        {
+            "columnName": s.column_name,
+            "sensorType": s.sensor_type,
+            "sensorDirection": s.sensor_direction,
+            "height": s.height,
+            "statType": s.stat_type,
+            "unit": s.unit,
+        }
+        for s in sensors
+    ]
+    sensors_json = json.dumps({"sensors": sensors_list})
 
-    # Create PyArrow table from Polars DataFrame
+    # Write DataFrame
     table = df.to_arrow()
 
-    # Update schema metadata with sensor information
-    metadata = table.schema.metadata or {}
-    metadata[b"cleanmast_sensors"] = json.dumps(sensors_data).encode("utf-8")
-    table = table.replace_schema_metadata(metadata)
-
-    # Write Parquet file
-    pq.write_table(table, filepath)
+    # Use ParquetWriter to add file-level metadata
+    writer = pq.ParquetWriter(filepath, table.schema)
+    writer.add_key_value_metadata({"cleanmast_sensors": sensors_json})
+    writer.write_table(table)
+    writer.close()
 
 
 def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
@@ -132,7 +151,7 @@ def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeri
 
     Args:
         source: TimeSeriesSource with paths to data and sensors files
-                (sensors path is optional for Parquet - metadata is embedded)
+                (sensors file is ignored for Parquet - metadata must be embedded)
         base_dir: Base directory for resolving relative paths
 
     Returns:
@@ -148,15 +167,16 @@ def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeri
     if not data_path.exists():
         raise FileNotFoundError(f"Data file not found: {data_path}")
 
-    # Try to load sensors from embedded metadata first
+    # Parquet reads sensors ONLY from column metadata (NO external sensor files)
     try:
         sensors = _extract_sensors_from_parquet(data_path)
-    except Exception:
-        # Fall back to sensors file if embedded metadata fails
-        sensors_path = _resolve_path(source.sensors, base_dir)
-        if not sensors_path.exists():
-            raise FileNotFoundError(f"Sensors file not found: {sensors_path}")
-        sensors = _load_sensors_from_file(sensors_path)
+    except ValueError as e:
+        # Re-raise with filename for clarity
+        raise ValueError(
+            f"No sensor metadata in Parquet file: {data_path}. "
+            f"Parquet files must have embedded column-level metadata. "
+            f"Original error: {e}"
+        ) from e
 
     # Load Parquet with polars
     df = pl.read_parquet(data_path)
@@ -244,6 +264,10 @@ def load_timeseries(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
         return load_timeseries_parquet(source, base_dir)
     else:
         # CSV format
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
         sensors_path = _resolve_path(source.sensors, base_dir)
 
         # Check files exist
@@ -294,6 +318,10 @@ def save_timeseries(
         save_timeseries_parquet(source, base_dir, data)
     else:
         # CSV format
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
         sensors_path = _resolve_path(source.sensors, base_dir)
 
         # Ensure parent directories exist

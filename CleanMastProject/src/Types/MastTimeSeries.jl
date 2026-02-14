@@ -233,34 +233,6 @@ function extract_sensors_from_parquet(ds::Parquet2.Dataset)::Vector{SensorColumn
     return sensors
 end
 
-"""
-    sensors_to_column_metadata(sensors::Vector{SensorColumn})::Dict{String, Dict{String, String}}
-
-Convert sensor definitions to Parquet column metadata format.
-
-# Arguments
-- `sensors::Vector{SensorColumn}`: List of sensors
-
-# Returns
-- `Dict{String, Dict{String, String}}`: Column metadata dictionary for Parquet2.writefile
-"""
-function sensors_to_column_metadata(sensors::Vector{SensorColumn})::Dict{String, Dict{String, String}}
-    metadata = Dict{String, Dict{String, String}}()
-    
-    for sensor in sensors
-        col_name = String(sensor.columnName)
-        metadata[col_name] = Dict{String, String}(
-            "sensorType" => sensor.sensorType,
-            "sensorDirection" => sensor.sensorDirection,
-            "height" => string(sensor.height),
-            "statType" => sensor.statType,
-            "unit" => sensor.unit
-        )
-    end
-    
-    return metadata
-end
-
 function resolve_absolute_path(source::TimeSeriesSource, base_dir::String) :: TimeSeriesSource
     data_path = joinpath(base_dir, source.data)
     sensors_path = isnothing(source.sensors) ? nothing : joinpath(base_dir, source.sensors)
@@ -325,7 +297,25 @@ end
 Load time series data from Parquet format with embedded sensor metadata.
 """
 function load_timeseries_parquet(source::TimeSeriesSource)::TimeSeriesData
-    ds = Parquet2.readfile(source.data)
+    # Read file-level metadata
+    ds = Parquet2.Dataset(source.data)
+    file_meta = DataAPI.metadata(ds)
+    
+    if !haskey(file_meta, "cleanmast_sensors")
+        error("No sensor metadata in file")
+    end
+    
+    # json_string is String (JSON encoded from file)
+    json_string::String = file_meta["cleanmast_sensors"]
+    
+    # Parse JSON
+    sensors_data::Dict{String, Any} = JSON.parse(json_string)
+    sensors_list = sensors_data["sensors"]
+    
+    # Convert to SensorColumn using from_dict
+    sensors = [from_dict(SensorColumn, Dict{String, Any}(s)) for s in sensors_list]
+    
+    # Read DataFrame
     df = DataFrame(ds)
     
     # Clean column names - remove null bytes that can come from Parquet metadata
@@ -339,9 +329,6 @@ function load_timeseries_parquet(source::TimeSeriesSource)::TimeSeriesData
     if !isempty(clean_names)
         rename!(df, clean_names)
     end
-    
-    # Extract sensors from column metadata
-    sensors = extract_sensors_from_parquet(ds)
     
     return TimeSeriesData(df, sensors)
 end
@@ -394,12 +381,17 @@ end
 Save time series data to Parquet format with embedded sensor metadata.
 """
 function save_timeseries_parquet(output_path::String, data::TimeSeriesData)
-    column_metadata = sensors_to_column_metadata(data.sensors)
+    # Serialize sensors to JSON using to_dict
+    sensors_list::Vector{Dict{String, Any}} = [to_dict(s) for s in data.sensors]
     
+    # sensors_json is String (JSON encoded)
+    sensors_json::String = JSON.json(Dict("sensors" => sensors_list))
+    
+    # Write to file-level metadata (NOT column_metadata)
     Parquet2.writefile(
         output_path,
         data.df;
-        column_metadata=column_metadata
+        metadata=Dict{String, String}("cleanmast_sensors" => sensors_json)
     )
 end
 

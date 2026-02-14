@@ -169,82 +169,56 @@
 
 跨测风塔重构的核心实现位于 `src/TrainReconstructCross/` 和 `src/ReconstructCross/` 目录。
 
-#### 数据覆盖分析 (`DataCoverage.jl`)
+#### 数据覆盖分析
 
-**1. 重叠期计算**
+**重叠期计算**
 
-```julia
-function analyze_mast_pair_coverage(target_ts::TimeSeriesData, source_ts::TimeSeriesData)
-    # 使用最高层风速传感器进行覆盖分析
-    target_highest_sensor = find_highest_wind_speed_sensor(target_ts.sensors)
-    source_highest_sensor = find_highest_wind_speed_sensor(source_ts.sensors)
-    
-    # 计算重叠时间戳
-    overlapped_timestamps = intersect(Set(target_valid_timestamps), Set(source_valid_timestamps))
-    
-    # 重叠天数计算（基于10分钟间隔）
-    overlap_days = (concurrent_records * 10.0) / (60.0 * 24.0)
-    
-    # 覆盖率计算
-    coverage_percentage = (concurrent_records / potential_timestamps) * 100.0
-end
-```
+实现见 `src/TrainReconstructCross/DataCoverage.jl`。
+
+该模块分析两个测风塔之间的时间序列重叠情况和数据可用性：
+
+1. **最高层传感器定位**：从各塔传感器列表中筛选出最高层的风速传感器（statType为avg）
+2. **有效时间戳提取**：获取每个传感器具有有效数据（非缺失）的时间戳列表
+3. **重叠时间戳计算**：取两组时间戳的交集，得到共同的观测时间段
+4. **重叠天数计算**：基于10分钟间隔统计，重叠天数 = 并发记录数 × 10分钟 ÷ (60×24)
+5. **覆盖率计算**：覆盖率 = 实际重叠记录数 ÷ 理论潜在记录数 × 100%
 
 **关键参数**：
 - 使用最高层风速传感器（avg类型）进行覆盖分析
 - 时间间隔：10分钟
 - 覆盖率 = 实际重叠记录数 / 理论潜在记录数
 
-#### 风速相关性分析 (`CrossMastSpeedCorrelation.jl`)
+#### 风速相关性分析
 
-**2. 相关性计算**
+**相关性计算**
 
-```julia
-function analyze_sensor_pair_correlation(target_ts, source_ts, target_sensor, source_sensor)
-    # 最小数据要求
-    if nrow(merged_df) < 100
-        return nothing  # 数据不足，跳过
-    end
-    
-    # 皮尔逊相关系数
-    correlation = cor(valid_target, valid_source)
-    
-    # 线性回归：target = slope * source + intercept
-    model = lm(@formula(target ~ source), regression_df)
-    slope = coef(model)[2]
-    intercept = coef(model)[1]
-end
-```
+实现见 `src/TrainReconstructCross/CrossMastSpeedCorrelation.jl`。
 
-**3. 模型训练与筛选**
+该模块分析两塔之间风速传感器的相关性并建立线性回归模型：
 
-```julia
-function train(::Type{CrossMastSpeedModel}, params, target_ts, source_ts)
-    # 筛选条件
-    qualified_correlations = filter(correlations) do corr
-        corr.data_points >= params.min_data_points &&
-        corr.correlation >= params.min_correlation
-    end
-    
-    # 按相关性降序排序
-    sort!(qualified_correlations, by = r -> r.correlation, rev = true)
-end
-```
+1. **传感器配对**：遍历目标塔与源塔之间所有风速传感器组合
+2. **数据合并**：按时间戳内连接两个塔的传感器数据
+3. **数据量验证**：要求最少100个有效并发数据点，否则跳过
+4. **皮尔逊相关系数**：计算目标与源风速的线性相关程度
+5. **线性回归拟合**：建立预测模型：目标值 = 斜率 × 源值 + 截距
 
-**4. 重构执行**
+**模型训练与筛选**
 
-```julia
-function reconstruct(model::CrossMastSpeedModel, source_ts::TimeSeriesData)
-    # 仅填补缺失值，不覆盖已有数据
-    reconstruct_mask = ismissing.(result_df[!, target_col]) .& .!ismissing.(source_ts.df[!, source_col])
-    
-    # 重构公式
-    reconstruction = pair.slope .* source_data .+ pair.intercept
-    
-    # 风速限制在 [0, 50] m/s
-    reconstruction = clamp.(reconstruction, 0.0, 50.0)
-end
-```
+训练函数根据配置参数筛选合格的传感器配对：
+
+1. **相关性阈值过滤**：保留相关系数 ≥ 最小相关系数阈值的配对
+2. **数据量过滤**：保留有效数据点 ≥ 最小数据点要求的配对
+3. **排序优化**：按相关系数降序排列，优先使用高相关性配对
+4. **模型构建**：将合格配对组合成完整的跨塔风速模型
+
+**重构执行**
+
+重构函数应用训练好的模型填补目标塔缺失数据：
+
+1. **缺失值识别**：仅对目标列中缺失且源数据有效的时间点进行重构
+2. **线性变换**：使用模型斜率和截距计算推算值：重构值 = 斜率 × 源值 + 截距
+3. **合理性约束**：将重构风速限制在 [0, 50] m/s 物理范围内
+4. **渐进式填补**：按优先级顺序应用多个配对，仅填补仍为缺失的位置
 
 #### 关键参数
 

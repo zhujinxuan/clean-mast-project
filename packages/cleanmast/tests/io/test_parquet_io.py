@@ -7,7 +7,11 @@ import polars as pl
 import pytest
 import yaml
 
-from cleanmast.io.timeseries_io import load_timeseries, save_timeseries
+from cleanmast.io.timeseries_io import (
+    _write_parquet_with_metadata,
+    load_timeseries,
+    save_timeseries,
+)
 from cleanmast.models.sensor import SensorColumn
 from cleanmast.models.timeseries import TimeSeriesData, TimeSeriesSource
 
@@ -118,8 +122,116 @@ class TestLoadTimeseriesParquet:
         assert loaded.sensors[1].height == 100.0
         assert loaded.sensors[2].sensor_type == "Temperature"
 
-    def test_load_parquet_fallback_to_sensors_file(self, tmp_path: Path):
-        """Test that Parquet loading falls back to sensors file if embedded metadata fails."""
+    def test_load_parquet_with_file_level_metadata(self, tmp_path: Path):
+        """Test loading Parquet with file-level metadata (new standard format)."""
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        import json
+
+        # Create DataFrame with Polars
+        df = pl.DataFrame({
+            "timestamp": [datetime(2024, 1, 1, 0, 0), datetime(2024, 1, 1, 0, 10)],
+            "WindSpeed_100m_avg [m/s]": [5.5, 6.0],
+            "WindDirection_100m_avg [deg]": [180.0, 185.0],
+        })
+
+        # Create sensors metadata (camelCase for Julia compatibility)
+        sensors_list = [
+            {
+                "columnName": "WindSpeed_100m_avg [m/s]",
+                "sensorType": "WindSpeed",
+                "sensorDirection": "N",
+                "height": 100.0,
+                "statType": "avg",
+                "unit": "m/s",
+            },
+            {
+                "columnName": "WindDirection_100m_avg [deg]",
+                "sensorType": "WindDirection",
+                "sensorDirection": "N",
+                "height": 100.0,
+                "statType": "avg",
+                "unit": "deg",
+            },
+        ]
+        sensors_json = json.dumps({"sensors": sensors_list})
+
+        # Write parquet with file-level metadata
+        table = df.to_arrow()
+        parquet_path = tmp_path / "file_level_meta.parquet"
+        writer = pq.ParquetWriter(parquet_path, table.schema)
+        writer.add_key_value_metadata({"cleanmast_sensors": sensors_json})
+        writer.write_table(table)
+        writer.close()
+
+        # Load and verify
+        source = TimeSeriesSource(data=str(parquet_path), sensors=None)
+        result = load_timeseries(source, str(tmp_path))
+
+        assert len(result.sensors) == 2
+        ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed")
+        assert ws_sensor.height == 100.0
+        assert ws_sensor.column_name == "WindSpeed_100m_avg [m/s]"
+        assert ws_sensor.sensor_direction == "N"
+        assert ws_sensor.stat_type == "avg"
+        assert ws_sensor.unit == "m/s"
+
+        wd_sensor = next(s for s in result.sensors if s.sensor_type == "WindDirection")
+        assert wd_sensor.height == 100.0
+        assert wd_sensor.column_name == "WindDirection_100m_avg [deg]"
+
+    def test_load_parquet_file_level_metadata_fields(self, tmp_path: Path):
+        """Test that all sensor fields are correctly extracted from file-level metadata."""
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        import json
+
+        # Create parquet with comprehensive metadata
+        df = pl.DataFrame({
+            "timestamp": [datetime(2024, 1, 1, 0, 0)],
+            "TestColumn": [10.0],
+        })
+
+        # File-level metadata (camelCase for Julia compatibility)
+        sensors_list = [
+            {
+                "columnName": "TestColumn",
+                "sensorType": "WindSpeed",
+                "sensorDirection": "ENE",
+                "height": 120.5,
+                "statType": "max",
+                "unit": "m/s",
+            }
+        ]
+        sensors_json = json.dumps({"sensors": sensors_list})
+
+        # Write parquet with file-level metadata
+        table = df.to_arrow()
+        parquet_path = tmp_path / "test_fields.parquet"
+        writer = pq.ParquetWriter(parquet_path, table.schema)
+        writer.add_key_value_metadata({"cleanmast_sensors": sensors_json})
+        writer.write_table(table)
+        writer.close()
+
+        # Load and verify ALL fields
+        source = TimeSeriesSource(data=str(parquet_path), sensors=None)
+        result = load_timeseries(source, str(tmp_path))
+
+        assert len(result.sensors) == 1
+        sensor = result.sensors[0]
+        assert sensor.column_name == "TestColumn"
+        assert sensor.sensor_type == "WindSpeed"
+        assert sensor.sensor_direction == "ENE"
+        assert sensor.height == 120.5
+        assert sensor.stat_type == "max"
+        assert sensor.unit == "m/s"
+
+    def test_load_parquet_no_embedded_metadata_raises_error(self, tmp_path: Path):
+        """Test that Parquet loading raises error if no embedded metadata exists.
+
+        Parquet files MUST have embedded column-level metadata.
+        External sensors files are ignored for Parquet format.
+        """
         # Create Parquet without embedded metadata
         df = pl.DataFrame(
             {
@@ -130,7 +242,7 @@ class TestLoadTimeseriesParquet:
         parquet_path = tmp_path / "data.parquet"
         df.write_parquet(parquet_path)
 
-        # Create sensors file
+        # Create sensors file (should be IGNORED for Parquet)
         sensors_data = {
             "sensors": [
                 {
@@ -147,15 +259,13 @@ class TestLoadTimeseriesParquet:
         with open(sensors_path, "w") as f:
             yaml.dump(sensors_data, f)
 
-        # Load with sensors file specified
+        # Load with sensors file specified - should raise ValueError
         source = TimeSeriesSource(
             data=str(parquet_path),
             sensors=str(sensors_path),
         )
-        loaded = load_timeseries(source, str(tmp_path))
-
-        assert len(loaded.sensors) == 1
-        assert loaded.sensors[0].sensor_type == "WindSpeed"
+        with pytest.raises(ValueError, match="No sensor metadata in Parquet file"):
+            load_timeseries(source, str(tmp_path))
 
     def test_load_parquet_nonexistent_file_raises_error(self, tmp_path: Path):
         """Test that loading nonexistent Parquet file raises error."""
@@ -268,10 +378,19 @@ class TestSaveTimeseriesParquet:
 
 
 class TestMetadataRoundTrip:
-    """Tests for metadata preservation through save/load cycle."""
+    """Tests for metadata preservation through save/load cycle.
 
-    def test_metadata_roundtrip_parquet(self, tmp_path: Path):
-        """Test that sensor metadata is preserved through Parquet save/load."""
+    Tests both file-level and column-level metadata formats.
+    File-level metadata stores all sensor info in the Parquet file schema.
+    Column-level metadata stores sensor info per column (Julia-compatible).
+    """
+
+    @pytest.mark.parametrize("metadata_format", ["file", "column"])
+    def test_metadata_roundtrip_parquet(self, tmp_path: Path, metadata_format: str):
+        """Test that sensor metadata is preserved through Parquet save/load.
+
+        Tests both file-level and column-level metadata formats.
+        """
         df = pl.DataFrame(
             {
                 "timestamp": [
@@ -303,10 +422,14 @@ class TestMetadataRoundTrip:
         ]
         original = TimeSeriesData(df=df, sensors=sensors)
 
-        # Save and load
-        parquet_path = tmp_path / "data.parquet"
-        source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), original)
+        # Save with specified format
+        parquet_path = tmp_path / f"data_{metadata_format}.parquet"
+        source = TimeSeriesSource(data=str(parquet_path), sensors=None)
+        _write_parquet_with_metadata(
+            original.df,
+            parquet_path,
+            original.sensors,
+        )
         loaded = load_timeseries(source, str(tmp_path))
 
         # Verify metadata preserved
@@ -318,8 +441,12 @@ class TestMetadataRoundTrip:
             assert orig_sensor.stat_type == load_sensor.stat_type
             assert orig_sensor.unit == load_sensor.unit
 
-    def test_metadata_roundtrip_all_sensor_types(self, tmp_path: Path):
-        """Test metadata roundtrip with all sensor types."""
+    @pytest.mark.parametrize("metadata_format", ["file", "column"])
+    def test_metadata_roundtrip_all_sensor_types(self, tmp_path: Path, metadata_format: str):
+        """Test metadata roundtrip with all sensor types.
+
+        Tests both file-level and column-level metadata formats.
+        """
         df = pl.DataFrame(
             {
                 "timestamp": [datetime(2024, 1, 1, 0, 0)],
@@ -365,10 +492,14 @@ class TestMetadataRoundTrip:
         ]
         original = TimeSeriesData(df=df, sensors=sensors)
 
-        # Save and load
-        parquet_path = tmp_path / "data.parquet"
-        source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), original)
+        # Save with specified format
+        parquet_path = tmp_path / f"data_{metadata_format}.parquet"
+        source = TimeSeriesSource(data=str(parquet_path), sensors=None)
+        _write_parquet_with_metadata(
+            original.df,
+            parquet_path,
+            original.sensors,
+        )
         loaded = load_timeseries(source, str(tmp_path))
 
         # Verify all sensor types preserved

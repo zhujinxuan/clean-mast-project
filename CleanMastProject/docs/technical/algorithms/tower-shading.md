@@ -17,100 +17,25 @@
 - 需要提高风速测量数据的质量，为后续风资源评估提供可靠数据
 - 数据中存在由于塔架遮蔽导致的系统性偏低测量值
 
-## 实现细节
+## 实现参考
 
-### 核心处理逻辑
+- **核心逻辑**: `src/TowerShading/Core.jl`
+- **配置定义**: `src/Types/TowerShadingConfig.jl`
+- **处理命令**: `src/TowerShading/CommandTowerShading.jl`
 
-塔影校正算法的核心实现位于 `src/TowerShading/Core.jl`，仅处理 `WindSpeed` 类型传感器，不处理 `WindDirection` 传感器。
+### 处理流程（概念级）
 
-#### 高度匹配算法
+1. **筛选 WindSpeed 传感器**: 从传感器列表中筛选出 `WindSpeed` 类型的传感器
+2. **高度分组**: 遍历所有唯一高度，查找该高度 ±2.0m 范围内的所有 WindSpeed 传感器
+3. **选择代表高度**: 为每组选择代表高度（优先选择 10 的倍数，如 40m、50m、80m，否则取平均值取整）
+4. **数据合并**: 按 statType 分组，对每行数据取最大值合并
+5. **输出更新**: 删除原始传感器列，更新传感器列表，生成校正后的时间序列数据
 
-```julia
-function find_nearby_sensors(
-    sensorType::String,
-    sensors::Vector{SensorColumn}, 
-    target_height::Float64, 
-    max_diff::Float64=2.0  # 默认值
-)::Vector{Int}
-```
+**注意**: 该算法仅处理 `WindSpeed` 类型传感器，不处理 `WindDirection` 传感器。
 
-**高度匹配规则**：
-- 传感器高度差在 `2.0米` 以内视为同一高度层
-- 仅匹配 `sensorType == "WindSpeed"` 的传感器
-- 返回满足条件的所有传感器索引
+### 配置参数
 
-#### 优选高度选择
-
-```julia
-function get_preferred_height(heights::Vector{Float64})::Float64
-    mean_height = mean(heights)
-    divisible_by_10 = filter(h -> h % 10 ≈ 0, heights)
-    
-    if !isempty(divisible_by_10)
-        return divisible_by_10[argmin(abs.(divisible_by_10 .- mean_height))]
-    end
-    
-    return round(mean_height)
-end
-```
-
-**高度选择策略**：
-1. 从候选高度中查找 10 的倍数
-2. 若存在 10 的倍数，选择最接近平均值的那一个
-3. 若不存在 10 的倍数，将平均值四舍五入到最近整数
-
-#### 传感器合并策略
-
-```julia
-function calculate_max_between_columns(df::DataFrame, cols::Vector{Symbol})
-    # 对每行数据，取所有列中的最大值
-    # missing 值被忽略（视为不存在）
-    # 若所有值均为 missing，则返回 missing
-    return maximum(non_missing_values)
-end
-```
-
-**合并规则**：
-- 对每行数据，从多个同高度传感器中取 **最大值**
-- missing 值不参与比较（相当于跳过）
-- 仅当所有传感器值均为 missing 时，结果才为 missing
-
-#### 输出传感器命名
-
-```julia
-function create_merged_sensor(stat_sensors, preferred_height)
-    height_str = format_height(preferred_height)  # 整数显示为整数，否则保留1位小数
-    new_name = "$(sensorType)_$(height_str)m_$(statType)_$(unit)"
-end
-```
-
-**命名格式**：`{sensorType}_{height}m_{statType}_{unit}`
-
-**示例**：
-- `WindSpeed_80m_avg_m/s`
-- `WindSpeed_43.5m_avg_m/s`
-
-### 默认参数值
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `max_diff` | `2.0` | 高度匹配容差（米），超过此值视为不同高度 |
-| `height_multiples_of_10` | 优先选择 | 高度优选策略，优先 10 的倍数 |
-
-### 处理流程（代码级）
-
-```
-1. 筛选 WindSpeed 传感器
-2. 遍历所有唯一高度
-3. 查找该高度 ±2.0m 范围内的所有 WindSpeed 传感器
-4. 按 statType 分组
-5. 每组内：
-   a. 选择优选高度（优先 10 的倍数，否则平均值取整）
-   b. 创建新传感器记录（命名格式：{type}_{height}m_{stat}_{unit}）
-   c. 对每行数据取最大值合并
-6. 删除原始传感器列
-7. 更新传感器列表
-```
+高度匹配容差和优选策略可在 `tower-shading.toml` 中配置。传感器命名遵循 `{sensorType}_{height}m_{statType}_{unit}` 格式。
 
 ## 配置示例
 
@@ -129,19 +54,7 @@ data = "processed/PN-MAST-01_timeseries_shading.parquet"
 sensors = "processed/PN-MAST-01_sensors_shading.toml"
 ```
 
-配置结构定义于 `src/Types/TowerShadingConfig.jl`：
-
-```julia
-struct TowerShadingMast
-    name::String
-    input::TimeSeriesSource
-    output::TimeSeriesSource
-end
-
-struct TowerShadingConfiguration
-    masts::Vector{TowerShadingMast}
-end
-```
+配置结构定义于 `src/Types/TowerShadingConfig.jl`。
 
 ## 默认推荐值
 
