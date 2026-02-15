@@ -125,33 +125,58 @@ julia bin/CleanMast.jl recommend parse-sensors projects/my-windfarm
 julia bin/CleanMast.jl project parse-sensors.toml projects/my-windfarm
 ```
 
-#### 5. 运行完整处理
+#### 5. 运行 Julia 处理步骤
 
 ```nu
 julia bin/CleanMast.jl process steps --all projects/my-windfarm
 ```
 
-这将依次执行所有 18 个处理步骤：
+这将依次执行前 16 个 Julia 处理步骤：
 - 步骤 1-2: 数据清理配置和执行
 - 步骤 3-4: 塔影校正配置和执行
 - 步骤 5-6: 单塔重构配置和执行
 - 步骤 7-10: 跨塔模型训练和重构
 - 步骤 11-14: 中尺度模型训练和重构
 - 步骤 15-16: 代表年校准
-- 步骤 17-18: 风机时间序列生成
 
-##### 灵活的步骤控制
+#### 6. 运行 Python 处理步骤
+
+完成 Julia 步骤后，使用 Python CLI 执行高度填补和风机时间序列导出：
+
+```nu
+# 步骤 17：高度填补（Python）
+uv run cleanmast recommend fill-heights projects/my-windfarm
+uv run cleanmast fill-heights projects/my-windfarm/fill-heights.toml
+
+# 步骤 18：风机时间序列导出（Python）
+uv run cleanmast recommend wt-timeseries projects/my-windfarm
+uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
+```
+
+#### 7. 生成报告配置
+
+```nu
+julia bin/CleanMast.jl recommend report-all projects/my-windfarm
+```
+
+#### 8. 生成分析报告
+
+```nu
+julia bin/CleanMast.jl report all projects/my-windfarm
+```
+
+##### 灵活的步骤控制（Julia 步骤 1-16）
 
 如果需要分步骤执行或调试特定环节：
 
 ```nu
-# 查看所有可用步骤
+# 查看所有可用 Julia 步骤
 julia bin/CleanMast.jl process steps --list
 
 # 仅执行数据准备步骤 (1-6)
 julia bin/CleanMast.jl process steps --from 1 --to 6 projects/my-windfarm
 
-# 从步骤 10 开始执行到结束
+# 从步骤 10 开始执行到步骤 16
 julia bin/CleanMast.jl process steps --from 10 projects/my-windfarm
 
 # 仅执行中尺度相关步骤 (11-14)
@@ -189,6 +214,9 @@ typst compile data-quality-report.typ data-quality-report.pdf
 - **原始数据** (`raw/`) - 标准化后的时间序列数据
 - **清理数据** (`clean/`) - 去除异常值后的数据
 - **重构数据** (`reconstruct-meso/`) - 完整的长期数据序列
+- **代表年数据** (`representative-year/filled/`) - 代表年校准后数据
+- **高度填补数据** (`fill-heights/`) - Python 高度填补后数据
+- **风机时间序列** (`wt-timeseries/`) - Python 生成的 MeteoDyn 格式数据
 - **分析报告** (`report-masts/`) - 专业的风资源评估报告
 
 ## 配置

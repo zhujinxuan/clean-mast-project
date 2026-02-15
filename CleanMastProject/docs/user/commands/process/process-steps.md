@@ -16,14 +16,14 @@ julia bin/CleanMast.jl process steps [选项] <项目目录>
 
 ### 命令选项
 
-- `--all`: 执行所有处理步骤 (1-18)
-- `--from <步骤号>`: 从指定步骤开始执行 (1-18)
-- `--to <步骤号>`: 执行到指定步骤结束 (1-18)
+- `--all`: 执行所有 Julia 处理步骤 (1-16)
+- `--from <步骤号>`: 从指定步骤开始执行 (1-16)
+- `--to <步骤号>`: 执行到指定步骤结束 (1-16)
 - `--list`: 仅显示所有可用步骤，不执行任何操作
 
 ## 处理步骤列表
 
-完整的数据处理流水线包含以下 18 个步骤：
+Julia 数据处理流水线包含以下 16 个步骤：
 
 1. **recommend-clean** - 推荐数据清理配置
 2. **clean** - 使用配置规则清理数据
@@ -41,8 +41,11 @@ julia bin/CleanMast.jl process steps [选项] <项目目录>
 14. **reconstruct-meso** - 使用中尺度数据重构
 15. **recommend-representative-year** - 推荐代表年配置
 16. **representative-year** - 校准到代表年
-17. **recommend-wt-timeseries** - 推荐风机时间序列配置
-18. **wt-timeseries** - 生成 MeteoDyn 风机时间序列数据
+
+> **注意**：步骤 16 完成后，需要使用 Python CLI 执行后续步骤：
+> - **步骤 17**（Python）: `uv run cleanmast recommend fill-heights` → `uv run cleanmast fill-heights`
+> - **步骤 18**（Python）: `uv run cleanmast recommend wt-timeseries` → `uv run cleanmast wt-timeseries`
+> - **步骤 19**（Julia）: `julia bin/CleanMast.jl recommend report-all` → `julia bin/CleanMast.jl report all`
 
 ## 使用示例
 
@@ -112,7 +115,7 @@ Executed steps 5-8 (4 steps total)
 ❌ Processing stopped at step 12 due to error:
    Configuration file not found: train-meso.toml
 
-Completed: 11/18 steps
+Completed: 11/16 steps
 To resume, use: process steps --from 12
 ```
 
@@ -138,8 +141,11 @@ project/
 ├── meso-models/            # 训练的中尺度模型
 ├── reconstruct-meso/       # 中尺度重构后数据
 ├── representative-year/     # 代表年校准数据
-├── wt-timeseries/          # 风机时间序列 (Meteodyn格式)
 └── *.toml                  # 各步骤配置文件
+
+后续 Python 步骤将生成：
+- `fill-heights/`           # 高度填补后数据 (Python)
+- `wt-timeseries/`          # 风机时间序列 (Python, Meteodyn格式)
 ```
 
 ## 相关命令
@@ -152,7 +158,20 @@ project/
 - [process train-meso](train-meso.md) - 中尺度模型训练
 - [process reconstruct-meso](reconstruct-meso.md) - 中尺度重构
 - [process representative-year](representative-year.md) - 代表年校准
-- [process wt-timeseries](wt-timeseries.md) - 导出风机时间序列
+
+## 后续 Python 步骤
+
+完成 Julia 的 16 个步骤后，使用 Python CLI 执行：
+
+```bash
+# 高度填补
+uv run cleanmast recommend fill-heights <项目目录>
+uv run cleanmast fill-heights <fill-heights.toml路径>
+
+# 风机时间序列导出
+uv run cleanmast recommend wt-timeseries <项目目录>
+uv run cleanmast wt-timeseries <wt-timeseries.toml路径>
+```
 
 ## 注意事项
 

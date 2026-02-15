@@ -13,6 +13,8 @@ from .models.representative_year import (
     RepresentativeYearConfiguration,
     load_representative_year_config,
 )
+from .wt_timeseries.commands.execute import execute_wt_timeseries_cli
+from .wt_timeseries.commands.recommend import recommend_wt_timeseries_cli
 
 
 @click.group()
@@ -76,6 +78,10 @@ def recommend():
 # Register fill-heights commands
 recommend.add_command(recommend_fill_heights, "fill-heights")
 main.add_command(fill_heights, "fill-heights")
+
+# Register wt-timeseries commands
+recommend.add_command(recommend_wt_timeseries_cli, "wt-timeseries")
+main.add_command(execute_wt_timeseries_cli, "wt-timeseries")
 
 
 

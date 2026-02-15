@@ -69,6 +69,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pyyaml" },
+    { name = "tomli" },
     { name = "tomli-w" },
 ]
 
@@ -116,6 +117,7 @@ requires-dist = [
     { name = "scipy", marker = "extra == 'analysis'", specifier = ">=1.11" },
     { name = "seaborn", marker = "extra == 'visualization'", specifier = ">=0.12" },
     { name = "statsmodels", marker = "extra == 'analysis'", specifier = ">=0.14" },
+    { name = "tomli", specifier = ">=2.0" },
     { name = "tomli-w", specifier = ">=1.2.0" },
 ]
 provides-extras = ["analysis", "visualization", "reports", "dev", "all"]

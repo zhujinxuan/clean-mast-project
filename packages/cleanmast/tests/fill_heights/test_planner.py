@@ -23,6 +23,7 @@ from cleanmast.fill_heights.recommend.planner import (
     _load_and_fit,
     generate_dual_configs,
 )
+from cleanmast.io.timeseries_io import save_timeseries_parquet
 from cleanmast.models.sensor import SensorColumn
 from cleanmast.models.timeseries import TimeSeriesData
 
@@ -60,9 +61,7 @@ class TestGenerateDualConfigs:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        df.write_parquet(tmp_path / "reconstruct-meso/M01.parquet")
-
-        # Create sensors file
+        # Create sensors
         sensors = [
             SensorColumn(
                 column_name="WS_50m_avg",
@@ -113,9 +112,16 @@ class TestGenerateDualConfigs:
                 unit="deg",
             ),
         ]
-        import yaml
-        with open(tmp_path / "reconstruct-meso/M01.sensors.yaml", "w") as f:
-            yaml.dump({"sensors": [s.model_dump(by_alias=True) for s in sensors]}, f)
+
+        # Save parquet with embedded sensor metadata
+        save_timeseries_parquet(
+            source=TimeSeriesSource(
+                data=str(tmp_path / "reconstruct-meso/M01.parquet"),
+                sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
+            ),
+            base_dir=str(tmp_path),
+            data=TimeSeriesData(df=df, sensors=sensors),
+        )
 
         return mock_config
 
@@ -148,9 +154,7 @@ class TestGenerateDualConfigs:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        df.write_parquet(tmp_path / "rep-year/M01.parquet")
-
-        # Create sensors file
+        # Create sensors
         sensors = [
             SensorColumn(
                 column_name="WS_50m_avg",
@@ -201,9 +205,16 @@ class TestGenerateDualConfigs:
                 unit="deg",
             ),
         ]
-        import yaml
-        with open(tmp_path / "rep-year/M01.sensors.yaml", "w") as f:
-            yaml.dump({"sensors": [s.model_dump(by_alias=True) for s in sensors]}, f)
+
+        # Save parquet with embedded sensor metadata
+        save_timeseries_parquet(
+            source=TimeSeriesSource(
+                data=str(tmp_path / "rep-year/M01.parquet"),
+                sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
+            ),
+            base_dir=str(tmp_path),
+            data=TimeSeriesData(df=df, sensors=sensors),
+        )
 
         return mock_config
 
@@ -264,8 +275,6 @@ class TestLoadAndFit:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        df.write_parquet(tmp_path / "test/M01.parquet")
-
         sensors = [
             SensorColumn(
                 column_name="WS_50m_avg",
@@ -316,9 +325,16 @@ class TestLoadAndFit:
                 unit="deg",
             ),
         ]
-        import yaml
-        with open(tmp_path / "test/M01.sensors.yaml", "w") as f:
-            yaml.dump({"sensors": [s.model_dump(by_alias=True) for s in sensors]}, f)
+
+        # Save parquet with embedded sensor metadata
+        save_timeseries_parquet(
+            source=TimeSeriesSource(
+                data=str(tmp_path / "test/M01.parquet"),
+                sensors=str(tmp_path / "test/M01.sensors.yaml"),
+            ),
+            base_dir=str(tmp_path),
+            data=TimeSeriesData(df=df, sensors=sensors),
+        )
 
         # Create mock config
         mock_mast = MagicMock()
@@ -616,7 +632,6 @@ class TestBothConfigsUseSameFittedParams:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        df_meso.write_parquet(tmp_path / "reconstruct-meso/M01.parquet")
 
         # Create rep-year data (different values, but same structure)
         df_rep = pl.DataFrame({
@@ -633,7 +648,6 @@ class TestBothConfigsUseSameFittedParams:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        df_rep.write_parquet(tmp_path / "rep-year/M01.parquet")
 
         sensors = [
             SensorColumn(
@@ -685,10 +699,24 @@ class TestBothConfigsUseSameFittedParams:
                 unit="deg",
             ),
         ]
-        import yaml
-        for subdir in ["reconstruct-meso", "rep-year"]:
-            with open(tmp_path / f"{subdir}/M01.sensors.yaml", "w") as f:
-                yaml.dump({"sensors": [s.model_dump(by_alias=True) for s in sensors]}, f)
+
+        # Save both parquets with embedded sensor metadata
+        save_timeseries_parquet(
+            source=TimeSeriesSource(
+                data=str(tmp_path / "reconstruct-meso/M01.parquet"),
+                sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
+            ),
+            base_dir=str(tmp_path),
+            data=TimeSeriesData(df=df_meso, sensors=sensors),
+        )
+        save_timeseries_parquet(
+            source=TimeSeriesSource(
+                data=str(tmp_path / "rep-year/M01.parquet"),
+                sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
+            ),
+            base_dir=str(tmp_path),
+            data=TimeSeriesData(df=df_rep, sensors=sensors),
+        )
 
         # Create mock configs
         mock_mast_meso = MagicMock()

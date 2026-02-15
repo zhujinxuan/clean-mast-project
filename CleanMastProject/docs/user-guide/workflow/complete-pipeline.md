@@ -33,20 +33,20 @@
 │        ↓                  ↓                  ↓                  ↓        │
 │ train-reconstruct-  reconstruct-cross/    meso-models/      reconstruct- │
 │      cross/                                                  meso/        │
-│  ┌─────────────┐    ┌─────────────┐                                         │
-│  │ 代表年校准  │───▶│ 报告生成   │                                         │
-│  │representative│    │  report    │                                         │
-│  │    -year    │    │    all     │                                         │
-│  └─────────────┘    └─────────────┘                                         │
-│        ↓                  ↓                                                │
-│ representative-      report-masts/                                          │
-│     year/                                                           │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐ │
+│  │ 代表年校准  │───▶│  高度填补   │───▶│风机时间序列 │───▶│  报告生成   │ │
+│  │representative│    │ fill-heights│    │ wt-timeseries│   │   report    │ │
+│  │    -year    │    │   (Python)  │    │   (Python)   │    │   (Julia)   │ │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
+│        ↓                  ↓                  ↓                  ↓          │
+│ representative-      fill-heights/      wt-timeseries/     report-masts/   │
+│     year/filled/                                                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 处理阶段概览
 
-流水线按功能可划分为六个主要阶段，每个阶段承担特定的数据处理任务。第一阶段负责数据准备，将各种格式的原始数据解析为统一的结构化格式；第二阶段进行数据质量控制，应用规则检测和标记异常数据；第三阶段处理塔影效应，校正测风塔结构对测量的影响；第四阶段利用传感器相关性填补数据缺口；第五阶段结合中尺度数据扩展时间序列覆盖范围；第六阶段进行长期校准并生成最终报告。
+流水线按功能可划分为八个主要阶段，每个阶段承担特定的数据处理任务。第一阶段负责数据准备，将各种格式的原始数据解析为统一的结构化格式；第二阶段进行数据质量控制，应用规则检测和标记异常数据；第三阶段处理塔影效应，校正测风塔结构对测量的影响；第四阶段利用传感器相关性填补数据缺口；第五阶段结合中尺度数据扩展时间序列覆盖范围；第六阶段进行长期校准；第七阶段使用 Python 工具进行高度填补；第八阶段导出风机时间序列；最后使用 Julia 生成分析报告。
 
 每个阶段都遵循"推荐配置 → 执行处理 → 验证输出"的三步模式。使用 `recommend` 命令可以快速生成适合项目特点的配置文件，执行完处理步骤后应检查输出目录和统计文件确认处理效果。这种标准化的流程设计使得项目管理更加规范，也便于问题追溯和结果复现。
 
@@ -404,35 +404,67 @@ julia bin/CleanMast.jl process representative-year projects/my-windfarm/represen
 
 代表年校准的处理时间取决于数据量和扇区数量，通常为中尺度重构时间的 1.5 倍左右。
 
-## 阶段九：风机时间序列导出（可选）
+## 阶段九：高度填补（Python）
 
 ### 任务清单
 
-- [ ] 使用 `recommend wt-timeseries` 生成导出配置
-- [ ] 执行 `process wt-timeseries` 导出 MeteoDyn 格式数据
+- [ ] 使用 `cleanmast recommend fill-heights` 生成填补配置
+- [ ] 执行 `cleanmast fill-heights` 进行高度填补
+- [ ] 验证填补后的数据完整性
+
+### 输入与输出
+
+**输入文件**：`representative-year/filled/` 目录下的代表年校准后数据。
+
+**输出文件**：`fill-heights/<测风塔名称>.parquet` 填补后的数据、`fill-heights/<测风塔名称>.sensors.yaml` 更新后的传感器配置。
+
+### 执行命令
+
+```bash
+# 生成高度填补配置（基于代表年数据）
+uv run cleanmast recommend fill-heights projects/my-windfarm
+
+# 执行高度填补
+uv run cleanmast fill-heights projects/my-windfarm/fill-heights.toml
+```
+
+### 功能说明
+
+高度填补使用 Python 实现，支持四种策略：外推（extrapolation）、插值（interpolation）、混合（mixed）和最近邻（nearest）。根据目标高度与现有传感器高度的关系，自动选择最合适的填补方法。此步骤生成完整的高度覆盖数据，为后续风机时间序列导出做准备。
+
+### 验证检查点
+
+填补完成后，检查以下内容：填补数据的时间连续性、各高度层数据分布的合理性、填补值与原始数据的重构一致性。
+
+## 阶段十：风机时间序列导出（Python）
+
+### 任务清单
+
+- [ ] 使用 `cleanmast recommend wt-timeseries` 生成导出配置
+- [ ] 执行 `cleanmast wt-timeseries` 导出 MeteoDyn 格式数据
 - [ ] 验证导出数据的格式正确性
 
 ### 输入与输出
 
-**输入文件**：`representative-year/` 目录下的校准后数据。
+**输入文件**：`fill-heights/` 目录下的填补后数据。
 
-**输出文件**：`wt-timeseries/<风机名称>.csv` MeteoDyn 格式的时间序列数据。
+**输出文件**：`wt-timeseries/<测风塔名称>/` 目录下的 MeteoDyn 格式 CSV 文件和 TI 矩阵文件。
 
 ### 执行命令
 
 ```bash
 # 生成风机时间序列导出配置
-julia bin/CleanMast.jl recommend wt-timeseries projects/my-windfarm
+uv run cleanmast recommend wt-timeseries projects/my-windfarm
 
 # 导出 MeteoDyn 时间序列
-julia bin/CleanMast.jl process wt-timeseries projects/my-windfarm/wt-timeseries.toml
+uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
 ```
 
 ### 适用场景
 
-此步骤用于将处理后的风数据导出为第三方风资源评估软件（如 MeteoDyn WT）所需的格式。如果项目不需要此类集成，可以跳过此步骤。
+此步骤用于将处理后的风数据导出为第三方风资源评估软件（如 MeteoDyn WT）所需的格式。WT TimeSeries 模块使用 Python 实现，支持生成符合 MeteoDyn 格式要求的时间序列数据和湍流强度矩阵。
 
-## 阶段十：报告生成
+## 阶段十一：报告生成（Julia）
 
 ### 任务清单
 
@@ -490,38 +522,60 @@ typst compile data-quality-report.typ data-quality-report.pdf
 
 ## 完整流水线执行
 
-### 一键执行全部步骤
+### 混合执行模式
 
-对于完整项目，可以使用 `process steps --all` 命令按顺序执行所有 18 个处理步骤：
+当前 CleanMast 采用 Julia 和 Python 混合执行模式：
+- **Julia** (步骤 1-16)：数据解析、清理、重构、中尺度处理、代表年校准
+- **Python** (步骤 17-18)：高度填补、风机时间序列导出
+- **Julia** (步骤 19)：报告生成
+
+### Julia 处理步骤 (1-16)
+
+使用 `process steps` 命令执行前 16 个 Julia 处理步骤：
 
 ```bash
+# 执行所有 Julia 步骤（1-16）
 julia bin/CleanMast.jl process steps --all projects/my-windfarm
-```
 
-此命令会自动依次执行推荐配置生成和数据处理步骤，每个步骤完成后会显示执行状态。遇到错误时会停止并提示恢复命令。
-
-### 分步执行模式
-
-在开发和调试阶段，建议使用步骤范围控制功能分批执行：
-
-```bash
 # 仅执行数据准备步骤 (1-6)
 julia bin/CleanMast.jl process steps --from 1 --to 6 projects/my-windfarm
 
-# 仅执行模型训练步骤 (7-12)
-julia bin/CleanMast.jl process steps --from 7 --to 12 projects/my-windfarm
+# 仅执行重构相关步骤 (7-16)
+julia bin/CleanMast.jl process steps --from 7 --to 16 projects/my-windfarm
 
 # 从特定步骤继续执行
 julia bin/CleanMast.jl process steps --from 12 projects/my-windfarm
 ```
 
-### 查看可用步骤列表
+### Python 处理步骤 (17-18)
+
+完成 Julia 步骤后，使用 Python CLI 执行高度填补和风机时间序列导出：
+
+```bash
+# 步骤 17：高度填补（Python）
+uv run cleanmast recommend fill-heights projects/my-windfarm
+uv run cleanmast fill-heights projects/my-windfarm/fill-heights.toml
+
+# 步骤 18：风机时间序列导出（Python）
+uv run cleanmast recommend wt-timeseries projects/my-windfarm
+uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
+```
+
+### 报告生成（Julia）
+
+```bash
+# 步骤 19：生成分析报告（Julia）
+julia bin/CleanMast.jl recommend report-all projects/my-windfarm
+julia bin/CleanMast.jl report all projects/my-windfarm
+```
+
+### 查看 Julia 可用步骤列表
 
 ```bash
 julia bin/CleanMast.jl process steps --list
 ```
 
-此命令显示所有 18 个步骤的名称和描述，便于了解整体流程和选择执行范围。
+此命令显示所有 16 个 Julia 步骤的名称和描述。
 
 ## 典型时间估计
 
@@ -536,6 +590,8 @@ julia bin/CleanMast.jl process steps --list
 | 中尺度训练 | 5-30 分钟/项目 | 测风塔数量、数据量 |
 | 中尺度重构 | 1-10 分钟/塔 | 时间跨度、模型类型 |
 | 代表年校准 | 2-15 分钟/塔 | 数据量、扇区数量 |
+| 高度填补 (Python) | 1-3 分钟/塔 | 填补策略、目标高度数 |
+| 风机时间序列 (Python) | 1-5 分钟/塔 | 数据量、导出格式 |
 | 报告生成 | 5-30 分钟/项目 | 分析内容丰富程度 |
 
 ### 总体评估
@@ -548,7 +604,7 @@ julia bin/CleanMast.jl process steps --list
 
 每个处理阶段完成后，应执行以下验证操作：
 
-第一阶段数据解析后，抽样检查时间戳连续性、列名规范性以及数值范围合理性。第二阶段数据清理后，查看各类规则的触发统计，分析异常数据的时空分布模式。第三阶段塔影校正后，检查风向玫瑰图对称性和不同高度数据的相关性变化。第四阶段单塔重构后，评估填补数据比例和重构值的统计特征。第五至第七阶段涉及中尺度处理时，重点检查相关性模型质量指标和重构不确定度。第八阶段代表年校准后，验证各扇区校准因子的合理性。最终的报告生成阶段应全面审核风资源评估结论的可信度。
+第一阶段数据解析后，抽样检查时间戳连续性、列名规范性以及数值范围合理性。第二阶段数据清理后，查看各类规则的触发统计，分析异常数据的时空分布模式。第三阶段塔影校正后，检查风向玫瑰图对称性和不同高度数据的相关性变化。第四阶段单塔重构后，评估填补数据比例和重构值的统计特征。第五至第七阶段涉及中尺度处理时，重点检查相关性模型质量指标和重构不确定度。第八阶段代表年校准后，验证各扇区校准因子的合理性。第九阶段高度填补（Python）后，检查填补数据的完整性和各高度层分布合理性。第十阶段风机时间序列导出（Python）后，验证 MeteoDyn 格式文件的正确性。最终的报告生成阶段应全面审核风资源评估结论的可信度。
 
 ### 错误处理与恢复
 
