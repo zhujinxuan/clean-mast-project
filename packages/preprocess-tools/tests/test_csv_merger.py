@@ -58,6 +58,7 @@ class TestConfigLoading:
         assert config.output == "../../merged_output.csv"
         assert config.duplicate_handling == "keep_last"
         assert config.input.delim == ","
+        assert config.input.datetime is not None
         assert config.input.datetime.col == "DateTime"
 
     def test_load_config_with_separate_datetime(self, configs_dir):
@@ -65,6 +66,8 @@ class TestConfigLoading:
         config_path = configs_dir / "csv_merger_separate_datetime.toml"
         config = load_config(str(config_path))
 
+        assert config.input.date is not None
+        assert config.input.time is not None
         assert config.input.date.col == "Date"
         assert config.input.time.col == "Time"
         assert config.input.date.format == "%Y-%m-%d"

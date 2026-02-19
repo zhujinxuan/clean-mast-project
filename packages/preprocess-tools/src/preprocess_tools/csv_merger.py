@@ -99,7 +99,8 @@ def detect_encoding(file_path: str) -> str:
     with open(file_path, 'rb') as f:
         raw_data = f.read()
     result = chardet.detect(raw_data)
-    return result['encoding']
+    encoding = result.get('encoding')
+    return encoding if encoding is not None else 'utf-8'
 
 
 def convert_to_utf8(file_path: str, detected_encoding: str) -> str:
@@ -131,6 +132,7 @@ def find_header_line(file_path: str, headline_config: HeadlineConfig) -> int:
     # Use regex to find header line
     with open(file_path, 'r', encoding='utf-8') as f:
         for line_num, line in enumerate(f):
+            assert headline_config.regex is not None, "regex must be set when number is None"
             if re.search(headline_config.regex, line):
                 return line_num
 
@@ -338,6 +340,9 @@ def create_timestamp_column(df: pl.DataFrame, config: CsvMergerConfig) -> pl.Dat
             df = df.drop(original_col)
     else:
         # Combine date and time columns
+        assert config.input.date is not None, "date config required when datetime is None"
+        assert config.input.time is not None, "time config required when datetime is None"
+
         date_col_name = config.input.date.col
         time_col_name = config.input.time.col
 

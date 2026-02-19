@@ -99,7 +99,7 @@ class TestTypeNormalization:
 
         assert result["WindSpeed"].dtype == pl.Float64
         assert result["WindSpeed"][0] == 5.2
-        assert result["WindSpeed"][1] is None or pl.is_null(result["WindSpeed"][1])
+        assert result["WindSpeed"][1] is None
 
     def test_normalize_integer_to_float(self):
         """Test converting integer columns to float."""
