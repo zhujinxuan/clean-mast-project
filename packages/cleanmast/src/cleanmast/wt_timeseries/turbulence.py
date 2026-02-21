@@ -14,6 +14,7 @@ The module supports:
 import logging
 from pathlib import Path
 
+import dataframely as dy
 import polars as pl
 
 from ..io.timeseries_io import load_timeseries
@@ -41,6 +42,43 @@ DIRECTION_16_SECTORS = [
     "NW",
     "NNW",
 ]
+
+
+class TIMatrixSchema(dy.Schema):
+    """Schema for TI matrix DataFrame validation.
+
+    This schema validates the structure of the TI (Turbulence Intensity) matrix
+    returned by calculate_ti_matrix(). The matrix contains:
+    - v_max: Wind speed bin upper bound
+    - 16 direction sectors: Mean TI values (0-1 range)
+
+    Example:
+        >>> df = pl.DataFrame({
+        ...     "v_max": [1.0, 2.0, 3.0],
+        ...     "N": [0.1, 0.12, 0.15],
+        ...     "NNE": [0.1, 0.12, 0.15],
+        ...     # ... all 16 sectors
+        ... })
+        >>> validated = TIMatrixSchema.validate(df, cast=True)
+    """
+
+    v_max = dy.Float64(nullable=False)
+    N = dy.Float64(nullable=False, min=0.0, max=1.0)
+    NNE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    NE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    ENE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    E = dy.Float64(nullable=False, min=0.0, max=1.0)
+    ESE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    SE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    SSE = dy.Float64(nullable=False, min=0.0, max=1.0)
+    S = dy.Float64(nullable=False, min=0.0, max=1.0)
+    SSW = dy.Float64(nullable=False, min=0.0, max=1.0)
+    SW = dy.Float64(nullable=False, min=0.0, max=1.0)
+    WSW = dy.Float64(nullable=False, min=0.0, max=1.0)
+    W = dy.Float64(nullable=False, min=0.0, max=1.0)
+    WNW = dy.Float64(nullable=False, min=0.0, max=1.0)
+    NW = dy.Float64(nullable=False, min=0.0, max=1.0)
+    NNW = dy.Float64(nullable=False, min=0.0, max=1.0)
 
 
 def _direction_to_sector(wd_col: pl.Expr) -> pl.Expr:
@@ -228,7 +266,7 @@ def calculate_ti_matrix(
     sd_col: str,
     wd_col: str,
     wind_speed_bins: list[float],
-) -> pl.DataFrame:
+) -> dy.DataFrame[TIMatrixSchema]:
     """Calculate TI matrix from raw wind data.
 
     Creates a matrix with wind speed bins as rows and 16 direction sectors
@@ -247,7 +285,7 @@ def calculate_ti_matrix(
         wind_speed_bins: List of wind speed bin upper bounds (e.g., [1.0, 2.0, ..., 28.0])
 
     Returns:
-        DataFrame with columns:
+        ValidatedFrame with TIMatrixSchema containing columns:
         - v_max: Wind speed bin upper bound
         - N, NNE, NE, ..., NNW: Mean TI values for 16 sectors (0-1 range)
 
@@ -284,7 +322,7 @@ def calculate_ti_matrix(
         data: dict[str, list] = {"v_max": wind_speed_bins}
         for sector_name in DIRECTION_16_SECTORS:
             data[sector_name] = [0.1] * len(wind_speed_bins)
-        return pl.DataFrame(data)
+        return TIMatrixSchema.validate(pl.DataFrame(data), cast=True)
 
     # Calculate overall mean TI for fallback
     mean_ti = working_df.select(pl.col("ti").mean()).item()
@@ -299,32 +337,55 @@ def calculate_ti_matrix(
         pl.col("ti").count().alias("count"),
     ])
 
-    # Build the matrix
-    # Start with base DataFrame with all bins
-    result_data: dict[str, list] = {"v_max": wind_speed_bins}
+    # Filter out cells with fewer than 5 samples - these will use fallback
+    valid_agg_df = agg_df.filter(pl.col("count") >= 5)
 
-    for sector_idx, sector_name in enumerate(DIRECTION_16_SECTORS):
-        sector_column: list[float] = []
+    # Cast sector to string so pivot creates string column names
+    valid_agg_df = valid_agg_df.with_columns(pl.col("sector").cast(pl.String))
 
-        for bin_idx, _ in enumerate(wind_speed_bins):
-            # Find matching row in agg_df
-            match = agg_df.filter(
-                (pl.col("wind_bin") == bin_idx) & (pl.col("sector") == sector_idx)
-            )
+    # Use pivot to transform from long to wide format
+    pivoted_df = valid_agg_df.pivot(
+        values="ti_mean",
+        index="wind_bin",
+        on="sector",
+        aggregate_function="first"
+    )
 
-            if match.is_empty():
-                # No data for this cell, use fallback
-                sector_column.append(mean_ti)
-            else:
-                count = match[0, "count"]
-                if count >= 5:
-                    sector_column.append(float(match[0, "ti_mean"]))
-                else:
-                    sector_column.append(mean_ti)
+    # Create a base DataFrame with all bins and their v_max values
+    base_df = pl.DataFrame({
+        "wind_bin": list(range(len(wind_speed_bins))),
+        "v_max": wind_speed_bins,
+    })
 
-        result_data[sector_name] = sector_column
+    # Join with pivoted data to ensure all bins are present
+    result_df = base_df.join(pivoted_df, on="wind_bin", how="left")
 
-    return pl.DataFrame(result_data)
+    # Rename sector columns from indices (0-15) to names (N, NNE, etc.)
+    # Use a lambda to handle both integer and string column names from pivot
+    def rename_sector_column(col_name: str) -> str:
+        try:
+            idx = int(col_name)
+            if 0 <= idx < 16:
+                return DIRECTION_16_SECTORS[idx]
+        except ValueError:
+            pass
+        return col_name
+
+    result_df = result_df.rename(rename_sector_column)
+
+    # Drop wind_bin column
+    result_df = result_df.drop("wind_bin")
+
+    # Ensure all sector columns exist (add missing ones with mean_ti values)
+    for sector_name in DIRECTION_16_SECTORS:
+        if sector_name not in result_df.columns:
+            result_df = result_df.with_columns(pl.lit(mean_ti).alias(sector_name))
+
+    # Reorder columns and fill any remaining nulls with mean_ti
+    result_df = result_df.select(["v_max"] + DIRECTION_16_SECTORS)
+    result_df = result_df.fill_null(mean_ti)
+
+    return TIMatrixSchema.validate(result_df, cast=True)
 
 
 def save_meteodyn_ti(

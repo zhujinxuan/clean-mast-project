@@ -138,25 +138,25 @@ def apply_wd_fill(
     total_weight = sum(ref.weight for ref in references)
 
     # Build u expression: sum of -sin(radians(wd_at_target)) * weight
-    u_expr = sum(
+    u_expr = pl.sum_horizontal(
         [
             -(
                 (pl.col(ref.sensor.column_name) + deg_diff_per_m * (target.height - ref.sensor.height)) % 360
             ).radians().sin() * (ref.weight / total_weight)
             for ref in references
         ],
-        pl.lit(0.0)
+        ignore_nulls=False
     )
 
     # Build v expression: sum of -cos(radians(wd_at_target)) * weight
-    v_expr = sum(
+    v_expr = pl.sum_horizontal(
         [
             -(
                 (pl.col(ref.sensor.column_name) + deg_diff_per_m * (target.height - ref.sensor.height)) % 360
             ).radians().cos() * (ref.weight / total_weight)
             for ref in references
         ],
-        pl.lit(0.0)
+        ignore_nulls=False
     )
 
     # Convert back to degrees using arctan2 (returns radians) then convert to degrees

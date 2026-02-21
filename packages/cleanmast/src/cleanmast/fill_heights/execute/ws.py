@@ -121,15 +121,14 @@ def apply_ws_fill(
     total_weight = sum(ref.weight for ref in references)
 
     # Build weighted expression using polars-native operations
-    # Use pl.lit(0) as start to ensure sum always returns an expression
-    expr = sum(
+    expr = pl.sum_horizontal(
         [
             pl.col(ref.sensor.column_name)
             * ((target.height / ref.sensor.height) ** shear)
             * (ref.weight / total_weight)
             for ref in references
         ],
-        pl.lit(0.0)
+        ignore_nulls=False,
     )
 
     # Single evaluation with polars

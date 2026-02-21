@@ -336,52 +336,6 @@ def _vector_to_degrees(u: float, v: float) -> float:
     return float(degrees % 360)
 
 
-def _calculate_mean_vector_direction(
-    timeseries: TimeSeriesData, col: str
-) -> float | None:
-    """Calculate mean wind direction using vector averaging.
-
-    Vector averaging properly handles the circular nature of wind direction.
-    This avoids the problem where simple averaging of 350° and 10° gives 180°
-    instead of the correct ~0°.
-
-    Algorithm:
-    1. Convert each direction to (u, v) vector
-    2. Sum all vectors component-wise
-    3. Convert mean vector back to degrees
-
-    Args:
-        timeseries: Time series data containing the wind direction column
-        col: Column name with wind direction data (degrees)
-
-    Returns:
-        Mean wind direction in degrees, or None if no valid data
-
-    Example:
-        # Mean of 350° and 10° should be ~0° (or 360°)
-        _calculate_mean_vector_direction(ts, 'WD_80m_avg')
-        -> 0.0  # Correct!
-    """
-    if col not in timeseries.df.columns:
-        return None
-
-    values = timeseries.df[col].drop_nulls()
-    if len(values) == 0:
-        return None
-
-    # Convert all directions to vectors and sum
-    sum_u = 0.0
-    sum_v = 0.0
-
-    for wd in values:
-        u, v = _degrees_to_vector(float(wd))
-        sum_u += u
-        sum_v += v
-
-    # Mean direction from mean vector
-    return _vector_to_degrees(sum_u, sum_v)
-
-
 def calculate_wd_deg_diff(
     timeseries: TimeSeriesData,
     source_sensors: list[SensorColumn],
