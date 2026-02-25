@@ -8,6 +8,8 @@ import tomli
 import tomli_w
 
 from .fill_heights.cli import fill_heights, recommend_fill_heights
+from .report.commands import recommend_rep_ts_report
+from .report.commands.report_rep_ts import report_rep_ts
 from .models.reconstruct_meso import ReconstructMesoConfiguration
 from .models.representative_year import (
     RepresentativeYearConfiguration,
@@ -83,8 +85,20 @@ main.add_command(fill_heights, "fill-heights")
 recommend.add_command(recommend_wt_timeseries_cli, "wt-timeseries")
 main.add_command(execute_wt_timeseries_cli, "wt-timeseries")
 
+# Register report commands
+recommend.add_command(recommend_rep_ts_report, "rep-ts-report")
+
+# === Report command group ===
 
 
+@main.group()
+def report():
+    """Generate reports from processed data."""
+    pass
+
+
+# Register report generation commands
+report.add_command(report_rep_ts, "rep-ts")
 
 
 if __name__ == "__main__":

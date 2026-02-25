@@ -24,7 +24,7 @@ htmlcov/
 venv/
 *.pyc
 .Python
-
+uv.lock
 
 # Project-specific ignores
 logs/

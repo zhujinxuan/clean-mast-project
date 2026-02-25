@@ -1,0 +1,1 @@
+"""Single mast report atoms."""

@@ -176,3 +176,155 @@ ParseSensors → DataClean → TowerShading → ReconstructSingle
 │   (PDF输出)   │  │  (DOCX输出)   │  │  (数据导出)   │
 └───────────────┘  └───────────────┘  └───────────────┘
 ```
+
+## Python Implementation (cleanmast)
+
+Python implementation provides equivalent report generation through `cleanmast report` commands.
+
+### Report Atom Architecture
+
+The Python implementation uses a modular "atom" architecture for report generation:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Report Command Layer                         │
+│            cleanmast report <report-type> --config              │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────┐
+│                      Report Orchestrator                         │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐  │
+│  │  Load Data    │  │  Load Config  │  │  Dispatch Atoms   │  │
+│  └───────────────┘  └───────────────┘  └───────────────────┘  │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│   StatAtom    │  │  TableAtom    │  │   PlotAtom    │
+└───────┬───────┘  └───────┬───────┘  └───────┬───────┘
+        │                  │                  │
+        ▼                  ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│   DocsAtom    │  │   DocsAtom    │  │   DocsAtom    │
+└───────────────┘  └───────────────┘  └───────────────┘
+```
+
+### Atom Types
+
+| Atom Type | 职责 | 输出 | 说明 |
+|-----------|------|------|------|
+| **StatAtom** | 统计计算 | Polars DataFrame | 计算风速、风向、湍流等统计指标 |
+| **TableAtom** | 表格生成 | Markdown table | 生成规范化的数据表格 |
+| **PlotAtom** | 图表生成 | PNG/SVG | 使用 Altair 生成风玫瑰图、时序图等 |
+| **DocsAtom** | 文档合成 | Typst source | 使用 typst-py 生成最终报告 |
+
+### Commands
+
+Python version uses `uv run cleanmast report` command structure:
+
+| 命令 | 说明 |
+|------|------|
+| `uv run cleanmast report clean --config config.toml` | 数据清洗报告 |
+| `uv run cleanmast report recovery --config config.toml` | 恢复报告 |
+| `uv run cleanmast report reconstruct-single --config config.toml` | 单mast重建报告 |
+| `uv run cleanmast report cross-mast --config config.toml` | 跨mast报告 |
+| `uv run cleanmast report timeseries --config config.toml` | 时序报告 |
+| `uv run cleanmast report representative-year --config config.toml` | 代表年报告 |
+
+#### Command Examples
+
+```bash
+# Generate clean report with default settings
+uv run cleanmast report clean --config config.toml
+
+# Generate timeseries report for specific mast
+uv run cleanmast report timeseries --config config.toml --mast mast1
+
+# Generate all reports
+uv run cleanmast report all --config config.toml
+```
+
+### Output Structure
+
+```
+project/
+├── report-masts/
+│   ├── clean/
+│   │   ├── report.typ
+│   │   ├── tables/
+│   │   │   └── coverage.csv
+│   │   └── plots/
+│   │       ├── wind_rose.png
+│   │       └── coverage_timeline.png
+│   ├── recovery/
+│   │   ├── report.typ
+│   │   └── plots/
+│   ├── reconstruct-single/
+│   │   ├── report.typ
+│   │   └── plots/
+│   ├── timeseries/
+│   │   └── [mast-name]/
+│   │       ├── report.typ
+│   │       ├── wind_rose.png
+│   │       └── weibull.png
+│   └── representative-year/
+│       ├── report.typ
+│       └── plots/
+```
+
+### Dependencies
+
+#### Python Libraries
+
+| 依赖库 | 用途 | 版本 |
+|--------|------|------|
+| **altair** | 声明式可视化 | ^5.0 |
+| **vl-convert-python** | Vega-Lite 图表导出 | ^1.0 |
+| **typst-py** | Typst 文档生成 | ^0.0 |
+| **polars** | 数据处理 | ^1.0 |
+| **typer** | CLI 框架 | ^0.15 |
+| **pydantic** | 配置验证 | ^2.0 |
+
+#### External Tools
+
+| 工具 | 用途 | 安装方式 |
+|------|------|----------|
+| **typst CLI** | PDF 编译 | `cargo install typst-cli` |
+| **typ2docx** | DOCX 转换 | 随项目提供 |
+
+### Differences from Julia
+
+| 特性 | Julia (CleanMast) | Python (cleanmast) |
+|------|-------------------|-------------------|
+| CLI Framework | Comonicon.jl | Typer |
+| DataFrame | DataFrames.jl | Polars |
+| Plotting | AlgebraOfGraphics.jl | Altair |
+| Report Engine | Typst.jl | typst-py |
+| Docx Export | Pandoc | typ2docx |
+| Configuration | TOML | TOML + Pydantic |
+
+#### 架构差异
+
+**Julia 实现特点:**
+
+- 原生 Julia 类型系统，强类型约束
+- 函数式编程风格，管道操作符支持
+- 与 Julia 生态深度集成
+
+**Python 实现特点:**
+
+- Pydantic 模型用于配置验证
+- Polars lazy API 用于高性能数据处理
+- Altair 声明式可视化语法
+- 更符合 Python 生态习惯
+
+#### 数据格式差异
+
+| 格式 | Julia | Python |
+|------|-------|--------|
+| 中间数据 | Parquet (默认) | Parquet |
+| 配置 | TOML | TOML |
+| 报告输出 | Typst | Typst |
+| 图表 | PNG/SVG | PNG/SVG |
+| 数据导出 | CSV | CSV |

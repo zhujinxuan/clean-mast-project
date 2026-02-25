@@ -20,6 +20,7 @@ dependencies = [
     "tomli-w>=1.2.0",
     "pyyaml>=6.0.3",
     "dataframely>=0.2.0",
+    "typing-extensions>=4.15.0",
 ]
 
 [tool.uv.sources]
@@ -36,6 +37,9 @@ visualization = [
 ]
 reports = [
     "jinja2>=3.1",
+    "altair>=5.0",
+    "vl-convert-python>=1.0",
+    "typ2docx>=0.8.0",
 ]
 dev = [
     "pytest>=8.0",

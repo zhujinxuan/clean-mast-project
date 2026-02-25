@@ -1,35 +1,69 @@
 # CleanMast Python Documentation
 
-CleanMast Python 版本正在开发中。
+CleanMast Python implementation for wind energy data processing.
 
-## 状态
+## Status
 
-参见 [迁移状态](../../migration/status.md) 了解最新进展。
+✅ **Report Generation**: Fully implemented
+⏳ **Other modules**: In development
 
-## 架构
+See [迁移状态](../../migration/status.md) for full migration progress.
+
+## Available Modules
+
+### Report Module ✅
+
+Representative year timeseries report generation.
+
+```bash
+# Generate configuration from fill-heights data
+uv run cleanmast recommend rep-ts-report projects/my-project
+
+# Generate report (Typst + PDF + optional DOCX)
+uv run cleanmast report rep-ts projects/my-project
+```
+
+**Output:**
+- `rep-ts/report.typ` - Typst source
+- `rep-ts/report.pdf` - Compiled PDF
+- `rep-ts/report.docx` - Word document (if typ2docx installed)
+- `rep-ts/images/*.png` - Charts
+
+**Features:**
+- 4 report atom types (wind, power, frequency rose, power rose)
+- Altair visualization
+- Content-addressable caching
+- Chinese text throughout
+
+See [Architecture](../../CleanMastProject/docs/c4/03-component/reporting.md) for design details.
+
+## Architecture
 
 ```
 cleanmast/
-├── types/              # 核心类型定义和配置
-├── parse_sensors/      # 数据解析和列映射
-├── process/            # 数据清洗规则和验证
-├── reconstruct/        # 数据重建模块
-├── analyze/            # 风资源分析
-├── reports/            # 报告生成
-└── utils/              # 共享工具
+├── report/              # ✅ Report generation (COMPLETE)
+│   ├── atom.py         # ReportAtom base class
+│   ├── builder.py      # Report orchestration
+│   ├── compiler.py     # PDF/DOCX compilation
+│   ├── renderer.py     # Typst helpers
+│   ├── meta.py         # SingleMastMeta + helpers
+│   └── atoms/          # Report atom implementations
+│       └── single_mast/
+│           ├── monthly_wind.py
+│           ├── monthly_wind_power.py
+│           ├── wind_rose.py
+│           └── schemas.py
+├── fill_heights/       # ✅ Height filling (COMPLETE)
+├── wt_timeseries/      # ⏳ Wind turbine time series (WIP)
+└── io/                 # ⏳ Data I/O (WIP)
 ```
 
-## 当前可用功能
+## In Development
 
-暂无。请使用 Julia 版本: [CleanMastProject/docs/](../../../CleanMastProject/docs/)
+- **Parse Sensors**: Data parsing and column mapping - Planning
+- **Data Clean**: Validation rules and cleaning - Not started
+- **Reconstruction**: Single/meso/cross reconstruction - Not started
 
-## 计划功能
+## Julia Reference
 
-1. 传感器解析 (Parse Sensors) - 规划中
-2. 数据清洗 (Data Cleaning) - 待开始
-3. 数据重建 (Reconstruction) - 待开始
-4. 分析报告 (Analysis & Reports) - 待开始
-
-## 参考
-
-完整包信息: [packages/cleanmast/README.md](../../../packages/cleanmast/README.md)
+For production use, see [Julia documentation](../../CleanMastProject/docs/).

@@ -22,6 +22,7 @@ See [ADR-template.md](ADR-template.md) for the standard format. Each ADR include
 |-----|-------|--------|
 | [001](001-adopt-c4-model.md) | Adopt C4 Model for Documentation | Accepted |
 | [002](002-parquet-migration.md) | Migrate from CSV+TOML to Parquet Format | Accepted |
+| [003](003-report-atom-pattern.md) | Report Atom Pattern for Modular Report Generation | Accepted |
 
 ## Creating New ADRs
 

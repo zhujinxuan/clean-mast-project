@@ -522,6 +522,54 @@ Before writing any documentation content:
 - **Explicit Constraints**: When documenting, state "refer to [specific file] for details" rather than elaborating
 - **Verification**: Always cross-reference with actual code before documenting features
 
+### Report Atom Pattern
+
+When working with report generation code:
+
+**Architecture:**
+- `ReportAtom` is an abstract base class (ABC)
+- Each atom implements 3 methods: `renderTable()`, `renderImage()`, `renderSummary()`
+- DataFrame + Schema + Meta = Atom instance
+- Use `Atom.create(schema, df, meta)` factory method
+
+**Data Format:**
+- Tables use **pivoted format**: Months/Sectors as rows, Heights as columns
+- Charts use **Altair** with `.to_pandas()` conversion (required!)
+- Wind roses use `mark_arc()` (not `mark_line`)
+- All text in **Chinese** (月份, 外推, 风速, etc.)
+
+**Table Column Order:**
+```
+[月份/风向], [10m], [50m], ..., [125m 外推], [140m 外推], [160m 外推]
+```
+
+**Typst Syntax:**
+- Cells separated by **commas**: `[1], [value], [value]`
+- Rows end with **trailing comma**: `[1], [value], [value],`
+- Use `get_height_display_name()` for height formatting
+
+**Testing:**
+- Mock DataFrames in tests
+- Test render methods return correct Typst syntax
+- Skip actual compilation in unit tests (`compile_pdf=False`)
+
+**Example Atom Structure:**
+```python
+@dataclass
+class SingleMastMonthlyWindAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
+    @override
+    def renderTable(self) -> str:
+        # Return Typst table markup
+
+    @override
+    def renderImage(self, output_dir: Path, force: bool = False) -> Path:
+        # Generate PNG via Altair
+
+    @override
+    def renderSummary(self) -> str:
+        # Return Chinese text summary
+```
+
 ### Common Patterns
 
 #### Configuration Loading
@@ -567,6 +615,82 @@ wind_sensors = filter(s -> s.sensorType ∈ ["WindSpeed", "WindDirection"] && s.
 # Create standardized sensor names
 sensor_name = create_sensor_short_name(sensor)  # e.g., "WS:80m" or "WD:100m:N"
 ```
+
+#### Sensor Column Detection Rule (CRITICAL - DO NOT VIOLATE)
+
+**NEVER scan column names to detect sensor types. Always use SensorColumn from load_timeseries().**
+
+**❌ FORBIDDEN: Pattern matching on column names**
+```python
+# NEVER DO THIS - Fragile and error-prone
+def detect_wind_speed_columns(columns: list[str]) -> list[str]:
+    wind_speed_cols = []
+    for col in columns:
+        if re.match(r"WS_\d+m|WindSpeed_\d+m", col):  # ❌ WRONG!
+            wind_speed_cols.append(col)
+    return wind_speed_cols
+
+# DON'T DO THIS EITHER
+ws_cols = [c for c in df.columns if c.startswith("WS_")]  # ❌ WRONG!
+
+# DON'T DO THIS
+import polars as pl
+df = pl.read_parquet(path)  # ❌ Loses sensor metadata!
+```
+
+**Why this is forbidden:**
+- Column naming conventions vary across projects and processing stages
+- Raw data uses `WindSpeed_100m_NE_avg [m/s]` format
+- Processed data uses `WS_125m_fill:extrapolated` format
+- Column names change during preprocessing (merging, normalization)
+- Pattern matching misses sensors or includes wrong columns
+- **No access to sensor metadata** (sensor_type, stat_type, height, unit)
+- Can't distinguish measured vs extrapolated vs interpolated data
+
+**✅ CORRECT: Use load_timeseries() with sensor metadata**
+```python
+from cleanmast.io import load_timeseries
+from cleanmast.models.timeseries import TimeSeriesSource
+
+# Load data WITH sensor metadata from parquet
+source = TimeSeriesSource(data="./clean/M6002.parquet")
+timeseries = load_timeseries(source, str(project_dir))
+
+# Access the DataFrame
+df = timeseries.df
+
+# Access sensors with full metadata
+sensors = timeseries.sensors  # [SensorColumn, SensorColumn, ...]
+
+# Filter for wind speed sensors using proper metadata
+wind_speed_sensors = [
+    s for s in sensors 
+    if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
+]
+
+for sensor in wind_speed_sensors:
+    height = sensor.height  # Official height from metadata
+    col_name = sensor.column_name  # Column name in DataFrame
+    data = df[col_name]  # ✅ CORRECT - Use sensor.column_name
+```
+
+**Key points:**
+1. Always use `load_timeseries()` to load data - it preserves sensor metadata
+2. Never use `pl.read_parquet()` directly - you lose sensor metadata
+3. Filter sensors using `sensor.sensor_type`, `sensor.stat_type`, etc.
+4. Access DataFrame columns via `sensor.column_name`
+5. Sensor metadata includes: height, sensor_type, stat_type, unit, sensor_direction
+
+**For report generation specifically:**
+- The CLI command should use `load_timeseries()` to load mast data
+- Access `timeseries.sensors` for sensor metadata
+- Never auto-detect columns from parquet file column names
+- If sensor metadata is missing, raise an error
+
+**See also:**
+- `packages/cleanmast/src/cleanmast/io/timeseries_io.py` - load_timeseries function
+- `packages/cleanmast/src/cleanmast/models/timeseries.py` - TimeSeriesData class
+- `packages/cleanmast/src/cleanmast/models/sensor.py` - SensorColumn model
 
 #### Accessing DataFrames via SensorColumn (CRITICAL)
 The `SensorColumn` type tracks the actual DataFrame column name after preprocessing. Always use this field to access DataFrame columns, not hardcoded strings or symbols:
