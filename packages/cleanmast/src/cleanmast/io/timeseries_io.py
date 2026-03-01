@@ -18,6 +18,7 @@ import yaml
 
 from ..models.sensor import SensorColumn
 from ..models.timeseries import TimeSeriesData, TimeSeriesSource
+from .timeseries_validation import validate_timeseries
 
 
 def _detect_format(path: Path) -> Literal["csv", "parquet"]:
@@ -188,6 +189,10 @@ def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeri
                 pl.col("timestamp").str.to_datetime().alias("timestamp")
             )
 
+    # Validate DataFrame against sensor metadata
+    mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.parquet"
+    df = validate_timeseries(df, sensors, mast_name)
+
     return TimeSeriesData(df=df, sensors=sensors)
 
 
@@ -292,6 +297,10 @@ def load_timeseries(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
                 df = df.with_columns(
                     pl.col("timestamp").str.to_datetime().alias("timestamp")
                 )
+
+        # Validate DataFrame against sensor metadata
+        mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.csv"
+        df = validate_timeseries(df, sensors, mast_name)
 
         return TimeSeriesData(df=df, sensors=sensors)
 
