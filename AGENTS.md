@@ -44,7 +44,7 @@ clean-mast-project/
     └── cleanmast/
 ```
 
-## Critical Rules
+## Critical Rules (Julia)
 
 | Rule | ADR |
 |------|-----|
