@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Self
 
 from .protocols import Section
-from .compiler import compile_typst_to_pdf, compile_typst_to_docx
+from .compiler import compile_typst_to_pdf
 
 
 class ReportBuilder:
@@ -45,7 +45,7 @@ class ReportBuilder:
         self._sections.append(section)
         return self
 
-    def build(self, compile_pdf: bool = True, compile_docx: bool = True) -> dict[str, Path | str]:
+    def build(self, compile_pdf: bool = True) -> dict[str, Path | str]:
         """Generate complete Typst document.
 
         Creates the output directory structure, generates images for all atoms,
@@ -54,11 +54,10 @@ class ReportBuilder:
 
         Args:
             compile_pdf: Whether to compile the report to PDF (default: True)
-            compile_docx: Whether to compile the report to DOCX (default: True)
 
         Returns:
             Dictionary containing paths to generated files. Always includes 'typ'.
-            May include 'pdf', 'docx', or 'docx_warning' depending on compilation.
+            May include 'pdf' depending on compilation.
         """
         # Create output directories
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -99,12 +98,5 @@ class ReportBuilder:
                     f"PDF generation failed: {e}\n"
                     f"Typst file created at: {report_path}"
                 ) from e
-
-        # DOCX is optional
-        if compile_docx:
-            try:
-                results["docx"] = compile_typst_to_docx(report_path, self.output_dir)
-            except (ImportError, RuntimeError) as e:
-                results["docx_warning"] = str(e)
 
         return results

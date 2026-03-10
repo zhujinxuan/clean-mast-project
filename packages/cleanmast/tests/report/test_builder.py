@@ -111,7 +111,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Test Section", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         assert output_dir.exists()
         assert (output_dir / "images").exists()
@@ -127,7 +127,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Test Section", [monthly_wind_atom])
         builder.add_section(section)
 
-        result = builder.build(compile_pdf=False, compile_docx=False)
+        result = builder.build(compile_pdf=False)
 
         assert result["typ"].exists()
         assert result["typ"].name == "report.typ"
@@ -140,7 +140,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Test", [monthly_wind_atom])
         builder.add_section(section)
 
-        result = builder.build(compile_pdf=False, compile_docx=False)
+        result = builder.build(compile_pdf=False)
 
         assert isinstance(result["typ"], Path)
 
@@ -155,7 +155,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Test", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "= Monthly Report" in content
@@ -171,7 +171,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Test", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "Source Han Serif SC" in content
@@ -188,7 +188,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Wind Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "== Wind Analysis" in content
@@ -204,7 +204,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         # Summary should be in the content (contains mast name and summary text)
@@ -221,7 +221,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "#figure(" in content
@@ -238,7 +238,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "table(" in content
@@ -254,7 +254,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         # Template uses "由图" (from figure) and "和表" (and table) for references
@@ -274,7 +274,7 @@ class TestReportBuilderBuild:
         section2 = self._create_section("Wind Power", [monthly_wind_power_atom])
         builder.add_section(section1).add_section(section2)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "== Wind Speed" in content
@@ -291,7 +291,7 @@ class TestReportBuilderBuild:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         images_dir = output_dir / "images"
         assert images_dir.exists()
@@ -314,7 +314,7 @@ class TestReportBuilderBuild:
         ])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
 
@@ -346,7 +346,7 @@ class TestReportBuilderEdgeCases:
         output_dir = tmp_path / "output"
         builder = ReportBuilder("Empty Report", output_dir)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         assert "= Empty Report" in content
@@ -363,7 +363,7 @@ class TestReportBuilderEdgeCases:
         section = self._create_section("All Analysis", all_atoms)
         builder.add_section(section)
 
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
         # Should have figures for all atoms
@@ -383,7 +383,7 @@ class TestReportBuilderEdgeCases:
         builder = ReportBuilder("New Report", output_dir)
         section = self._create_section("Test", [monthly_wind_atom])
         builder.add_section(section)
-        builder.build(compile_pdf=False, compile_docx=False)
+        builder.build(compile_pdf=False)
 
         content = report_file.read_text(encoding="utf-8")
         assert "New Report" in content
@@ -400,10 +400,10 @@ class TestReportBuilderEdgeCases:
         section = self._create_section("Analysis", [monthly_wind_atom])
         builder.add_section(section)
 
-        result1 = builder.build(compile_pdf=False, compile_docx=False)
+        result1 = builder.build(compile_pdf=False)
         content1 = result1["typ"].read_text(encoding="utf-8")
 
-        result2 = builder.build(compile_pdf=False, compile_docx=False)
+        result2 = builder.build(compile_pdf=False)
         content2 = result2["typ"].read_text(encoding="utf-8")
 
         assert content1 == content2

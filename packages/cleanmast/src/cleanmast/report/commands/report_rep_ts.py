@@ -407,7 +407,6 @@ def report_rep_ts(project_dir: str, no_pdf: bool, no_docx: bool):
     try:
         results = builder.build(
             compile_pdf=not no_pdf,
-            compile_docx=not no_docx,
         )
 
         click.echo("\n✓ Report generated successfully!")
@@ -416,11 +415,6 @@ def report_rep_ts(project_dir: str, no_pdf: bool, no_docx: bool):
         if "pdf" in results:
             click.echo(f"  PDF:   {results['pdf']}")
 
-        if "docx" in results:
-            click.echo(f"  DOCX:  {results['docx']}")
-
-        if "docx_warning" in results:
-            click.echo(f"\n⚠ Warning: {results['docx_warning']}")
     except RuntimeError as e:
         raise click.ClickException(str(e))
     except Exception as e:

@@ -50,38 +50,3 @@ def compile_typst_to_pdf(typ_path: Path, output_dir: Path) -> Path:
     return pdf_path
 
 
-def compile_typst_to_docx(typ_path: Path, output_dir: Path) -> Path:
-    """Compile Typst file to DOCX using typ2docx.
-
-    Args:
-        typ_path: Path to the .typ file to compile
-        output_dir: Directory where the DOCX will be saved
-
-    Returns:
-        Path to the generated DOCX file
-
-    Raises:
-        ImportError: If typ2docx is not installed
-        RuntimeError: If conversion fails
-    """
-    # Try to import typ2docx
-    try:
-        import typ2docx  # type: ignore
-    except ImportError:
-        raise ImportError(
-            "typ2docx not installed. Install with: pip install typ2docx"
-        )
-
-    # Determine output path
-    docx_path = output_dir / "report.docx"
-
-    # Convert the typst file
-    try:
-        typ2docx.convert(
-            input_path=str(typ_path),
-            output_path=str(docx_path)
-        )
-    except Exception as e:
-        raise RuntimeError(f"DOCX conversion failed: {e}")
-
-    return docx_path
