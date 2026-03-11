@@ -4,14 +4,16 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.wt_timeseries.turbulence import (
+from cleanmast.subdomains.dataprocessing.services import (
+    calculate_ti_matrix,
+    calculate_ti_series,
+)
+from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     DIRECTION_16_SECTORS,
     _create_wind_speed_bin,
     _create_wind_speed_bin_expr,
     _direction_to_sector,
     calculate_sector_stats,
-    calculate_ti_matrix,
-    calculate_ti_series,
     load_meteodyn_ti,
     save_meteodyn_ti,
 )

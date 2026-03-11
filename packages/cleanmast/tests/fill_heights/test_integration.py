@@ -7,17 +7,17 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.fill_heights.config import (
+from cleanmast.subdomains.configuration import (
     FillHeightsConfiguration,
     HeightReference,
     MastFillConfig,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.fill_heights.execute.ws import apply_ws_fill
-from cleanmast.fill_heights.execute.wd import apply_wd_fill
-from cleanmast.models.timeseries import TimeSeriesData, TimeSeriesSource
-from cleanmast.models.sensor import SensorColumn
+from cleanmast.subdomains.dataprocessing.services import apply_ws_fill, apply_wd_fill
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 
 
 def create_ws_sensor(column_name: str, height: float) -> SensorColumn:
@@ -214,7 +214,7 @@ class TestReferenceValidation:
 
     def test_validate_references_valid_config(self):
         """Test validation passes for valid reference configuration."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg", "WS_100m_avg"],
@@ -241,7 +241,7 @@ class TestReferenceValidation:
 
     def test_validate_references_missing_column(self):
         """Test validation fails when reference column doesn't exist."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg"],
@@ -269,7 +269,7 @@ class TestReferenceValidation:
 
     def test_validate_references_wrong_sensor_type(self):
         """Test validation fails when sensor_type doesn't match."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg", "WD_80m_avg"],
@@ -297,7 +297,7 @@ class TestReferenceValidation:
 
     def test_validate_references_height_mismatch(self):
         """Test validation fails when reference height doesn't match sensor height."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg"],
@@ -325,7 +325,7 @@ class TestReferenceValidation:
 
     def test_validate_references_height_within_tolerance(self):
         """Test validation passes when height difference is within tolerance."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg"],
@@ -353,7 +353,7 @@ class TestReferenceValidation:
 
     def test_validate_references_wind_direction_config(self):
         """Test validation works for wind direction configs."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WD_80m_avg"],
@@ -380,7 +380,7 @@ class TestReferenceValidation:
 
     def test_validate_references_collects_all_errors(self):
         """Test validation collects all errors before raising."""
-        from cleanmast.fill_heights.cli import _validate_references
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg"],
@@ -428,7 +428,7 @@ class TestReferenceValidation:
 
     def test_build_sensor_column_map(self):
         """Test that sensor column map is built correctly."""
-        from cleanmast.fill_heights.cli import _build_sensor_column_map
+        from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _build_sensor_column_map
         
         timeseries = self._create_test_timeseries(
             column_names=["WS_80m_avg", "WS_100m_avg"],

@@ -11,21 +11,21 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.fill_heights.config import (
+from cleanmast.subdomains.configuration import (
     FillHeightsConfiguration,
     MastFillConfig,
-    TimeSeriesSource,
 )
-from cleanmast.fill_heights.recommend.planner import (
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (
     _build_mast_configs,
     _build_wd_configs,
     _build_ws_configs,
     _load_and_fit,
     generate_dual_configs,
 )
-from cleanmast.io.timeseries_io import save_timeseries_parquet
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesData
+from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import save_timeseries_parquet
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 
 class TestGenerateDualConfigs:
@@ -397,8 +397,8 @@ class TestBuildWDConfigs:
 class TestInterpolationUsesNeighborFitting:
     """Test that interpolation uses neighbor-specific fitting, not top3."""
 
-    @patch('cleanmast.fill_heights.recommend.planner.fit_shear_neighbors')
-    @patch('cleanmast.fill_heights.recommend.planner.fit_deg_diff_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_shear_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_deg_diff_neighbors')
     def test_interpolation_calls_neighbor_fitting(
         self, mock_fit_wd: MagicMock, mock_fit_ws: MagicMock, sample_timeseries: TimeSeriesData
     ):
@@ -439,8 +439,8 @@ class TestInterpolationUsesNeighborFitting:
         assert len(ws_configs) == 1
         assert len(wd_configs) == 1
 
-    @patch('cleanmast.fill_heights.recommend.planner.fit_shear_neighbors')
-    @patch('cleanmast.fill_heights.recommend.planner.fit_deg_diff_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_shear_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_deg_diff_neighbors')
     def test_interpolation_multi_target_calls_correct_neighbors(
         self, mock_fit_wd: MagicMock, mock_fit_ws: MagicMock, sample_timeseries: TimeSeriesData
     ):
@@ -496,8 +496,8 @@ class TestInterpolationUsesNeighborFitting:
 class TestExtrapolationUsesTop3Fitting:
     """Test that extrapolation uses top3 fitting, not neighbors."""
 
-    @patch('cleanmast.fill_heights.recommend.planner.fit_shear_neighbors')
-    @patch('cleanmast.fill_heights.recommend.planner.fit_deg_diff_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_shear_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_deg_diff_neighbors')
     def test_extrapolation_does_not_call_neighbor_fitting(
         self, mock_fit_wd: MagicMock, mock_fit_ws: MagicMock, sample_timeseries: TimeSeriesData
     ):
@@ -527,8 +527,8 @@ class TestExtrapolationUsesTop3Fitting:
         assert len(ws_configs) == 1
         assert len(wd_configs) == 1
 
-    @patch('cleanmast.fill_heights.recommend.planner.fit_shear_neighbors')
-    @patch('cleanmast.fill_heights.recommend.planner.fit_deg_diff_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_shear_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_deg_diff_neighbors')
     def test_extrapolation_multi_target_does_not_call_neighbors(
         self, mock_fit_wd: MagicMock, mock_fit_ws: MagicMock, sample_timeseries: TimeSeriesData
     ):
@@ -558,8 +558,8 @@ class TestExtrapolationUsesTop3Fitting:
         assert len(ws_configs) == 2
         assert len(wd_configs) == 2
 
-    @patch('cleanmast.fill_heights.recommend.planner.fit_shear_neighbors')
-    @patch('cleanmast.fill_heights.recommend.planner.fit_deg_diff_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_shear_neighbors')
+    @patch('cleanmast.subdomains.dataprocessing.services.height_filling.planner.fit_deg_diff_neighbors')
     def test_mixed_interpolation_and_extrapolation(
         self, mock_fit_wd: MagicMock, mock_fit_ws: MagicMock, sample_timeseries: TimeSeriesData
     ):

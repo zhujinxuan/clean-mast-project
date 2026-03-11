@@ -16,8 +16,9 @@ import tomli
 import tomli_w
 import yaml
 
-from ..models.sensor import SensorColumn
-from ..models.timeseries import TimeSeriesData, TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from ..subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from ..subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 from .timeseries_validation import validate_timeseries
 
 

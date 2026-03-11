@@ -4,7 +4,7 @@ import tomli
 from pathlib import Path
 from pydantic import BaseModel
 
-from ..models.timeseries import TimeSeriesSource
+from ..subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 class MastConfig(BaseModel):

@@ -6,8 +6,8 @@ from pathlib import Path
 import polars as pl
 from typing_extensions import override
 
-from ...atom import ReportAtom
-from ...meta import SingleMastMeta, get_height_display_name
+from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
 from .schemas import MonthlyWindSchema
 
 

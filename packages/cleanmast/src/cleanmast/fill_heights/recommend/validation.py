@@ -12,8 +12,8 @@ These functions are used by the fill_heights CLI commands to ensure
 reference configurations match actual sensor metadata before processing.
 """
 
-from ...models.sensor import SensorColumn
-from ..config import MastFillConfig, HeightReference
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.subdomains.configuration import MastFillConfig, HeightReference
 
 
 def _build_sensor_column_map(timeseries) -> dict[str, SensorColumn]:

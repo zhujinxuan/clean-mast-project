@@ -4,14 +4,15 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.fill_heights.config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     MastFillConfig,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesData, TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 @pytest.fixture

@@ -10,8 +10,8 @@ from pathlib import Path
 
 import polars as pl
 
-from ..io.timeseries_io import load_timeseries
-from ..models.sensor import SensorColumn
+from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 from .config import WtTimeSeriesConfiguration, WtTimeSeriesMast
 
 logger = logging.getLogger(__name__)

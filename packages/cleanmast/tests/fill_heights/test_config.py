@@ -6,15 +6,15 @@ WindDirectionHeightConfig, and MastFillConfig models.
 
 import pytest
 
-from cleanmast.fill_heights.config import (
+from cleanmast.subdomains.configuration import (
     FillHeightsConfiguration,
     HeightReference,
     MastFillConfig,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 def create_ws_sensor(column_name: str, height: float) -> SensorColumn:

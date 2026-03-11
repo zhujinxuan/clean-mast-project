@@ -296,7 +296,7 @@ class TestAllAtomsCommonBehavior:
 
     def test_all_atoms_inherit_from_report_atom(self, all_atoms: list[Any]):
         """Test that all atoms inherit from ReportAtom."""
-        from cleanmast.report.atom import ReportAtom
+        from cleanmast.subdomains.reporting.entities import ReportAtom
 
         for atom in all_atoms:
             assert isinstance(atom, ReportAtom)

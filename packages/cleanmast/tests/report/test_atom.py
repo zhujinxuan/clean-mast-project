@@ -8,10 +8,9 @@ import polars as pl
 import pytest
 from typing_extensions import override
 
-from cleanmast.report.atom import ReportAtom, SchemaProtocol
-from cleanmast.report.atoms.single_mast.monthly_wind import SingleMastMonthlyWindAtom
-from cleanmast.report.atoms.single_mast.schemas import MonthlyWindSchema
-from cleanmast.report.meta import SingleMastMeta
+from cleanmast.subdomains.reporting.entities import ReportAtom, SchemaProtocol
+from cleanmast.subdomains.reporting.entities import SingleMastMonthlyWindAtom, MonthlyWindSchema
+from cleanmast.subdomains.reporting.value_objects import SingleMastMeta
 
 
 class MockSchema:

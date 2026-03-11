@@ -8,9 +8,10 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesData, TimeSeriesSource
-from cleanmast.wt_timeseries.config import WtTimeSeriesMast
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.configuration import WtTimeSeriesMast
 
 
 @pytest.fixture

@@ -54,8 +54,8 @@ at a given row, the result is null at that row.
 
 import polars as pl
 
-from ..config import HeightReference
-from ...models.sensor import SensorColumn
+from cleanmast.subdomains.configuration import HeightReference
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 
 def apply_wd_fill(

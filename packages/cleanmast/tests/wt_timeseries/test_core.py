@@ -8,14 +8,16 @@ import polars as pl
 import pyarrow.parquet as pq
 import pytest
 
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesSource
-from cleanmast.wt_timeseries.config import WtTimeSeriesMast
-from cleanmast.wt_timeseries.core import (
-    _filter_sensors_by_height,
-    _find_nearest_sensor,
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.configuration import WtTimeSeriesMast
+from cleanmast.subdomains.dataprocessing.services import (
     process_single_mast_csv,
     process_wt_timeseries,
+)
+from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
+    _filter_sensors_by_height,
+    _find_nearest_sensor,
 )
 
 
@@ -591,7 +593,7 @@ class TestProcessWtTimeseries:
             writer.write_table(table)
             writer.close()
 
-        from cleanmast.wt_timeseries.config import WtTimeSeriesConfiguration
+        from cleanmast.subdomains.configuration import WtTimeSeriesConfiguration
 
         config = WtTimeSeriesConfiguration(
             masts=[

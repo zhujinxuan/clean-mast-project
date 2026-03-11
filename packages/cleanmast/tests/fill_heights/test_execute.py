@@ -7,10 +7,9 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.fill_heights.config import HeightReference
-from cleanmast.fill_heights.execute.wd import apply_wd_fill
-from cleanmast.fill_heights.execute.ws import apply_ws_fill
-from cleanmast.models.sensor import SensorColumn
+from cleanmast.subdomains.configuration import HeightReference
+from cleanmast.subdomains.dataprocessing.services import apply_wd_fill, apply_ws_fill
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 
 
 def create_ws_sensor(column_name: str, height: float) -> SensorColumn:

@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-from cleanmast.report.builder import ReportBuilder
-from cleanmast.report.collection import AtomCollection
-from cleanmast.report.sections.templated import TemplatedSection, WIND_SPEED_POWER_TEMPLATE
+from cleanmast.subdomains.reporting.services import ReportBuilder
+from cleanmast.subdomains.reporting.entities import AtomCollection
+from cleanmast.subdomains.reporting.services import TemplatedSection, WIND_SPEED_POWER_TEMPLATE
 
 
 class TestReportBuilderInitialization:

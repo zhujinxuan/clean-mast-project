@@ -4,14 +4,15 @@ from datetime import datetime
 
 import pytest
 
-from cleanmast.models.reconstruct_meso import (
+from cleanmast.subdomains.configuration import (
     MesoSource,
     ReconstructMesoConfiguration,
     ReconstructMesoMast,
     ReconstructMesoModelSpec,
     ReconstructMesoModels,
 )
-from cleanmast.models.timeseries import TimeRange, TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 class TestReconstructMesoModelSpec:

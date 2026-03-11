@@ -7,7 +7,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from cleanmast.fill_heights.recommend.fitting import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.fitting import (
     calculate_wd_deg_diff,
     calculate_ws_shear,
     fit_deg_diff_neighbors,
@@ -15,9 +15,9 @@ from cleanmast.fill_heights.recommend.fitting import (
     fit_shear_neighbors,
     fit_shear_top3,
 )
-from cleanmast.fill_heights.recommend.helpers import get_top_sensors
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesData
+from cleanmast.subdomains.dataprocessing.services.height_filling.helpers import get_top_sensors
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 
 class TestCalculateWsShear:

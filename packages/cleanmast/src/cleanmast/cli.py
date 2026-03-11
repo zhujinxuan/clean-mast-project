@@ -4,19 +4,15 @@ import shutil
 from pathlib import Path
 
 import click
-import tomli
-import tomli_w
 
-from .fill_heights.cli import fill_heights, recommend_fill_heights
-from .report.commands import recommend_rep_ts_report
-from .report.commands.report_rep_ts import report_rep_ts
-from .models.reconstruct_meso import ReconstructMesoConfiguration
-from .models.representative_year import (
-    RepresentativeYearConfiguration,
-    load_representative_year_config,
+from .adapters.cli import (
+    recommend_fill_heights,
+    execute_fill_heights,
+    recommend_rep_ts_report,
+    report_rep_ts,
+    recommend_wt_timeseries_cli,
+    execute_wt_timeseries_cli,
 )
-from .wt_timeseries.commands.execute import execute_wt_timeseries_cli
-from .wt_timeseries.commands.recommend import recommend_wt_timeseries_cli
 
 
 @click.group()
@@ -29,25 +25,18 @@ def main():
 @main.command()
 @click.argument("project_dir", type=click.Path())
 def init(project_dir: str):
-    """Initialize a new project with template structure.
-
-    Creates project directory with formats/, pre-masts/, and mesos/ subdirectories.
-    """
+    """Initialize a new project with template structure."""
     project_path = Path(project_dir)
 
-    # Create project directory if it doesn't exist
     if not project_path.exists():
         project_path.mkdir(parents=True)
         click.echo(f"Created project directory: {project_path}")
     else:
         click.echo(f"Project directory exists: {project_path}")
 
-    # Get scaffold directory path
     scaffold_dir = Path(__file__).parent / "scaffold"
 
-    # Copy scaffold contents to project
     for item in scaffold_dir.iterdir():
-        # Skip __pycache__ directories
         if item.name == "__pycache__":
             continue
         target = project_path / item.name
@@ -61,11 +50,6 @@ def init(project_dir: str):
             click.echo(f"Exists: {target}")
 
     click.echo(f"\nProject initialized at: {project_path}")
-    click.echo("\nNext steps:")
-    click.echo(f"  1. Add raw mast data (see {project_path}/pre-masts/README.md)")
-    click.echo(f"  2. Download meso data (see {project_path}/mesos/README.md)")
-    click.echo(f"  3. Run preprocessing in Claude Code: /preprocess-mast-data {project_path}/pre-masts")
-    click.echo("  4. Generate config: julia bin/CleanMast.jl recommend parse-sensors")
 
 
 # === Recommend command group ===
@@ -79,7 +63,7 @@ def recommend():
 
 # Register fill-heights commands
 recommend.add_command(recommend_fill_heights, "fill-heights")
-main.add_command(fill_heights, "fill-heights")
+main.add_command(execute_fill_heights, "fill-heights")
 
 # Register wt-timeseries commands
 recommend.add_command(recommend_wt_timeseries_cli, "wt-timeseries")
@@ -99,6 +83,49 @@ def report():
 
 # Register report generation commands
 report.add_command(report_rep_ts, "rep-ts")
+
+
+# === Process command group ===
+
+
+@main.group()
+def process():
+    """Execute data processing pipeline steps."""
+    pass
+
+
+@process.command()
+@click.option("--config", required=True, type=click.Path(exists=True))
+def reconstruct_single(config: str):
+    """Reconstruct data using single-mast correlation."""
+    raise NotImplementedError(
+        "Single-mast reconstruction is not yet implemented in Python. "
+        "Use: julia bin/CleanMast.jl reconstruct-single"
+    )
+
+
+@process.command()
+@click.option("--config", required=True, type=click.Path(exists=True))
+def reconstruct_meso(config: str):
+    """Reconstruct data using mesoscale correlation."""
+    raise NotImplementedError(
+        "Mesoscale reconstruction is not yet implemented in Python. "
+        "Use: julia bin/CleanMast.jl reconstruct-meso"
+    )
+
+
+# === Recommend clean command ===
+
+
+@recommend.command()
+@click.option("--output", "-o", default="clean-config.toml", help="Output config file path")
+@click.argument("project_dir", type=click.Path(exists=True))
+def clean(project_dir: str, output: str):
+    """Generate configuration for data cleaning step."""
+    raise NotImplementedError(
+        "Data cleaning configuration is not yet implemented in Python. "
+        "Use: julia bin/CleanMast.jl recommend clean"
+    )
 
 
 if __name__ == "__main__":

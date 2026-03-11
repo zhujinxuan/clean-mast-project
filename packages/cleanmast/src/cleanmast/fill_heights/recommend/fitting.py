@@ -77,8 +77,8 @@ import numpy as np
 import polars as pl
 from typing import Literal, cast
 
-from ...models.sensor import SensorColumn
-from ...models.timeseries import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from ...subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 logger = logging.getLogger(__name__)
 

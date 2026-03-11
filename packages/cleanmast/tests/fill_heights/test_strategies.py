@@ -2,29 +2,29 @@
 
 import pytest
 
-from cleanmast.fill_heights.config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.fill_heights.recommend.helpers import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.helpers import (
     create_fill_target_sensor,
     get_existing_sensors,
     get_top_sensors,
 )
-from cleanmast.fill_heights.recommend.strategies.wd_extrapolate_top3 import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.strategies.wd_extrapolate_top3 import (
     WDExtrapolateTop3Strategy,
 )
-from cleanmast.fill_heights.recommend.strategies.wd_interpolate_inter import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.strategies.wd_interpolate_inter import (
     WDInterpolateInterStrategy,
 )
-from cleanmast.fill_heights.recommend.strategies.ws_extrapolate_top3 import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.strategies.ws_extrapolate_top3 import (
     WSExtrapolateTop3Strategy,
 )
-from cleanmast.fill_heights.recommend.strategies.ws_interpolate_inter import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.strategies.ws_interpolate_inter import (
     WSInterpolateInterStrategy,
 )
-from cleanmast.models.timeseries import TimeSeriesData
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 
 class TestWSExtrapolateTop3Strategy:

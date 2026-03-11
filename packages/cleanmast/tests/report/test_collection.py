@@ -7,8 +7,8 @@ from typing import Any
 import polars as pl
 import pytest
 
-from cleanmast.report.collection import AtomCollection
-from cleanmast.report.atom import ReportAtom
+from cleanmast.subdomains.reporting.entities import AtomCollection
+from cleanmast.subdomains.reporting.entities import ReportAtom
 
 
 class MockSchema:

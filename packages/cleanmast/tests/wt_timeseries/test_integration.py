@@ -9,13 +9,13 @@ import polars as pl
 import pyarrow.parquet as pq
 import pytest
 
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesSource
-from cleanmast.wt_timeseries.commands.execute import execute_wt_timeseries
-from cleanmast.wt_timeseries.commands.recommend import recommend_wt_timeseries
-from cleanmast.wt_timeseries.config import load_wt_timeseries_config
-from cleanmast.wt_timeseries.core import process_single_mast_csv
-from cleanmast.wt_timeseries.turbulence import process_turbulence_for_mast
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.application.usecases.recommend_wt_timeseries import recommend_wt_timeseries
+from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
+from cleanmast.subdomains.configuration import load_wt_timeseries_config
+from cleanmast.subdomains.dataprocessing.services import process_single_mast_csv, process_turbulence_for_mast
+
 
 
 class TestFullWorkflow:
@@ -79,8 +79,8 @@ class TestFullWorkflow:
         fill_heights_dir.mkdir(parents=True)
 
         # Create fill-heights-representative-year.toml config
-        from cleanmast.fill_heights.config import FillHeightsConfiguration, MastFillConfig
-        from cleanmast.models.timeseries import TimeSeriesSource
+        from cleanmast.subdomains.configuration import FillHeightsConfiguration, MastFillConfig
+        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
         import tomli_w
 
         fill_heights_config = FillHeightsConfiguration(
@@ -224,8 +224,8 @@ class TestFullWorkflow:
         fill_heights_dir.mkdir(parents=True)
 
         # Create fill-heights-representative-year.toml config
-        from cleanmast.fill_heights.config import FillHeightsConfiguration, MastFillConfig
-        from cleanmast.models.timeseries import TimeSeriesSource
+        from cleanmast.subdomains.configuration import FillHeightsConfiguration, MastFillConfig
+        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
         import tomli_w
 
         fill_heights_config = FillHeightsConfiguration(
@@ -287,7 +287,7 @@ class TestFullWorkflow:
         config_path = recommend_wt_timeseries(project_dir)
 
         # Execute
-        execute_wt_timeseries(config_path)
+        generate_wt_timeseries(config_path)
 
         # Verify outputs
         output_dir = project_dir / "wt-timeseries"
@@ -306,7 +306,7 @@ class TestHeightFiltering:
 
     def test_csv_heights_filtered_below_100m(self, tmp_path):
         """Test that CSV output filters heights < 100m."""
-        from cleanmast.wt_timeseries.config import WtTimeSeriesMast
+        from cleanmast.subdomains.configuration import WtTimeSeriesMast
 
         project_dir = tmp_path / "test-project"
         project_dir.mkdir()
@@ -472,7 +472,7 @@ class TestHeightFiltering:
         writer.write_table(table)
         writer.close()
 
-        from cleanmast.wt_timeseries.config import WtTimeSeriesMast
+        from cleanmast.subdomains.configuration import WtTimeSeriesMast
 
         mast = WtTimeSeriesMast(
             name="TGL1",
@@ -581,7 +581,7 @@ class TestErrorHandling:
         project_dir = tmp_path / "test-project"
         project_dir.mkdir()
 
-        from cleanmast.wt_timeseries.config import WtTimeSeriesMast
+        from cleanmast.subdomains.configuration import WtTimeSeriesMast
 
         mast = WtTimeSeriesMast(
             name="TGL1",

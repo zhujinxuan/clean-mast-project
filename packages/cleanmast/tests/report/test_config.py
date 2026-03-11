@@ -5,8 +5,8 @@ from pathlib import Path
 import tempfile
 import tomli_w
 
-from cleanmast.report.config import MastConfig, RepTsReportConfig
-from cleanmast.models.timeseries import TimeSeriesSource
+from cleanmast.subdomains.reporting.value_objects import MastConfig, RepTsReportConfig
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 class TestMastConfig:

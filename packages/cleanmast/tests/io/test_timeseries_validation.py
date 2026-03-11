@@ -9,12 +9,12 @@ from datetime import datetime
 import polars as pl
 import pytest
 
-from cleanmast.io.timeseries_validation import (
+from cleanmast.subdomains.dataingestion.infrastructure.timeseries_validation import (
     _hash_sensors,
     create_wind_schema,
     validate_timeseries,
 )
-from cleanmast.models.sensor import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 
 
 class TestHashSensors:

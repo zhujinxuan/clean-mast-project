@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cleanmast.report.compiler import compile_typst_to_pdf
+from cleanmast.subdomains.reporting.services import compile_typst_to_docx, compile_typst_to_pdf
 
 
 class TestCompileTypstToPdf:

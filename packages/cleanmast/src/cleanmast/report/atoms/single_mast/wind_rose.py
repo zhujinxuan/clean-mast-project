@@ -8,8 +8,8 @@ import polars as pl
 import vl_convert as vlc
 from typing_extensions import override
 
-from ...atom import ReportAtom
-from ...meta import SingleMastMeta, get_height_display_name
+from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
 from .schemas import WindRoseSchema
 
 

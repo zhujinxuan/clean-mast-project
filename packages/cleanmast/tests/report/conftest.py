@@ -6,21 +6,17 @@ from typing import Any
 import polars as pl
 import pytest
 
-from cleanmast.report.atom import ReportAtom
-from cleanmast.report.atoms.single_mast.monthly_wind import SingleMastMonthlyWindAtom
-from cleanmast.report.atoms.single_mast.monthly_wind_power import (
+from cleanmast.subdomains.reporting.entities import ReportAtom
+from cleanmast.subdomains.reporting.entities import (
+    SingleMastMonthlyWindAtom,
     SingleMastMonthlyWindPowerAtom,
-)
-from cleanmast.report.atoms.single_mast.schemas import (
     MonthlyWindPowerSchema,
     MonthlyWindSchema,
     WindRoseSchema,
-)
-from cleanmast.report.atoms.single_mast.wind_rose import (
     SingleMastMonthlyWindFrequencyRoseAtom,
     SingleMastWindPowerRoseAtom,
 )
-from cleanmast.report.meta import SingleMastMeta
+from cleanmast.subdomains.reporting.value_objects import SingleMastMeta
 
 
 @pytest.fixture

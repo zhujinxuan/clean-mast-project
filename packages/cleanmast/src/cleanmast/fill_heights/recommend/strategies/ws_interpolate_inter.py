@@ -45,10 +45,10 @@ If target is outside this range, the strategy returns None and the
 planner should use extrapolation instead.
 """
 
-from ...config import WindSpeedHeightConfig, HeightReference
-from ....models.sensor import SensorColumn
-from ....models.timeseries import TimeSeriesData
-from ..helpers import get_existing_sensors, calculate_interpolation_weights
+from cleanmast.subdomains.configuration import WindSpeedHeightConfig, HeightReference
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from ....subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataprocessing.services.height_filling import get_existing_sensors, calculate_interpolation_weights
 
 
 class WSInterpolateInterStrategy:

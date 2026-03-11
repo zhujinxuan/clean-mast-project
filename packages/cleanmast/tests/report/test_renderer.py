@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from cleanmast.report.renderer import TypstRenderer
+from cleanmast.subdomains.reporting.services import TypstRenderer
 
 
 class TestTypstRendererRenderPreamble:

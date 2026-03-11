@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypeVar, cast
 
-from .atom import ReportAtom
+from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
 
 T = TypeVar("T", bound=ReportAtom)
 

@@ -4,7 +4,7 @@ Provides different section implementations for organizing
 report content with various rendering strategies.
 """
 
-from .templated import TemplatedSection, WIND_SPEED_POWER_TEMPLATE
+from cleanmast.subdomains.reporting.services.sections.templated import TemplatedSection, WIND_SPEED_POWER_TEMPLATE
 from .wind_rose import WindRoseSection
 from .representative_wind_speed import RepresentativeWindSpeedSection
 from .representative_wind_power import RepresentativeWindPowerSection

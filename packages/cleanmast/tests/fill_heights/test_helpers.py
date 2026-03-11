@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from cleanmast.fill_heights.recommend.helpers import (
+from cleanmast.subdomains.dataprocessing.services.height_filling.helpers import (
     calculate_interpolation_weights,
     create_fill_target_sensor,
     degrees_to_vector,
@@ -14,7 +14,7 @@ from cleanmast.fill_heights.recommend.helpers import (
     get_top_sensors,
     vector_to_degrees,
 )
-from cleanmast.models.sensor import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 
 
 class TestGetExistingSensors:

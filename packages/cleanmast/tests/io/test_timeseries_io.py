@@ -8,9 +8,10 @@ import polars as pl
 import pytest
 import yaml
 
-from cleanmast.io.timeseries_io import load_timeseries, save_timeseries
-from cleanmast.models.sensor import SensorColumn
-from cleanmast.models.timeseries import TimeSeriesData, TimeSeriesSource
+from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries, save_timeseries
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 
 
 class TestLoadTimeseries:
