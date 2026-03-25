@@ -328,16 +328,17 @@ def create_timestamp_column(df: pl.DataFrame, config: CsvMergerConfig) -> pl.Dat
                 df = df.with_columns(pl.col(original_col).alias('Timestamp'))
             else:
                 # Case 2: Wrong format, reformat and remove original
+                # Note: .alias() replaces existing column, so we drop first
+                df = df.drop(original_col)
                 df = df.with_columns(
                     pl.col('_timestamp').dt.strftime('%Y-%m-%d %H:%M:%S').alias('Timestamp')
                 )
-                df = df.drop(original_col)
         else:
             # Different column name, create new Timestamp and remove original
+            df = df.drop(original_col)
             df = df.with_columns(
                 pl.col('_timestamp').dt.strftime('%Y-%m-%d %H:%M:%S').alias('Timestamp')
             )
-            df = df.drop(original_col)
     else:
         # Combine date and time columns
         assert config.input.date is not None, "date config required when datetime is None"
