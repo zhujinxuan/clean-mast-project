@@ -52,8 +52,7 @@ module Types
   export RepresentativeYearConfig
   include("./Types/GuessMastFromMesoConfig.jl")
   export GuessMastFromMesoConfig
-  include("./Types/WtTimeSeriesConfig.jl")
-  export WtTimeSeriesConfig
+
   include("./Types/Sector.jl")
   export Sector
   include("./Types/MastReferenceModel.jl")
@@ -287,13 +286,7 @@ module GuessMastFromMeso
 end
 export GuessMastFromMeso
 
-module WTTimeSeries
-  include("./WTTimeSeries/Core.jl")
-  include("./WTTimeSeries/CommandWtTimeSeries.jl")
-  include("./WTTimeSeries/RecommendWtTimeSeriesCommand.jl")
-  export CommandWtTimeSeries, RecommendWtTimeSeriesCommand, Core
-end
-export WTTimeSeries
+
 
 module ReportTimeSeries
   include("./ReportTimeSeries/Utils.jl")

@@ -140,5 +140,5 @@ julia bin/CleanMast.jl recommend representative-year projects/my-windfarm
 
 代表年校准完成后，可以执行：
 
-1. **生成风机时间序列配置**: `julia bin/CleanMast.jl recommend wt-timeseries projects/my-windfarm`
-2. **导出Meteodyn时间序列**: `julia bin/CleanMast.jl process wt-timeseries projects/my-windfarm/wt-timeseries.toml`
+1. **生成风机时间序列配置** (Python): `uv run cleanmast recommend wt-timeseries projects/my-windfarm`
+2. **导出Meteodyn时间序列** (Python): `uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml`

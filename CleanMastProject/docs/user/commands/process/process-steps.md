@@ -42,11 +42,6 @@ Julia 数据处理流水线包含以下 16 个步骤：
 15. **recommend-representative-year** - 推荐代表年配置
 16. **representative-year** - 校准到代表年
 
-> **注意**：步骤 16 完成后，需要使用 Python CLI 执行后续步骤：
-> - **步骤 17**（Python）: `uv run cleanmast recommend fill-heights` → `uv run cleanmast fill-heights`
-> - **步骤 18**（Python）: `uv run cleanmast recommend wt-timeseries` → `uv run cleanmast wt-timeseries`
-> - **步骤 19**（Julia）: `julia bin/CleanMast.jl recommend report-all` → `julia bin/CleanMast.jl report all`
-
 ## 使用示例
 
 ### 执行所有步骤
@@ -143,9 +138,6 @@ project/
 ├── representative-year/     # 代表年校准数据
 └── *.toml                  # 各步骤配置文件
 
-后续 Python 步骤将生成：
-- `fill-heights/`           # 高度填补后数据 (Python)
-- `wt-timeseries/`          # 风机时间序列 (Python, Meteodyn格式)
 ```
 
 ## 相关命令
@@ -158,20 +150,6 @@ project/
 - [process train-meso](train-meso.md) - 中尺度模型训练
 - [process reconstruct-meso](reconstruct-meso.md) - 中尺度重构
 - [process representative-year](representative-year.md) - 代表年校准
-
-## 后续 Python 步骤
-
-完成 Julia 的 16 个步骤后，使用 Python CLI 执行：
-
-```bash
-# 高度填补
-uv run cleanmast recommend fill-heights <项目目录>
-uv run cleanmast fill-heights <fill-heights.toml路径>
-
-# 风机时间序列导出
-uv run cleanmast recommend wt-timeseries <项目目录>
-uv run cleanmast wt-timeseries <wt-timeseries.toml路径>
-```
 
 ## 注意事项
 

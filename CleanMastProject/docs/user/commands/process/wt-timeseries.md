@@ -1,4 +1,16 @@
-# process wt-timeseries
+# DEPRECATED
+
+This Julia command has been removed. WT TimeSeries generation is now handled by the Python CLI.
+
+**New usage:**
+```bash
+uv run cleanmast recommend wt-timeseries <project_dir>
+uv run cleanmast wt-timeseries <wt-timeseries.toml>
+```
+
+---
+
+# process wt-timeseries (Archived)
 
 ## 概述
 

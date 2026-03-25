@@ -153,18 +153,6 @@ uv run cleanmast recommend wt-timeseries projects/my-windfarm
 uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
 ```
 
-#### 7. 生成报告配置
-
-```nu
-julia bin/CleanMast.jl recommend report-all projects/my-windfarm
-```
-
-#### 8. 生成分析报告
-
-```nu
-julia bin/CleanMast.jl report all projects/my-windfarm
-```
-
 ##### 灵活的步骤控制（Julia 步骤 1-16）
 
 如果需要分步骤执行或调试特定环节：

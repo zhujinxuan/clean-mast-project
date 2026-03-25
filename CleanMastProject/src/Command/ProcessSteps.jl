@@ -16,8 +16,6 @@ using ...ReconstructMeso.CommandReconstructMeso
 using ...ReconstructMeso.RecommendReconstructMesoCommand
 using ...RepresentativeYear.CommandRepresentativeYear
 using ...RepresentativeYear.RecommendRepresentativeYearCommand
-using ...WTTimeSeries.CommandWtTimeSeries
-using ...WTTimeSeries.RecommendWtTimeSeriesCommand
 using ...Types.ParseSensorsConfig: ParseSensorsConfiguration, from_dict
 using ...Types.ReconstructSingleConfig: ReconstructSingleConfiguration
 using ...CleanMastUtils: load_dict
@@ -219,24 +217,6 @@ function get_all_steps()::Vector{ProcessingStep}
             "representative-year.toml",
             "representative-year",
             false
-        ),
-        ProcessingStep(
-            17,
-            "recommend-wt-timeseries",
-            "Recommend WT time series configuration",
-            dir -> RecommendWtTimeSeriesCommand.execute(dir),
-            "wt-timeseries.toml",
-            "wt-timeseries.toml",
-            false
-        ),
-        ProcessingStep(
-            18,
-            "wt-timeseries",
-            "Produce MeteoDyn WT time series data",
-            dir -> CommandWtTimeSeries.execute(joinpath(dir, "wt-timeseries.toml")),
-            "wt-timeseries.toml",
-            "wt-timeseries",
-            false
         )
     ]
 end
@@ -353,7 +333,7 @@ Execute processing steps based on the specified parameters.
 
 # Arguments
 - `dir::String`: Project directory containing configurations
-- `all::Bool`: Execute all steps (equivalent to --from 1 --to 18)
+- `all::Bool`: Execute all steps (equivalent to --from 1 --to 16)
 - `from_step::Union{Int, Nothing}`: Starting step number
 - `to_step::Union{Int, Nothing}`: Ending step number
 - `list_only::Bool`: Only list available steps without executing

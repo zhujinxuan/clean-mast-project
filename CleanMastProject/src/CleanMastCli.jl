@@ -43,7 +43,6 @@ Comonicon.@cast module Process
     using CleanMastProject.TrainMeso.CommandTrainMeso
     using CleanMastProject.ReconstructMeso.CommandReconstructMeso
     using CleanMastProject.RepresentativeYear.CommandRepresentativeYear
-    using CleanMastProject.WTTimeSeries.CommandWtTimeSeries
     using CleanMastProject.Command.ProcessSteps
     using CleanMastProject.ReconstructCross.ProcessReconstructCrossCommand
     using CleanMastProject.GuessMastFromMeso.CommandGuessMastFromMeso
@@ -118,20 +117,6 @@ Comonicon.@cast module Process
     """
     Comonicon.@cast function representative_year(config_path::String)
         CommandRepresentativeYear.execute(config_path)
-    end
-
-    """
-    wt-timeseries
-
-    Process wind turbine time series data.
-    Extracts wind speed and direction data at target heights from representative year data.
-    Saves timestamp, wind speed, and wind direction to CSV files.
-
-    # Arguments
-    - `config_path`: Path to wt-timeseries.toml configuration file
-    """
-    Comonicon.@cast function wt_timeseries(config_path::String)
-        CommandWtTimeSeries.execute(config_path)
     end
 
     """
@@ -329,7 +314,6 @@ end
     using CleanMastProject.ReportReconstructCross.RecommendCrossMastReportCommand
     using CleanMastProject.ReconstructCross.RecommendReconstructCrossCommand
     using CleanMastProject.RepresentativeYear.RecommendRepresentativeYearCommand
-    using CleanMastProject.WTTimeSeries.RecommendWtTimeSeriesCommand
     using CleanMastProject.ReportClean.RecommendReportCleanCommand
     using CleanMastProject.ReportRecovery.RecommendReportRecoveryCommand
     using CleanMastProject.ReportFrozenPeriod.RecommendReportFrozenCommand
@@ -548,25 +532,6 @@ end
     """
     @cast function representative_year(dir::String)
         RecommendRepresentativeYearCommand.execute(dir)
-    end
-    
-    """
-    wt-timeseries
-
-    Recommend a wt-timeseries.toml configuration file for the project.
-
-    # Arguments
-    - `dir`: Project directory containing representative-year.toml
-
-    # Example
-    ```bash
-    julia bin/CleanMast.jl recommend wt-timeseries ./projects/my-project
-    ```
-
-    Generates wt-timeseries.toml for processing wind turbine time series data.
-    """
-    @cast function wt_timeseries(dir::String)
-        RecommendWtTimeSeriesCommand.execute(dir)
     end
 
     """
