@@ -3,14 +3,15 @@
 ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
 """
 
-from pathlib import Path
 
 import click
 
 from cleanmast.application.usecases.recommend_fill_heights import (
-    recommend_fill_heights as recommend_fill_heights_usecase,
-    DEFAULT_FILL_HEIGHTS,
     DEFAULT_DEG_DIFF_PER_M_LIMIT,
+    DEFAULT_FILL_HEIGHTS,
+)
+from cleanmast.application.usecases.recommend_fill_heights import (
+    recommend_fill_heights as recommend_fill_heights_usecase,
 )
 
 

@@ -1,0 +1,10 @@
+# Verify manifest for kp-202603 report timeseries test dataset
+# Used by: cleanmast verify
+
+[run]
+command = "report timeseries"
+config = "rep-ts-report.toml"
+args = ["--no-docx"]
+
+[expect]
+outputs = ["rep-ts/report.pdf"]

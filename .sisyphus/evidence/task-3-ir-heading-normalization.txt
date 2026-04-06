@@ -1,0 +1,14 @@
+Task 3 Evidence: IR Heading Normalization Test
+
+Test: test_heading_level_bounds
+Command: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "heading"
+Result: PASSED
+
+Heading normalization verified:
+- Level 1 produces "= Title"
+- Level 2 produces "== Title"
+- Level 3 produces "=== Title"
+- Level 0 (invalid) normalized to level 1
+- Level > 3 normalized to level 3
+
+Date: 2026-04-04

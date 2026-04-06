@@ -1,0 +1,36 @@
+Type Check Results - packages/cleanmast
+======================================
+
+Command: uv run ty check packages/cleanmast
+Status: Completed with errors (non-phantom reporting related)
+
+Summary:
+--------
+The type checker found multiple errors, but NONE are related to phantom "reporting" subdomain imports.
+The errors are legitimate type issues in the codebase:
+
+1. Unsupported `/` operation in wind_frequency_distribution.py (lines 166, 170)
+2. Invalid argument types for ReportAtom.create() in multiple files
+3. Unused `type: ignore` directives
+4. Various schema type mismatches in test files
+5. Unknown argument `original_column` in SensorColumn constructor
+6. Return type mismatches in test fixtures
+
+Key Finding:
+------------
+No phantom "reporting" subdomain errors were found.
+The TD-009 issue (phantom reporting subdomain imports) has been resolved.
+
+Full Output (excerpt):
+----------------------
+error[unsupported-operator]: Unsupported `/` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:166:26
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py:52:17
+
+... (truncated for brevity)
+
+Conclusion:
+-----------
+TD-009 CLOSED - No phantom "reporting" errors in type checker output.

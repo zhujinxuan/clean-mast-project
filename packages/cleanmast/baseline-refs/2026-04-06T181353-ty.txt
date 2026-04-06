@@ -1,0 +1,82 @@
+warning[possibly-missing-attribute]: Attribute `exists` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:132:16
+    |
+130 |         result = builder.build(compile_pdf=False)
+131 |
+132 |         assert result["typ"].exists()
+    |                ^^^^^^^^^^^^^^^^^^^^
+133 |         assert result["typ"].name == "report.typ"
+134 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `name` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:133:16
+    |
+132 |         assert result["typ"].exists()
+133 |         assert result["typ"].name == "report.typ"
+    |                ^^^^^^^^^^^^^^^^^^
+134 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `parent` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:134:16
+    |
+132 |         assert result["typ"].exists()
+133 |         assert result["typ"].name == "report.typ"
+134 |         assert result["typ"].parent == output_dir
+    |                ^^^^^^^^^^^^^^^^^^^^
+135 |
+136 |     def test_build_returns_path(self, tmp_path: Path, monthly_wind_atom: Any):
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:404:20
+    |
+403 |         result1 = builder.build(compile_pdf=False)
+404 |         content1 = result1["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+405 |
+406 |         result2 = builder.build(compile_pdf=False)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:407:20
+    |
+406 |         result2 = builder.build(compile_pdf=False)
+407 |         content2 = result2["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+408 |
+409 |         assert content1 == content2
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `calculate_representative_ti` is incorrect
+   --> packages\cleanmast\tests\assessment\test_turbulence_calculator.py:339:57
+    |
+337 |         ti_values = [0.10, None, 0.12, None, 0.14] * 20  # 100 values, 40% None
+338 |         
+339 |         rep_ti = calculator.calculate_representative_ti(ti_values)
+    |                                                         ^^^^^^^^^ Expected `list[int | float]`, found `list[Unknown | int | float | None]`
+340 |         
+341 |         assert rep_ti is not None
+    |
+info: Method defined here
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:231:9
+    |
+229 |         return ti_list
+230 |
+231 |     def calculate_representative_ti(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+232 |         self,
+233 |         ti_values: list[float],
+    |         ---------------------- Parameter declared here
+234 |     ) -> float | None:
+235 |         """Calculate representative turbulence intensity (P90).
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+Found 6 diagnostics

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
 from preprocess_tools.csv_merger import (
     CsvMergerConfig,
     check_and_handle_duplicates,

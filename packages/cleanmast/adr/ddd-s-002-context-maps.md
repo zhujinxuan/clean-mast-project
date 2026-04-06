@@ -17,8 +17,7 @@ applies_when:
 2. **Configuration → PipelineContext** (Customer-Supplier)
 3. **PipelineContext coordinates all** - owns workflow orchestration
 4. **DataIngestion → DataProcessing** (Customer-Supplier via Repository Protocol)
-5. **DataProcessing → Analysis** (Customer-Supplier)
-6. **Analysis → Reporting** (Conformist) - Reporting accepts Analysis output
+5. **DataProcessing → Assessment** (Customer-Supplier) - Assessment performs analysis and generates reports
 7. **TimeSeriesRepository protocol** for data transfer
 
 ## Rationale (WHY)
@@ -29,7 +28,7 @@ Explicit relationships show dependencies. PipelineContext orchestrates. Reposito
 
 ```python
 # ❌ Circular dependencies
-DataProcessing importing Analysis  # NEVER
+DataProcessing importing Assessment  # NEVER
 
 # ❌ Direct service calls
 cleaner = DataCleaner()

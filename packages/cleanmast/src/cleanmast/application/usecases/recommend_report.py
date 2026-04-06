@@ -10,11 +10,18 @@ files based on fill-heights-representative-year data.
 
 from pathlib import Path
 
-import polars as pl
 import tomli
 import tomli_w
 
-from cleanmast.subdomains.reporting.value_objects.meta import calculate_air_density
+from cleanmast.subdomains.assessment.domain.value_objects.air_density import (
+    calculate_air_density,
+)
+from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
+    load_timeseries_parquet,
+)
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 def recommend_report(project_dir: str) -> Path:
@@ -83,8 +90,9 @@ def recommend_report(project_dir: str) -> Path:
 
         # Load parquet and calculate air density
         try:
-            df = pl.read_parquet(parquet_path)
-            air_density = calculate_air_density(df)
+            source = TimeSeriesSource(data=data_path, sensors=None)
+            time_series_data = load_timeseries_parquet(source, str(project_path))
+            air_density = calculate_air_density(time_series_data)
         except Exception:
             air_density = 1.225  # Fallback to standard value
 

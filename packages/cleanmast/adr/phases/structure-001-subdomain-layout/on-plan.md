@@ -10,27 +10,37 @@ Load this file during the planning/design phase when organizing folder structure
 
 ### Layer Organization
 
-Each context follows this structure:
+Contexts follow one of these patterns:
+
+**Layered Pattern** (assessment):
 ```
-ContextName/
-├── subdomains/           # Domain layer - pure business logic
-│   └── {subdomain}/
-│       ├── entities/     # Business objects with identity
-│       ├── value_objects/# Immutable values
-│       ├── domain_events/# Events for cross-boundary communication
-│       └── domain_services/ # Stateless operations
+assessment/
+├── domain/               # Domain layer - pure business logic
+│   ├── entities/         # Business objects with identity
+│   ├── protocols/        # Interface definitions
+│   ├── services/         # Domain services
+│   └── value_objects/    # Immutable values
 ├── application/          # Application layer - use cases
-│   └── {use_case}.py     # Orchestrate domain operations
+│   └── services/
 └── infrastructure/       # Infrastructure layer - I/O
-    ├── repositories/     # Repository implementations
-    └── external/         # External API clients
+```
+
+**Flat Pattern** (dataingestion, configuration, dataprocessing, pipeline):
+```
+dataingestion/            # DDD folders without layer nesting
+├── entities/
+├── value_objects/
+├── repositories/
+├── services/
+└── infrastructure/
 ```
 
 ### Key Considerations
 - Domain layer has NO external dependencies (no polars, no pandas)
-- Application layer coordinates domain operations
+- Application layer coordinates domain operations (layered pattern only)
 - Infrastructure contains all I/O and external concerns
-- Protocols define interfaces between layers
+- Protocols define interfaces between layers (layered pattern only)
+- Flat patterns are acceptable for simpler subdomains
 
 ### Entity Examples
 
@@ -53,21 +63,22 @@ class TimeSeries:
     """Domain Entity (Aggregate Root): Time series data collection."""
     source: TimeSeriesSource  # identity part 1
     time_range: TimeRange     # identity part 2
-    data: pl.DataFrame
     sensors: list[SensorColumn]
 ```
 
 Note: In DDD, Aggregate Roots ARE Entities. Both belong in the `entities/` folder.
 
-### Subdomain Examples
-- **DataIngestion**: parsing, loading, validation subdomains
-- **DataProcessing**: cleaning, reconstruction subdomains
-- **Analysis**: calculations, aggregations subdomains
+### Current Contexts
+- **assessment**: Layered pattern (3-layer)
+- **dataingestion**: Organized-flat pattern
+- **dataprocessing**: Minimal-flat pattern (CQRS naming: commands/, strategies/)
+- **configuration**: Minimal-flat pattern
+- **pipeline**: Minimal-flat pattern
 
 ## Checklist
 Before proceeding to implementation, verify:
-- [ ] Folder structure follows 3-layer architecture
+- [ ] Folder structure follows appropriate pattern for complexity
 - [ ] Domain layer is dependency-free
-- [ ] Subdomains identified for each context
-- [ ] Protocol location planned
+- [ ] Context pattern chosen (layered vs flat) based on needs
+- [ ] Protocol location planned (if using layered pattern)
 - [ ] ADR constraints are respected

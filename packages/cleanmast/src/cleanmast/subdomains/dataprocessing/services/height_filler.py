@@ -40,9 +40,10 @@ Vector Math for Wind Direction:
 """
 
 import polars as pl
-from polars import Series
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import HeightReference
+from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+    HeightReference,
+)
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 

@@ -3,7 +3,6 @@
 ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
 """
 
-from pathlib import Path
 
 import click
 
@@ -12,8 +11,8 @@ from cleanmast.application.usecases.generate_report import (
 )
 
 
-@click.command("rep-ts")
-@click.argument("project_dir", type=click.Path(exists=True))
+@click.command("timeseries")
+@click.argument("config_path", type=click.Path(exists=True))
 @click.option(
     "--no-pdf",
     is_flag=True,
@@ -24,13 +23,13 @@ from cleanmast.application.usecases.generate_report import (
     is_flag=True,
     help="Skip DOCX generation",
 )
-def report_rep_ts(project_dir: str, no_pdf: bool, no_docx: bool):
+def report_timeseries(config_path: str, no_pdf: bool, no_docx: bool):
     """Generate representative timeseries report from config."""
-    click.echo(f"Generating report for: {project_dir}")
+    click.echo(f"Generating report for: {config_path}")
 
     try:
         results = generate_report_usecase(
-            project_dir=project_dir,
+            config_path=config_path,
             no_pdf=no_pdf,
             no_docx=no_docx,
         )

@@ -10,11 +10,11 @@ from configuration file.
 from pathlib import Path
 
 from cleanmast.subdomains.configuration import load_wt_timeseries_config
-from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
-    process_single_mast_csv,
-)
 from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     process_turbulence_for_mast,
+)
+from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
+    process_single_mast_csv,
 )
 
 

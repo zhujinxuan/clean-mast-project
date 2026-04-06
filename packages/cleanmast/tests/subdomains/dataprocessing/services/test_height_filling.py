@@ -1,30 +1,15 @@
 """Tests for height filling DDD services."""
 
-import numpy as np
 import polars as pl
-import pytest
-
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.height_filling import (
-    generate_dual_configs,
-    validate_references,
     build_sensor_column_map,
-    fit_shear_top3,
-    fit_shear_neighbors,
-    fit_deg_diff_top3,
-    fit_deg_diff_neighbors,
+    create_fill_target_sensor,
+    find_neighbor_sensors,
     get_existing_sensors,
     get_top_sensors,
-    find_neighbor_sensors,
-    create_fill_target_sensor,
 )
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    MastFillConfig,
-    HeightReference,
-    WindSpeedHeightConfig,
-    WindDirectionHeightConfig,
-)
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 
 class TestHeightFillingServices:

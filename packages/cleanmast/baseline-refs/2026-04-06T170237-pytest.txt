@@ -1,0 +1,27 @@
+
+=================================== ERRORS ====================================
+___________ ERROR collecting tests/assessment/test_column_utils.py ____________
+ImportError while importing test module 'C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_column_utils.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\cleanmast\tests\assessment\test_column_utils.py:3: in <module>
+    from cleanmast.subdomains.assessment.domain.value_objects.column_utils import (
+E   ImportError: cannot import name 'detect_interpolation_marker' from 'cleanmast.subdomains.assessment.domain.value_objects.column_utils' (C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\column_utils.py)
+_______________ ERROR collecting tests/assessment/test_meta.py ________________
+ImportError while importing test module 'C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_meta.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages\cleanmast\tests\assessment\test_meta.py:4: in <module>
+    from cleanmast.subdomains.assessment.domain.value_objects import (
+E   ImportError: cannot import name 'detect_interpolation_marker' from 'cleanmast.subdomains.assessment.domain.value_objects' (C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py)
+=========================== short test summary info ===========================
+ERROR packages\cleanmast\tests\assessment\test_column_utils.py
+ERROR packages\cleanmast\tests\assessment\test_meta.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+2 errors in 2.23s

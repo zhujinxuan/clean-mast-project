@@ -1,0 +1,102 @@
+F811 Redefinition of unused `calculate_air_density` from line 7
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:26:5
+   |
+24 |     _normalize_pressure,
+25 |     _normalize_temperature,
+26 |     calculate_air_density,
+   |     ^^^^^^^^^^^^^^^^^^^^^ `calculate_air_density` redefined here
+27 |     detect_interpolation_marker,
+28 | )
+   |
+  ::: packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:7:26
+   |
+ 5 | """
+ 6 |
+ 7 | from .air_density import calculate_air_density
+   |                          --------------------- previous definition of `calculate_air_density` here
+ 8 | from .analysis_input import SingleMastAnalysisInput
+ 9 | from .analysis_metadata import AnalysisMetadata
+   |
+help: Remove definition: `calculate_air_density`
+
+F811 Redefinition of unused `detect_interpolation_marker` from line 14
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:27:5
+   |
+25 |     _normalize_temperature,
+26 |     calculate_air_density,
+27 |     detect_interpolation_marker,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `detect_interpolation_marker` redefined here
+28 | )
+29 | from .schemas import (
+   |
+  ::: packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:14:27
+   |
+12 | from .analysis_result import AnalysisResult
+13 | from .collections import AtomCollection
+14 | from .column_utils import detect_interpolation_marker
+   |                           --------------------------- previous definition of `detect_interpolation_marker` here
+15 | from .hash_utils import compute_node_id, hash_dataframe, hash_parameters
+16 | from .rep_ts_report_config import MastConfig, RepTsReportConfig
+   |
+help: Remove definition: `detect_interpolation_marker`
+
+F401 `.single_mast.schemas.MonthlyWindPowerSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:38:31
+   |
+36 | from .single_mast.report_meta import SingleMastMeta, get_height_display_name
+37 | from .single_mast.schemas import (
+38 |     MonthlyWindPowerSchema as SingleMastMonthlyWindPowerSchema,
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+39 | )
+40 | from .single_mast.schemas import (
+   |
+help: Add unused import `SingleMastMonthlyWindPowerSchema` to __all__
+
+F401 `.single_mast.schemas.MonthlyWindSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:41:26
+   |
+39 | )
+40 | from .single_mast.schemas import (
+41 |     MonthlyWindSchema as SingleMastMonthlyWindSchema,
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 | )
+43 | from .single_mast.schemas import (
+   |
+help: Add unused import `SingleMastMonthlyWindSchema` to __all__
+
+F401 `.single_mast.schemas.WindRoseSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\__init__.py:44:23
+   |
+42 | )
+43 | from .single_mast.schemas import (
+44 |     WindRoseSchema as SingleMastWindRoseSchema,
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^
+45 | )
+   |
+help: Add unused import `SingleMastWindRoseSchema` to __all__
+
+F401 `cleanmast.subdomains.dataprocessing.services.height_filling.generate_target_column` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> packages\cleanmast\src\cleanmast\subdomains\dataprocessing\services\__init__.py:19:5
+   |
+17 |     fit_shear_top3,
+18 |     generate_dual_configs,
+19 |     generate_target_column,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+20 |     get_existing_sensors,
+21 |     get_top_sensors,
+   |
+help: Add unused import `generate_target_column` to __all__
+
+F401 `.helpers.generate_target_column` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> packages\cleanmast\src\cleanmast\subdomains\dataprocessing\services\height_filling\__init__.py:16:5
+   |
+14 |     create_fill_target_sensor,
+15 |     find_neighbor_sensors,
+16 |     generate_target_column,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+17 |     get_existing_sensors,
+18 |     get_top_sensors,
+   |
+help: Add unused import `generate_target_column` to __all__
+
+Found 7 errors.

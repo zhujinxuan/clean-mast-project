@@ -9,9 +9,9 @@ import logging
 from pathlib import Path
 
 import polars as pl
-
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+
 from .config import WtTimeSeriesConfiguration, WtTimeSeriesMast
 
 logger = logging.getLogger(__name__)

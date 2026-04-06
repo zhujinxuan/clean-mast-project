@@ -1,0 +1,7 @@
+=== Task 5: Polars pivot() API Update ===
+
+ty check output for wind_frequency_table and wind_power_frequency_table:
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_table.py:19:51
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_power_frequency_table.py:19:56
+
+Result: No pivot-related errors found (only pre-existing WindFrequencySchema type error at line 19)

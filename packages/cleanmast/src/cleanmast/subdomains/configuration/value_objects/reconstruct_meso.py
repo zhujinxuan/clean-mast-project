@@ -7,7 +7,9 @@ reading reconstruct-meso.toml configuration files.
 from pydantic import BaseModel
 
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 class ReconstructMesoModelSpec(BaseModel):

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
 from preprocess_tools.col_name_normalizer import (
     ColNameNormalizerConfig,
     load_config,

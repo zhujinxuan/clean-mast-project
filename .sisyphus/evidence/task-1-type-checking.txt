@@ -1,0 +1,17 @@
+TYPE_CHECKING Block Check - Task 1
+===================================
+Result: PASSED
+
+Command: grep -A3 "TYPE_CHECKING" packages/cleanmast/src/cleanmast/subdomains/assessment/application/services/report_generation_service.py
+Output:
+from typing import TYPE_CHECKING
+...
+if TYPE_CHECKING:
+    from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+
+Analysis:
+---------
+- TYPE_CHECKING block correctly placed after imports
+- TimeSeriesData import inside TYPE_CHECKING block
+- from __future__ import annotations present at top of file
+- Runtime import of TimeSeriesData eliminated

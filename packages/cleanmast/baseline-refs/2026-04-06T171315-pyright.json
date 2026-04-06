@@ -1,0 +1,380 @@
+[
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\entities\\single_mast\\turbulence_multi.py",
+    "line": 186,
+    "message": "Operator \"+\" not supported for \"None\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\entities\\single_mast\\wind_frequency_distribution.py",
+    "line": 165,
+    "message": "Operator \"/\" not supported for types \"int | float | Decimal\" and \"float\"\n\u807d\u807dOperator \"/\" not supported for types \"Decimal\" and \"float\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\entities\\single_mast\\wind_frequency_distribution.py",
+    "line": 169,
+    "message": "Operator \"/\" not supported for types \"int | float | Decimal\" and \"int | float | Decimal\"\n\u807d\u807dOperator \"/\" not supported for types \"float\" and \"Decimal\"\n\u807d\u807dOperator \"/\" not supported for types \"Decimal\" and \"float\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\services\\calculators\\vertical_profile_analyzer.py",
+    "line": 159,
+    "message": "Cannot access attribute \"slope\" for class \"_\"\n\u807d\u807dAttribute \"slope\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\services\\calculators\\vertical_profile_analyzer.py",
+    "line": 160,
+    "message": "Cannot access attribute \"rvalue\" for class \"_\"\n\u807d\u807dAttribute \"rvalue\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 98,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 107,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 141,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 163,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 208,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 217,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 239,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_air_density.py",
+    "line": 248,
+    "message": "No parameter named \"original_column\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_atom.py",
+    "line": 112,
+    "message": "Argument of type \"type[MonthlyWindSchema]\" cannot be assigned to parameter \"schema\" of type \"type[TemporalPatternSchema]\" in function \"create\"\n\u807d\u807d\"type[MonthlyWindSchema]\" is not assignable to \"type[TemporalPatternSchema]\"\n\u807d\u807dType \"type[MonthlyWindSchema]\" is not assignable to type \"type[TemporalPatternSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder.py",
+    "line": 131,
+    "message": "Cannot access attribute \"exists\" for class \"str\"\n\u807d\u807dAttribute \"exists\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder.py",
+    "line": 132,
+    "message": "Cannot access attribute \"name\" for class \"str\"\n\u807d\u807dAttribute \"name\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder.py",
+    "line": 133,
+    "message": "Cannot access attribute \"parent\" for class \"str\"\n\u807d\u807dAttribute \"parent\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder.py",
+    "line": 403,
+    "message": "Cannot access attribute \"read_text\" for class \"str\"\n\u807d\u807dAttribute \"read_text\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder.py",
+    "line": 406,
+    "message": "Cannot access attribute \"read_text\" for class \"str\"\n\u807d\u807dAttribute \"read_text\" is unknown",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder_typst.py",
+    "line": 468,
+    "message": "Operator \"<\" not supported for types \"int | None\" and \"int | None\"\n\u807d\u807dOperator \"<\" not supported for types \"int\" and \"None\"\n\u807d\u807dOperator \"<\" not supported for types \"None\" and \"int\"\n\u807d\u807dOperator \"<\" not supported for types \"None\" and \"None\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_builder_typst.py",
+    "line": 468,
+    "message": "Operator \"<\" not supported for types \"int | None\" and \"int | None\"\n\u807d\u807dOperator \"<\" not supported for types \"int\" and \"None\"\n\u807d\u807dOperator \"<\" not supported for types \"None\" and \"int\"\n\u807d\u807dOperator \"<\" not supported for types \"None\" and \"None\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_collection.py",
+    "line": 26,
+    "message": "Type \"MockSchema\" cannot be assigned to type variable \"T@ReportAtom\"\n\u807d\u807dType \"MockSchema\" is not assignable to upper bound \"SchemaProtocol\" for type variable \"T@ReportAtom\"\n\u807d\u807d\u807d\u807d\"MockSchema\" is incompatible with protocol \"SchemaProtocol\"\n\u807d\u807d\u807d\u807d\u807d\u807d\"validate\" is an incompatible type\n\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807dOne or more overloads of \"validate\" is not assignable\n\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807dType \"(df: DataFrame, *, cast: bool = False) -> DataFrame\" is not assignable to type \"(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_collection.py",
+    "line": 39,
+    "message": "Type \"MockSchema\" cannot be assigned to type variable \"T@ReportAtom\"\n\u807d\u807dType \"MockSchema\" is not assignable to upper bound \"SchemaProtocol\" for type variable \"T@ReportAtom\"\n\u807d\u807d\u807d\u807d\"MockSchema\" is incompatible with protocol \"SchemaProtocol\"\n\u807d\u807d\u807d\u807d\u807d\u807d\"validate\" is an incompatible type\n\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807dOne or more overloads of \"validate\" is not assignable\n\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807d\u807dType \"(df: DataFrame, *, cast: bool = False) -> DataFrame\" is not assignable to type \"(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_column_utils.py",
+    "line": 3,
+    "message": "\"detect_interpolation_marker\" is unknown import symbol",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_meta.py",
+    "line": 5,
+    "message": "\"detect_interpolation_marker\" is unknown import symbol",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_subsections.py",
+    "line": 346,
+    "message": "Type \"tuple[ReportAtom[WindRoseSchema, SingleMastMeta], ReportAtom[WindRoseSchema, SingleMastMeta]]\" is not assignable to return type \"tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyWindFrequencyRoseAtom\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastWindPowerRoseAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_subsections.py",
+    "line": 427,
+    "message": "Type \"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindFrequencyTableAtom\"\n\u807d\u807d\"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to \"SingleMastWindFrequencyTableAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_subsections.py",
+    "line": 471,
+    "message": "Type \"ReportAtom[VerticalProfileSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastVerticalProfileAtom\"\n\u807d\u807d\"ReportAtom[VerticalProfileSchema, SingleMastMeta]\" is not assignable to \"SingleMastVerticalProfileAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_turbulence_atoms.py",
+    "line": 40,
+    "message": "Type \"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastTurbulenceIntensityAtom\"\n\u807d\u807d\"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to \"SingleMastTurbulenceIntensityAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_turbulence_atoms_migrated.py",
+    "line": 169,
+    "message": "Type \"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastTurbulenceIntensityAtom\"\n\u807d\u807d\"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to \"SingleMastTurbulenceIntensityAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_turbulence_atoms_migrated.py",
+    "line": 182,
+    "message": "Type \"ReportAtom[TurbulenceSectorSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastTurbulenceSectorAtom\"\n\u807d\u807d\"ReportAtom[TurbulenceSectorSchema, SingleMastMeta]\" is not assignable to \"SingleMastTurbulenceSectorAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_turbulence_atoms_migrated.py",
+    "line": 195,
+    "message": "Type \"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastTurbulenceMultiHeightAtom\"\n\u807d\u807d\"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to \"SingleMastTurbulenceMultiHeightAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_turbulence_atoms_migrated.py",
+    "line": 208,
+    "message": "Type \"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastTurbulenceSummaryAtom\"\n\u807d\u807d\"ReportAtom[TurbulenceSchema, SingleMastMeta]\" is not assignable to \"SingleMastTurbulenceSummaryAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 483,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 524,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 539,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 553,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 652,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 669,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 682,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 715,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 729,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_vertical_profile_atoms_migrated.py",
+    "line": 818,
+    "message": "Argument of type \"type[VerticalProfileSchema]\" cannot be assigned to parameter \"schema\" of type \"type[WindShearSchema]\" in function \"__init__\"\n\u807d\u807d\"type[VerticalProfileSchema]\" is not assignable to \"type[WindShearSchema]\"\n\u807d\u807dType \"type[VerticalProfileSchema]\" is not assignable to type \"type[WindShearSchema]\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_weibull_atoms.py",
+    "line": 142,
+    "message": "Type \"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWeibullParametersAtom\"\n\u807d\u807d\"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to \"SingleMastWeibullParametersAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_weibull_atoms.py",
+    "line": 155,
+    "message": "Type \"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWeibullDistributionAtom\"\n\u807d\u807d\"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to \"SingleMastWeibullDistributionAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_weibull_atoms.py",
+    "line": 168,
+    "message": "Type \"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWeibullDistributionAtom\"\n\u807d\u807d\"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to \"SingleMastWeibullDistributionAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_weibull_atoms.py",
+    "line": 181,
+    "message": "Type \"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWeibullMultiHeightAtom\"\n\u807d\u807d\"ReportAtom[WeibullSchema, SingleMastMeta]\" is not assignable to \"SingleMastWeibullMultiHeightAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_frequency_atoms.py",
+    "line": 158,
+    "message": "Type \"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindFrequencyDistributionAtom\"\n\u807d\u807d\"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to \"SingleMastWindFrequencyDistributionAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_frequency_atoms.py",
+    "line": 171,
+    "message": "Type \"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindFrequencyTableAtom\"\n\u807d\u807d\"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to \"SingleMastWindFrequencyTableAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_frequency_atoms.py",
+    "line": 184,
+    "message": "Type \"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindPowerFrequencyTableAtom\"\n\u807d\u807d\"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to \"SingleMastWindPowerFrequencyTableAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_frequency_atoms.py",
+    "line": 197,
+    "message": "Type \"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindRangeSummaryAtom\"\n\u807d\u807d\"ReportAtom[WindFrequencySchema, SingleMastMeta]\" is not assignable to \"SingleMastWindRangeSummaryAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_rose_atoms.py",
+    "line": 66,
+    "message": "Type \"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyWindFrequencyRoseAtom\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyWindFrequencyRoseAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_rose_atoms.py",
+    "line": 78,
+    "message": "Type \"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindPowerRoseAtom\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastWindPowerRoseAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_rose_grid_atom.py",
+    "line": 183,
+    "message": "Type \"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyWindRoseGridAtom\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyWindRoseGridAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_rose_grid_atom.py",
+    "line": 196,
+    "message": "Type \"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyWindRoseGridAtom\"\n\u807d\u807d\"ReportAtom[WindRoseSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyWindRoseGridAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 200,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastWindTimeseriesAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastWindTimeseriesAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 213,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastDailyPatternAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastDailyPatternAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 226,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastDailyPowerPatternAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastDailyPowerPatternAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 239,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyPatternAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyPatternAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 252,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyPowerPatternAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyPowerPatternAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 265,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyDailyWindAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyDailyWindAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 278,
+    "message": "Type \"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to return type \"SingleMastMonthlyDailyPowerAtom\"\n\u807d\u807d\"ReportAtom[TemporalPatternSchema, SingleMastMeta]\" is not assignable to \"SingleMastMonthlyDailyPowerAtom\"",
+    "severity": "error"
+  },
+  {
+    "file": "c:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\subdomains\\dataingestion\\infrastructure\\test_parquet_interop.py",
+    "line": 178,
+    "message": "Argument of type \"list[float]\" cannot be assigned to parameter \"value\" of type \"DatetimeIndex\" in function \"__setitem__\"\n\u807d\u807d\"list[float]\" is not assignable to \"DatetimeIndex\"",
+    "severity": "error"
+  }
+]

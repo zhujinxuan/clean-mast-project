@@ -6,12 +6,13 @@ from pathlib import Path
 import click
 
 from .adapters.cli import (
-    recommend_fill_heights,
     execute_fill_heights,
-    recommend_rep_ts_report,
-    report_rep_ts,
-    recommend_wt_timeseries_cli,
     execute_wt_timeseries_cli,
+    recommend_fill_heights,
+    recommend_timeseries_report,
+    recommend_wt_timeseries_cli,
+    report_timeseries,
+    verify,
 )
 
 
@@ -69,9 +70,6 @@ main.add_command(execute_fill_heights, "fill-heights")
 recommend.add_command(recommend_wt_timeseries_cli, "wt-timeseries")
 main.add_command(execute_wt_timeseries_cli, "wt-timeseries")
 
-# Register report commands
-recommend.add_command(recommend_rep_ts_report, "rep-ts-report")
-
 # === Report command group ===
 
 
@@ -82,7 +80,21 @@ def report():
 
 
 # Register report generation commands
-report.add_command(report_rep_ts, "rep-ts")
+report.add_command(report_timeseries, "timeseries")
+
+# Register verify command
+main.add_command(verify, "verify")
+
+# === Recommend report subgroup ===
+
+
+@recommend.group()
+def report_configs():
+    """Generate report configurations."""
+    pass
+
+
+report_configs.add_command(recommend_timeseries_report, "timeseries")
 
 
 # === Process command group ===

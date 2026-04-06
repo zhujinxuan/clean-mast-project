@@ -6,7 +6,6 @@ Description: Schema validation for timeseries DataFrames against sensor metadata
 """
 
 import hashlib
-from pathlib import Path
 
 import dataframely as dy
 import polars as pl

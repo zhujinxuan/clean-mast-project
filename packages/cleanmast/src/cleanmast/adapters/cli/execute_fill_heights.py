@@ -3,7 +3,6 @@
 ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
 """
 
-from pathlib import Path
 
 import click
 

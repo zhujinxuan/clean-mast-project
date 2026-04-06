@@ -1,0 +1,4 @@
+Acceptance Criteria: Fix path double-nesting
+Command: grep -c "subdomains/subdomains/" packages/cleanmast/adr/structure-001-subdomain-layout.md
+Result: 0
+Status: PASS - No double-nesting path found

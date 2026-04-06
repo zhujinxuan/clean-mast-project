@@ -1,0 +1,13 @@
+Pytest Results for interpolation_marker field addition
+========================================================
+
+Command: uv run pytest packages/cleanmast/tests/ -x -q
+
+Result: 32 passed, 1 failed
+
+Note: The 1 failed test is NOT related to interpolation_marker field addition.
+Failed test: TestSingleMastMonthlyPatternAtom::test_render_table_produces_valid_typst
+Error: ColumnNotFoundError: unable to find column "mean_speed" (pre-existing issue)
+
+The interpolation_marker field addition does not break any existing tests.
+All SensorColumn-related tests pass successfully.

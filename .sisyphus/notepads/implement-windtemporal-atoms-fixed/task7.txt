@@ -1,0 +1,20 @@
+# Task 7: SingleMastMonthlyPowerPatternAtom
+
+## Completed
+- Created: `packages/cleanmast/src/cleanmast/subdomains/reporting/entities/single_mast/monthly_power_pattern.py`
+- Class: `SingleMastMonthlyPowerPatternAtom` inherits from `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+
+## Implementation Details
+- `renderTable()`: Typst table with 12 months as rows, heights as columns, power values in W/m²
+- `renderImage()`: Altair grouped bar chart (mark_bar) with X=month, Y=avg_power, grouped by height
+- `renderSummary()`: Chinese narrative about seasonal power patterns with statistics
+
+## Key Differences from monthly_pattern.py
+- Uses `mean_power` instead of `mean_speed`
+- Units: W/m² instead of m/s
+- Chart title: "月平均风功率密度分布" instead of "月平均风速分布"
+
+## Notes
+- Same type error as monthly_pattern.py (pre-existing dataframely SchemaProtocol issue)
+- All three render methods implemented
+- Filters to heights >= 100m for visualization

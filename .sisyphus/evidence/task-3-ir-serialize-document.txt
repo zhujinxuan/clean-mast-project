@@ -1,0 +1,12 @@
+Task 3 Evidence: IR Serializer Document Test
+
+Test: test_serialize_document
+Command: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "serialize_document"
+Result: PASSED
+
+Serialized output verified to contain:
+- Valid Typst syntax
+- Document structure with heading + table + figure
+- All components compile with typst CLI
+
+Date: 2026-04-04

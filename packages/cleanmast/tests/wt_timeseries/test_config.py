@@ -1,14 +1,15 @@
 """Tests for wt_timeseries configuration module."""
 
 import pytest
-from pydantic import ValidationError
-
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
     load_wt_timeseries_config,
 )
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
+from pydantic import ValidationError
 
 
 class TestWtTimeSeriesMast:

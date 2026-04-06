@@ -14,11 +14,11 @@ import click
 from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
     load_wt_timeseries_config,
 )
-from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
-    process_single_mast_csv,
-)
 from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     process_turbulence_for_mast,
+)
+from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
+    process_single_mast_csv,
 )
 
 
@@ -57,7 +57,7 @@ def execute_wt_timeseries(config_path: Path) -> None:
             click.echo(f"  Generating turbulence files for {len(mast.turbulence_heights)} height(s)...")
             process_turbulence_for_mast(mast, project_dir)
         else:
-            click.echo(f"  No turbulence heights configured, skipping...")
+            click.echo("  No turbulence heights configured, skipping...")
 
     click.echo("\nProcessing complete!")
     click.echo(f"Output directory: {project_dir / 'wt-timeseries'}")

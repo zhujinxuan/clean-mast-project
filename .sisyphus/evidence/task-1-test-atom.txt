@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
+configfile: pyproject.toml
+plugins: cov-7.0.0
+collecting ... collected 14 items
+
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomCreate::test_create_validates_dataframe PASSED [  7%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomCreate::test_create_returns_correct_type PASSED [ 14%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomHashCaching::test_hash_computed_lazily PASSED [ 21%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomHashCaching::test_hash_cached_on_subsequent_calls PASSED [ 28%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomHashCaching::test_different_data_produces_different_hashes PASSED [ 35%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomHashCaching::test_same_data_produces_same_hash PASSED [ 42%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomRenderImageTypst::test_render_image_typst_includes_figure_markup PASSED [ 50%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomRenderImageTypst::test_render_image_typst_includes_label PASSED [ 57%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomGetReference::test_get_reference_returns_typst_format PASSED [ 64%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomGetReference::test_get_reference_consistent PASSED [ 71%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomAbstractMethods::test_cannot_instantiate_abstract_class PASSED [ 78%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomAbstractMethods::test_must_implement_render_table PASSED [ 85%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomAbstractMethods::test_must_implement_render_image PASSED [ 92%]
+packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomAbstractMethods::test_must_implement_render_summary PASSED [100%]
+
+============================= 14 passed in 0.16s ==============================

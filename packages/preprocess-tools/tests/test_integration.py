@@ -5,15 +5,14 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
-from preprocess_tools.col_name_normalizer import process_file as col_normalize
-from preprocess_tools.csv_merger import merge_csv_files
-from preprocess_tools.timestamp_normalizer import process_file as timestamp_normalize
-from preprocess_tools.type_normalizer import process_file as type_normalize
 from preprocess_tools.col_name_normalizer import ColNameNormalizerConfig
-from preprocess_tools.csv_merger import CsvMergerConfig, load_config as load_merger_config
+from preprocess_tools.col_name_normalizer import process_file as col_normalize
+from preprocess_tools.csv_merger import CsvMergerConfig, merge_csv_files
+from preprocess_tools.csv_merger import load_config as load_merger_config
 from preprocess_tools.timestamp_normalizer import TimestampNormalizerConfig
+from preprocess_tools.timestamp_normalizer import process_file as timestamp_normalize
 from preprocess_tools.type_normalizer import TypeNormalizerConfig
+from preprocess_tools.type_normalizer import process_file as type_normalize
 
 
 @pytest.fixture
@@ -120,7 +119,7 @@ class TestFullPipeline:
         df2.write_csv(test_dir / "file2.csv")
 
         # Step 1: Merge
-        from preprocess_tools.csv_merger import InputConfig, HeadlineConfig, DateTimeConfig
+        from preprocess_tools.csv_merger import DateTimeConfig, HeadlineConfig, InputConfig
 
         merger_config = CsvMergerConfig(
             output=str(temp_output_dir / "step1_merged.csv"),
@@ -192,10 +191,10 @@ class TestCLIIntegration:
 
     def test_cli_commands_available(self):
         """Test that CLI commands are importable."""
-        from preprocess_tools.csv_merger import main as csv_merge_main
-        from preprocess_tools.type_normalizer import main as type_norm_main
         from preprocess_tools.col_name_normalizer import main as col_norm_main
+        from preprocess_tools.csv_merger import main as csv_merge_main
         from preprocess_tools.timestamp_normalizer import main as ts_norm_main
+        from preprocess_tools.type_normalizer import main as type_norm_main
 
         # If we can import them, the CLI structure is correct
         assert callable(csv_merge_main)
@@ -249,7 +248,7 @@ class TestErrorHandling:
         df1.write_csv(test_dir / "file1.csv")
         df2.write_csv(test_dir / "file2.csv")
 
-        from preprocess_tools.csv_merger import InputConfig, HeadlineConfig, DateTimeConfig
+        from preprocess_tools.csv_merger import DateTimeConfig, HeadlineConfig, InputConfig
 
         config = CsvMergerConfig(
             output=str(temp_output_dir / "merged.csv"),

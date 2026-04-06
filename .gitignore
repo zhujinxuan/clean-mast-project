@@ -45,4 +45,7 @@ tmp/
 *.docx
 nul
 tmpclaude*
-.sisyphus
+
+#omo
+.sisyphus/*
+!.sisyphus/rules/

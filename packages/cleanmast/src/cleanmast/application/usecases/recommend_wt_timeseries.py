@@ -9,9 +9,9 @@ configuration files based on auto-discovering heights from representative-year d
 
 from pathlib import Path
 
-import tomli
 import tomli_w
 
+from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.configuration import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
@@ -19,7 +19,9 @@ from cleanmast.subdomains.configuration import (
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 def _discover_csv_heights(sensors: list[SensorColumn]) -> list[float]:
@@ -106,7 +108,7 @@ def recommend_wt_timeseries(project_dir: Path) -> Path:
             "Please run fill-heights processing first."
         )
 
-    fill_heights_config = load_fill_heights_config(str(fill_heights_config_path))
+    fill_heights_config = load_fill_heights_config(to_posix_path(fill_heights_config_path))
 
     masts: list[WtTimeSeriesMast] = []
 

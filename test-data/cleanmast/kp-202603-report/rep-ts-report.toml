@@ -1,0 +1,13 @@
+[[masts]]
+name = "L32261"
+air_density = 1.237
+
+[masts.input]
+data = "./representative-year-fill-heights/L32261.parquet"
+
+[[masts]]
+name = "M245228"
+air_density = 1.238
+
+[masts.input]
+data = "./representative-year-fill-heights/M245228.parquet"

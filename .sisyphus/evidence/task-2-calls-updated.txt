@@ -1,0 +1,5 @@
+QA Verification 2: All calls updated to pass timeseries
+95:        input_data = service._create_analysis_input(timeseries, meta, air_density)
+106:            wind_section = service.generate_monthly_wind_section(timeseries, meta)
+111:            power_section = service.generate_monthly_power_section(
+118:            wind_rose_section = service.generate_wind_rose_section(timeseries, meta)

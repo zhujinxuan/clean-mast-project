@@ -1,0 +1,4 @@
+Acceptance Criteria: Document 3 patterns
+Command: grep -c "layered\|organized-flat\|minimal-flat" packages/cleanmast/adr/structure-001-subdomain-layout.md
+Result: 3
+Status: PASS - All 3 patterns documented

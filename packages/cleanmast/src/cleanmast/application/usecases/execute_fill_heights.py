@@ -10,14 +10,22 @@ from configuration files.
 
 from pathlib import Path
 
-import polars as pl
-
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import load_fill_heights_config
-from cleanmast.subdomains.dataprocessing.services.height_filling.validation import _validate_references
-from cleanmast.subdomains.dataprocessing.services.height_filler import apply_ws_fill, apply_wd_fill
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import ParquetRepository
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.infrastructure.path_utils import to_posix_path
+from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+    load_fill_heights_config,
+)
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
+    ParquetRepository,
+)
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.subdomains.dataprocessing.services.height_filler import (
+    apply_wd_fill,
+    apply_ws_fill,
+)
+from cleanmast.subdomains.dataprocessing.services.height_filling.validation import (
+    _validate_references,
+)
 
 
 def execute_fill_heights(config_path: str) -> None:
@@ -51,9 +59,9 @@ def execute_fill_heights(config_path: str) -> None:
         ValueError: If configuration is invalid
     """
     config_path_obj = Path(config_path)
-    base_dir = str(config_path_obj.parent)
+    base_dir = to_posix_path(config_path_obj.parent)
 
-    config = load_fill_heights_config(str(config_path_obj))
+    config = load_fill_heights_config(to_posix_path(config_path_obj))
 
     # Process each mast
     for mast_config in config.masts:

@@ -2,10 +2,10 @@
 
 import click
 
-from .csv_merger import main as csv_merger_main
 from .col_name_normalizer import main as col_normalizer_main
-from .type_normalizer import main as type_normalizer_main
+from .csv_merger import main as csv_merger_main
 from .timestamp_normalizer import main as timestamp_normalizer_main
+from .type_normalizer import main as type_normalizer_main
 
 
 @click.group()

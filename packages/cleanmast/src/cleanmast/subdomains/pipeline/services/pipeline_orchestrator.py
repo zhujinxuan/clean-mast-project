@@ -9,11 +9,9 @@ Coordinates execution of pipeline phases in the correct order.
 from pathlib import Path
 
 from cleanmast.subdomains.pipeline.entities.pipeline_phase import (
-    PipelinePhase,
     PhaseStatus,
     PhaseType,
-    IMPLEMENTED_PHASES,
-    UNIMPLEMENTED_PHASES,
+    PipelinePhase,
 )
 
 
@@ -153,24 +151,24 @@ class PipelineOrchestrator:
         Args:
             phase: Phase to execute
         """
-        from cleanmast.application.usecases.recommend_fill_heights import (
-            recommend_fill_heights,
-        )
         from cleanmast.application.usecases.execute_fill_heights import (
             execute_fill_heights,
         )
-        from cleanmast.application.usecases.recommend_wt_timeseries import (
-            recommend_wt_timeseries,
-        )
         from cleanmast.application.usecases.generate_wt_timeseries import (
             generate_wt_timeseries,
+        )
+        from cleanmast.application.usecases.recommend_fill_heights import (
+            recommend_fill_heights,
+        )
+        from cleanmast.application.usecases.recommend_wt_timeseries import (
+            recommend_wt_timeseries,
         )
 
         executors = {
             "recommend-fill-heights": lambda: recommend_fill_heights(
                 str(self.project_dir), "125,140,160", 1.125
             ),
-            "execute-fill-heights": lambda: execute_fill_heights.callback(
+            "execute-fill-heights": lambda: execute_fill_heights(
                 str(self.project_dir / "fill-heights-reconstruct-meso.toml")
             ),
             "recommend-wt-timeseries": lambda: recommend_wt_timeseries(self.project_dir),

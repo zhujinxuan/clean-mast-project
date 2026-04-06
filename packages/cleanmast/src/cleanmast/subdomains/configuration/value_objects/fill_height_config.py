@@ -11,7 +11,9 @@ import tomli
 from pydantic import BaseModel, field_validator, model_validator
 
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 class HeightReference(BaseModel):

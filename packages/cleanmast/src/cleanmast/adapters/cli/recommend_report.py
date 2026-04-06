@@ -3,7 +3,6 @@
 ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
 """
 
-from pathlib import Path
 
 import click
 
@@ -12,9 +11,9 @@ from cleanmast.application.usecases.recommend_report import (
 )
 
 
-@click.command("rep-ts-report")
+@click.command("timeseries")
 @click.argument("project_dir", type=click.Path(exists=True))
-def recommend_rep_ts_report(project_dir: str):
+def recommend_timeseries_report(project_dir: str):
     """Generate configuration for representative timeseries report."""
     click.echo("Generating rep-ts-report configuration...")
 
@@ -27,4 +26,4 @@ def recommend_rep_ts_report(project_dir: str):
 
     click.echo(f"\nGenerated: {output_path}")
     click.echo("\nNext steps:")
-    click.echo(f"  uv run cleanmast report rep-ts {project_dir}")
+    click.echo(f"  uv run cleanmast report timeseries {project_dir}")

@@ -1,11 +1,5 @@
 """Subdomains package."""
 
-from cleanmast.subdomains.dataingestion import (
-    SensorColumn,
-    TimeSeriesData,
-    TimeSeriesSource,
-    TimeRange,
-)
 from cleanmast.subdomains.configuration import (
     FillHeightsConfiguration,
     HeightReference,
@@ -16,6 +10,12 @@ from cleanmast.subdomains.configuration import (
     WtTimeSeriesMast,
     load_fill_heights_config,
     load_wt_timeseries_config,
+)
+from cleanmast.subdomains.dataingestion import (
+    SensorColumn,
+    TimeRange,
+    TimeSeriesData,
+    TimeSeriesSource,
 )
 
 __all__ = [

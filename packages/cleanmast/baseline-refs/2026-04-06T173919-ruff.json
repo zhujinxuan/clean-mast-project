@@ -1,0 +1,38 @@
+[
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\value_objects\\__init__.py",
+    "line": 7,
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\infrastructure\\test_typst_ir.py",
+    "line": 339,
+    "code": "F841",
+    "message": "Local variable `snapshot` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\subdomains\\dataingestion\\infrastructure\\test_parquet_interop.py",
+    "line": 84,
+    "code": "E402",
+    "message": "Module level import not at top of file"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\subdomains\\dataingestion\\infrastructure\\test_parquet_interop.py",
+    "line": 128,
+    "code": "F841",
+    "message": "Local variable `parquet_file` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\wt_timeseries\\test_turbulence.py",
+    "line": 515,
+    "code": "F841",
+    "message": "Local variable `exc_info` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\preprocess-tools\\src\\preprocess_tools\\csv_merger.py",
+    "line": 186,
+    "code": "E722",
+    "message": "Do not use bare `except`"
+  }
+]

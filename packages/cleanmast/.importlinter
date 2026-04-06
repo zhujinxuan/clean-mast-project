@@ -1,0 +1,83 @@
+[importlinter]
+
+root_package = cleanmast
+include_external_packages = true
+exclude_type_checking_imports = true
+
+[importlinter:contract:subdomain-isolation]
+name = DDD Bounded Context Isolation
+type = independence
+modules =
+    cleanmast.subdomains.dataingestion
+    cleanmast.subdomains.dataprocessing
+    cleanmast.subdomains.assessment
+    cleanmast.subdomains.configuration
+    cleanmast.subdomains.pipeline
+
+[importlinter:contract:domain-purity]
+name = Domain Layer Purity
+type = forbidden
+source_modules =
+    cleanmast.subdomains.dataingestion.value_objects
+    cleanmast.subdomains.dataingestion.entities
+    cleanmast.subdomains.assessment.domain.value_objects
+    cleanmast.subdomains.assessment.domain.entities
+forbidden_modules =
+    polars
+    pandas
+    sqlalchemy
+    click
+    cleanmast.db
+    cleanmast.infrastructure
+
+[importlinter:contract:layer-hierarchy]
+name = Application Layer Dependencies
+type = layers
+containers = cleanmast
+layers =
+    application
+    subdomains
+
+[importlinter:contract:repository-access]
+name = Repository Protocol Access
+type = allowed
+source_modules =
+    cleanmast.subdomains.dataprocessing
+    cleanmast.subdomains.assessment
+allowed_modules =
+    cleanmast.subdomains.dataingestion.repositories
+    cleanmast.subdomains.dataingestion.value_objects
+
+[importlinter:contract:cli-isolation]
+name = CLI Isolation
+type = forbidden
+source_modules = cleanmast.cli
+forbidden_modules =
+    cleanmast.subdomains.dataingestion
+    cleanmast.subdomains.dataprocessing
+    cleanmast.subdomains.assessment
+    cleanmast.db.repositories
+allowed_modules =
+    cleanmast.application
+
+[importlinter:contract:no-circular-imports]
+name = No Circular Imports
+type = no_circular_imports
+modules = cleanmast
+
+[importlinter:contract:timeseriesdata-creation-gate]
+name = TimeSeriesData instantiation restricted to I/O and pipeline modules
+type = allowed
+source_modules = 
+    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io
+    cleanmast.subdomains.dataingestion.repositories.parquet_repository
+    cleanmast.application.usecases.execute_fill_heights
+allowed_modules = cleanmast.subdomains.dataingestion.entities.time_series_data
+
+[importlinter:contract:entities-package-marker-banned]
+name = No import from entities package marker __init__.py
+type = forbidden
+source_modules = cleanmast
+forbidden_modules =
+    cleanmast.subdomains.*.entities
+    cleanmast.subdomains.*.*.entities

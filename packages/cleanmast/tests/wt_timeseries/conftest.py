@@ -2,16 +2,15 @@
 
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import polars as pl
 import pytest
-
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import WtTimeSeriesMast
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 @pytest.fixture
@@ -206,7 +205,6 @@ def sample_wt_timeseries_mast():
 def sample_parquet_with_sensors(tmp_path, sample_sensor_columns_with_sd):
     """Create a sample parquet file with embedded sensor metadata."""
     import pyarrow.parquet as pq
-    import pyarrow as pa
 
     np.random.seed(42)
     n = 1000

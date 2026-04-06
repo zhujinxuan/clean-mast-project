@@ -13,11 +13,12 @@ applies_when:
 
 ## Constraint (MUST)
 
-1. **Six contexts**: Configuration, PipelineContext, DataIngestion, DataProcessing, Analysis, Reporting
+1. **Five contexts**: Configuration, PipelineContext, DataIngestion, DataProcessing, Assessment
 2. **PascalCase names** - `DataIngestion`, `PipelineContext`
 3. **Physical isolation**: Each context = separate package with own `subdomains/`
 4. **NO direct imports**: Between contexts - use protocols/ACL
 5. **SharedKernel**: Only `TimeSeriesData` as DTO, no business logic
+Note: Assessment was formed by merging Analysis and Reporting due to tight coupling.
 
 ## Rationale (WHY)
 
@@ -27,7 +28,7 @@ CleanMast processes wind data through distinct phases (config → loading → cl
 
 ```python
 # ❌ Direct context imports
-from ..analysis.calculations import WindRose  # NEVER!
+from ..assessment.domain.services.calculators import WindRoseCalculator  # NEVER!
 
 # ❌ Leaking domain models
 class DataCleaner:

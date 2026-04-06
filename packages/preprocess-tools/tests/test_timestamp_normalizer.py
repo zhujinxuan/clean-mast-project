@@ -5,7 +5,6 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
 from preprocess_tools.timestamp_normalizer import (
     TimestampNormalizerConfig,
     load_config,

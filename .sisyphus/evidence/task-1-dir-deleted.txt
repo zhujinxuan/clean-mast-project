@@ -1,0 +1,34 @@
+Directory deletion completed successfully.
+
+DELETED: packages/cleanmast/src/cleanmast/report/
+
+FILES REMOVED:
+- report/atoms/__init__.py
+- report/atoms/single_mast/__init__.py
+- report/atoms/single_mast/monthly_wind.py
+- report/atoms/single_mast/monthly_wind_power.py
+- report/atoms/single_mast/monthly_wind_speed.py
+- report/atoms/single_mast/schemas.py
+- report/atoms/single_mast/wind_rose.py
+- report/builder.py
+- report/collection.py
+- report/compiler.py
+- report/config.py
+- report/protocols.py
+- report/renderer.py
+- report/sections/__init__.py
+- report/sections/representative_wind_power.py
+- report/sections/representative_wind_speed.py
+- report/sections/wind_rose.py
+- report/__pycache__/config.cpython-313.pyc
+
+VERIFICATION:
+- glob confirms: No files found in report/ path
+- ls confirms: "No such file or directory"
+
+TYPE CHECK RESULTS:
+- Before: 80 diagnostics
+- After: 70 diagnostics
+- Reduction: 10 errors (all from deleted report/ files)
+
+STATUS: COMPLETE

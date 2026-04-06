@@ -14,14 +14,17 @@ import click
 import tomli
 import tomli_w
 
+from cleanmast.infrastructure.path_utils import to_posix_path
+from cleanmast.subdomains.configuration import load_fill_heights_config
 from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
-from cleanmast.subdomains.configuration import load_fill_heights_config
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +135,7 @@ def recommend_wt_timeseries(project_dir: Path) -> Path:
             "Please run fill-heights processing first."
         )
 
-    fill_heights_config = load_fill_heights_config(str(fill_heights_config_path))
+    fill_heights_config = load_fill_heights_config(to_posix_path(fill_heights_config_path))
 
     masts: list[WtTimeSeriesMast] = []
 

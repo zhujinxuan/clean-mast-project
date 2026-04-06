@@ -183,7 +183,7 @@ def read_csv_file_robust(file_path: str, config: CsvMergerConfig, utf8_file_path
             # Only keep cast if <50% nulls (indicates numeric column)
             if test_cast.null_count() <= len(df) * 0.5:
                 df = df.with_columns(test_cast.alias(col))
-        except:
+        except Exception:
             pass
 
     return df
@@ -249,7 +249,7 @@ def read_csv_file(file_path: str, config: CsvMergerConfig, force_whitespace_stri
 
             # Fall through to slow path if whitespace detected
             click.echo(
-                f"  Note: Detected whitespace in numeric values, re-reading with cleanup...",
+                "  Note: Detected whitespace in numeric values, re-reading with cleanup...",
                 err=True
             )
 

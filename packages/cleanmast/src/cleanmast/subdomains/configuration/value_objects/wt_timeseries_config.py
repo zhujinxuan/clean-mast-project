@@ -11,7 +11,10 @@ from typing import Union
 import tomli
 from pydantic import BaseModel, field_validator
 
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.infrastructure.path_utils import to_posix_path
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 class WtTimeSeriesMast(BaseModel):
@@ -60,6 +63,6 @@ def load_wt_timeseries_config(config_path: Union[str, Path]) -> WtTimeSeriesConf
         if "input" in mast_data and "data" in mast_data["input"]:
             input_path = Path(mast_data["input"]["data"])
             if not input_path.is_absolute():
-                mast_data["input"]["data"] = str(config_dir / input_path)
+                mast_data["input"]["data"] = to_posix_path(config_dir / input_path)
 
     return WtTimeSeriesConfiguration(**data)

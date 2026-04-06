@@ -16,9 +16,9 @@ from pathlib import Path
 
 import dataframely as dy
 import polars as pl
-
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+
 from .config import WtTimeSeriesMast
 
 logger = logging.getLogger(__name__)

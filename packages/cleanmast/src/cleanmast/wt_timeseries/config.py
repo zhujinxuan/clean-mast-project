@@ -5,8 +5,8 @@ This module re-exports from the canonical DDD location for backward compatibilit
 """
 
 from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
-    WtTimeSeriesMast,
     WtTimeSeriesConfiguration,
+    WtTimeSeriesMast,
     load_wt_timeseries_config,
 )
 

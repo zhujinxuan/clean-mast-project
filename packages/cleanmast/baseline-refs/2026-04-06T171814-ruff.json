@@ -1,0 +1,98 @@
+[
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\entities\\single_mast\\turbulence_multi.py",
+    "line": 85,
+    "code": "E722",
+    "message": "Do not use bare `except`"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\entities\\single_mast\\wind_power_frequency_table.py",
+    "line": 167,
+    "code": "F841",
+    "message": "Local variable `effective_power_hours` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\value_objects\\__init__.py",
+    "line": 25,
+    "code": "F811",
+    "message": "Redefinition of unused `calculate_air_density` from line 7: `calculate_air_density` redefined here"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\value_objects\\__init__.py",
+    "line": 36,
+    "code": "F401",
+    "message": "`.single_mast.schemas.MonthlyWindPowerSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\value_objects\\__init__.py",
+    "line": 39,
+    "code": "F401",
+    "message": "`.single_mast.schemas.MonthlyWindSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\assessment\\domain\\value_objects\\__init__.py",
+    "line": 42,
+    "code": "F401",
+    "message": "`.single_mast.schemas.WindRoseSchema` imported but unused; consider removing, adding to `__all__`, or using a redundant alias"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\dataprocessing\\services\\__init__.py",
+    "line": 19,
+    "code": "F401",
+    "message": "`cleanmast.subdomains.dataprocessing.services.height_filling.generate_target_column` imported but unused; consider removing, adding to `__all__`, or using a redundant alias"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\dataprocessing\\services\\height_filling\\__init__.py",
+    "line": 16,
+    "code": "F401",
+    "message": "`.helpers.generate_target_column` imported but unused; consider removing, adding to `__all__`, or using a redundant alias"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\src\\cleanmast\\subdomains\\dataprocessing\\services\\height_filling\\planner.py",
+    "line": 272,
+    "code": "F841",
+    "message": "Local variable `fit_timeseries` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 704,
+    "code": "F841",
+    "message": "Local variable `mtime1` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\assessment\\test_wind_temporal_atoms.py",
+    "line": 710,
+    "code": "F841",
+    "message": "Local variable `mtime2` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\infrastructure\\test_typst_ir.py",
+    "line": 339,
+    "code": "F841",
+    "message": "Local variable `snapshot` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\subdomains\\dataingestion\\infrastructure\\test_parquet_interop.py",
+    "line": 84,
+    "code": "E402",
+    "message": "Module level import not at top of file"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\subdomains\\dataingestion\\infrastructure\\test_parquet_interop.py",
+    "line": 128,
+    "code": "F841",
+    "message": "Local variable `parquet_file` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\cleanmast\\tests\\wt_timeseries\\test_turbulence.py",
+    "line": 515,
+    "code": "F841",
+    "message": "Local variable `exc_info` is assigned to but never used"
+  },
+  {
+    "file": "C:\\Users\\zhu_j\\workspace\\developing\\cleanmast-report-gen\\packages\\preprocess-tools\\src\\preprocess_tools\\csv_merger.py",
+    "line": 186,
+    "code": "E722",
+    "message": "Do not use bare `except`"
+  }
+]

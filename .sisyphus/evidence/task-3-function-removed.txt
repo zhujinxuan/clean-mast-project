@@ -1,0 +1,2 @@
+PASS: detect_interpolation_marker function removed from column_utils.py
+ImportError confirmed when trying to import function.

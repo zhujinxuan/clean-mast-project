@@ -13,7 +13,9 @@ from pydantic import BaseModel
 
 from cleanmast.subdomains.configuration.value_objects.reconstruct_meso import MesoSource
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 class RepresentativeYearMesoModel(BaseModel):

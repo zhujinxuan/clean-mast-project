@@ -69,8 +69,8 @@ def normalize_timestamp(df: pl.DataFrame, config: TimestampNormalizerConfig) -> 
             pl.col(config.timestamp_column).dt.strftime(output_format)
         )
 
-        click.echo(f"Successfully converted timestamp column")
-        click.echo(f"Sample converted timestamps:")
+        click.echo("Successfully converted timestamp column")
+        click.echo("Sample converted timestamps:")
         sample_timestamps = df_converted[config.timestamp_column].head(3).to_list()
         for ts in sample_timestamps:
             click.echo(f"  {ts}")

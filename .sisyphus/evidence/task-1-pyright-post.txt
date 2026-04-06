@@ -1,0 +1,218 @@
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:23:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.daily_pattern" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:26:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.daily_power_pattern" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:29:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_power" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:32:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_wind" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:35:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.monthly_pattern" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:38:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.monthly_power_pattern" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:41:6 - error: Import "cleanmast.subdomains.reporting.entities.single_mast.timeseries" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:44:6 - error: Import "cleanmast.subdomains.reporting.services.sections" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:45:6 - error: Import "cleanmast.subdomains.reporting.value_objects.collections.atom_collection" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:48:6 - error: Import "cleanmast.subdomains.reporting.value_objects.report_config" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:49:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.meta" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:50:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.schemas" could not be resolved (reportMissingImports)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:9:6 - error: Import "cleanmast.subdomains.reporting.entities.report_atom" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:10:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.meta" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:29:9 - error: Method "renderTable" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:83:9 - error: Method "renderImage" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:134:9 - error: Method "renderSummary" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:9:6 - error: Import "cleanmast.subdomains.reporting.entities.report_atom" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:10:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.meta" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:29:9 - error: Method "renderTable" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:83:9 - error: Method "renderImage" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:131:9 - error: Method "renderSummary" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:7:6 - error: Import "cleanmast.subdomains.reporting.entities.report_atom" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:8:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.meta" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:22:9 - error: Method "renderTable" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:64:9 - error: Method "renderImage" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:119:9 - error: Method "renderSummary" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:9:6 - error: Import "cleanmast.subdomains.reporting.entities.report_atom" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:10:6 - error: Import "cleanmast.subdomains.reporting.value_objects.single_mast.meta" could not be resolved (reportMissingImports)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:29:9 - error: Method "renderTable" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:80:9 - error: Method "renderImage" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:141:9 - error: Method "renderSummary" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:184:9 - error: Method "renderTable" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:237:9 - error: Method "renderImage" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:303:9 - error: Method "renderSummary" is marked as override, but no base method of same name is present (reportGeneralTypeIssues)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\collection.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\collection.py:8:6 - error: Import "cleanmast.subdomains.reporting.entities.report_atom" could not be resolved (reportMissingImports)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\sections\__init__.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\report\sections\__init__.py:7:6 - error: Import "cleanmast.subdomains.reporting.services.sections.templated" could not be resolved (reportMissingImports)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_multi.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_multi.py:169:27 - error: Operator "+" not supported for "None" (reportOptionalOperand)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:166:26 - error: Operator "/" not supported for types "int | float | Decimal" and "float"
+    Operator "/" not supported for types "Decimal" and "float" (reportOperatorIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:170:37 - error: Operator "/" not supported for types "int | float | Decimal" and "int | float | Decimal"
+    Operator "/" not supported for types "float" and "Decimal"
+    Operator "/" not supported for types "Decimal" and "float" (reportOperatorIssue)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py:52:24 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py:57:24 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\vertical_profile_analyzer.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\vertical_profile_analyzer.py:163:24 - error: Cannot access attribute "slope" for class "_"
+    Attribute "slope" is unknown (reportAttributeAccessIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\vertical_profile_analyzer.py:164:28 - error: Cannot access attribute "rvalue" for class "_"
+    Attribute "rvalue" is unknown (reportAttributeAccessIssue)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:80:16 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:92:16 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:130:16 - error: Argument of type "type[MonthlyWindSchema]" cannot be assigned to parameter "schema" of type "type[TemporalPatternSchema]" in function "create"
+    "type[MonthlyWindSchema]" is not assignable to "type[TemporalPatternSchema]"
+    Type "type[MonthlyWindSchema]" is not assignable to type "type[TemporalPatternSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:143:16 - error: Argument of type "type[MonthlyWindPowerSchema]" cannot be assigned to parameter "schema" of type "type[TemporalPatternSchema]" in function "create"
+    "type[MonthlyWindPowerSchema]" is not assignable to "type[TemporalPatternSchema]"
+    Type "type[MonthlyWindPowerSchema]" is not assignable to type "type[TemporalPatternSchema]" (reportArgumentType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:99:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:108:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:142:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:164:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:209:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:218:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:240:17 - error: No parameter named "original_column" (reportCallIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_air_density.py:249:17 - error: No parameter named "original_column" (reportCallIssue)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atom.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atom.py:113:20 - error: Argument of type "type[MonthlyWindSchema]" cannot be assigned to parameter "schema" of type "type[TemporalPatternSchema]" in function "create"
+    "type[MonthlyWindSchema]" is not assignable to "type[TemporalPatternSchema]"
+    Type "type[MonthlyWindSchema]" is not assignable to type "type[TemporalPatternSchema]" (reportArgumentType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py:132:30 - error: Cannot access attribute "exists" for class "str"
+    Attribute "exists" is unknown (reportAttributeAccessIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py:133:30 - error: Cannot access attribute "name" for class "str"
+    Attribute "name" is unknown (reportAttributeAccessIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py:134:30 - error: Cannot access attribute "parent" for class "str"
+    Attribute "parent" is unknown (reportAttributeAccessIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py:404:35 - error: Cannot access attribute "read_text" for class "str"
+    Attribute "read_text" is unknown (reportAttributeAccessIssue)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py:407:35 - error: Cannot access attribute "read_text" for class "str"
+    Attribute "read_text" is unknown (reportAttributeAccessIssue)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_collection.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_collection.py:27:33 - error: Type "MockSchema" cannot be assigned to type variable "T@ReportAtom"
+    Type "MockSchema" is not assignable to upper bound "SchemaProtocol" for type variable "T@ReportAtom"
+      "MockSchema" is incompatible with protocol "SchemaProtocol"
+        "validate" is an incompatible type
+          One or more overloads of "validate" is not assignable
+            Type "(df: DataFrame, *, cast: bool = False) -> DataFrame" is not assignable to type "(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]" (reportInvalidTypeArguments)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_collection.py:40:40 - error: Type "MockSchema" cannot be assigned to type variable "T@ReportAtom"
+    Type "MockSchema" is not assignable to upper bound "SchemaProtocol" for type variable "T@ReportAtom"
+      "MockSchema" is incompatible with protocol "SchemaProtocol"
+        "validate" is an incompatible type
+          One or more overloads of "validate" is not assignable
+            Type "(df: DataFrame, *, cast: bool = False) -> DataFrame" is not assignable to type "(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]" (reportInvalidTypeArguments)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_subsections.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_subsections.py:347:12 - error: Type "tuple[ReportAtom[WindRoseSchema, SingleMastMeta], ReportAtom[WindRoseSchema, SingleMastMeta]]" is not assignable to return type "tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyWindFrequencyRoseAtom"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastWindPowerRoseAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_subsections.py:428:12 - error: Type "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to return type "SingleMastWindFrequencyTableAtom"
+    "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to "SingleMastWindFrequencyTableAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_subsections.py:472:12 - error: Type "ReportAtom[VerticalProfileSchema, SingleMastMeta]" is not assignable to return type "SingleMastVerticalProfileAtom"
+    "ReportAtom[VerticalProfileSchema, SingleMastMeta]" is not assignable to "SingleMastVerticalProfileAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms.py:41:12 - error: Type "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to return type "SingleMastTurbulenceIntensityAtom"
+    "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to "SingleMastTurbulenceIntensityAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:170:12 - error: Type "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to return type "SingleMastTurbulenceIntensityAtom"
+    "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to "SingleMastTurbulenceIntensityAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:183:12 - error: Type "ReportAtom[TurbulenceSectorSchema, SingleMastMeta]" is not assignable to return type "SingleMastTurbulenceSectorAtom"
+    "ReportAtom[TurbulenceSectorSchema, SingleMastMeta]" is not assignable to "SingleMastTurbulenceSectorAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:196:12 - error: Type "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to return type "SingleMastTurbulenceMultiHeightAtom"
+    "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to "SingleMastTurbulenceMultiHeightAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:209:12 - error: Type "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to return type "SingleMastTurbulenceSummaryAtom"
+    "ReportAtom[TurbulenceSchema, SingleMastMeta]" is not assignable to "SingleMastTurbulenceSummaryAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:484:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:525:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:540:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:554:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:653:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:670:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:683:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:716:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:730:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:819:20 - error: Argument of type "type[VerticalProfileSchema]" cannot be assigned to parameter "schema" of type "type[WindShearSchema]" in function "__init__"
+    "type[VerticalProfileSchema]" is not assignable to "type[WindShearSchema]"
+    Type "type[VerticalProfileSchema]" is not assignable to type "type[WindShearSchema]" (reportArgumentType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_weibull_atoms.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_weibull_atoms.py:143:12 - error: Type "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to return type "SingleMastWeibullParametersAtom"
+    "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to "SingleMastWeibullParametersAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_weibull_atoms.py:156:12 - error: Type "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to return type "SingleMastWeibullDistributionAtom"
+    "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to "SingleMastWeibullDistributionAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_weibull_atoms.py:169:12 - error: Type "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to return type "SingleMastWeibullDistributionAtom"
+    "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to "SingleMastWeibullDistributionAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_weibull_atoms.py:182:12 - error: Type "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to return type "SingleMastWeibullMultiHeightAtom"
+    "ReportAtom[WeibullSchema, SingleMastMeta]" is not assignable to "SingleMastWeibullMultiHeightAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:159:12 - error: Type "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to return type "SingleMastWindFrequencyDistributionAtom"
+    "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to "SingleMastWindFrequencyDistributionAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:172:12 - error: Type "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to return type "SingleMastWindFrequencyTableAtom"
+    "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to "SingleMastWindFrequencyTableAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:185:12 - error: Type "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to return type "SingleMastWindPowerFrequencyTableAtom"
+    "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to "SingleMastWindPowerFrequencyTableAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:198:12 - error: Type "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to return type "SingleMastWindRangeSummaryAtom"
+    "ReportAtom[WindFrequencySchema, SingleMastMeta]" is not assignable to "SingleMastWindRangeSummaryAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_atoms.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:61:12 - error: Type "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyWindFrequencyRoseAtom"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyWindFrequencyRoseAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:62:16 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:73:12 - error: Type "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to return type "SingleMastWindPowerRoseAtom"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastWindPowerRoseAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:74:16 - error: Argument of type "type[WindRoseSchema]" cannot be assigned to parameter "schema" of type "type[WindRoseSchema]" in function "create"
+    "cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema" is not assignable to "cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema"
+    Type "type[cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema]" is not assignable to type "type[cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]" (reportArgumentType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:184:12 - error: Type "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyWindRoseGridAtom"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyWindRoseGridAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:197:12 - error: Type "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyWindRoseGridAtom"
+    "ReportAtom[WindRoseSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyWindRoseGridAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:201:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastWindTimeseriesAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastWindTimeseriesAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:214:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastDailyPatternAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastDailyPatternAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:227:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastDailyPowerPatternAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastDailyPowerPatternAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:240:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyPatternAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyPatternAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:253:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyPowerPatternAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyPowerPatternAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:266:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyDailyWindAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyDailyWindAtom" (reportReturnType)
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:279:12 - error: Type "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to return type "SingleMastMonthlyDailyPowerAtom"
+    "ReportAtom[TemporalPatternSchema, SingleMastMeta]" is not assignable to "SingleMastMonthlyDailyPowerAtom" (reportReturnType)
+c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\subdomains\dataingestion\infrastructure\test_parquet_interop.py
+  c:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\subdomains\dataingestion\infrastructure\test_parquet_interop.py:179:13 - error: Argument of type "list[float]" cannot be assigned to parameter "value" of type "DatetimeIndex" in function "__setitem__"
+    "list[float]" is not assignable to "DatetimeIndex" (reportArgumentType)
+104 errors, 0 warnings, 0 informations

@@ -1,5 +1,5 @@
-"""DataIngestion entities."""
+"""DataIngestion entities package marker.
 
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-
-__all__ = ["TimeSeriesData"]
+Import entities directly from their modules:
+    from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+"""

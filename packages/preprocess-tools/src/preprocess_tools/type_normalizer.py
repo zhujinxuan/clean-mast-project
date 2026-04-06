@@ -90,7 +90,7 @@ def process_file(config: TypeNormalizerConfig, config_dir: Path) -> None:
             )
 
             # Debug: show first few rows
-            click.echo(f"DEBUG: First 3 rows of loaded DataFrame:")
+            click.echo("DEBUG: First 3 rows of loaded DataFrame:")
             click.echo(df.head(3))
         else:
             click.echo(f"Error: Unsupported file format '{input_path.suffix}'", err=True)

@@ -2,20 +2,22 @@
 
 import json
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 import pytest
-
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
-from cleanmast.application.usecases.recommend_wt_timeseries import recommend_wt_timeseries
 from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
+from cleanmast.application.usecases.recommend_wt_timeseries import recommend_wt_timeseries
 from cleanmast.subdomains.configuration import load_wt_timeseries_config
-from cleanmast.subdomains.dataprocessing.services import process_single_mast_csv, process_turbulence_for_mast
-
+from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
+from cleanmast.subdomains.dataprocessing.services import (
+    process_single_mast_csv,
+    process_turbulence_for_mast,
+)
 
 
 class TestFullWorkflow:
@@ -79,9 +81,14 @@ class TestFullWorkflow:
         fill_heights_dir.mkdir(parents=True)
 
         # Create fill-heights-representative-year.toml config
-        from cleanmast.subdomains.configuration import FillHeightsConfiguration, MastFillConfig
-        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
         import tomli_w
+        from cleanmast.subdomains.configuration import (
+            FillHeightsConfiguration,
+            MastFillConfig,
+        )
+        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+            TimeSeriesSource,
+        )
 
         fill_heights_config = FillHeightsConfiguration(
             strategy="default",
@@ -224,9 +231,14 @@ class TestFullWorkflow:
         fill_heights_dir.mkdir(parents=True)
 
         # Create fill-heights-representative-year.toml config
-        from cleanmast.subdomains.configuration import FillHeightsConfiguration, MastFillConfig
-        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
         import tomli_w
+        from cleanmast.subdomains.configuration import (
+            FillHeightsConfiguration,
+            MastFillConfig,
+        )
+        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+            TimeSeriesSource,
+        )
 
         fill_heights_config = FillHeightsConfiguration(
             strategy="default",

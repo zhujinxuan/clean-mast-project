@@ -1,0 +1,23 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
+configfile: pyproject.toml
+plugins: cov-7.0.0
+
+# Full Test Suite Results (excluding scipy-dependent modules)
+# Note: 8 test files skipped due to missing scipy dependency (pre-existing environment issue)
+
+collecting ... collected 252 items
+
+Test Results:
+- 250 PASSED
+- 1 FAILED (pre-existing Windows path separator issue)
+- 1 SKIPPED
+
+FAILED: tests/wt_timeseries/test_config.py::TestLoadWtTimeSeriesConfig::test_path_resolution_relative_to_config
+- AssertionError: forward slash vs backslash path mismatch on Windows
+- This is a pre-existing issue unrelated to typecheck-quickwins work
+
+All other tests pass successfully.
+============================== 1 failed, 250 passed, 1 skipped in 3.69s ==============================

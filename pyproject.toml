@@ -21,6 +21,7 @@ dev-dependencies = [
     "ruff>=0.1.0",
     "mypy>=1.8",
     "pyright>=1.1",
+    "typ2docx>=0.3.0",
 ]
 
 # Shared tool configurations
@@ -30,6 +31,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
+ignore = ["E501"]  # Line too long - accept long lines to save tokens
 
 [tool.mypy]
 python_version = "3.11"

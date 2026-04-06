@@ -29,6 +29,11 @@ Architecture Decision Records for CleanMast Python package DDD refactoring.
 |--------|------|-------|---------|-----------|
 | pipeline-001 | [pipeline-001-orchestration.md](pipeline-001-orchestration.md) | Pipeline Orchestration | Phase workflows, Julia integration | Pipeline execution |
 
+### Platform & Infrastructure
+| ADR ID | File | Title | Purpose | Load When |
+|--------|------|-------|---------|-----------|
+| platform-001 | [platform-001-cross-platform-paths.md](platform-001-cross-platform-paths.md) | Cross-Platform Path Handling | POSIX path strings on all platforms | Path serialization, display, config |
+
 ## Quick Start: Selective Loading
 
 ```
@@ -94,8 +99,9 @@ Each ADR has **main file** (concise constraints) + **phase files** (detailed gui
 | `structure-*` | Project structure | `structure-001-subdomain-layout` |
 | `persistence-*` | Data storage | `persistence-001-parquet-storage` |
 | `pipeline-*` | Workflow | `pipeline-001-orchestration` |
+| `platform-*` | Platform/Infrastructure | `platform-001-cross-platform-paths` |
 
-**Current ADRs**: 5
+**Current ADRs**: 6
 
 ---
 

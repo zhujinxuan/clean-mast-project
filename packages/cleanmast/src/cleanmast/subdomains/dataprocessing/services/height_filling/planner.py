@@ -73,37 +73,41 @@ Available Strategies:
 - WDInterpolateInterStrategy: Interpolate WD between two sensors
 """
 
-from typing import Literal
 
 from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
     FillHeightsConfiguration,
     MastFillConfig,
-    WindSpeedHeightConfig,
     WindDirectionHeightConfig,
-    HeightReference,
+    WindSpeedHeightConfig,
+)
+from cleanmast.subdomains.configuration.value_objects.reconstruct_meso import (
+    ReconstructMesoConfiguration,
+)
+from cleanmast.subdomains.configuration.value_objects.representative_year import (
+    RepresentativeYearConfiguration,
 )
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
-from cleanmast.subdomains.configuration.value_objects.reconstruct_meso import ReconstructMesoConfiguration
-from cleanmast.subdomains.configuration.value_objects.representative_year import RepresentativeYearConfiguration
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
+from .fitting import (
+    fit_deg_diff_neighbors,
+    fit_deg_diff_top3,
+    fit_shear_neighbors,
+    fit_shear_top3,
+)
 from .helpers import (
-    get_existing_sensors,
-    find_neighbor_sensors,
     create_fill_target_sensor,
+    find_neighbor_sensors,
+    get_existing_sensors,
     get_top_sensors,
 )
-from .fitting import (
-    fit_shear_top3,
-    fit_shear_neighbors,
-    fit_deg_diff_top3,
-    fit_deg_diff_neighbors,
-)
-from .strategies.ws_extrapolate_top3 import WSExtrapolateTop3Strategy
-from .strategies.ws_interpolate_inter import WSInterpolateInterStrategy
 from .strategies.wd_extrapolate_top3 import WDExtrapolateTop3Strategy
 from .strategies.wd_interpolate_inter import WDInterpolateInterStrategy
+from .strategies.ws_extrapolate_top3 import WSExtrapolateTop3Strategy
+from .strategies.ws_interpolate_inter import WSInterpolateInterStrategy
 
 
 def generate_dual_configs(
@@ -265,7 +269,6 @@ def _build_mast_configs(
     for mast in source_config.masts:
         # Get fitted data for this mast
         fit_data = fitted_params[mast.name]
-        fit_timeseries = fit_data["timeseries"]
 
         # Get existing heights from source timeseries
         source_timeseries = load_timeseries(mast.output, base_dir)

@@ -1,0 +1,14 @@
+Task 3 Evidence: IR Validation Test
+
+Tests: test_table_empty_data_validation, test_table_headers_length_mismatch, test_figure_empty_content_validation
+Command: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "validation or empty or mismatch"
+Results: ALL PASSED
+
+Validation verified:
+- Empty table data raises ValueError
+- Header/data column mismatch raises ValueError
+- Empty figure content raises ValueError
+- Non-TypstDocument root raises TypeError
+- Invalid child types raise TypeError
+
+Date: 2026-04-04

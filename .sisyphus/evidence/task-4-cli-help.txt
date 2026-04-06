@@ -1,0 +1,30 @@
+=== cleanmast --help ===
+Usage: cleanmast [OPTIONS] COMMAND [ARGS]...
+
+  CleanMast - Wind energy meteorological tower data analysis toolkit.
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  fill-heights   Execute fill-heights from configuration file.
+  init           Initialize a new project with template structure.
+  process        Execute data processing pipeline steps.
+  recommend      Generate configuration files for various processing steps.
+  report         Generate reports from processed data.
+  wt-timeseries  Execute wt-timeseries processing from configuration file.
+
+=== cleanmast recommend --help ===
+Usage: cleanmast recommend [OPTIONS] COMMAND [ARGS]...
+
+  Generate configuration files for various processing steps.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  clean           Generate configuration for data cleaning step.
+  fill-heights    Generate fill-heights configuration files.
+  report-configs  Generate report configurations.
+  wt-timeseries   Generate wt-timeseries.toml configuration file.

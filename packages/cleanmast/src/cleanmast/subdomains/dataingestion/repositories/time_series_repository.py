@@ -5,11 +5,14 @@ Compliance: Subdomain layout ✓ | Repository Pattern ✓ | Protocol-based ✓
 Description: Repository protocol defining interface for time series data access
 """
 
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Protocol
+from __future__ import annotations
 
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from abc import abstractmethod
+from pathlib import Path
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 
 
 class TimeSeriesRepository(Protocol):

@@ -1,0 +1,791 @@
+..................F.............F........FF..................EEEEEEEEE.. [  7%]
+...E.......FFFF.F..E.................................................... [ 15%]
+.................................EEEEEEE................................ [ 23%]
+...FEEE................................x......xX................FF...... [ 30%]
+.......................xx......E........................................ [ 38%]
+........................................................................ [ 46%]
+........................................................................ [ 53%]
+...X.................................................................... [ 61%]
+....X......x............................................................ [ 69%]
+..........................F...............s............................. [ 76%]
+........................................................................ [ 84%]
+........................................................................ [ 92%]
+..........F........................F.................................... [ 99%]
+..                                                                       [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_inherit_from_report_atom _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 295
+      def test_all_atoms_inherit_from_report_atom(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_have_df_attribute _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 302
+      def test_all_atoms_have_df_attribute(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_have_meta_attribute _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 308
+      def test_all_atoms_have_meta_attribute(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_have_schema_attribute _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 314
+      def test_all_atoms_have_schema_attribute(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_produce_unique_hashes _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 320
+      def test_all_atoms_produce_unique_hashes(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_produce_consistent_hashes _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 327
+      def test_all_atoms_produce_consistent_hashes(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_render_table_returns_string _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 334
+      def test_all_atoms_render_table_returns_string(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_render_summary_returns_string _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 341
+      def test_all_atoms_render_summary_returns_string(self, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestAllAtomsCommonBehavior.test_all_atoms_render_image_returns_path _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_atoms.py, line 348
+      def test_all_atoms_render_image_returns_path(
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+___ ERROR at setup of TestReportBuilderAddSection.test_add_section_chaining ___
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py, line 74
+      def test_add_section_chaining(self, tmp_path: Path, all_atoms: list[Any]):
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_ ERROR at setup of TestReportBuilderEdgeCases.test_build_section_with_multiple_atoms _
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_builder.py, line 355
+      def test_build_section_with_multiple_atoms(
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py, line 634
+  @pytest.fixture
+  def all_atoms(
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\conftest.py:634
+_____ ERROR at setup of TestWindRoseSubsection.test_render_produces_typst _____
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+___ ERROR at setup of TestWindRoseSubsection.test_render_has_chinese_title ____
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+____ ERROR at setup of TestWindRoseSubsection.test_render_has_table_marker ____
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+___ ERROR at setup of TestWindRoseSubsection.test_render_has_figure_marker ____
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+_____ ERROR at setup of TestWindRoseSubsection.test_render_has_mast_name ______
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+_________ ERROR at setup of TestWindRoseSubsection.test_custom_title __________
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+_____ ERROR at setup of TestWindRoseSubsection.test_level_affects_header ______
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+________ ERROR at setup of TestIntegration.test_all_subsections_render ________
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+_ ERROR at setup of TestIntegration.test_all_subsections_have_chinese_titles __
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+_ ERROR at setup of TestIntegration.test_all_subsections_produce_valid_typst __
+packages\cleanmast\tests\assessment\test_subsections.py:337: in wind_rose_atoms
+    freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+____ ERROR at setup of TestTypstCompilation.test_wind_timeseries_compiles _____
+file C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_typst_compilation.py, line 268
+      def test_wind_timeseries_compiles(self, wind_timeseries_atom, tmp_path):
+E       fixture 'wind_timeseries_atom' not found
+>       available fixtures: all_atoms, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, daily_pattern_atom, daily_power_pattern_atom, doctest_namespace, monkeypatch, monthly_daily_power_atom, monthly_daily_wind_atom, monthly_wind_atom, monthly_wind_power_atom, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_mast_meta, sample_monthly_wind_df, sample_monthly_wind_power_df, sample_temporal_pattern_df, sample_weibull_df, sample_wind_frequency_df, sample_wind_rose_df, subtests, temp_output_dir, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, turbulence_intensity_atom, turbulence_sector_atom, turbulence_summary_atom, vertical_profile_atom, weibull_distribution_atom, weibull_multi_atom, weibull_parameters_atom, wind_frequency_rose_atom, wind_frequency_table_atom, wind_power_frequency_table_atom, wind_power_rose_atom, wind_power_rose_atom_null_power, wind_range_summary_atom, wind_rose_grid_atom, wind_shear_matrix_atom, wind_shear_table_atom
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\tests\assessment\test_typst_compilation.py:268
+================================== FAILURES ===================================
+____________ TestReportAtomCreate.test_create_validates_dataframe _____________
+packages\cleanmast\tests\assessment\test_atom.py:117: in test_create_validates_dataframe
+    atom = SingleMastMonthlyPatternAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:575: in validate
+    raise ValidationError(
+E   dataframely.exc.ValidationError: 1 rules failed validation:
+E    * Column 'timestamp' failed validation for 1 rules:
+E      - 'dtype' failed for 2 rows
+___ TestSingleMastMonthlyPatternAtom.test_render_table_produces_valid_typst ___
+packages\cleanmast\tests\assessment\test_atoms.py:14: in test_render_table_produces_valid_typst
+    assert result.startswith("#figure(")
+E   AssertionError: assert False
+E    +  where False = <built-in method startswith of str object at 0x000002D24E83DAB0>('#figure(')
+E    +    where <built-in method startswith of str object at 0x000002D24E83DAB0> = '#table(\n  columns: (auto, auto, auto),\n  inset: 8pt,\n  align: center,\n  table.header(\n    [鏈堜唤], [80m(m/s)], [120...[7鏈圿, [-], [-],\n  [8鏈圿, [-], [-],\n  [9鏈圿, [-], [-],\n  [10鏈圿, [-], [-],\n  [11鏈圿, [-], [-],\n  [12鏈圿, [-], [-],\n)\n'.startswith
+_ TestSingleMastMonthlyPatternAtom.test_render_image_filename_includes_mast_name_and_hash _
+packages\cleanmast\tests\assessment\test_atoms.py:101: in test_render_image_filename_includes_mast_name_and_hash
+    assert "monthlywind" in image_path.name
+E   AssertionError: assert 'monthlywind' in 'monthly_pattern_M01_SingleMastMonthlyPatternAtom_af183196451f.png'
+E    +  where 'monthly_pattern_M01_SingleMastMonthlyPatternAtom_af183196451f.png' = WindowsPath('C:/Users/zhu_j/AppData/Local/Temp/pytest-of-zhu_j/pytest-827/test_render_image_filename_inc0/output/monthly_pattern_M01_SingleMastMonthlyPatternAtom_af183196451f.png').name
+__ TestSingleMastMonthlyWindPowerAtom.test_render_table_produces_valid_typst __
+packages\cleanmast\tests\assessment\test_atoms.py:113: in test_render_table_produces_valid_typst
+    assert result.startswith("#figure(")
+E   AssertionError: assert False
+E    +  where False = <built-in method startswith of str object at 0x000002D25045B1D0>('#figure(')
+E    +    where <built-in method startswith of str object at 0x000002D25045B1D0> = '#table(\n  columns: (auto, auto, auto),\n  inset: 8pt,\n  align: center,\n  table.header(\n    [鏈堜唤], [80m(W/m虏)], [12...[7鏈圿, [-], [-],\n  [8鏈圿, [-], [-],\n  [9鏈圿, [-], [-],\n  [10鏈圿, [-], [-],\n  [11鏈圿, [-], [-],\n  [12鏈圿, [-], [-],\n)\n'.startswith
+______ TestReportBuilderBuild.test_build_content_includes_atom_summaries ______
+packages\cleanmast\tests\assessment\test_builder.py:211: in test_build_content_includes_atom_summaries
+    assert "M01" in content
+E   assert 'M01' in '// Chinese text support\n#set text(font: ("Linux Libertine", "Source Han Serif SC"))\n#set heading(numbering: "1.")\n\n= Test\n\n== Analysis\n\n'
+_________ TestReportBuilderBuild.test_build_content_includes_figures __________
+packages\cleanmast\tests\assessment\test_builder.py:227: in test_build_content_includes_figures
+    assert "#figure(" in content
+E   assert '#figure(' in '// Chinese text support\n#set text(font: ("Linux Libertine", "Source Han Serif SC"))\n#set heading(numbering: "1.")\n\n= Test\n\n== Analysis\n\n'
+__________ TestReportBuilderBuild.test_build_content_includes_tables __________
+packages\cleanmast\tests\assessment\test_builder.py:244: in test_build_content_includes_tables
+    assert "table(" in content
+E   assert 'table(' in '// Chinese text support\n#set text(font: ("Linux Libertine", "Source Han Serif SC"))\n#set heading(numbering: "1.")\n\n= Test\n\n== Analysis\n\n'
+________ TestReportBuilderBuild.test_build_content_includes_references ________
+packages\cleanmast\tests\assessment\test_builder.py:261: in test_build_content_includes_references
+    assert "鐢卞浘" in content
+E   assert '鐢卞浘' in '// Chinese text support\n#set text(font: ("Linux Libertine", "Source Han Serif SC"))\n#set heading(numbering: "1.")\n\n= Test\n\n== Analysis\n\n'
+_____________ TestReportBuilderBuild.test_build_generates_images ______________
+packages\cleanmast\tests\assessment\test_builder.py:300: in test_build_generates_images
+    assert len(png_files) >= 1
+E   assert 0 >= 1
+E    +  where 0 = len([])
+______________________ TestEdgeCases.test_multiple_masts ______________________
+packages\cleanmast\tests\assessment\test_subsections.py:969: in test_multiple_masts
+    atom1 = SingleMastMonthlyWindFrequencyRoseAtom.create(
+packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:95: in create
+    validated = schema.validate(df, cast=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:573: in validate
+    out, failure = cls.filter(df, cast=cast, eager=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\schema.py:740: in filter
+    lf.pipe(cls._with_evaluated_rules, rules).pipe(collect_if, eager).lazy()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:986: in pipe
+    return function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\dataframely\_polars.py:48: in collect_if
+    return lf.collect()
+           ^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\_utils\deprecation.py:97: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\opt_flags.py:326: in wrapper
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:2464: in collect
+    return wrap_df(ldf.collect(engine, callback))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\polars\lazyframe\frame.py:1045: in wrapper
+    return function(
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:28: in cast_lenient
+    _validate_columns_exist(schema, target)
+.venv\Lib\site-packages\dataframely\_match_to_schema.py:62: in _validate_columns_exist
+    raise SchemaError(
+E   dataframely.exc.SchemaError: 2 missing columns for schema 'WindRoseSchema': 'month', 'month_name'
+E   
+E   Resolved plan until failure:
+E   
+E   	---> FAILED HERE RESOLVING 'with_columns' <---
+E   DF ["sector", "sector_name", "height", "frequency", ...]; PROJECT */6 COLUMNS
+E   
+E   This error occurred with the following context stack:
+E   	[1] 'with_columns'
+E   	[2] 'with_columns'
+E   	[3] 'with_columns'
+______________ TestWindSpeedAnalysis.test_analyze_by_wind_speed _______________
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py:471: in test_analyze_by_wind_speed
+    assert len(result.data) > 0
+E   AssertionError: assert 0 > 0
+E    +  where 0 = len(shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹怽n鈹� w...鈺愨晲鈺�鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�\n鈹斺攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�)
+E    +    where shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹怽n鈹� w...鈺愨晲鈺�鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�\n鈹斺攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹� = AnalysisResult(data=shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�..._name='TestMast', time_range='2023-01-01 to 2023-02-11', created_at=datetime.datetime(2026, 4, 6, 18, 40, 19, 876422))).data
+______ TestWindSpeedAnalysis.test_analyze_by_wind_speed_multiple_heights ______
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py:483: in test_analyze_by_wind_speed_multiple_heights
+    assert len(result.data) > 0
+E   AssertionError: assert 0 > 0
+E    +  where 0 = len(shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹怽n鈹� w...鈺愨晲鈺�鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�\n鈹斺攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�)
+E    +    where shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹怽n鈹� w...鈺愨晲鈺�鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�\n鈹斺攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹粹攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹� = AnalysisResult(data=shape: (0, 7)\n鈹屸攢鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�鈹�..._name='TestMast', time_range='2023-01-01 to 2023-02-11', created_at=datetime.datetime(2026, 4, 6, 18, 40, 19, 888591))).data
+______________ TestSerializer.test_serialize_table_with_caption _______________
+packages\cleanmast\tests\infrastructure\test_typst_ir.py:238: in test_serialize_table_with_caption
+    assert "#table(" in result
+E   AssertionError: assert '#table(' in '#figure(\n  table(\n    columns: (auto),\n    inset: 8pt,\n    align: center,\n    table.header(\n      [A]\n    ),\n    [1],\n  ),\n  caption: [Table 1],\n)\n'
+_____ TestLoadWtTimeSeriesConfig.test_path_resolution_relative_to_config ______
+packages\cleanmast\tests\wt_timeseries\test_config.py:186: in test_path_resolution_relative_to_config
+    assert config.masts[0].input.data == expected_path
+E   AssertionError: assert 'C:/Users/zhu.../TGL1.parquet' == 'C:\\Users\\z...\TGL1.parquet'
+E     
+E     - C:\Users\zhu_j\AppData\Local\Temp\pytest-of-zhu_j\pytest-827\test_path_resolution_relative_0\config\..\data\TGL1.parquet
+E     ?   ^     ^     ^       ^     ^    ^               ^          ^                               ^      ^  ^    ^
+E     + C:/Users/zhu_j/AppData/Local/Temp/pytest-of-zhu_j/pytest-827/test_path_resolution_relative_0/config/../data/TGL1.parquet
+E     ?   ^     ^     ^       ^     ^    ^               ^          ^                               ^      ^  ^    ^
+_______________ TestPathResolution.test_relative_paths_resolved _______________
+packages\cleanmast\tests\wt_timeseries\test_integration.py:579: in test_relative_paths_resolved
+    assert config.masts[0].input.data == str(expected_path)
+E   AssertionError: assert 'C:/Users/zhu.../TGL1.parquet' == 'C:\\Users\\z...\TGL1.parquet'
+E     
+E     - C:\Users\zhu_j\AppData\Local\Temp\pytest-of-zhu_j\pytest-827\test_relative_paths_resolved0\test-project\representative-year\filled\TGL1.parquet
+E     ?   ^     ^     ^       ^     ^    ^               ^          ^                             ^            ^                   ^      ^
+E     + C:/Users/zhu_j/AppData/Local/Temp/pytest-of-zhu_j/pytest-827/test_relative_paths_resolved0/test-project/representative-year/filled/TGL1.parquet
+E     ?   ^     ^     ^       ^     ^    ^               ^          ^                             ^            ^                   ^      ^
+============================== warnings summary ===============================
+tests/assessment/test_typst_compilation.py::TestTypstCompilation::test_wind_frequency_table_compiles
+  C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-28 (_readerthread)
+  
+  Traceback (most recent call last):
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py", line 1043, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py", line 994, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+  UnicodeDecodeError: 'gbk' codec can't decode byte 0x82 in position 165: illegal multibyte sequence
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+tests/assessment/test_typst_compilation.py::TestTypstCompilation::test_wind_power_frequency_table_compiles
+  C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-30 (_readerthread)
+  
+  Traceback (most recent call last):
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py", line 1043, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\threading.py", line 994, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\zhu_j\AppData\Roaming\uv\python\cpython-3.13.5-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+  UnicodeDecodeError: 'gbk' codec can't decode byte 0x82 in position 171: illegal multibyte sequence
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED packages\cleanmast\tests\assessment\test_atom.py::TestReportAtomCreate::test_create_validates_dataframe
+FAILED packages\cleanmast\tests\assessment\test_atoms.py::TestSingleMastMonthlyPatternAtom::test_render_table_produces_valid_typst
+FAILED packages\cleanmast\tests\assessment\test_atoms.py::TestSingleMastMonthlyPatternAtom::test_render_image_filename_includes_mast_name_and_hash
+FAILED packages\cleanmast\tests\assessment\test_atoms.py::TestSingleMastMonthlyWindPowerAtom::test_render_table_produces_valid_typst
+FAILED packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderBuild::test_build_content_includes_atom_summaries
+FAILED packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderBuild::test_build_content_includes_figures
+FAILED packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderBuild::test_build_content_includes_tables
+FAILED packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderBuild::test_build_content_includes_references
+FAILED packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderBuild::test_build_generates_images
+FAILED packages\cleanmast\tests\assessment\test_subsections.py::TestEdgeCases::test_multiple_masts
+FAILED packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestWindSpeedAnalysis::test_analyze_by_wind_speed
+FAILED packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestWindSpeedAnalysis::test_analyze_by_wind_speed_multiple_heights
+FAILED packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestSerializer::test_serialize_table_with_caption
+FAILED packages\cleanmast\tests\wt_timeseries\test_config.py::TestLoadWtTimeSeriesConfig::test_path_resolution_relative_to_config
+FAILED packages\cleanmast\tests\wt_timeseries\test_integration.py::TestPathResolution::test_relative_paths_resolved
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_inherit_from_report_atom
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_have_df_attribute
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_have_meta_attribute
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_have_schema_attribute
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_produce_unique_hashes
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_produce_consistent_hashes
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_render_table_returns_string
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_render_summary_returns_string
+ERROR packages\cleanmast\tests\assessment\test_atoms.py::TestAllAtomsCommonBehavior::test_all_atoms_render_image_returns_path
+ERROR packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderAddSection::test_add_section_chaining
+ERROR packages\cleanmast\tests\assessment\test_builder.py::TestReportBuilderEdgeCases::test_build_section_with_multiple_atoms
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_render_produces_typst
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_render_has_chinese_title
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_render_has_table_marker
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_render_has_figure_marker
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_render_has_mast_name
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_custom_title
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestWindRoseSubsection::test_level_affects_header
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestIntegration::test_all_subsections_render
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestIntegration::test_all_subsections_have_chinese_titles
+ERROR packages\cleanmast\tests\assessment\test_subsections.py::TestIntegration::test_all_subsections_produce_valid_typst
+ERROR packages\cleanmast\tests\assessment\test_typst_compilation.py::TestTypstCompilation::test_wind_timeseries_compiles
+15 failed, 892 passed, 1 skipped, 5 xfailed, 3 xpassed, 2 warnings, 22 errors in 46.73s

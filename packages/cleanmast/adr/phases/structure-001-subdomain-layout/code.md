@@ -10,34 +10,38 @@ Load this file during the implementation phase when organizing code structure.
 
 ### Key Implementation Steps
 1. Create `src/subdomains/` directory
-2. For each context, create: `subdomains/`, `application/`, `infrastructure/`
-3. In subdomains/, create subdirectories by capability
+2. Create context directories based on complexity needs
+3. Add DDD folders appropriate for chosen pattern
 4. Add `__init__.py` files with proper exports
 5. Create `shared/` for cross-context types
-6. Create `protocols/` for shared interfaces
+6. Create `protocols/` for shared interfaces (layered pattern)
 
 ### Example Structure
 ```python
 src/subdomains/
-├── dataingestion/
-├── dataprocessing/
-├── analysis/
-├── reporting/
-├── configuration/
-└── pipeline/
+├── assessment/        # Layered pattern (3-layer)
+├── dataingestion/     # Organized-flat pattern
+├── dataprocessing/    # Minimal-flat pattern (CQRS naming)
+├── configuration/     # Minimal-flat pattern
+└── pipeline/          # Minimal-flat pattern
 ```
+
+### Pattern Selection Guide
+- **Layered**: Complex subdomains with multiple application services (assessment)
+- **Organized-flat**: Moderate complexity with repositories (dataingestion)
+- **Minimal-flat**: Simple subdomains with basic entities (configuration, pipeline)
 
 ### Domain Layer Rules
 - NO imports of polars, pandas, requests, etc.
 - Pure Python dataclasses
 - Business logic only
-- Protocol imports only
+- Protocol imports only (layered pattern)
 
 ## Checklist
 Before marking implementation complete, verify:
 - [ ] Folder structure matches ADR
 - [ ] Domain layer has no I/O imports
-- [ ] All contexts follow same pattern
+- [ ] Pattern appropriate for context complexity
 - [ ] __init__.py files with exports
-- [ ] shared/ and protocols/ created
+- [ ] shared/ and protocols/ created (if needed)
 - [ ] Tests organized by context

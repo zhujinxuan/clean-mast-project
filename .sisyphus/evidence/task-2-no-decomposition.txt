@@ -1,0 +1,2 @@
+QA Verification 3: timeseries usage (only wd_sensors filter)
+99:            s for s in timeseries.sensors

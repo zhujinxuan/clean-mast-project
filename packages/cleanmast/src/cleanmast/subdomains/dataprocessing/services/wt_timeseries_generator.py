@@ -13,9 +13,14 @@ from pathlib import Path
 
 import polars as pl
 
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import ParquetRepository
+from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
+    WtTimeSeriesConfiguration,
+    WtTimeSeriesMast,
+)
+from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
+    ParquetRepository,
+)
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import WtTimeSeriesConfiguration, WtTimeSeriesMast
 
 logger = logging.getLogger(__name__)
 

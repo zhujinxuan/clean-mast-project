@@ -1,0 +1,2003 @@
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.collections.atom_collection`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:23:6
+   |
+21 | from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+22 | from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+23 | from cleanmast.subdomains.reporting.value_objects.collections.atom_collection import AtomCollection
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 | from cleanmast.subdomains.reporting.value_objects.report_config import ReportConfig
+25 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.report_config`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:24:6
+   |
+22 | from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+23 | from cleanmast.subdomains.reporting.value_objects.collections.atom_collection import AtomCollection
+24 | from cleanmast.subdomains.reporting.value_objects.report_config import ReportConfig
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta
+26 | from cleanmast.subdomains.reporting.entities.single_mast.daily_pattern import (
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.meta`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:25:6
+   |
+23 | from cleanmast.subdomains.reporting.value_objects.collections.atom_collection import AtomCollection
+24 | from cleanmast.subdomains.reporting.value_objects.report_config import ReportConfig
+25 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | from cleanmast.subdomains.reporting.entities.single_mast.daily_pattern import (
+27 |     SingleMastDailyPatternAtom,
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.daily_pattern`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:26:6
+   |
+24 | from cleanmast.subdomains.reporting.value_objects.report_config import ReportConfig
+25 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta
+26 | from cleanmast.subdomains.reporting.entities.single_mast.daily_pattern import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |     SingleMastDailyPatternAtom,
+28 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.daily_power_pattern`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:29:6
+   |
+27 |     SingleMastDailyPatternAtom,
+28 | )
+29 | from cleanmast.subdomains.reporting.entities.single_mast.daily_power_pattern import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+30 |     SingleMastDailyPowerPatternAtom,
+31 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_power`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:32:6
+   |
+30 |     SingleMastDailyPowerPatternAtom,
+31 | )
+32 | from cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_power import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 |     SingleMastMonthlyDailyPowerAtom,
+34 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_wind`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:35:6
+   |
+33 |     SingleMastMonthlyDailyPowerAtom,
+34 | )
+35 | from cleanmast.subdomains.reporting.entities.single_mast.monthly_daily_wind import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+36 |     SingleMastMonthlyDailyWindAtom,
+37 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.monthly_pattern`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:38:6
+   |
+36 |     SingleMastMonthlyDailyWindAtom,
+37 | )
+38 | from cleanmast.subdomains.reporting.entities.single_mast.monthly_pattern import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+39 |     SingleMastMonthlyPatternAtom,
+40 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.monthly_power_pattern`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:41:6
+   |
+39 |     SingleMastMonthlyPatternAtom,
+40 | )
+41 | from cleanmast.subdomains.reporting.entities.single_mast.monthly_power_pattern import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |     SingleMastMonthlyPowerPatternAtom,
+43 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.single_mast.timeseries`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:44:6
+   |
+42 |     SingleMastMonthlyPowerPatternAtom,
+43 | )
+44 | from cleanmast.subdomains.reporting.entities.single_mast.timeseries import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+45 |     SingleMastWindTimeseriesAtom,
+46 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.services.sections`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:47:6
+   |
+45 |     SingleMastWindTimeseriesAtom,
+46 | )
+47 | from cleanmast.subdomains.reporting.services.sections import WindTemporalSubsection
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+48 | from cleanmast.subdomains.reporting.value_objects.single_mast.schemas import (
+49 |     TemporalPatternSchema,
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.schemas`
+  --> packages\cleanmast\src\cleanmast\application\commands\generate_timeseries_report.py:48:6
+   |
+46 | )
+47 | from cleanmast.subdomains.reporting.services.sections import WindTemporalSubsection
+48 | from cleanmast.subdomains.reporting.value_objects.single_mast.schemas import (
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+49 |     TemporalPatternSchema,
+50 | )
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.report_atom`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:11:6
+   |
+ 9 | from typing_extensions import override
+10 |
+11 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+13 | from .schemas import MonthlyWindSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.meta`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind.py:12:6
+   |
+11 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+12 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from .schemas import MonthlyWindSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.report_atom`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:12:6
+   |
+10 | import vl_convert as vlc
+11 |
+12 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+14 | from .schemas import MonthlyWindPowerSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.meta`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_power.py:13:6
+   |
+12 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+13 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from .schemas import MonthlyWindPowerSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.report_atom`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:9:6
+   |
+ 7 | from typing_extensions import override
+ 8 |
+ 9 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+11 | from .schemas import MonthlyWindSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.meta`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\monthly_wind_speed.py:10:6
+   |
+ 9 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+10 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from .schemas import MonthlyWindSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.report_atom`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:11:6
+   |
+ 9 | from typing_extensions import override
+10 |
+11 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+13 | from .schemas import WindRoseSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.value_objects.single_mast.meta`
+  --> packages\cleanmast\src\cleanmast\report\atoms\single_mast\wind_rose.py:12:6
+   |
+11 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+12 | from cleanmast.subdomains.reporting.value_objects.single_mast.meta import SingleMastMeta, get_height_display_name
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from .schemas import WindRoseSchema
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.entities.report_atom`
+  --> packages\cleanmast\src\cleanmast\report\collection.py:8:6
+   |
+ 6 | from typing import TypeVar, cast
+ 7 |
+ 8 | from cleanmast.subdomains.reporting.entities.report_atom import ReportAtom
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |
+10 | T = TypeVar("T", bound=ReportAtom)
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `cleanmast.subdomains.reporting.services.sections.templated`
+ --> packages\cleanmast\src\cleanmast\report\sections\__init__.py:7:6
+  |
+5 | """
+6 |
+7 | from cleanmast.subdomains.reporting.services.sections.templated import TemplatedSection, WIND_SPEED_POWER_TEMPLATE
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 | from .wind_rose import WindRoseSection
+9 | from .representative_wind_speed import RepresentativeWindSpeedSection
+  |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `strftime` may be missing on object of type `int | float | Decimal | ... omitted 8 union elements`
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\timeseries.py:195:25
+    |
+193 |             return (
+194 |                 f"{self.meta.mast_name}测风塔风速时间序列分析。"
+195 |                 f"时间范围：{time_min.strftime('%Y年%m月%d日')}至{time_max.strftime('%Y年%m月%d日')}，"
+    |                              ^^^^^^^^^^^^^^^^^
+196 |                 f"分析高度包括{', '.join(height_strs)}。"
+197 |                 f"平均风速{mean_speed:.2f}m/s，"
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `strftime` may be missing on object of type `int | float | Decimal | ... omitted 8 union elements`
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\timeseries.py:195:58
+    |
+193 |             return (
+194 |                 f"{self.meta.mast_name}测风塔风速时间序列分析。"
+195 |                 f"时间范围：{time_min.strftime('%Y年%m月%d日')}至{time_max.strftime('%Y年%m月%d日')}，"
+    |                                                                   ^^^^^^^^^^^^^^^^^
+196 |                 f"分析高度包括{', '.join(height_strs)}。"
+197 |                 f"平均风速{mean_speed:.2f}m/s，"
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unsupported-operator]: Unsupported `*` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_sector.py:146:23
+    |
+144 |             f"图表显示{', '.join(height_strs)}高度的湍流强度分布，"
+145 |             f"主导湍流方向为{'、'.join(dominant_directions)}，"
+146 |             f"平均湍流强度为{avg_ti*100:.2f}%，"
+    |                              ------^---
+    |                              |      |
+    |                              |      Has type `Literal[100]`
+    |                              Has type `int | float | Decimal | ... omitted 8 union elements`
+147 |             f"为风机选型与载荷计算提供参考依据。"
+148 |         )
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_summary.py:142:30
+    |
+140 |             f"{get_height_display_name(min_ti_row['height'], min_ti_row['interpolation_marker'] or '')}。"
+141 |             f"按IEC标准分类：{iec_summary}。"
+142 |             f"整体湍流水平{'较高' if avg_mean_ti > 0.15 else '中等' if avg_mean_ti > 0.12 else '较低'}，"
+    |                                      -----------^^^----
+    |                                      |             |
+    |                                      |             Has type `float`
+    |                                      Has type `int | float | Decimal | ... omitted 8 union elements`
+143 |             f"{'建议选用更高等级机组' if avg_mean_ti > 0.16 else '适合常规机组选型'}。"
+144 |         )
+    |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_summary.py:142:62
+    |
+140 |             f"{get_height_display_name(min_ti_row['height'], min_ti_row['interpolation_marker'] or '')}。"
+141 |             f"按IEC标准分类：{iec_summary}。"
+142 |             f"整体湍流水平{'较高' if avg_mean_ti > 0.15 else '中等' if avg_mean_ti > 0.12 else '较低'}，"
+    |                                                                        -----------^^^----
+    |                                                                        |             |
+    |                                                                        |             Has type `float`
+    |                                                                        Has type `int | float | Decimal | ... omitted 8 union elements`
+143 |             f"{'建议选用更高等级机组' if avg_mean_ti > 0.16 else '适合常规机组选型'}。"
+144 |         )
+    |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\turbulence_summary.py:143:32
+    |
+141 |             f"按IEC标准分类：{iec_summary}。"
+142 |             f"整体湍流水平{'较高' if avg_mean_ti > 0.15 else '中等' if avg_mean_ti > 0.12 else '较低'}，"
+143 |             f"{'建议选用更高等级机组' if avg_mean_ti > 0.16 else '适合常规机组选型'}。"
+    |                                          -----------^^^----
+    |                                          |             |
+    |                                          |             Has type `float`
+    |                                          Has type `int | float | Decimal | ... omitted 8 union elements`
+144 |         )
+    |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `**` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:172:20
+    |
+170 |             fitted = pl.Series(row["fitted_density"])
+171 |             # Simple RMSE
+172 |             rmse = ((observed - fitted) ** 2).mean() ** 0.5
+    |                    ---------------------------------^^^^---
+    |                    |                                    |
+    |                    |                                    Has type `float`
+    |                    Has type `int | float | Decimal | ... omitted 8 union elements`
+173 |             fit_qualities.append({
+174 |                 "height": row["height"],
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:195:12
+    |
+194 |         # Determine distribution type based on shape parameter k
+195 |         if avg_k < 1.5:
+    |            -----^^^---
+    |            |       |
+    |            |       Has type `float`
+    |            Has type `int | float | Decimal | ... omitted 8 union elements`
+196 |             dist_type = "低风速偏态分布，风速较低区间频率较高"
+197 |         elif avg_k < 2.0:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:197:14
+    |
+195 |         if avg_k < 1.5:
+196 |             dist_type = "低风速偏态分布，风速较低区间频率较高"
+197 |         elif avg_k < 2.0:
+    |              -----^^^---
+    |              |       |
+    |              |       Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+198 |             dist_type = "中等偏态分布，接近瑞利分布"
+199 |         elif avg_k < 2.5:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:199:14
+    |
+197 |         elif avg_k < 2.0:
+198 |             dist_type = "中等偏态分布，接近瑞利分布"
+199 |         elif avg_k < 2.5:
+    |              -----^^^---
+    |              |       |
+    |              |       Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+200 |             dist_type = "接近正态分布，风速分布较为均匀"
+201 |         else:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:206:12
+    |
+204 |         # Overall fit quality assessment
+205 |         avg_rmse = fit_df["rmse"].mean()
+206 |         if avg_rmse < 0.005:
+    |            --------^^^-----
+    |            |          |
+    |            |          Has type `float`
+    |            Has type `int | float | Decimal | ... omitted 8 union elements`
+207 |             quality_desc = "拟合效果优秀"
+208 |         elif avg_rmse < 0.01:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:208:14
+    |
+206 |         if avg_rmse < 0.005:
+207 |             quality_desc = "拟合效果优秀"
+208 |         elif avg_rmse < 0.01:
+    |              --------^^^----
+    |              |          |
+    |              |          Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+209 |             quality_desc = "拟合效果良好"
+210 |         elif avg_rmse < 0.02:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\weibull_distribution.py:210:14
+    |
+208 |         elif avg_rmse < 0.01:
+209 |             quality_desc = "拟合效果良好"
+210 |         elif avg_rmse < 0.02:
+    |              --------^^^----
+    |              |          |
+    |              |          Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+211 |             quality_desc = "拟合效果一般"
+212 |         else:
+    |
+info: Operation fails because operator `<` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+warning[deprecated]: The function `melt` is deprecated
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:68:16
+   |
+66 |                 "frequency",
+67 |                 "power_frequency",
+68 |             ]).melt(
+   |                ^^^^ `DataFrame.melt` is deprecated; use `DataFrame.unpivot` instead, with `index` instead of `id_vars` and `on` instead of `value_vars`
+69 |                 id_vars=["bin_center"],
+70 |                 value_vars=["frequency", "power_frequency"],
+   |
+info: rule `deprecated` is enabled by default
+
+error[unsupported-operator]: Unsupported `/` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:161:26
+    |
+159 |             # Calculate mean speed (approximation using bin centers)
+160 |             total_freq = height_df["frequency"].sum()
+161 |             mean_speed = (height_df["bin_center"] * height_df["frequency"]).sum() / total_freq
+    |                          --------------------------------------------------------^^^----------
+    |                          |
+    |                          Both operands have type `int | float | Decimal`
+162 |
+163 |             # Calculate energy-weighted mean speed
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `/` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:165:37
+    |
+163 |                # Calculate energy-weighted mean speed
+164 |                total_power_freq = height_df["power_frequency"].sum()
+165 |                energy_weighted_speed = (
+    |   _____________________________________-
+    |  |_____________________________________|
+166 | ||                 height_df["bin_center"] * height_df["power_frequency"]
+167 | ||             ).sum() / total_power_freq
+    | ||                   -   ---------------^
+    | ||___________________|__________________|
+    |  |___________________|                  Both operands have type `int | float | Decimal`
+    |
+168 |
+169 |                # Distribution shape analysis
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_range_summary.py:127:12
+    |
+125 |         best_freq = best_row["frequency_sum"] * 100
+126 |
+127 |         if avg_freq >= 0.60:
+    |            --------^^^^----
+    |            |           |
+    |            |           Has type `float`
+    |            Has type `int | float | Decimal | ... omitted 8 union elements`
+128 |             productivity = "优秀"
+129 |             recommendation = "风能资源非常丰富，适合安装大容量风电机组"
+    |
+info: Operation fails because operator `>=` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_range_summary.py:130:14
+    |
+128 |             productivity = "优秀"
+129 |             recommendation = "风能资源非常丰富，适合安装大容量风电机组"
+130 |         elif avg_freq >= 0.45:
+    |              --------^^^^----
+    |              |           |
+    |              |           Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+131 |             productivity = "良好"
+132 |             recommendation = "风能资源丰富，具备良好的开发价值"
+    |
+info: Operation fails because operator `>=` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_range_summary.py:133:14
+    |
+131 |             productivity = "良好"
+132 |             recommendation = "风能资源丰富，具备良好的开发价值"
+133 |         elif avg_freq >= 0.30:
+    |              --------^^^^----
+    |              |           |
+    |              |           Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+134 |             productivity = "一般"
+135 |             recommendation = "风能资源中等，需结合经济性评估"
+    |
+info: Operation fails because operator `>=` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `*` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_range_summary.py:143:28
+    |
+141 |             f"{self.meta.mast_name}测风塔有效风速区间(3-25m/s)分析汇总。"
+142 |             f"分析高度包括{', '.join(height_strs)}。"
+143 |             f"各高度平均有效风速频率为{avg_freq * 100:.1f}%，"
+    |                                        --------^^^---
+    |                                        |          |
+    |                                        |          Has type `Literal[100]`
+    |                                        Has type `int | float | Decimal | ... omitted 8 union elements`
+144 |             f"对应年有效小时数约{avg_hours:.0f}小时。"
+145 |             f"风能频率平均{avg_power_freq * 100:.1f}%，"
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `*` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_range_summary.py:145:22
+    |
+143 |             f"各高度平均有效风速频率为{avg_freq * 100:.1f}%，"
+144 |             f"对应年有效小时数约{avg_hours:.0f}小时。"
+145 |             f"风能频率平均{avg_power_freq * 100:.1f}%，"
+    |                            --------------^^^---
+    |                            |                |
+    |                            |                Has type `Literal[100]`
+    |                            Has type `int | float | Decimal | ... omitted 8 union elements`
+146 |             f"风能小时数约{avg_power_hours:.0f}小时。"
+147 |             f"最优高度为{best_height}，"
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:97:12
+   |
+95 |         # Determine typical terrain type based on mean alpha
+96 |         terrain_type = "平坦开阔"
+97 |         if overall_mean > 0.25:
+   |            ------------^^^----
+   |            |              |
+   |            |              Has type `float`
+   |            Has type `int | float | Decimal | ... omitted 8 union elements`
+98 |             terrain_type = "复杂粗糙"
+99 |         elif overall_mean > 0.16:
+   |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:99:14
+    |
+ 97 |         if overall_mean > 0.25:
+ 98 |             terrain_type = "复杂粗糙"
+ 99 |         elif overall_mean > 0.16:
+    |              ------------^^^----
+    |              |              |
+    |              |              Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+100 |             terrain_type = "粗糙"
+101 |         elif overall_mean > 0.12:
+    |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `>` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:101:14
+    |
+ 99 |         elif overall_mean > 0.16:
+100 |             terrain_type = "粗糙"
+101 |         elif overall_mean > 0.12:
+    |              ------------^^^----
+    |              |              |
+    |              |              Has type `float`
+    |              Has type `int | float | Decimal | ... omitted 8 union elements`
+102 |             terrain_type = "开阔"
+    |
+info: Operation fails because operator `>` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:115:33
+    |
+113 | …         f"平均风切变最大值为{max_mean_row['alpha_mean']:.3f}（{max_mean_row['from_height']:.0f}m→{max_mean_row['to_height']:.0f}m）          …
+114 | …         f"最小值为{min_mean_row['alpha_mean']:.3f}（{min_mean_row['from_height']:.0f}m→{min_mean_row['to_height']:.0f}m）。"
+115 | …         f"风切变指数在典型范围{'内' if 0.10 <= overall_mean <= 0.40 else '外'}，"
+    |                                          ----^^^^------------
+    |                                          |       |
+    |                                          |       Has type `int | float | Decimal | ... omitted 8 union elements`
+    |                                          Has type `float`
+116 | …         f"{'适合' if 0.12 <= overall_mean <= 0.20 else '需谨慎评估'}风机轮毂高度选择。"
+117 | …     )
+    |
+info: Operation fails because operator `<=` is not supported between objects of type `float` and `date`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:115:41
+    |
+113 | …         f"平均风切变最大值为{max_mean_row['alpha_mean']:.3f}（{max_mean_row['from_height']:.0f}m→{max_mean_row['to_height']:.0f}m）          …
+114 | …         f"最小值为{min_mean_row['alpha_mean']:.3f}（{min_mean_row['from_height']:.0f}m→{min_mean_row['to_height']:.0f}m）。"
+115 | …         f"风切变指数在典型范围{'内' if 0.10 <= overall_mean <= 0.40 else '外'}，"
+    |                                                  ------------^^^^----
+    |                                                  |               |
+    |                                                  |               Has type `float`
+    |                                                  Has type `int | float | Decimal | ... omitted 8 union elements`
+116 | …         f"{'适合' if 0.12 <= overall_mean <= 0.20 else '需谨慎评估'}风机轮毂高度选择。"
+117 | …     )
+    |
+info: Operation fails because operator `<=` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:116:24
+    |
+114 | …         f"最小值为{min_mean_row['alpha_mean']:.3f}（{min_mean_row['from_height']:.0f}m→{min_mean_row['to_height']:.0f}m）。"
+115 | …         f"风切变指数在典型范围{'内' if 0.10 <= overall_mean <= 0.40 else '外'}，"
+116 | …         f"{'适合' if 0.12 <= overall_mean <= 0.20 else '需谨慎评估'}风机轮毂高度选择。"
+    |                        ----^^^^------------
+    |                        |       |
+    |                        |       Has type `int | float | Decimal | ... omitted 8 union elements`
+    |                        Has type `float`
+117 | …     )
+    |
+info: Operation fails because operator `<=` is not supported between objects of type `float` and `date`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<=` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_shear_table.py:116:32
+    |
+114 | …         f"最小值为{min_mean_row['alpha_mean']:.3f}（{min_mean_row['from_height']:.0f}m→{min_mean_row['to_height']:.0f}m）。"
+115 | …         f"风切变指数在典型范围{'内' if 0.10 <= overall_mean <= 0.40 else '外'}，"
+116 | …         f"{'适合' if 0.12 <= overall_mean <= 0.20 else '需谨慎评估'}风机轮毂高度选择。"
+    |                                ------------^^^^----
+    |                                |               |
+    |                                |               Has type `float`
+    |                                Has type `int | float | Decimal | ... omitted 8 union elements`
+117 | …     )
+    |
+info: Operation fails because operator `<=` is not supported between objects of type `date` and `float`
+info: rule `unsupported-operator` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py:48:17
+   |
+46 |         atoms: list[ReportAtom] = [
+47 |             SingleMastMonthlyWindFrequencyRoseAtom.create(
+48 |                 schema=WindRoseSchema,
+   |                 ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+49 |                 df=df,
+50 |                 meta=meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\builders\wind_rose_builder.py:53:17
+   |
+51 |             ),
+52 |             SingleMastWindPowerRoseAtom.create(
+53 |                 schema=WindRoseSchema,
+   |                 ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+54 |                 df=df,
+55 |                 meta=meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:227:32
+    |
+225 |         ti_list = ti_values.tolist()
+226 |         for i in range(half_window):
+227 |             ti_list[i] = None  # type: ignore
+    |                                ^^^^^^^^^^^^^^
+228 |             ti_list[-(i + 1)] = None  # type: ignore
+    |
+help: Remove the unused suppression comment
+224 |         half_window = rolling_window // 2
+225 |         ti_list = ti_values.tolist()
+226 |         for i in range(half_window):
+    -             ti_list[i] = None  # type: ignore
+227 +             ti_list[i] = None
+228 |             ti_list[-(i + 1)] = None  # type: ignore
+229 | 
+230 |         return ti_list
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:228:39
+    |
+226 |         for i in range(half_window):
+227 |             ti_list[i] = None  # type: ignore
+228 |             ti_list[-(i + 1)] = None  # type: ignore
+    |                                       ^^^^^^^^^^^^^^
+229 |
+230 |         return ti_list
+    |
+help: Remove the unused suppression comment
+225 |         ti_list = ti_values.tolist()
+226 |         for i in range(half_window):
+227 |             ti_list[i] = None  # type: ignore
+    -             ti_list[-(i + 1)] = None  # type: ignore
+228 +             ti_list[-(i + 1)] = None
+229 | 
+230 |         return ti_list
+231 | 
+
+error[unresolved-import]: Cannot resolve imported module `scipy.stats`
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\vertical_profile_analyzer.py:15:6
+   |
+13 | import numpy as np
+14 | import polars as pl
+15 | from scipy.stats import linregress
+   |      ^^^^^^^^^^^
+16 |
+17 | from cleanmast.subdomains.assessment.domain.value_objects.analysis_metadata import (
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `scipy.optimize`
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\weibull_fitter.py:15:6
+   |
+13 | import numpy as np
+14 | import polars as pl
+15 | from scipy.optimize import minimize
+   |      ^^^^^^^^^^^^^^
+16 |
+17 | from cleanmast.subdomains.assessment.domain.value_objects.analysis_metadata import (
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\air_density.py:106:60
+    |
+105 |         # Normalize units - safe to cast now that we've validated
+106 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+107 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+    |
+help: Remove the unused suppression comment
+103 |             return STANDARD_AIR_DENSITY
+104 | 
+105 |         # Normalize units - safe to cast now that we've validated
+    -         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+106 +         temp_k = _normalize_temperature(float(temp_mean))
+107 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+108 | 
+109 |         # Calculate air density using ideal gas law
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\air_density.py:107:66
+    |
+105 |         # Normalize units - safe to cast now that we've validated
+106 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+107 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+    |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+108 |
+109 |         # Calculate air density using ideal gas law
+    |
+help: Remove the unused suppression comment
+104 | 
+105 |         # Normalize units - safe to cast now that we've validated
+106 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+    -         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+107 +         pressure_pa = _normalize_pressure(float(pressure_mean))
+108 | 
+109 |         # Calculate air density using ideal gas law
+110 |         air_density = pressure_pa / (GAS_CONSTANT_DRY_AIR * temp_k)
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\report_config.py:12:14
+   |
+10 | from typing import Any
+11 |
+12 | import yaml  # type: ignore
+   |              ^^^^^^^^^^^^^^
+   |
+help: Remove the unused suppression comment
+9  | from pathlib import Path
+10 | from typing import Any
+11 | 
+   - import yaml  # type: ignore
+12 + import yaml
+13 | 
+14 | 
+15 | @dataclass
+
+error[unresolved-attribute]: Function `execute_fill_heights` has no attribute `callback`
+   --> packages\cleanmast\src\cleanmast\subdomains\pipeline\services\pipeline_orchestrator.py:171:45
+    |
+169 |                 str(self.project_dir), "125,140,160", 1.125
+170 |             ),
+171 |             "execute-fill-heights": lambda: execute_fill_heights.callback(
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+172 |                 str(self.project_dir / "fill-heights-reconstruct-meso.toml")
+173 |             ),
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\tests\assessment\conftest.py:80:9
+   |
+78 | ) -> Any:
+79 |     return SingleMastMonthlyWindFrequencyRoseAtom.create(
+80 |         schema=WindRoseSchema,
+   |         ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+81 |         df=sample_wind_rose_df,
+82 |         meta=sample_mast_meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\tests\assessment\conftest.py:92:9
+   |
+90 | ) -> Any:
+91 |     return SingleMastWindPowerRoseAtom.create(
+92 |         schema=WindRoseSchema,
+   |         ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+93 |         df=sample_wind_rose_df,
+94 |         meta=sample_mast_meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+   --> packages\cleanmast\tests\assessment\conftest.py:133:9
+    |
+131 |     )
+132 |     return SingleMastMonthlyPatternAtom.create(
+133 |         schema=MonthlyWindSchema,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[TemporalPatternSchema]`, found `<class 'MonthlyWindSchema'>`
+134 |         df=sample_monthly_wind_df,
+135 |         meta=sample_mast_meta,
+    |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+   --> packages\cleanmast\tests\assessment\conftest.py:149:9
+    |
+147 |     )
+148 |     return SingleMastMonthlyPowerPatternAtom.create(
+149 |         schema=MonthlyWindPowerSchema,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[TemporalPatternSchema]`, found `<class 'MonthlyWindPowerSchema'>`
+150 |         df=sample_monthly_wind_power_df,
+151 |         meta=sample_mast_meta,
+    |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:100:17
+    |
+ 98 |         sensors = [
+ 99 |             SensorColumn(
+100 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+101 |                 column_name="temperature_avg",
+102 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:109:17
+    |
+107 |             ),
+108 |             SensorColumn(
+109 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+110 |                 column_name="pressure_avg",
+111 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:143:17
+    |
+141 |         sensors = [
+142 |             SensorColumn(
+143 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+144 |                 column_name="pressure_avg",
+145 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:165:17
+    |
+163 |         sensors = [
+164 |             SensorColumn(
+165 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 |                 column_name="temperature_avg",
+167 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:210:17
+    |
+208 |         sensors = [
+209 |             SensorColumn(
+210 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+211 |                 column_name="temperature_avg",
+212 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:219:17
+    |
+217 |             ),
+218 |             SensorColumn(
+219 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+220 |                 column_name="pressure_avg",
+221 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:241:17
+    |
+239 |         sensors = [
+240 |             SensorColumn(
+241 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+242 |                 column_name="temperature_avg",  # Column doesn't exist in df
+243 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:250:17
+    |
+248 |             ),
+249 |             SensorColumn(
+250 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+251 |                 column_name="pressure_avg",  # Column doesn't exist in df
+252 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+   --> packages\cleanmast\tests\assessment\test_atom.py:107:13
+    |
+106 |         atom = SingleMastMonthlyPatternAtom.create(
+107 |             schema=MonthlyWindSchema,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[TemporalPatternSchema]`, found `<class 'MonthlyWindSchema'>`
+108 |             df=df,
+109 |             meta=meta,
+    |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `exists` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:134:16
+    |
+132 |         result = builder.build(compile_pdf=False)
+133 |
+134 |         assert result["typ"].exists()
+    |                ^^^^^^^^^^^^^^^^^^^^
+135 |         assert result["typ"].name == "report.typ"
+136 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `name` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:135:16
+    |
+134 |         assert result["typ"].exists()
+135 |         assert result["typ"].name == "report.typ"
+    |                ^^^^^^^^^^^^^^^^^^
+136 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `parent` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:136:16
+    |
+134 |         assert result["typ"].exists()
+135 |         assert result["typ"].name == "report.typ"
+136 |         assert result["typ"].parent == output_dir
+    |                ^^^^^^^^^^^^^^^^^^^^
+137 |
+138 |     def test_build_returns_path(self, tmp_path: Path, monthly_wind_atom: Any):
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:406:20
+    |
+405 |         result1 = builder.build(compile_pdf=False)
+406 |         content1 = result1["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+407 |
+408 |         result2 = builder.build(compile_pdf=False)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:409:20
+    |
+408 |         result2 = builder.build(compile_pdf=False)
+409 |         content2 = result2["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+410 |
+411 |         assert content1 == content2
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\tests\assessment\test_subsections.py:163:29
+    |
+161 |         marker = "外推" if height > 100 else None
+162 |         for ts in timestamps:
+163 |             hour = ts.hour  # type: ignore
+    |                             ^^^^^^^^^^^^^^
+164 |             month = ts.month  # type: ignore
+165 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+    |
+help: Remove the unused suppression comment
+160 |     for height in [80.0, 120.0]:
+161 |         marker = "外推" if height > 100 else None
+162 |         for ts in timestamps:
+    -             hour = ts.hour  # type: ignore
+163 +             hour = ts.hour
+164 |             month = ts.month  # type: ignore
+165 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+166 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\tests\assessment\test_subsections.py:164:31
+    |
+162 |         for ts in timestamps:
+163 |             hour = ts.hour  # type: ignore
+164 |             month = ts.month  # type: ignore
+    |                               ^^^^^^^^^^^^^^
+165 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+166 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+    |
+help: Remove the unused suppression comment
+161 |         marker = "外推" if height > 100 else None
+162 |         for ts in timestamps:
+163 |             hour = ts.hour  # type: ignore
+    -             month = ts.month  # type: ignore
+164 +             month = ts.month
+165 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+166 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+167 |             rows.append({
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:350:12
+    |
+348 |         meta=sample_mast_meta,
+349 |     )
+350 |     return freq_atom, power_atom
+    |            ^^^^^^^^^^^^^^^^^^^^^ expected `tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]`, found `tuple[ReportAtom[WindRoseSchema, SingleMastMeta], ReportAtom[WindRoseSchema, SingleMastMeta]]`
+    |
+   ::: packages\cleanmast\tests\assessment\test_subsections.py:338:6
+    |
+336 |     sample_wind_rose_df: pl.DataFrame,
+337 |     sample_mast_meta: SingleMastMeta,
+338 | ) -> tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]:
+    |      -------------------------------------------------------------------------- Expected `tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]` because of return type
+339 |     """Create wind rose atoms."""
+340 |     freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:429:6
+    |
+427 |       sample_wind_frequency_df: pl.DataFrame,
+428 |       sample_mast_meta: SingleMastMeta,
+429 |   ) -> SingleMastWindFrequencyTableAtom:
+    |        -------------------------------- Expected `SingleMastWindFrequencyTableAtom` because of return type
+430 |       """Create wind frequency table atom."""
+431 |       return SingleMastWindFrequencyTableAtom.create(
+    |  ____________^
+432 | |         schema=WindFrequencySchema,
+433 | |         df=sample_wind_frequency_df,
+434 | |         meta=sample_mast_meta,
+435 | |     )
+    | |_____^ expected `SingleMastWindFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:473:6
+    |
+471 |       sample_vertical_profile_df: pl.DataFrame,
+472 |       sample_mast_meta: SingleMastMeta,
+473 |   ) -> SingleMastVerticalProfileAtom:
+    |        ----------------------------- Expected `SingleMastVerticalProfileAtom` because of return type
+474 |       """Create vertical profile atom."""
+475 |       return SingleMastVerticalProfileAtom.create(
+    |  ____________^
+476 | |         schema=VerticalProfileSchema,
+477 | |         df=sample_vertical_profile_df,
+478 | |         meta=sample_mast_meta,
+479 | |     )
+    | |_____^ expected `SingleMastVerticalProfileAtom`, found `ReportAtom[VerticalProfileSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_turbulence_atoms.py:44:6
+   |
+42 |       sample_turbulence_df: pl.DataFrame,
+43 |       sample_mast_meta: SingleMastMeta,
+44 |   ) -> SingleMastTurbulenceIntensityAtom:
+   |        --------------------------------- Expected `SingleMastTurbulenceIntensityAtom` because of return type
+45 |       return SingleMastTurbulenceIntensityAtom.create(
+   |  ____________^
+46 | |         schema=TurbulenceSchema,
+47 | |         df=sample_turbulence_df,
+48 | |         meta=sample_mast_meta,
+49 | |     )
+   | |_____^ expected `SingleMastTurbulenceIntensityAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:170:6
+    |
+168 |       sample_turbulence_df_multiple: pl.DataFrame,
+169 |       sample_mast_meta: SingleMastMeta,
+170 |   ) -> SingleMastTurbulenceIntensityAtom:
+    |        --------------------------------- Expected `SingleMastTurbulenceIntensityAtom` because of return type
+171 |       """Create a SingleMastTurbulenceIntensityAtom for testing."""
+172 |       return SingleMastTurbulenceIntensityAtom.create(
+    |  ____________^
+173 | |         schema=TurbulenceSchema,
+174 | |         df=sample_turbulence_df_multiple,
+175 | |         meta=sample_mast_meta,
+176 | |     )
+    | |_____^ expected `SingleMastTurbulenceIntensityAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:183:6
+    |
+181 |       sample_sector_df: pl.DataFrame,
+182 |       sample_mast_meta: SingleMastMeta,
+183 |   ) -> SingleMastTurbulenceSectorAtom:
+    |        ------------------------------ Expected `SingleMastTurbulenceSectorAtom` because of return type
+184 |       """Create a SingleMastTurbulenceSectorAtom for testing."""
+185 |       return SingleMastTurbulenceSectorAtom.create(
+    |  ____________^
+186 | |         schema=TurbulenceSectorSchema,
+187 | |         df=sample_sector_df,
+188 | |         meta=sample_mast_meta,
+189 | |     )
+    | |_____^ expected `SingleMastTurbulenceSectorAtom`, found `ReportAtom[TurbulenceSectorSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:196:6
+    |
+194 |       sample_turbulence_df_three_heights: pl.DataFrame,
+195 |       sample_mast_meta: SingleMastMeta,
+196 |   ) -> SingleMastTurbulenceMultiHeightAtom:
+    |        ----------------------------------- Expected `SingleMastTurbulenceMultiHeightAtom` because of return type
+197 |       """Create a SingleMastTurbulenceMultiHeightAtom for testing."""
+198 |       return SingleMastTurbulenceMultiHeightAtom.create(
+    |  ____________^
+199 | |         schema=TurbulenceSchema,
+200 | |         df=sample_turbulence_df_three_heights,
+201 | |         meta=sample_mast_meta,
+202 | |     )
+    | |_____^ expected `SingleMastTurbulenceMultiHeightAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:209:6
+    |
+207 |       sample_turbulence_df_multiple: pl.DataFrame,
+208 |       sample_mast_meta: SingleMastMeta,
+209 |   ) -> SingleMastTurbulenceSummaryAtom:
+    |        ------------------------------- Expected `SingleMastTurbulenceSummaryAtom` because of return type
+210 |       """Create a SingleMastTurbulenceSummaryAtom for testing."""
+211 |       return SingleMastTurbulenceSummaryAtom.create(
+    |  ____________^
+212 | |         schema=TurbulenceSchema,
+213 | |         df=sample_turbulence_df_multiple,
+214 | |         meta=sample_mast_meta,
+215 | |     )
+    | |_____^ expected `SingleMastTurbulenceSummaryAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `calculate_representative_ti` is incorrect
+   --> packages\cleanmast\tests\assessment\test_turbulence_calculator.py:342:57
+    |
+340 |         ti_values = [0.10, None, 0.12, None, 0.14] * 20  # 100 values, 40% None
+341 |         
+342 |         rep_ti = calculator.calculate_representative_ti(ti_values)
+    |                                                         ^^^^^^^^^ Expected `list[int | float]`, found `list[Unknown | int | float | None]`
+343 |         
+344 |         assert rep_ti is not None
+    |
+info: Method defined here
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:232:9
+    |
+230 |         return ti_list
+231 |
+232 |     def calculate_representative_ti(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+233 |         self,
+234 |         ti_values: list[float],
+    |         ---------------------- Parameter declared here
+235 |     ) -> float | None:
+236 |         """Calculate representative turbulence intensity (P90).
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-import]: Cannot resolve imported module `scipy.stats`
+  --> packages\cleanmast\tests\assessment\test_vertical_profile_analyzer.py:13:6
+   |
+11 | import polars as pl
+12 | import pytest
+13 | from scipy.stats import linregress
+   |      ^^^^^^^^^^^
+14 |
+15 | from cleanmast.subdomains.assessment.domain.services.calculators.vertical_profile_analyzer import (
+   |
+info: Searched in the following paths during module resolution:
+info:   1. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen (first-party code)
+info:   2. vendored://stdlib (stdlib typeshed stubs vendored by ty)
+info:   3. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Lib\site-packages (site-packages)
+info:   4. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast\src (editable install)
+info:   5. C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\preprocess-tools\src (editable install)
+info: make sure your Python environment is properly configured: https://docs.astral.sh/ty/modules/#python-environment
+info: rule `unresolved-import` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:488:13
+    |
+486 |         """Test basic table rendering."""
+487 |         atom = SingleMastWindShearTableAtom(
+488 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+489 |             meta=sample_meta
+490 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:529:13
+    |
+527 |         """Test that alpha values are formatted to 3 decimal places."""
+528 |         atom = SingleMastWindShearTableAtom(
+529 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+530 |             meta=sample_meta
+531 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:544:13
+    |
+542 |         """Test that renderImage returns empty path (no image for table)."""
+543 |         atom = SingleMastWindShearTableAtom(
+544 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+545 |             meta=sample_meta
+546 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:558:13
+    |
+556 |         """Test basic summary rendering."""
+557 |         atom = SingleMastWindShearTableAtom(
+558 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+559 |             meta=sample_meta
+560 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:657:13
+    |
+655 |         """Test basic matrix table rendering."""
+656 |         atom = SingleMastWindShearExponentAtom(
+657 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+658 |             meta=sample_meta
+659 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:674:13
+    |
+672 |         """Test that diagonal shows '◦' marker."""
+673 |         atom = SingleMastWindShearExponentAtom(
+674 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+675 |             meta=sample_meta
+676 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:687:13
+    |
+685 |         """Test that table shows antisymmetric values (α_ij = -α_ji)."""
+686 |         atom = SingleMastWindShearExponentAtom(
+687 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+688 |             meta=sample_meta
+689 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:720:13
+    |
+718 |         """Test that renderImage returns empty path (no image for matrix)."""
+719 |         atom = SingleMastWindShearExponentAtom(
+720 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+721 |             meta=sample_meta
+722 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:734:13
+    |
+732 |         """Test basic summary rendering."""
+733 |         atom = SingleMastWindShearExponentAtom(
+734 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+735 |             meta=sample_meta
+736 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:823:13
+    |
+821 |         """Test that summary includes min and max alpha pairs."""
+822 |         atom = SingleMastWindShearExponentAtom(
+823 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+824 |             meta=sample_meta
+825 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:142:6
+    |
+140 |       sample_weibull_df_multiple: pl.DataFrame,
+141 |       sample_mast_meta: SingleMastMeta,
+142 |   ) -> SingleMastWeibullParametersAtom:
+    |        ------------------------------- Expected `SingleMastWeibullParametersAtom` because of return type
+143 |       """Create a SingleMastWeibullParametersAtom for testing."""
+144 |       return SingleMastWeibullParametersAtom.create(
+    |  ____________^
+145 | |         schema=WeibullSchema,
+146 | |         df=sample_weibull_df_multiple,
+147 | |         meta=sample_mast_meta,
+148 | |     )
+    | |_____^ expected `SingleMastWeibullParametersAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:155:6
+    |
+153 |       sample_weibull_df_single: pl.DataFrame,
+154 |       sample_mast_meta: SingleMastMeta,
+155 |   ) -> SingleMastWeibullDistributionAtom:
+    |        --------------------------------- Expected `SingleMastWeibullDistributionAtom` because of return type
+156 |       """Create a SingleMastWeibullDistributionAtom for testing."""
+157 |       return SingleMastWeibullDistributionAtom.create(
+    |  ____________^
+158 | |         schema=WeibullSchema,
+159 | |         df=sample_weibull_df_single,
+160 | |         meta=sample_mast_meta,
+161 | |     )
+    | |_____^ expected `SingleMastWeibullDistributionAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:168:6
+    |
+166 |       sample_weibull_df_multiple: pl.DataFrame,
+167 |       sample_mast_meta: SingleMastMeta,
+168 |   ) -> SingleMastWeibullDistributionAtom:
+    |        --------------------------------- Expected `SingleMastWeibullDistributionAtom` because of return type
+169 |       """Create a SingleMastWeibullDistributionAtom with multiple heights."""
+170 |       return SingleMastWeibullDistributionAtom.create(
+    |  ____________^
+171 | |         schema=WeibullSchema,
+172 | |         df=sample_weibull_df_multiple,
+173 | |         meta=sample_mast_meta,
+174 | |     )
+    | |_____^ expected `SingleMastWeibullDistributionAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:181:6
+    |
+179 |       sample_weibull_df_three_heights: pl.DataFrame,
+180 |       sample_mast_meta: SingleMastMeta,
+181 |   ) -> SingleMastWeibullMultiHeightAtom:
+    |        -------------------------------- Expected `SingleMastWeibullMultiHeightAtom` because of return type
+182 |       """Create a SingleMastWeibullMultiHeightAtom for testing."""
+183 |       return SingleMastWeibullMultiHeightAtom.create(
+    |  ____________^
+184 | |         schema=WeibullSchema,
+185 | |         df=sample_weibull_df_three_heights,
+186 | |         meta=sample_mast_meta,
+187 | |     )
+    | |_____^ expected `SingleMastWeibullMultiHeightAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:158:6
+    |
+156 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+157 |       sample_mast_meta: SingleMastMeta,
+158 |   ) -> SingleMastWindFrequencyDistributionAtom:
+    |        --------------------------------------- Expected `SingleMastWindFrequencyDistributionAtom` because of return type
+159 |       """Create a SingleMastWindFrequencyDistributionAtom for testing."""
+160 |       return SingleMastWindFrequencyDistributionAtom.create(
+    |  ____________^
+161 | |         schema=WindFrequencySchema,
+162 | |         df=sample_wind_frequency_df_multiple,
+163 | |         meta=sample_mast_meta,
+164 | |     )
+    | |_____^ expected `SingleMastWindFrequencyDistributionAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:171:6
+    |
+169 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+170 |       sample_mast_meta: SingleMastMeta,
+171 |   ) -> SingleMastWindFrequencyTableAtom:
+    |        -------------------------------- Expected `SingleMastWindFrequencyTableAtom` because of return type
+172 |       """Create a SingleMastWindFrequencyTableAtom for testing."""
+173 |       return SingleMastWindFrequencyTableAtom.create(
+    |  ____________^
+174 | |         schema=WindFrequencySchema,
+175 | |         df=sample_wind_frequency_df_multiple,
+176 | |         meta=sample_mast_meta,
+177 | |     )
+    | |_____^ expected `SingleMastWindFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:184:6
+    |
+182 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+183 |       sample_mast_meta: SingleMastMeta,
+184 |   ) -> SingleMastWindPowerFrequencyTableAtom:
+    |        ------------------------------------- Expected `SingleMastWindPowerFrequencyTableAtom` because of return type
+185 |       """Create a SingleMastWindPowerFrequencyTableAtom for testing."""
+186 |       return SingleMastWindPowerFrequencyTableAtom.create(
+    |  ____________^
+187 | |         schema=WindFrequencySchema,
+188 | |         df=sample_wind_frequency_df_multiple,
+189 | |         meta=sample_mast_meta,
+190 | |     )
+    | |_____^ expected `SingleMastWindPowerFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:197:6
+    |
+195 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+196 |       sample_mast_meta: SingleMastMeta,
+197 |   ) -> SingleMastWindRangeSummaryAtom:
+    |        ------------------------------ Expected `SingleMastWindRangeSummaryAtom` because of return type
+198 |       """Create a SingleMastWindRangeSummaryAtom for testing."""
+199 |       return SingleMastWindRangeSummaryAtom.create(
+    |  ____________^
+200 | |         schema=WindFrequencySchema,
+201 | |         df=sample_wind_frequency_df_multiple,
+202 | |         meta=sample_mast_meta,
+203 | |     )
+    | |_____^ expected `SingleMastWindRangeSummaryAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:61:6
+   |
+59 |       sample_wind_rose_data: pl.DataFrame,
+60 |       sample_mast_meta: SingleMastMeta,
+61 |   ) -> SingleMastMonthlyWindFrequencyRoseAtom:
+   |        -------------------------------------- Expected `SingleMastMonthlyWindFrequencyRoseAtom` because of return type
+62 |       return SingleMastMonthlyWindFrequencyRoseAtom.create(
+   |  ____________^
+63 | |         schema=WindRoseSchema,
+64 | |         df=sample_wind_rose_data,
+65 | |         meta=sample_mast_meta,
+66 | |     )
+   | |_____^ expected `SingleMastMonthlyWindFrequencyRoseAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:63:9
+   |
+61 | ) -> SingleMastMonthlyWindFrequencyRoseAtom:
+62 |     return SingleMastMonthlyWindFrequencyRoseAtom.create(
+63 |         schema=WindRoseSchema,
+   |         ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+64 |         df=sample_wind_rose_data,
+65 |         meta=sample_mast_meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:73:6
+   |
+71 |       sample_wind_rose_data: pl.DataFrame,
+72 |       sample_mast_meta: SingleMastMeta,
+73 |   ) -> SingleMastWindPowerRoseAtom:
+   |        --------------------------- Expected `SingleMastWindPowerRoseAtom` because of return type
+74 |       return SingleMastWindPowerRoseAtom.create(
+   |  ____________^
+75 | |         schema=WindRoseSchema,
+76 | |         df=sample_wind_rose_data,
+77 | |         meta=sample_mast_meta,
+78 | |     )
+   | |_____^ expected `SingleMastWindPowerRoseAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:75:9
+   |
+73 | ) -> SingleMastWindPowerRoseAtom:
+74 |     return SingleMastWindPowerRoseAtom.create(
+75 |         schema=WindRoseSchema,
+   |         ^^^^^^^^^^^^^^^^^^^^^ Expected `type[packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas.WindRoseSchema]`, found `<class 'packages.cleanmast.src.cleanmast.subdomains.assessment.domain.value_objects.schemas.WindRoseSchema'>`
+76 |         df=sample_wind_rose_data,
+77 |         meta=sample_mast_meta,
+   |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:183:6
+    |
+181 |       sample_wind_rose_df: pl.DataFrame,
+182 |       sample_mast_meta: SingleMastMeta,
+183 |   ) -> SingleMastMonthlyWindRoseGridAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyWindRoseGridAtom` because of return type
+184 |       """Create a SingleMastMonthlyWindRoseGridAtom for testing."""
+185 |       return SingleMastMonthlyWindRoseGridAtom.create(
+    |  ____________^
+186 | |         schema=WindRoseSchema,
+187 | |         df=sample_wind_rose_df,
+188 | |         meta=sample_mast_meta,
+189 | |     )
+    | |_____^ expected `SingleMastMonthlyWindRoseGridAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:196:6
+    |
+194 |       sample_wind_rose_df_multiple_heights: pl.DataFrame,
+195 |       sample_mast_meta: SingleMastMeta,
+196 |   ) -> SingleMastMonthlyWindRoseGridAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyWindRoseGridAtom` because of return type
+197 |       """Create a SingleMastMonthlyWindRoseGridAtom with multiple heights."""
+198 |       return SingleMastMonthlyWindRoseGridAtom.create(
+    |  ____________^
+199 | |         schema=WindRoseSchema,
+200 | |         df=sample_wind_rose_df_multiple_heights,
+201 | |         meta=sample_mast_meta,
+202 | |     )
+    | |_____^ expected `SingleMastMonthlyWindRoseGridAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:201:6
+    |
+199 |       sample_timeseries_df: pl.DataFrame,
+200 |       sample_mast_meta: SingleMastMeta,
+201 |   ) -> SingleMastWindTimeseriesAtom:
+    |        ---------------------------- Expected `SingleMastWindTimeseriesAtom` because of return type
+202 |       """Create a SingleMastWindTimeseriesAtom for testing."""
+203 |       return SingleMastWindTimeseriesAtom.create(
+    |  ____________^
+204 | |         schema=TemporalPatternSchema,
+205 | |         df=sample_timeseries_df,
+206 | |         meta=sample_mast_meta,
+207 | |     )
+    | |_____^ expected `SingleMastWindTimeseriesAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:214:6
+    |
+212 |       sample_daily_pattern_df: pl.DataFrame,
+213 |       sample_mast_meta: SingleMastMeta,
+214 |   ) -> SingleMastDailyPatternAtom:
+    |        -------------------------- Expected `SingleMastDailyPatternAtom` because of return type
+215 |       """Create a SingleMastDailyPatternAtom for testing."""
+216 |       return SingleMastDailyPatternAtom.create(
+    |  ____________^
+217 | |         schema=TemporalPatternSchema,
+218 | |         df=sample_daily_pattern_df,
+219 | |         meta=sample_mast_meta,
+220 | |     )
+    | |_____^ expected `SingleMastDailyPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:227:6
+    |
+225 |       sample_daily_pattern_df: pl.DataFrame,
+226 |       sample_mast_meta: SingleMastMeta,
+227 |   ) -> SingleMastDailyPowerPatternAtom:
+    |        ------------------------------- Expected `SingleMastDailyPowerPatternAtom` because of return type
+228 |       """Create a SingleMastDailyPowerPatternAtom for testing."""
+229 |       return SingleMastDailyPowerPatternAtom.create(
+    |  ____________^
+230 | |         schema=TemporalPatternSchema,
+231 | |         df=sample_daily_pattern_df,
+232 | |         meta=sample_mast_meta,
+233 | |     )
+    | |_____^ expected `SingleMastDailyPowerPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:240:6
+    |
+238 |       sample_monthly_pattern_df: pl.DataFrame,
+239 |       sample_mast_meta: SingleMastMeta,
+240 |   ) -> SingleMastMonthlyPatternAtom:
+    |        ---------------------------- Expected `SingleMastMonthlyPatternAtom` because of return type
+241 |       """Create a SingleMastMonthlyPatternAtom for testing."""
+242 |       return SingleMastMonthlyPatternAtom.create(
+    |  ____________^
+243 | |         schema=TemporalPatternSchema,
+244 | |         df=sample_monthly_pattern_df,
+245 | |         meta=sample_mast_meta,
+246 | |     )
+    | |_____^ expected `SingleMastMonthlyPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:253:6
+    |
+251 |       sample_monthly_pattern_df: pl.DataFrame,
+252 |       sample_mast_meta: SingleMastMeta,
+253 |   ) -> SingleMastMonthlyPowerPatternAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyPowerPatternAtom` because of return type
+254 |       """Create a SingleMastMonthlyPowerPatternAtom for testing."""
+255 |       return SingleMastMonthlyPowerPatternAtom.create(
+    |  ____________^
+256 | |         schema=TemporalPatternSchema,
+257 | |         df=sample_monthly_pattern_df,
+258 | |         meta=sample_mast_meta,
+259 | |     )
+    | |_____^ expected `SingleMastMonthlyPowerPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:266:6
+    |
+264 |       sample_monthly_daily_df_full: pl.DataFrame,
+265 |       sample_mast_meta: SingleMastMeta,
+266 |   ) -> SingleMastMonthlyDailyWindAtom:
+    |        ------------------------------ Expected `SingleMastMonthlyDailyWindAtom` because of return type
+267 |       """Create a SingleMastMonthlyDailyWindAtom for testing."""
+268 |       return SingleMastMonthlyDailyWindAtom.create(
+    |  ____________^
+269 | |         schema=TemporalPatternSchema,
+270 | |         df=sample_monthly_daily_df_full,
+271 | |         meta=sample_mast_meta,
+272 | |     )
+    | |_____^ expected `SingleMastMonthlyDailyWindAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:279:6
+    |
+277 |       sample_monthly_daily_df_full: pl.DataFrame,
+278 |       sample_mast_meta: SingleMastMeta,
+279 |   ) -> SingleMastMonthlyDailyPowerAtom:
+    |        ------------------------------- Expected `SingleMastMonthlyDailyPowerAtom` because of return type
+280 |       """Create a SingleMastMonthlyDailyPowerAtom for testing."""
+281 |       return SingleMastMonthlyDailyPowerAtom.create(
+    |  ____________^
+282 | |         schema=TemporalPatternSchema,
+283 | |         df=sample_monthly_daily_df_full,
+284 | |         meta=sample_mast_meta,
+285 | |     )
+    | |_____^ expected `SingleMastMonthlyDailyPowerAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+Found 121 diagnostics

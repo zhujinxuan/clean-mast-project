@@ -8,11 +8,11 @@ This module provides runtime validation for HeightReference configurations
 against actual sensor metadata in timeseries data.
 """
 
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    MastFillConfig,
     HeightReference,
+    MastFillConfig,
 )
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 
 def build_sensor_column_map(timeseries) -> dict[str, SensorColumn]:

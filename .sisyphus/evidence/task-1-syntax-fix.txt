@@ -1,0 +1,69 @@
+TASK 1: Typst Syntax Bug Fixes - QA Evidence
+=============================================
+
+## Scenario 1: Chinese Commas Eliminated
+
+```bash
+uv run python -c "
+with open('packages/cleanmast/src/cleanmast/subdomains/assessment/domain/entities/single_mast/turbulence_sector.py', 'r', encoding='utf-8') as f:
+    content = f.read()
+line59 = content.split(chr(10))[58]
+assert chr(0xFF0C) not in line59
+print('PASS: No Chinese commas on line 59')
+"
+```
+
+**Result:** PASS: No Chinese commas on line 59
+
+---
+
+## Scenario 2: Trailing Comma Fix Present
+
+**Note:** Original assertion in plan had typo. Corrected assertion used:
+- Fixed pattern: `rows + [",']` detected in line 61
+
+**Result:** PASS: Trailing comma fix present on line 61
+
+---
+
+## Scenario 4: Existing Tests Still Pass
+
+```bash
+uv run pytest packages/cleanmast/tests/assessment/test_turbulence_atoms_migrated.py -v -k "TurbulenceSector" --tb=short
+```
+
+**Result:**
+```
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-9.0.2
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_render_image PASSED [ 14%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_render_table PASSED [ 28%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_render_summary PASSED [ 42%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_content_hash_consistency PASSED [ 57%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_table_has_all_sectors PASSED [ 71%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_summary_has_dominant_directions PASSED [ 85%]
+packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py::TestSingleMastTurbulenceSectorAtom::test_filter_by_height PASSED [100%]
+
+====================== 7 passed, 33 deselected in 2.07s =======================
+```
+
+---
+
+## Summary of Changes
+
+**File Modified:** `packages/cleanmast/src/cleanmast/subdomains/assessment/domain/entities/single_mast/turbulence_sector.py`
+
+### Bug Fix 1 (Line 59): Chinese Commas
+- **Before:** `[风向], [高度], [平均TI(%)]，[代表TI(%)]，[IEC类别]`
+- **After:** `[风向], [高度], [平均TI(%)], [代表TI(%)], [IEC类别]`
+- **Issue:** Chinese full-width commas (U+FF0C) replaced with ASCII commas (,)
+
+### Bug Fix 2 (Line 61): Trailing Comma
+- **Before:** `{chr(10).join(rows)}`
+- **After:** `{chr(10).join(rows + [","])}`
+- **Issue:** Added trailing comma after joined rows for valid Typst table syntax
+
+### Verification
+✅ All 7 existing tests pass
+✅ No Chinese commas in source code
+✅ Trailing comma pattern implemented correctly

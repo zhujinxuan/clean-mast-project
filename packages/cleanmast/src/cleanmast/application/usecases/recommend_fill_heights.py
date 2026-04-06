@@ -13,18 +13,14 @@ from pathlib import Path
 import tomli
 import tomli_w
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    MastFillConfig,
-    HeightReference,
-    load_fill_heights_config,
-)
-from cleanmast.subdomains.dataprocessing.services.height_filling.planner import generate_dual_configs
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import ParquetRepository
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.configuration import (
     ReconstructMesoConfiguration,
     RepresentativeYearConfiguration,
     load_representative_year_config,
+)
+from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (
+    generate_dual_configs,
 )
 
 # Default deg_diff_per_m limit (22.5° over 20m = 1.125 deg/m)
@@ -86,14 +82,14 @@ def recommend_fill_heights(
     rep_year_path = project_path / "representative-year.toml"
 
     if rep_year_path.exists():
-        rep_year_config = load_representative_year_config(str(rep_year_path))
+        rep_year_config = load_representative_year_config(to_posix_path(rep_year_path))
 
     # Generate dual configs
     meso_config, rep_config = generate_dual_configs(
         reconstruct_meso_config=reconstruct_config,
         representative_year_config=rep_year_config,
         target_heights=target_heights,
-        base_dir=str(project_path),
+        base_dir=to_posix_path(project_path),
         deg_diff_limit=deg_diff_limit,
     )
 

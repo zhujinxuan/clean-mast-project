@@ -1,0 +1,7 @@
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/monthly_power_calculator.py:            marker = sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/monthly_stats_calculator.py:            marker = sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/turbulence_calculator.py:            interpolation_marker = sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/turbulence_calculator.py:            interpolation_marker = ws_sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/vertical_profile_analyzer.py:            interpolation_marker = sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/wind_frequency_calculator.py:            interpolation_marker = sensor.detect_interpolation_marker()
+packages/cleanmast/src/cleanmast/subdomains/assessment/domain/services/calculators/wind_rose_calculator.py:            marker = sensor.detect_interpolation_marker()

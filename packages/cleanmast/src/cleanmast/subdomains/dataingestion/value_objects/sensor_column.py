@@ -5,6 +5,8 @@ Compliance: Subdomain layout ✓ | Value Object ✓ | Julia-compatible ✓
 Description: Value object representing sensor metadata with Julia-compatible camelCase serialization
 """
 
+import re
+
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
@@ -36,3 +38,23 @@ class SensorColumn(BaseModel):
     height: float
     stat_type: str
     unit: str
+
+    def detect_interpolation_marker(self) -> str:
+        """Detect fill type marker from column name.
+
+        Returns Chinese label:
+        - "外推" for extrapolated
+        - "内插" for interpolated
+        - Empty string if no fill marker found (original measured data)
+
+        Pattern: *_fill:{type} at end of column name
+        """
+        FILL_TYPE_PATTERN = r"_fill:(\w+)$"
+        FILL_TYPE_LABELS: dict[str, str] = {
+            "extrapolated": "外推",
+            "interpolated": "内插",
+        }
+        if match := re.search(FILL_TYPE_PATTERN, self.column_name, re.IGNORECASE):
+            fill_type = match.group(1).lower()
+            return FILL_TYPE_LABELS.get(fill_type, "")
+        return ""

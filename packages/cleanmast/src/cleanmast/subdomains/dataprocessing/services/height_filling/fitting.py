@@ -11,13 +11,13 @@ parameters to use (that's the planner's job).
 """
 
 import logging
+from typing import Literal, cast
 
 import numpy as np
 import polars as pl
-from typing import Literal, cast
 
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 logger = logging.getLogger(__name__)
 

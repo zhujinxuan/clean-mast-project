@@ -5,21 +5,21 @@ Compliance: Subdomain layout ✓ | Repository Pattern ✓ | Julia-compatible met
 Description: Repository implementation using Parquet format with embedded sensor metadata
 """
 
+import json
 from pathlib import Path
 from typing import Literal
 
-import json
-
 import polars as pl
-import pyarrow as pa
 import pyarrow.parquet as pq
 import tomli
 import tomli_w
 import yaml
 
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 def _detect_format(path: Path) -> Literal["csv", "parquet"]:
@@ -262,7 +262,9 @@ class ParquetRepository:
                 )
 
         # Validate DataFrame against sensor metadata
-        from cleanmast.subdomains.dataingestion.repositories.timeseries_validation import validate_timeseries
+        from cleanmast.subdomains.dataingestion.repositories.timeseries_validation import (
+            validate_timeseries,
+        )
         mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.parquet"
         df = validate_timeseries(df, sensors, mast_name)
 
@@ -314,7 +316,9 @@ class ParquetRepository:
                 )
 
         # Validate DataFrame against sensor metadata
-        from cleanmast.subdomains.dataingestion.repositories.timeseries_validation import validate_timeseries
+        from cleanmast.subdomains.dataingestion.repositories.timeseries_validation import (
+            validate_timeseries,
+        )
         mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.csv"
         df = validate_timeseries(df, sensors, mast_name)
 

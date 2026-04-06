@@ -1,0 +1,1034 @@
+error[unsupported-operator]: Unsupported `/` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:166:26
+    |
+164 |             # Calculate mean speed (approximation using bin centers)
+165 |             total_freq = height_df["frequency"].sum()
+166 |             mean_speed = (height_df["bin_center"] * height_df["frequency"]).sum() / float(total_freq)
+    |                          --------------------------------------------------------^^^-----------------
+    |                          |                                                          |
+    |                          |                                                          Has type `float`
+    |                          Has type `int | float | Decimal`
+167 |
+168 |             # Calculate energy-weighted mean speed
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `/` operation
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\single_mast\wind_frequency_distribution.py:170:37
+    |
+168 |                # Calculate energy-weighted mean speed
+169 |                total_power_freq = height_df["power_frequency"].sum()
+170 |                energy_weighted_speed = (
+    |   _____________________________________-
+    |  |_____________________________________|
+171 | ||                 height_df["bin_center"] * height_df["power_frequency"]
+172 | ||             ).sum() / total_power_freq
+    | ||                   -   ---------------^
+    | ||___________________|__________________|
+    |  |___________________|                  Both operands have type `int | float | Decimal`
+    |
+173 |
+174 |                # Distribution shape analysis
+    |
+info: rule `unsupported-operator` is enabled by default
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:226:32
+    |
+224 |         ti_list = ti_values.tolist()
+225 |         for i in range(half_window):
+226 |             ti_list[i] = None  # type: ignore
+    |                                ^^^^^^^^^^^^^^
+227 |             ti_list[-(i + 1)] = None  # type: ignore
+    |
+help: Remove the unused suppression comment
+223 |         half_window = rolling_window // 2
+224 |         ti_list = ti_values.tolist()
+225 |         for i in range(half_window):
+    -             ti_list[i] = None  # type: ignore
+226 +             ti_list[i] = None
+227 |             ti_list[-(i + 1)] = None  # type: ignore
+228 | 
+229 |         return ti_list
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:227:39
+    |
+225 |         for i in range(half_window):
+226 |             ti_list[i] = None  # type: ignore
+227 |             ti_list[-(i + 1)] = None  # type: ignore
+    |                                       ^^^^^^^^^^^^^^
+228 |
+229 |         return ti_list
+    |
+help: Remove the unused suppression comment
+224 |         ti_list = ti_values.tolist()
+225 |         for i in range(half_window):
+226 |             ti_list[i] = None  # type: ignore
+    -             ti_list[-(i + 1)] = None  # type: ignore
+227 +             ti_list[-(i + 1)] = None
+228 | 
+229 |         return ti_list
+230 | 
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\air_density.py:104:60
+    |
+103 |         # Normalize units - safe to cast now that we've validated
+104 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+105 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+    |
+help: Remove the unused suppression comment
+101 |             return STANDARD_AIR_DENSITY
+102 | 
+103 |         # Normalize units - safe to cast now that we've validated
+    -         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+104 +         temp_k = _normalize_temperature(float(temp_mean))
+105 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+106 | 
+107 |         # Calculate air density using ideal gas law
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\air_density.py:105:66
+    |
+103 |         # Normalize units - safe to cast now that we've validated
+104 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+105 |         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+    |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+106 |
+107 |         # Calculate air density using ideal gas law
+    |
+help: Remove the unused suppression comment
+102 | 
+103 |         # Normalize units - safe to cast now that we've validated
+104 |         temp_k = _normalize_temperature(float(temp_mean))  # type: ignore[arg-type]
+    -         pressure_pa = _normalize_pressure(float(pressure_mean))  # type: ignore[arg-type]
+105 +         pressure_pa = _normalize_pressure(float(pressure_mean))
+106 | 
+107 |         # Calculate air density using ideal gas law
+108 |         air_density = pressure_pa / (GAS_CONSTANT_DRY_AIR * temp_k)
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\value_objects\report_config.py:12:14
+   |
+10 | from typing import Any
+11 |
+12 | import yaml  # type: ignore
+   |              ^^^^^^^^^^^^^^
+   |
+help: Remove the unused suppression comment
+9  | from pathlib import Path
+10 | from typing import Any
+11 | 
+   - import yaml  # type: ignore
+12 + import yaml
+13 | 
+14 | 
+15 | @dataclass
+
+error[unresolved-attribute]: Function `execute_fill_heights` has no attribute `callback`
+   --> packages\cleanmast\src\cleanmast\subdomains\pipeline\services\pipeline_orchestrator.py:171:45
+    |
+169 |                 str(self.project_dir), "125,140,160", 1.125
+170 |             ),
+171 |             "execute-fill-heights": lambda: execute_fill_heights.callback(
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+172 |                 str(self.project_dir / "fill-heights-reconstruct-meso.toml")
+173 |             ),
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:99:17
+    |
+ 97 |         sensors = [
+ 98 |             SensorColumn(
+ 99 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+100 |                 column_name="temperature_avg",
+101 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:108:17
+    |
+106 |             ),
+107 |             SensorColumn(
+108 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+109 |                 column_name="pressure_avg",
+110 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:142:17
+    |
+140 |         sensors = [
+141 |             SensorColumn(
+142 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+143 |                 column_name="pressure_avg",
+144 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:164:17
+    |
+162 |         sensors = [
+163 |             SensorColumn(
+164 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+165 |                 column_name="temperature_avg",
+166 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:209:17
+    |
+207 |         sensors = [
+208 |             SensorColumn(
+209 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+210 |                 column_name="temperature_avg",
+211 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:218:17
+    |
+216 |             ),
+217 |             SensorColumn(
+218 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+219 |                 column_name="pressure_avg",
+220 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:240:17
+    |
+238 |         sensors = [
+239 |             SensorColumn(
+240 |                 original_column="temperature_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+241 |                 column_name="temperature_avg",  # Column doesn't exist in df
+242 |                 sensor_type="Temperature",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[unknown-argument]: Argument `original_column` does not match any known parameter
+   --> packages\cleanmast\tests\assessment\test_air_density.py:249:17
+    |
+247 |             ),
+248 |             SensorColumn(
+249 |                 original_column="pressure_avg",
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+250 |                 column_name="pressure_avg",  # Column doesn't exist in df
+251 |                 sensor_type="Pressure",
+    |
+info: rule `unknown-argument` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `create` is incorrect
+   --> packages\cleanmast\tests\assessment\test_atom.py:113:13
+    |
+112 |         atom = SingleMastMonthlyPatternAtom.create(
+113 |             schema=MonthlyWindSchema,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[TemporalPatternSchema]`, found `<class 'MonthlyWindSchema'>`
+114 |             df=df,
+115 |             meta=meta,
+    |
+info: Method defined here
+  --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\entities\report_atom.py:84:9
+   |
+83 |     @classmethod
+84 |     def create(cls, schema: type[T], df: pl.DataFrame, meta: M) -> ReportAtom[T, M]:
+   |         ^^^^^^      --------------- Parameter declared here
+85 |         """Factory: validates once, returns typed atom.
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `exists` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:132:16
+    |
+130 |         result = builder.build(compile_pdf=False)
+131 |
+132 |         assert result["typ"].exists()
+    |                ^^^^^^^^^^^^^^^^^^^^
+133 |         assert result["typ"].name == "report.typ"
+134 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `name` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:133:16
+    |
+132 |         assert result["typ"].exists()
+133 |         assert result["typ"].name == "report.typ"
+    |                ^^^^^^^^^^^^^^^^^^
+134 |         assert result["typ"].parent == output_dir
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `parent` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:134:16
+    |
+132 |         assert result["typ"].exists()
+133 |         assert result["typ"].name == "report.typ"
+134 |         assert result["typ"].parent == output_dir
+    |                ^^^^^^^^^^^^^^^^^^^^
+135 |
+136 |     def test_build_returns_path(self, tmp_path: Path, monthly_wind_atom: Any):
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:404:20
+    |
+403 |         result1 = builder.build(compile_pdf=False)
+404 |         content1 = result1["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+405 |
+406 |         result2 = builder.build(compile_pdf=False)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `read_text` may be missing on object of type `Path | str`
+   --> packages\cleanmast\tests\assessment\test_builder.py:407:20
+    |
+406 |         result2 = builder.build(compile_pdf=False)
+407 |         content2 = result2["typ"].read_text(encoding="utf-8")
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+408 |
+409 |         assert content1 == content2
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\tests\assessment\test_builder_typst.py:469:16
+    |
+467 |         )
+468 |
+469 |         assert first_pos < second_pos < third_pos, (
+    |                ---------^^^----------
+    |                |
+    |                Both operands have type `Unknown | None`
+470 |             f"Sections not in expected order: {section_texts}"
+471 |         )
+    |
+info: Operation fails because operator `<` is not supported between two objects of type `None`
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Unsupported `<` operation
+   --> packages\cleanmast\tests\assessment\test_builder_typst.py:469:28
+    |
+467 |         )
+468 |
+469 |         assert first_pos < second_pos < third_pos, (
+    |                            ----------^^^---------
+    |                            |
+    |                            Both operands have type `Unknown | None`
+470 |             f"Sections not in expected order: {section_texts}"
+471 |         )
+    |
+info: Operation fails because operator `<` is not supported between two objects of type `None`
+info: rule `unsupported-operator` is enabled by default
+
+error[unresolved-import]: Module `cleanmast.subdomains.assessment.domain.value_objects.column_utils` has no member `detect_interpolation_marker`
+ --> packages\cleanmast\tests\assessment\test_column_utils.py:4:5
+  |
+3 | from cleanmast.subdomains.assessment.domain.value_objects.column_utils import (
+4 |     detect_interpolation_marker,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | )
+  |
+info: rule `unresolved-import` is enabled by default
+
+error[unresolved-import]: Module `cleanmast.subdomains.assessment.domain.value_objects` has no member `detect_interpolation_marker`
+ --> packages\cleanmast\tests\assessment\test_meta.py:6:5
+  |
+4 | from cleanmast.subdomains.assessment.domain.value_objects import (
+5 |     SingleMastMeta,
+6 |     detect_interpolation_marker,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |     get_height_display_name,
+8 | )
+  |
+info: rule `unresolved-import` is enabled by default
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\tests\assessment\test_subsections.py:160:29
+    |
+158 |         marker = "澶栨帹" if height > 100 else None
+159 |         for ts in timestamps:
+160 |             hour = ts.hour  # type: ignore
+    |                             ^^^^^^^^^^^^^^
+161 |             month = ts.month  # type: ignore
+162 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+    |
+help: Remove the unused suppression comment
+157 |     for height in [80.0, 120.0]:
+158 |         marker = "澶栨帹" if height > 100 else None
+159 |         for ts in timestamps:
+    -             hour = ts.hour  # type: ignore
+160 +             hour = ts.hour
+161 |             month = ts.month  # type: ignore
+162 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+163 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+
+warning[unused-ignore-comment]: Unused blanket `type: ignore` directive
+   --> packages\cleanmast\tests\assessment\test_subsections.py:161:31
+    |
+159 |         for ts in timestamps:
+160 |             hour = ts.hour  # type: ignore
+161 |             month = ts.month  # type: ignore
+    |                               ^^^^^^^^^^^^^^
+162 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+163 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+    |
+help: Remove the unused suppression comment
+158 |         marker = "澶栨帹" if height > 100 else None
+159 |         for ts in timestamps:
+160 |             hour = ts.hour  # type: ignore
+    -             month = ts.month  # type: ignore
+161 +             month = ts.month
+162 |             wind_speed = 5.0 + np.sin(hour * np.pi / 12) * 2 + (height - 80) * 0.02
+163 |             wind_power = 0.5 * 1.225 * wind_speed ** 3
+164 |             rows.append({
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:347:12
+    |
+345 |         meta=sample_mast_meta,
+346 |     )
+347 |     return freq_atom, power_atom
+    |            ^^^^^^^^^^^^^^^^^^^^^ expected `tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]`, found `tuple[ReportAtom[WindRoseSchema, SingleMastMeta], ReportAtom[WindRoseSchema, SingleMastMeta]]`
+    |
+   ::: packages\cleanmast\tests\assessment\test_subsections.py:335:6
+    |
+333 |     sample_wind_rose_df: pl.DataFrame,
+334 |     sample_mast_meta: SingleMastMeta,
+335 | ) -> tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]:
+    |      -------------------------------------------------------------------------- Expected `tuple[SingleMastMonthlyWindFrequencyRoseAtom, SingleMastWindPowerRoseAtom]` because of return type
+336 |     """Create wind rose atoms."""
+337 |     freq_atom = SingleMastMonthlyWindFrequencyRoseAtom.create(
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:426:6
+    |
+424 |       sample_wind_frequency_df: pl.DataFrame,
+425 |       sample_mast_meta: SingleMastMeta,
+426 |   ) -> SingleMastWindFrequencyTableAtom:
+    |        -------------------------------- Expected `SingleMastWindFrequencyTableAtom` because of return type
+427 |       """Create wind frequency table atom."""
+428 |       return SingleMastWindFrequencyTableAtom.create(
+    |  ____________^
+429 | |         schema=WindFrequencySchema,
+430 | |         df=sample_wind_frequency_df,
+431 | |         meta=sample_mast_meta,
+432 | |     )
+    | |_____^ expected `SingleMastWindFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_subsections.py:470:6
+    |
+468 |       sample_vertical_profile_df: pl.DataFrame,
+469 |       sample_mast_meta: SingleMastMeta,
+470 |   ) -> SingleMastVerticalProfileAtom:
+    |        ----------------------------- Expected `SingleMastVerticalProfileAtom` because of return type
+471 |       """Create vertical profile atom."""
+472 |       return SingleMastVerticalProfileAtom.create(
+    |  ____________^
+473 | |         schema=VerticalProfileSchema,
+474 | |         df=sample_vertical_profile_df,
+475 | |         meta=sample_mast_meta,
+476 | |     )
+    | |_____^ expected `SingleMastVerticalProfileAtom`, found `ReportAtom[VerticalProfileSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_turbulence_atoms.py:40:6
+   |
+38 |       sample_turbulence_df: pl.DataFrame,
+39 |       sample_mast_meta: SingleMastMeta,
+40 |   ) -> SingleMastTurbulenceIntensityAtom:
+   |        --------------------------------- Expected `SingleMastTurbulenceIntensityAtom` because of return type
+41 |       return SingleMastTurbulenceIntensityAtom.create(
+   |  ____________^
+42 | |         schema=TurbulenceSchema,
+43 | |         df=sample_turbulence_df,
+44 | |         meta=sample_mast_meta,
+45 | |     )
+   | |_____^ expected `SingleMastTurbulenceIntensityAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:168:6
+    |
+166 |       sample_turbulence_df_multiple: pl.DataFrame,
+167 |       sample_mast_meta: SingleMastMeta,
+168 |   ) -> SingleMastTurbulenceIntensityAtom:
+    |        --------------------------------- Expected `SingleMastTurbulenceIntensityAtom` because of return type
+169 |       """Create a SingleMastTurbulenceIntensityAtom for testing."""
+170 |       return SingleMastTurbulenceIntensityAtom.create(
+    |  ____________^
+171 | |         schema=TurbulenceSchema,
+172 | |         df=sample_turbulence_df_multiple,
+173 | |         meta=sample_mast_meta,
+174 | |     )
+    | |_____^ expected `SingleMastTurbulenceIntensityAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:181:6
+    |
+179 |       sample_sector_df: pl.DataFrame,
+180 |       sample_mast_meta: SingleMastMeta,
+181 |   ) -> SingleMastTurbulenceSectorAtom:
+    |        ------------------------------ Expected `SingleMastTurbulenceSectorAtom` because of return type
+182 |       """Create a SingleMastTurbulenceSectorAtom for testing."""
+183 |       return SingleMastTurbulenceSectorAtom.create(
+    |  ____________^
+184 | |         schema=TurbulenceSectorSchema,
+185 | |         df=sample_sector_df,
+186 | |         meta=sample_mast_meta,
+187 | |     )
+    | |_____^ expected `SingleMastTurbulenceSectorAtom`, found `ReportAtom[TurbulenceSectorSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:194:6
+    |
+192 |       sample_turbulence_df_three_heights: pl.DataFrame,
+193 |       sample_mast_meta: SingleMastMeta,
+194 |   ) -> SingleMastTurbulenceMultiHeightAtom:
+    |        ----------------------------------- Expected `SingleMastTurbulenceMultiHeightAtom` because of return type
+195 |       """Create a SingleMastTurbulenceMultiHeightAtom for testing."""
+196 |       return SingleMastTurbulenceMultiHeightAtom.create(
+    |  ____________^
+197 | |         schema=TurbulenceSchema,
+198 | |         df=sample_turbulence_df_three_heights,
+199 | |         meta=sample_mast_meta,
+200 | |     )
+    | |_____^ expected `SingleMastTurbulenceMultiHeightAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_turbulence_atoms_migrated.py:207:6
+    |
+205 |       sample_turbulence_df_multiple: pl.DataFrame,
+206 |       sample_mast_meta: SingleMastMeta,
+207 |   ) -> SingleMastTurbulenceSummaryAtom:
+    |        ------------------------------- Expected `SingleMastTurbulenceSummaryAtom` because of return type
+208 |       """Create a SingleMastTurbulenceSummaryAtom for testing."""
+209 |       return SingleMastTurbulenceSummaryAtom.create(
+    |  ____________^
+210 | |         schema=TurbulenceSchema,
+211 | |         df=sample_turbulence_df_multiple,
+212 | |         meta=sample_mast_meta,
+213 | |     )
+    | |_____^ expected `SingleMastTurbulenceSummaryAtom`, found `ReportAtom[TurbulenceSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `calculate_representative_ti` is incorrect
+   --> packages\cleanmast\tests\assessment\test_turbulence_calculator.py:339:57
+    |
+337 |         ti_values = [0.10, None, 0.12, None, 0.14] * 20  # 100 values, 40% None
+338 |         
+339 |         rep_ti = calculator.calculate_representative_ti(ti_values)
+    |                                                         ^^^^^^^^^ Expected `list[int | float]`, found `list[Unknown | int | float | None]`
+340 |         
+341 |         assert rep_ti is not None
+    |
+info: Method defined here
+   --> packages\cleanmast\src\cleanmast\subdomains\assessment\domain\services\calculators\turbulence_calculator.py:231:9
+    |
+229 |         return ti_list
+230 |
+231 |     def calculate_representative_ti(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+232 |         self,
+233 |         ti_values: list[float],
+    |         ---------------------- Parameter declared here
+234 |     ) -> float | None:
+235 |         """Calculate representative turbulence intensity (P90).
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:484:13
+    |
+482 |         """Test basic table rendering."""
+483 |         atom = SingleMastWindShearTableAtom(
+484 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+485 |             meta=sample_meta
+486 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:525:13
+    |
+523 |         """Test that alpha values are formatted to 3 decimal places."""
+524 |         atom = SingleMastWindShearTableAtom(
+525 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+526 |             meta=sample_meta
+527 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:540:13
+    |
+538 |         """Test that renderImage returns empty path (no image for table)."""
+539 |         atom = SingleMastWindShearTableAtom(
+540 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+541 |             meta=sample_meta
+542 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:554:13
+    |
+552 |         """Test basic summary rendering."""
+553 |         atom = SingleMastWindShearTableAtom(
+554 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+555 |             meta=sample_meta
+556 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:653:13
+    |
+651 |         """Test basic matrix table rendering."""
+652 |         atom = SingleMastWindShearExponentAtom(
+653 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+654 |             meta=sample_meta
+655 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:670:13
+    |
+668 |         """Test that diagonal shows '鈼�' marker."""
+669 |         atom = SingleMastWindShearExponentAtom(
+670 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+671 |             meta=sample_meta
+672 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:683:13
+    |
+681 |         """Test that table shows antisymmetric values (伪_ij = -伪_ji)."""
+682 |         atom = SingleMastWindShearExponentAtom(
+683 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+684 |             meta=sample_meta
+685 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:716:13
+    |
+714 |         """Test that renderImage returns empty path (no image for matrix)."""
+715 |         atom = SingleMastWindShearExponentAtom(
+716 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+717 |             meta=sample_meta
+718 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:730:13
+    |
+728 |         """Test basic summary rendering."""
+729 |         atom = SingleMastWindShearExponentAtom(
+730 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+731 |             meta=sample_meta
+732 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:819:13
+    |
+817 |         """Test that summary includes min and max alpha pairs."""
+818 |         atom = SingleMastWindShearExponentAtom(
+819 |             schema=VerticalProfileSchema, df=wind_shear_data,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `type[WindShearSchema]`, found `<class 'VerticalProfileSchema'>`
+820 |             meta=sample_meta
+821 |         )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:141:6
+    |
+139 |       sample_weibull_df_multiple: pl.DataFrame,
+140 |       sample_mast_meta: SingleMastMeta,
+141 |   ) -> SingleMastWeibullParametersAtom:
+    |        ------------------------------- Expected `SingleMastWeibullParametersAtom` because of return type
+142 |       """Create a SingleMastWeibullParametersAtom for testing."""
+143 |       return SingleMastWeibullParametersAtom.create(
+    |  ____________^
+144 | |         schema=WeibullSchema,
+145 | |         df=sample_weibull_df_multiple,
+146 | |         meta=sample_mast_meta,
+147 | |     )
+    | |_____^ expected `SingleMastWeibullParametersAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:154:6
+    |
+152 |       sample_weibull_df_single: pl.DataFrame,
+153 |       sample_mast_meta: SingleMastMeta,
+154 |   ) -> SingleMastWeibullDistributionAtom:
+    |        --------------------------------- Expected `SingleMastWeibullDistributionAtom` because of return type
+155 |       """Create a SingleMastWeibullDistributionAtom for testing."""
+156 |       return SingleMastWeibullDistributionAtom.create(
+    |  ____________^
+157 | |         schema=WeibullSchema,
+158 | |         df=sample_weibull_df_single,
+159 | |         meta=sample_mast_meta,
+160 | |     )
+    | |_____^ expected `SingleMastWeibullDistributionAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:167:6
+    |
+165 |       sample_weibull_df_multiple: pl.DataFrame,
+166 |       sample_mast_meta: SingleMastMeta,
+167 |   ) -> SingleMastWeibullDistributionAtom:
+    |        --------------------------------- Expected `SingleMastWeibullDistributionAtom` because of return type
+168 |       """Create a SingleMastWeibullDistributionAtom with multiple heights."""
+169 |       return SingleMastWeibullDistributionAtom.create(
+    |  ____________^
+170 | |         schema=WeibullSchema,
+171 | |         df=sample_weibull_df_multiple,
+172 | |         meta=sample_mast_meta,
+173 | |     )
+    | |_____^ expected `SingleMastWeibullDistributionAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_weibull_atoms.py:180:6
+    |
+178 |       sample_weibull_df_three_heights: pl.DataFrame,
+179 |       sample_mast_meta: SingleMastMeta,
+180 |   ) -> SingleMastWeibullMultiHeightAtom:
+    |        -------------------------------- Expected `SingleMastWeibullMultiHeightAtom` because of return type
+181 |       """Create a SingleMastWeibullMultiHeightAtom for testing."""
+182 |       return SingleMastWeibullMultiHeightAtom.create(
+    |  ____________^
+183 | |         schema=WeibullSchema,
+184 | |         df=sample_weibull_df_three_heights,
+185 | |         meta=sample_mast_meta,
+186 | |     )
+    | |_____^ expected `SingleMastWeibullMultiHeightAtom`, found `ReportAtom[WeibullSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:157:6
+    |
+155 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+156 |       sample_mast_meta: SingleMastMeta,
+157 |   ) -> SingleMastWindFrequencyDistributionAtom:
+    |        --------------------------------------- Expected `SingleMastWindFrequencyDistributionAtom` because of return type
+158 |       """Create a SingleMastWindFrequencyDistributionAtom for testing."""
+159 |       return SingleMastWindFrequencyDistributionAtom.create(
+    |  ____________^
+160 | |         schema=WindFrequencySchema,
+161 | |         df=sample_wind_frequency_df_multiple,
+162 | |         meta=sample_mast_meta,
+163 | |     )
+    | |_____^ expected `SingleMastWindFrequencyDistributionAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:170:6
+    |
+168 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+169 |       sample_mast_meta: SingleMastMeta,
+170 |   ) -> SingleMastWindFrequencyTableAtom:
+    |        -------------------------------- Expected `SingleMastWindFrequencyTableAtom` because of return type
+171 |       """Create a SingleMastWindFrequencyTableAtom for testing."""
+172 |       return SingleMastWindFrequencyTableAtom.create(
+    |  ____________^
+173 | |         schema=WindFrequencySchema,
+174 | |         df=sample_wind_frequency_df_multiple,
+175 | |         meta=sample_mast_meta,
+176 | |     )
+    | |_____^ expected `SingleMastWindFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:183:6
+    |
+181 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+182 |       sample_mast_meta: SingleMastMeta,
+183 |   ) -> SingleMastWindPowerFrequencyTableAtom:
+    |        ------------------------------------- Expected `SingleMastWindPowerFrequencyTableAtom` because of return type
+184 |       """Create a SingleMastWindPowerFrequencyTableAtom for testing."""
+185 |       return SingleMastWindPowerFrequencyTableAtom.create(
+    |  ____________^
+186 | |         schema=WindFrequencySchema,
+187 | |         df=sample_wind_frequency_df_multiple,
+188 | |         meta=sample_mast_meta,
+189 | |     )
+    | |_____^ expected `SingleMastWindPowerFrequencyTableAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_frequency_atoms.py:196:6
+    |
+194 |       sample_wind_frequency_df_multiple: pl.DataFrame,
+195 |       sample_mast_meta: SingleMastMeta,
+196 |   ) -> SingleMastWindRangeSummaryAtom:
+    |        ------------------------------ Expected `SingleMastWindRangeSummaryAtom` because of return type
+197 |       """Create a SingleMastWindRangeSummaryAtom for testing."""
+198 |       return SingleMastWindRangeSummaryAtom.create(
+    |  ____________^
+199 | |         schema=WindFrequencySchema,
+200 | |         df=sample_wind_frequency_df_multiple,
+201 | |         meta=sample_mast_meta,
+202 | |     )
+    | |_____^ expected `SingleMastWindRangeSummaryAtom`, found `ReportAtom[WindFrequencySchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:66:6
+   |
+64 |       sample_wind_rose_data: pl.DataFrame,
+65 |       sample_mast_meta: SingleMastMeta,
+66 |   ) -> SingleMastMonthlyWindFrequencyRoseAtom:
+   |        -------------------------------------- Expected `SingleMastMonthlyWindFrequencyRoseAtom` because of return type
+67 |       return SingleMastMonthlyWindFrequencyRoseAtom.create(
+   |  ____________^
+68 | |         schema=WindRoseSchema,
+69 | |         df=sample_wind_rose_data,
+70 | |         meta=sample_mast_meta,
+71 | |     )
+   | |_____^ expected `SingleMastMonthlyWindFrequencyRoseAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:78:6
+   |
+76 |       sample_wind_rose_data: pl.DataFrame,
+77 |       sample_mast_meta: SingleMastMeta,
+78 |   ) -> SingleMastWindPowerRoseAtom:
+   |        --------------------------- Expected `SingleMastWindPowerRoseAtom` because of return type
+79 |       return SingleMastWindPowerRoseAtom.create(
+   |  ____________^
+80 | |         schema=WindRoseSchema,
+81 | |         df=sample_wind_rose_data,
+82 | |         meta=sample_mast_meta,
+83 | |     )
+   | |_____^ expected `SingleMastWindPowerRoseAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+   |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:182:6
+    |
+180 |       sample_wind_rose_df: pl.DataFrame,
+181 |       sample_mast_meta: SingleMastMeta,
+182 |   ) -> SingleMastMonthlyWindRoseGridAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyWindRoseGridAtom` because of return type
+183 |       """Create a SingleMastMonthlyWindRoseGridAtom for testing."""
+184 |       return SingleMastMonthlyWindRoseGridAtom.create(
+    |  ____________^
+185 | |         schema=WindRoseSchema,
+186 | |         df=sample_wind_rose_df,
+187 | |         meta=sample_mast_meta,
+188 | |     )
+    | |_____^ expected `SingleMastMonthlyWindRoseGridAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:195:6
+    |
+193 |       sample_wind_rose_df_multiple_heights: pl.DataFrame,
+194 |       sample_mast_meta: SingleMastMeta,
+195 |   ) -> SingleMastMonthlyWindRoseGridAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyWindRoseGridAtom` because of return type
+196 |       """Create a SingleMastMonthlyWindRoseGridAtom with multiple heights."""
+197 |       return SingleMastMonthlyWindRoseGridAtom.create(
+    |  ____________^
+198 | |         schema=WindRoseSchema,
+199 | |         df=sample_wind_rose_df_multiple_heights,
+200 | |         meta=sample_mast_meta,
+201 | |     )
+    | |_____^ expected `SingleMastMonthlyWindRoseGridAtom`, found `ReportAtom[WindRoseSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:199:6
+    |
+197 |       sample_timeseries_df: pl.DataFrame,
+198 |       sample_mast_meta: SingleMastMeta,
+199 |   ) -> SingleMastWindTimeseriesAtom:
+    |        ---------------------------- Expected `SingleMastWindTimeseriesAtom` because of return type
+200 |       """Create a SingleMastWindTimeseriesAtom for testing."""
+201 |       return SingleMastWindTimeseriesAtom.create(
+    |  ____________^
+202 | |         schema=TemporalPatternSchema,
+203 | |         df=sample_timeseries_df,
+204 | |         meta=sample_mast_meta,
+205 | |     )
+    | |_____^ expected `SingleMastWindTimeseriesAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:212:6
+    |
+210 |       sample_daily_pattern_df: pl.DataFrame,
+211 |       sample_mast_meta: SingleMastMeta,
+212 |   ) -> SingleMastDailyPatternAtom:
+    |        -------------------------- Expected `SingleMastDailyPatternAtom` because of return type
+213 |       """Create a SingleMastDailyPatternAtom for testing."""
+214 |       return SingleMastDailyPatternAtom.create(
+    |  ____________^
+215 | |         schema=TemporalPatternSchema,
+216 | |         df=sample_daily_pattern_df,
+217 | |         meta=sample_mast_meta,
+218 | |     )
+    | |_____^ expected `SingleMastDailyPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:225:6
+    |
+223 |       sample_daily_pattern_df: pl.DataFrame,
+224 |       sample_mast_meta: SingleMastMeta,
+225 |   ) -> SingleMastDailyPowerPatternAtom:
+    |        ------------------------------- Expected `SingleMastDailyPowerPatternAtom` because of return type
+226 |       """Create a SingleMastDailyPowerPatternAtom for testing."""
+227 |       return SingleMastDailyPowerPatternAtom.create(
+    |  ____________^
+228 | |         schema=TemporalPatternSchema,
+229 | |         df=sample_daily_pattern_df,
+230 | |         meta=sample_mast_meta,
+231 | |     )
+    | |_____^ expected `SingleMastDailyPowerPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:238:6
+    |
+236 |       sample_monthly_pattern_df: pl.DataFrame,
+237 |       sample_mast_meta: SingleMastMeta,
+238 |   ) -> SingleMastMonthlyPatternAtom:
+    |        ---------------------------- Expected `SingleMastMonthlyPatternAtom` because of return type
+239 |       """Create a SingleMastMonthlyPatternAtom for testing."""
+240 |       return SingleMastMonthlyPatternAtom.create(
+    |  ____________^
+241 | |         schema=TemporalPatternSchema,
+242 | |         df=sample_monthly_pattern_df,
+243 | |         meta=sample_mast_meta,
+244 | |     )
+    | |_____^ expected `SingleMastMonthlyPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:251:6
+    |
+249 |       sample_monthly_pattern_df: pl.DataFrame,
+250 |       sample_mast_meta: SingleMastMeta,
+251 |   ) -> SingleMastMonthlyPowerPatternAtom:
+    |        --------------------------------- Expected `SingleMastMonthlyPowerPatternAtom` because of return type
+252 |       """Create a SingleMastMonthlyPowerPatternAtom for testing."""
+253 |       return SingleMastMonthlyPowerPatternAtom.create(
+    |  ____________^
+254 | |         schema=TemporalPatternSchema,
+255 | |         df=sample_monthly_pattern_df,
+256 | |         meta=sample_mast_meta,
+257 | |     )
+    | |_____^ expected `SingleMastMonthlyPowerPatternAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:264:6
+    |
+262 |       sample_monthly_daily_df_full: pl.DataFrame,
+263 |       sample_mast_meta: SingleMastMeta,
+264 |   ) -> SingleMastMonthlyDailyWindAtom:
+    |        ------------------------------ Expected `SingleMastMonthlyDailyWindAtom` because of return type
+265 |       """Create a SingleMastMonthlyDailyWindAtom for testing."""
+266 |       return SingleMastMonthlyDailyWindAtom.create(
+    |  ____________^
+267 | |         schema=TemporalPatternSchema,
+268 | |         df=sample_monthly_daily_df_full,
+269 | |         meta=sample_mast_meta,
+270 | |     )
+    | |_____^ expected `SingleMastMonthlyDailyWindAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> packages\cleanmast\tests\assessment\test_wind_temporal_atoms.py:277:6
+    |
+275 |       sample_monthly_daily_df_full: pl.DataFrame,
+276 |       sample_mast_meta: SingleMastMeta,
+277 |   ) -> SingleMastMonthlyDailyPowerAtom:
+    |        ------------------------------- Expected `SingleMastMonthlyDailyPowerAtom` because of return type
+278 |       """Create a SingleMastMonthlyDailyPowerAtom for testing."""
+279 |       return SingleMastMonthlyDailyPowerAtom.create(
+    |  ____________^
+280 | |         schema=TemporalPatternSchema,
+281 | |         df=sample_monthly_daily_df_full,
+282 | |         meta=sample_mast_meta,
+283 | |     )
+    | |_____^ expected `SingleMastMonthlyDailyPowerAtom`, found `ReportAtom[TemporalPatternSchema, SingleMastMeta]`
+    |
+info: rule `invalid-return-type` is enabled by default
+
+Found 66 diagnostics

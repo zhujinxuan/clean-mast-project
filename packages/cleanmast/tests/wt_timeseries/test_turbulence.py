@@ -3,7 +3,6 @@
 import numpy as np
 import polars as pl
 import pytest
-
 from cleanmast.subdomains.dataprocessing.services import (
     calculate_ti_matrix,
     calculate_ti_series,
@@ -513,7 +512,7 @@ class TestLoadMeteodynTi:
         ti_file = tmp_path / "invalid.txt"
         ti_file.write_text("not_a_number\n")
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ValueError):
             load_meteodyn_ti(str(ti_file))
 
 
