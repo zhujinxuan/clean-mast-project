@@ -122,7 +122,7 @@ julia bin/CleanMast.jl recommend parse-sensors projects/my-windfarm
 #### 4. 解析原始数据
 
 ```nu
-julia bin/CleanMast.jl project parse-sensors.toml projects/my-windfarm
+julia bin/CleanMast.jl project parse-sensors projects/my-windfarm/parse-sensors.toml
 ```
 
 #### 5. 运行 Julia 处理步骤

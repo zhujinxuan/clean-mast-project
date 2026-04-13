@@ -52,7 +52,7 @@ Pkg.instantiate()
 2. 从项目根目录运行：
 
 ```bash
-uv sync
+uv sync --all-groups --all-packages --all-extras
 ```
 
 Python 版本包含：
