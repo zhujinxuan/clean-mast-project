@@ -1,0 +1,32 @@
+[[pairs]]
+    [pairs.mast]
+    name = "L32261"
+
+        [pairs.mast.input]
+        data = "./tower-shading/L32261.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8786037221560596
+
+    [pairs.meso]
+    name = "ERA5Lidar"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5Lidar.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M245228"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M245228.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8680315331831913
+
+    [pairs.meso]
+    name = "ERA5Lidar"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5Lidar.parquet"

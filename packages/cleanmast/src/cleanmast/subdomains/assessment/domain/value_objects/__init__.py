@@ -12,7 +12,16 @@ from .analysis_parameters import AnalysisParameters
 from .analysis_result import AnalysisResult
 from .collections import AtomCollection
 from .hash_utils import compute_node_id, hash_dataframe, hash_parameters
-from .rep_ts_report_config import MastConfig, RepTsReportConfig
+from .rep_ts_report_config import (
+    CONTAINER_SUBSECTION_TYPES,
+    LEAF_SUBSECTION_TYPES,
+    VALID_SUBSECTION_TYPES,
+    DocumentConfig,
+    DocumentSectionConfig,
+    MastConfig,
+    RepTsReportConfig,
+    SubsectionConfig,
+)
 from .report_config import ReportConfig, ReportSubsectionConfig
 from .report_meta import (
     FILL_TYPE_LABELS,
@@ -67,8 +76,14 @@ __all__ = [
     "hash_parameters",
     "compute_node_id",
     # Report configs
+    "DocumentConfig",
+    "DocumentSectionConfig",
+    "LEAF_SUBSECTION_TYPES",
+    "CONTAINER_SUBSECTION_TYPES",
+    "VALID_SUBSECTION_TYPES",
     "MastConfig",
     "RepTsReportConfig",
+    "SubsectionConfig",
     "ReportConfig",
     "ReportSubsectionConfig",
     # Report meta

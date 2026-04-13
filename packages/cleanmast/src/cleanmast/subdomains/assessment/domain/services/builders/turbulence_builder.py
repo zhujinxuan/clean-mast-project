@@ -7,17 +7,17 @@ Compliance: Subdomain layout ✓ | Service ✓ | Builder Pattern ✓
 import polars as pl
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_intensity import (
-    SingleMastTurbulenceIntensityAtom,
-)
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
     SingleMastTurbulenceMultiHeightAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_sector import (
-    SingleMastTurbulenceSectorAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_per_height import (
+    SingleMastTurbulencePerHeightAtom,
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
     SingleMastTurbulenceSummaryAtom,
+)
+from cleanmast.subdomains.assessment.domain.services.utils.height_filter import (
+    select_interested_heights,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
     AnalysisResult,
@@ -42,27 +42,26 @@ class TurbulenceSectionBuilder:
         self,
         mast_name: str,
         ti_results: list[AnalysisResult[TurbulenceSchema]],
-        sector_results: list[AnalysisResult[TurbulenceSectorSchema]],
+        sector_results: list[AnalysisResult[TurbulenceSectorSchema]] | None = None,
     ) -> list[ReportAtom]:
         """Build turbulence section from analysis results to report atoms.
 
         Args:
             mast_name: Name of the mast being analyzed
             ti_results: List of turbulence intensity results, one per height
-            sector_results: List of turbulence sector results, one per height
+            sector_results: Deprecated, kept for API compatibility.
 
         Returns:
-            List of 4 report atoms in order:
+            List of report atoms in order:
             1. SingleMastTurbulenceSummaryAtom (turbulence summary across heights)
-            2. SingleMastTurbulenceIntensityAtom (TI by wind speed bin)
-            3. SingleMastTurbulenceMultiHeightAtom (multi-height comparison)
-            4. SingleMastTurbulenceSectorAtom (TI by direction sector)
+            2..N. SingleMastTurbulencePerHeightAtom (one per interested height)
+            N+1. SingleMastTurbulenceMultiHeightAtom (multi-height comparison)
         """
         # Concatenate TI results into single DataFrame
         ti_df = pl.concat([r.data for r in ti_results])
-        # Concatenate sector results into single DataFrame
-        sector_df = pl.concat([r.data for r in sector_results])
         meta = SingleMastMeta(mast_name=mast_name)
+        unique_heights = ti_df["height"].unique().to_list()
+        interested_heights = select_interested_heights(unique_heights)
 
         atoms: list[ReportAtom] = [
             SingleMastTurbulenceSummaryAtom.create(
@@ -70,21 +69,24 @@ class TurbulenceSectionBuilder:
                 df=ti_df,
                 meta=meta,
             ),
-            SingleMastTurbulenceIntensityAtom.create(
-                schema=TurbulenceSchema,
-                df=ti_df,
-                meta=meta,
-            ),
+        ]
+
+        for height in sorted(interested_heights):
+            atoms.append(
+                SingleMastTurbulencePerHeightAtom.create_with_height(
+                    schema=TurbulenceSchema,
+                    df=ti_df,
+                    meta=meta,
+                    height=height,
+                )
+            )
+
+        atoms.append(
             SingleMastTurbulenceMultiHeightAtom.create(
                 schema=TurbulenceSchema,
                 df=ti_df,
                 meta=meta,
-            ),
-            SingleMastTurbulenceSectorAtom.create(
-                schema=TurbulenceSectorSchema,
-                df=sector_df,
-                meta=meta,
-            ),
-        ]
+            )
+        )
 
         return atoms

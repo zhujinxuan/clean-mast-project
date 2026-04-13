@@ -1,0 +1,16 @@
+[[masts]]
+name = "L32261"
+
+    [masts.input]
+    data = "./reconstruct-single/L32261.parquet"
+[[masts]]
+name = "M245228"
+
+    [masts.input]
+    data = "./reconstruct-single/M245228.parquet"
+
+[train]
+min_overlap_days = 90.0
+min_data_points = 200
+output_dir = "./train-reconstruct-cross"
+exclude_nan_results = true

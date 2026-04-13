@@ -5,7 +5,6 @@ Compliance: Subdomain layout ✓ | Domain Service ✓
 Description: Domain service for calculating turbulence intensity statistics and IEC category classification
 """
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -117,7 +116,7 @@ class TurbulenceCalculator:
                 input, "No wind speed sensors found"
             )
 
-        result_df = self._process_wind_speed_analysis(df, ws_avg_sensors)
+        result_df = self._process_wind_speed_analysis(df, ws_avg_sensors, sensors)
 
         # Create metadata
         metadata = AnalysisMetadata(
@@ -164,7 +163,7 @@ class TurbulenceCalculator:
                 input, "No wind direction sensors found"
             )
 
-        result_df = self._process_sector_analysis(df, ws_avg_sensors, wd_avg_sensors)
+        result_df = self._process_sector_analysis(df, ws_avg_sensors, wd_avg_sensors, sensors)
 
         # Create metadata
         metadata = AnalysisMetadata(
@@ -278,54 +277,37 @@ class TurbulenceCalculator:
 
     def classify_iec_category(
         self,
-        ti_values: Sequence[float | None],
-        wind_speeds: Sequence[float],
+        representative_ti: float | None,
+        wind_speed: float,
     ) -> str:
-        """Classify IEC turbulence category based on measured TI vs IEC reference.
+        """Classify IEC turbulence category based on representative TI vs IEC reference.
 
-        Compares measured representative TI against IEC reference TI for each
-        wind speed bin, then determines the most appropriate IEC category.
+        Uses strict threshold logic matching the Julia production implementation:
+        compares representative TI against IEC reference TI thresholds for
+        categories A, B, and C at the given wind speed.
 
         Args:
-            ti_values: List of measured TI values
-            wind_speeds: List of corresponding wind speeds
+            representative_ti: Representative turbulence intensity (P90)
+            wind_speed: Wind speed in m/s
 
         Returns:
             IEC category ("A+", "A", "B", or "C")
         """
-        # Filter valid pairs
-        valid_pairs = [
-            (ti, ws)
-            for ti, ws in zip(ti_values, wind_speeds)
-            if ti is not None and ws > 0
-        ]
-
-        if len(valid_pairs) < self.constants.MIN_SAMPLES:
-            return "C"  # Default to lowest turbulence if insufficient data
-
-        # Calculate representative TI
-        ti_list = [pair[0] for pair in valid_pairs]
-        rep_ti = self.calculate_representative_ti(ti_list)
-
-        if rep_ti is None:
+        if representative_ti is None or wind_speed <= 0:
             return "C"
 
-        # Calculate mean wind speed
-        mean_ws = float(np.mean([pair[1] for pair in valid_pairs]))
+        ti_a = self.calculate_iec_ti(wind_speed, self.iec_categories["A"])
+        ti_b = self.calculate_iec_ti(wind_speed, self.iec_categories["B"])
+        ti_c = self.calculate_iec_ti(wind_speed, self.iec_categories["C"])
 
-        # Compare against each IEC category
-        best_category = "C"
-        min_difference = float("inf")
-
-        for category, i_ref in self.iec_categories.items():
-            iec_ti = self.calculate_iec_ti(mean_ws, i_ref)
-            if iec_ti is not None:
-                difference = abs(rep_ti - iec_ti)
-                if difference < min_difference:
-                    min_difference = difference
-                    best_category = category
-
-        return best_category
+        if ti_a is not None and representative_ti > ti_a:
+            return "A+"
+        elif ti_b is not None and representative_ti > ti_b:
+            return "A"
+        elif ti_c is not None and representative_ti > ti_c:
+            return "B"
+        else:
+            return "C"
 
     def _find_matching_sd_sensor(
         self,
@@ -359,7 +341,8 @@ class TurbulenceCalculator:
     def _process_wind_speed_analysis(
         self,
         df: pl.DataFrame,
-        sensors: list[SensorColumn],
+        avg_sensors: list[SensorColumn],
+        all_sensors: list[SensorColumn],
     ) -> pl.DataFrame:
         """Process data into TI by wind speed bins (long format).
 
@@ -368,19 +351,20 @@ class TurbulenceCalculator:
 
         Args:
             df: DataFrame with timestamp and WS_* columns
-            sensors: List of SensorColumn objects for wind speed sensors (avg sensors)
+            avg_sensors: List of SensorColumn objects for wind speed sensors (avg sensors)
+            all_sensors: List of all available sensors to find matching sd sensors
 
         Returns:
             DataFrame with columns matching TurbulenceSchema
         """
         rows: list[dict] = []
 
-        for sensor in sensors:
+        for sensor in avg_sensors:
             height = sensor.height
             avg_col = sensor.column_name
 
             # Find matching sd sensor for this height
-            sd_sensor = self._find_matching_sd_sensor(sensor, sensors)
+            sd_sensor = self._find_matching_sd_sensor(sensor, all_sensors)
             if sd_sensor is None:
                 continue
             sd_col = sd_sensor.column_name
@@ -437,11 +421,8 @@ class TurbulenceCalculator:
                 # Calculate representative TI (P90)
                 rep_ti = mean_ti + self.constants.TI_REP_Z * std_ti
 
-                # Classify IEC category
-                # Create synthetic TI list for classification
-                ti_values = [mean_ti] * int(count)
-                wind_speeds = [float(ws_bin)] * int(count)
-                iec_category = self.classify_iec_category(ti_values, wind_speeds)
+                # Classify IEC category using bin-center wind speed
+                iec_category = self.classify_iec_category(rep_ti, float(ws_bin) + 0.5)
 
                 rows.append({
                     "wind_speed_bin": ws_bin,
@@ -451,6 +432,7 @@ class TurbulenceCalculator:
                     "std_ti": std_ti,
                     "representative_ti": rep_ti,
                     "iec_category": iec_category,
+                    "count": count,
                 })
 
         return pl.DataFrame(rows) if rows else self._create_empty_turbulence_dataframe()
@@ -460,6 +442,7 @@ class TurbulenceCalculator:
         df: pl.DataFrame,
         ws_sensors: list[SensorColumn],
         wd_sensors: list[SensorColumn],
+        all_sensors: list[SensorColumn],
     ) -> pl.DataFrame:
         """Process data into TI by direction sectors (long format).
 
@@ -470,6 +453,7 @@ class TurbulenceCalculator:
             df: DataFrame with timestamp, WS_*, and WD_* columns
             ws_sensors: List of SensorColumn objects for wind speed sensors (avg sensors)
             wd_sensors: List of SensorColumn objects for wind direction sensors
+            all_sensors: List of all available sensors to find matching sd sensors
 
         Returns:
             DataFrame with columns matching TurbulenceSectorSchema
@@ -482,7 +466,7 @@ class TurbulenceCalculator:
             avg_col = ws_sensor.column_name
 
             # Find matching sd sensor for this height
-            sd_sensor = self._find_matching_sd_sensor(ws_sensor, ws_sensors)
+            sd_sensor = self._find_matching_sd_sensor(ws_sensor, all_sensors)
             if sd_sensor is None:
                 continue
             sd_col = sd_sensor.column_name
@@ -530,6 +514,7 @@ class TurbulenceCalculator:
                     pl.col("ti").mean().alias("mean_ti"),
                     pl.col("ti").std().alias("std_ti"),
                     pl.col("ti").count().alias("count"),
+                    pl.col(avg_col).mean().alias("mean_ws"),
                 ])
                 .sort("sector")
             )
@@ -547,10 +532,8 @@ class TurbulenceCalculator:
                 # Calculate representative TI (P90)
                 rep_ti = mean_ti + self.constants.TI_REP_Z * std_ti
 
-                # Classify IEC category
-                ti_values = [mean_ti] * int(count)
-                wind_speeds = [float(sector)] * int(count)
-                iec_category = self.classify_iec_category(ti_values, wind_speeds)
+                # Classify IEC category using sector mean wind speed
+                iec_category = self.classify_iec_category(rep_ti, row["mean_ws"])
 
                 rows.append({
                     "sector": sector,
@@ -656,6 +639,7 @@ class TurbulenceCalculator:
             "std_ti": pl.Series([], dtype=pl.Float64),
             "representative_ti": pl.Series([], dtype=pl.Float64),
             "iec_category": pl.Series([], dtype=pl.String),
+            "count": pl.Series([], dtype=pl.Int64),
         })
 
     def _create_empty_sector_dataframe(self) -> pl.DataFrame:

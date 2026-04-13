@@ -23,9 +23,6 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern
 from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
     SingleMastMonthlyPowerPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
-    SingleMastWindTimeseriesAtom,
-)
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
     AnalysisResult,
 )
@@ -41,7 +38,7 @@ class WindTemporalSectionBuilder:
     """Builds wind temporal section from analysis results into report atoms.
 
     Bridges the analysis layer (WindTemporalAnalyzer) with the reporting layer,
-    converting analysis results into the 7 temporal pattern atoms.
+    converting analysis results into the 6 temporal pattern atoms.
     """
 
     def build(
@@ -62,21 +59,25 @@ class WindTemporalSectionBuilder:
             monthly_daily_result: Monthly-daily combined pattern data
 
         Returns:
-            List of 7 report atoms in order:
-            1. SingleMastWindTimeseriesAtom
-            2. SingleMastDailyPatternAtom
-            3. SingleMastDailyPowerPatternAtom
-            4. SingleMastMonthlyPatternAtom
-            5. SingleMastMonthlyPowerPatternAtom
-            6. SingleMastMonthlyDailyWindAtom
-            7. SingleMastMonthlyDailyPowerAtom
+            List of 6 report atoms in order:
+            1. SingleMastMonthlyPatternAtom
+            2. SingleMastMonthlyPowerPatternAtom
+            3. SingleMastDailyPatternAtom
+            4. SingleMastDailyPowerPatternAtom
+            5. SingleMastMonthlyDailyWindAtom
+            6. SingleMastMonthlyDailyPowerAtom
         """
         meta = SingleMastMeta(mast_name=mast_name)
 
         atoms: list[ReportAtom] = [
-            SingleMastWindTimeseriesAtom.create(
+            SingleMastMonthlyPatternAtom.create(
                 schema=TemporalPatternSchema,
-                df=time_series_result.data,
+                df=monthly_result.data,
+                meta=meta,
+            ),
+            SingleMastMonthlyPowerPatternAtom.create(
+                schema=TemporalPatternSchema,
+                df=monthly_result.data,
                 meta=meta,
             ),
             SingleMastDailyPatternAtom.create(
@@ -87,16 +88,6 @@ class WindTemporalSectionBuilder:
             SingleMastDailyPowerPatternAtom.create(
                 schema=TemporalPatternSchema,
                 df=daily_result.data,
-                meta=meta,
-            ),
-            SingleMastMonthlyPatternAtom.create(
-                schema=TemporalPatternSchema,
-                df=monthly_result.data,
-                meta=meta,
-            ),
-            SingleMastMonthlyPowerPatternAtom.create(
-                schema=TemporalPatternSchema,
-                df=monthly_result.data,
                 meta=meta,
             ),
             SingleMastMonthlyDailyWindAtom.create(

@@ -66,8 +66,8 @@ class TestLoadTimeseriesParquet:
         # Verify
         assert loaded.df.shape == (3, 3)
         assert len(loaded.sensors) == 2
-        assert loaded.sensors[0].sensor_type == "WindSpeed"
-        assert loaded.sensors[1].sensor_type == "WindDirection"
+        assert loaded.sensors[0].sensor_type == "WindSpeed" and loaded.sensors[0].stat_type == "avg"
+        assert loaded.sensors[1].sensor_type == "WindDirection" and loaded.sensors[1].stat_type == "avg"
 
     def test_load_parquet_with_embedded_metadata(self, tmp_path: Path):
         """Test loading Parquet with embedded sensor metadata."""
@@ -122,7 +122,7 @@ class TestLoadTimeseriesParquet:
         assert len(loaded.sensors) == 3
         assert loaded.sensors[0].height == 80.0
         assert loaded.sensors[1].height == 100.0
-        assert loaded.sensors[2].sensor_type == "Temperature"
+        assert loaded.sensors[2].sensor_type == "Temperature" and loaded.sensors[2].stat_type == "avg"
 
     def test_load_parquet_with_file_level_metadata(self, tmp_path: Path):
         """Test loading Parquet with file-level metadata (new standard format)."""
@@ -171,14 +171,14 @@ class TestLoadTimeseriesParquet:
         result = load_timeseries(source, str(tmp_path))
 
         assert len(result.sensors) == 2
-        ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed")
+        ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed" and s.stat_type == "avg")
         assert ws_sensor.height == 100.0
         assert ws_sensor.column_name == "WindSpeed_100m_avg [m/s]"
         assert ws_sensor.sensor_direction == "N"
         assert ws_sensor.stat_type == "avg"
         assert ws_sensor.unit == "m/s"
 
-        wd_sensor = next(s for s in result.sensors if s.sensor_type == "WindDirection")
+        wd_sensor = next(s for s in result.sensors if s.sensor_type == "WindDirection" and s.stat_type == "avg")
         assert wd_sensor.height == 100.0
         assert wd_sensor.column_name == "WindDirection_100m_avg [deg]"
 
@@ -222,7 +222,7 @@ class TestLoadTimeseriesParquet:
         assert len(result.sensors) == 1
         sensor = result.sensors[0]
         assert sensor.column_name == "TestColumn"
-        assert sensor.sensor_type == "WindSpeed"
+        assert sensor.sensor_type == "WindSpeed" and sensor.stat_type == "max"
         assert sensor.sensor_direction == "ENE"
         assert sensor.height == 120.5
         assert sensor.stat_type == "max"
@@ -438,7 +438,7 @@ class TestMetadataRoundTrip:
         assert len(loaded.sensors) == len(original.sensors)
         for orig_sensor, load_sensor in zip(original.sensors, loaded.sensors):
             assert orig_sensor.column_name == load_sensor.column_name
-            assert orig_sensor.sensor_type == load_sensor.sensor_type
+            assert orig_sensor.sensor_type == load_sensor.sensor_type and orig_sensor.stat_type == load_sensor.stat_type
             assert orig_sensor.height == load_sensor.height
             assert orig_sensor.stat_type == load_sensor.stat_type
             assert orig_sensor.unit == load_sensor.unit
@@ -506,7 +506,7 @@ class TestMetadataRoundTrip:
 
         # Verify all sensor types preserved
         assert len(loaded.sensors) == 4
-        sensor_types = [s.sensor_type for s in loaded.sensors]
+        sensor_types = [s.sensor_type for s in loaded.sensors if s.stat_type == "avg"]
         assert "WindSpeed" in sensor_types
         assert "WindDirection" in sensor_types
         assert "Temperature" in sensor_types
@@ -765,5 +765,5 @@ class TestBackwardCompatibility:
         # Verify metadata match
         assert len(csv_loaded.sensors) == len(parquet_loaded.sensors)
         for csv_s, parquet_s in zip(csv_loaded.sensors, parquet_loaded.sensors):
-            assert csv_s.sensor_type == parquet_s.sensor_type
+            assert csv_s.sensor_type == parquet_s.sensor_type and csv_s.stat_type == parquet_s.stat_type
             assert csv_s.height == parquet_s.height

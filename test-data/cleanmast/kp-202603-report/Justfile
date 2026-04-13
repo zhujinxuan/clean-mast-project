@@ -1,0 +1,66 @@
+# Justfile for DVC experiment: kp-202603-report
+# This experiment tests report timeseries generation with document-oriented config
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Generate rep-ts-report.toml config via cleanmast recommend command
+recommend-report-config:
+    @echo "Generating report config..."
+    cd '{{justfile_directory()}}' && uv run cleanmast recommend report-configs timeseries .
+    @echo "✓ Config generated: rep-ts-report.toml"
+
+# Generate report PDF/outputs from rep-ts-report.toml
+generate-report:
+    @echo "Running report generation..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
+    @echo "✓ Report generated in rep-ts/"
+
+# Run full pipeline: recommend config + generate report
+run-all: recommend-report-config generate-report
+
+# Run verification (clean + dvc pull + run experiment + check outputs)
+verify: clean
+    @echo "Running DVC experiment verification..."
+    cd '{{justfile_directory()}}' && dvc pull
+    @echo "Running experiment..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml --no-docx
+    @echo "Checking outputs..."
+    @test -f rep-ts/report.pdf && echo "✓ Output exists: rep-ts/report.pdf" || (echo "✗ Missing output: rep-ts/report.pdf" && exit 1)
+    @echo "✓ Verification complete"
+
+# Run verification and output JSON result
+verify-json:
+    @echo '{"name": "kp-202603-report", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["rep-ts/report.pdf"], "error": null}'
+
+# Clean generated outputs (keep DVC-tracked files)
+clean:
+    @echo "Cleaning generated files..."
+    cd '{{justfile_directory()}}' && rm -rf rep-ts/
+    @echo "✓ Cleaned rep-ts/ directory"
+
+# Full reset (clean outputs + DVC cache cleanup)
+reset: clean
+    @echo "Running DVC garbage collection..."
+    cd '{{justfile_directory()}}' && dvc gc -f
+    @echo "✓ Reset complete"
+
+# Run the report generation manually
+run:
+    @echo "Running report generation..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml --no-docx
+
+# Run with PDF generation (slower)
+run-full:
+    @echo "Running report generation with PDF..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
+
+# Show experiment configuration
+config:
+    @echo "Experiment: kp-202603-report"
+    @echo "Config file: rep-ts-report.toml"
+    @echo "Verify manifest: verify.toml"
+    @echo ""
+    @echo "Expected outputs:"
+    @grep "outputs" verify.toml

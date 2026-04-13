@@ -1,10 +1,10 @@
-"""Tests for wind frequency report atoms.
+"""Tests for simplified wind frequency report atoms.
 
-Tests cover all 4 wind frequency atoms:
-- SingleMastWindFrequencyDistributionAtom
-- SingleMastWindFrequencyTableAtom
-- SingleMastWindPowerFrequencyTableAtom
-- SingleMastWindRangeSummaryAtom
+Tests cover 4 new simplified wind frequency atoms:
+- SingleMastWindFrequencyHoursAtom
+- SingleMastWindPowerHoursAtom
+- SingleMastWindProductiveRangeAtom
+- SingleMastWindDistributionSubgridAtom
 """
 
 from pathlib import Path
@@ -12,22 +12,23 @@ from typing import Any
 
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_distribution import (
-    SingleMastWindFrequencyDistributionAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_distribution_subgrid import (
+    SingleMastWindDistributionSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_table import (
-    SingleMastWindFrequencyTableAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+    SingleMastWindFrequencyHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_frequency_table import (
-    SingleMastWindPowerFrequencyTableAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_hours import (
+    SingleMastWindPowerHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_range_summary import (
-    SingleMastWindRangeSummaryAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_productive_range import (
+    SingleMastWindProductiveRangeAtom,
 )
 from cleanmast.subdomains.assessment.domain.value_objects import SingleMastMeta
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
     WindFrequencySchema,
 )
+from typst_ir import TypstParagraph, TypstTable
 
 # =============================================================================
 # Fixtures
@@ -41,89 +42,37 @@ def sample_mast_meta() -> SingleMastMeta:
 
 
 @pytest.fixture
-def sample_wind_frequency_df_single() -> pl.DataFrame:
-    """Create sample wind frequency data DataFrame with single height."""
-    rows = []
-    height = 100.0
-    
-    # Create bins from 0 to 28 m/s
-    for bin_idx in range(29):
-        bin_start = float(bin_idx)
-        bin_end = float(bin_idx + 1) if bin_idx < 28 else 100.0
-        bin_center = bin_start + 0.5
-        
-        # Simulate realistic Weibull-like distribution
-        # Peak around 6-8 m/s, tapering off
-        if bin_center < 6:
-            freq = 0.02 + bin_center * 0.015
-        elif bin_center < 10:
-            freq = 0.12 - (bin_center - 8) * 0.01
-        else:
-            freq = max(0.02 - (bin_center - 10) * 0.002, 0.001)
-        
-        occurrence_hours = freq * 8760.0
-        
-        # Power frequency (peaks at higher speeds due to v³)
-        power_factor = bin_center ** 3
-        p_freq = freq * power_factor
-        
-        rows.append({
-            "height": height,
-            "interpolation_marker": None,
-            "bin_start": bin_start,
-            "bin_end": bin_end,
-            "bin_center": bin_center,
-            "frequency": freq,
-            "occurrence_hours": occurrence_hours,
-            "power_frequency": p_freq,
-            "power_hours": p_freq * 8760.0,
-        })
-    
-    # Normalize frequencies to sum to 1.0
-    total_freq = sum(r["frequency"] for r in rows)
-    total_power_freq = sum(r["power_frequency"] for r in rows)
-    
-    for r in rows:
-        r["frequency"] = r["frequency"] / total_freq
-        r["occurrence_hours"] = r["frequency"] * 8760.0
-        r["power_frequency"] = r["power_frequency"] / total_power_freq
-        r["power_hours"] = r["power_frequency"] * 8760.0
-    
-    return pl.DataFrame(rows)
+def sample_wind_frequency_df_with_interested_heights() -> pl.DataFrame:
+    """Create sample wind frequency data with interested and non-interested heights.
 
-
-@pytest.fixture
-def sample_wind_frequency_df_multiple() -> pl.DataFrame:
-    """Create sample wind frequency data DataFrame with multiple heights."""
+    Interested heights are >120m and ≤160m.
+    Includes 100m (not interested), 130m (interested), 140m (interested), 150m (interested).
+    """
     rows = []
-    
-    for height in [100.0, 120.0, 140.0]:
-        marker = "外推" if height > 100 else None
-        
-        # Slightly different distributions per height (higher = more high-speed bins)
+
+    for height in [100.0, 130.0, 140.0, 150.0]:
+        marker = "外推" if height > 140 else None
         speed_shift = (height - 100) * 0.02
-        
+
         for bin_idx in range(29):
             bin_start = float(bin_idx)
             bin_end = float(bin_idx + 1) if bin_idx < 28 else 100.0
             bin_center = bin_start + 0.5
-            
-            # Distribution shifts to higher speeds with height
+
             effective_center = bin_center - speed_shift
-            
+
             if effective_center < 6:
                 freq = 0.02 + effective_center * 0.015
             elif effective_center < 10:
                 freq = 0.12 - (effective_center - 8) * 0.01
             else:
                 freq = max(0.02 - (effective_center - 10) * 0.002, 0.001)
-            
+
             occurrence_hours = freq * 8760.0
-            
-            # Power frequency
+
             power_factor = bin_center ** 3
             p_freq = freq * power_factor
-            
+
             rows.append({
                 "height": height,
                 "interpolation_marker": marker,
@@ -135,376 +84,337 @@ def sample_wind_frequency_df_multiple() -> pl.DataFrame:
                 "power_frequency": p_freq,
                 "power_hours": p_freq * 8760.0,
             })
-        
+
         # Normalize per height
         height_rows = [r for r in rows if r["height"] == height]
         total_freq = sum(r["frequency"] for r in height_rows)
         total_power_freq = sum(r["power_frequency"] for r in height_rows)
-        
+
         for r in height_rows:
             r["frequency"] = r["frequency"] / total_freq
             r["occurrence_hours"] = r["frequency"] * 8760.0
             r["power_frequency"] = r["power_frequency"] / total_power_freq
             r["power_hours"] = r["power_frequency"] * 8760.0
-    
+
     return pl.DataFrame(rows)
 
 
 @pytest.fixture
-def wind_frequency_distribution_atom(
-    sample_wind_frequency_df_multiple: pl.DataFrame,
+def wind_frequency_hours_atom(
+    sample_wind_frequency_df_with_interested_heights: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
-) -> SingleMastWindFrequencyDistributionAtom:
-    """Create a SingleMastWindFrequencyDistributionAtom for testing."""
-    return SingleMastWindFrequencyDistributionAtom.create(
+) -> SingleMastWindFrequencyHoursAtom:
+    """Create a SingleMastWindFrequencyHoursAtom for testing."""
+    return SingleMastWindFrequencyHoursAtom.create(
         schema=WindFrequencySchema,
-        df=sample_wind_frequency_df_multiple,
+        df=sample_wind_frequency_df_with_interested_heights,
         meta=sample_mast_meta,
     )
 
 
 @pytest.fixture
-def wind_frequency_table_atom(
-    sample_wind_frequency_df_multiple: pl.DataFrame,
+def wind_power_hours_atom(
+    sample_wind_frequency_df_with_interested_heights: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
-) -> SingleMastWindFrequencyTableAtom:
-    """Create a SingleMastWindFrequencyTableAtom for testing."""
-    return SingleMastWindFrequencyTableAtom.create(
+) -> SingleMastWindPowerHoursAtom:
+    """Create a SingleMastWindPowerHoursAtom for testing."""
+    return SingleMastWindPowerHoursAtom.create(
         schema=WindFrequencySchema,
-        df=sample_wind_frequency_df_multiple,
+        df=sample_wind_frequency_df_with_interested_heights,
         meta=sample_mast_meta,
     )
 
 
 @pytest.fixture
-def wind_power_frequency_table_atom(
-    sample_wind_frequency_df_multiple: pl.DataFrame,
+def wind_productive_range_atom(
+    sample_wind_frequency_df_with_interested_heights: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
-) -> SingleMastWindPowerFrequencyTableAtom:
-    """Create a SingleMastWindPowerFrequencyTableAtom for testing."""
-    return SingleMastWindPowerFrequencyTableAtom.create(
+) -> SingleMastWindProductiveRangeAtom:
+    """Create a SingleMastWindProductiveRangeAtom for testing."""
+    return SingleMastWindProductiveRangeAtom.create(
         schema=WindFrequencySchema,
-        df=sample_wind_frequency_df_multiple,
+        df=sample_wind_frequency_df_with_interested_heights,
         meta=sample_mast_meta,
     )
 
 
 @pytest.fixture
-def wind_range_summary_atom(
-    sample_wind_frequency_df_multiple: pl.DataFrame,
+def wind_distribution_subgrid_atom(
+    sample_wind_frequency_df_with_interested_heights: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
-) -> SingleMastWindRangeSummaryAtom:
-    """Create a SingleMastWindRangeSummaryAtom for testing."""
-    return SingleMastWindRangeSummaryAtom.create(
+) -> SingleMastWindDistributionSubgridAtom:
+    """Create a SingleMastWindDistributionSubgridAtom for testing."""
+    return SingleMastWindDistributionSubgridAtom.create(
         schema=WindFrequencySchema,
-        df=sample_wind_frequency_df_multiple,
+        df=sample_wind_frequency_df_with_interested_heights,
         meta=sample_mast_meta,
     )
 
 
 # =============================================================================
-# Test SingleMastWindFrequencyDistributionAtom
+# Test SingleMastWindFrequencyHoursAtom
 # =============================================================================
 
 
-class TestSingleMastWindFrequencyDistributionAtom:
-    """Tests for SingleMastWindFrequencyDistributionAtom."""
+class TestSingleMastWindFrequencyHoursAtom:
+    """Tests for SingleMastWindFrequencyHoursAtom."""
 
-    def test_render_image(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom,
-        tmp_path: Path
+    def test_render_table_structure(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom) -> None:
+        """Test renderTable has 0-28 m/s bins as rows and interested heights as paired columns."""
+        table = wind_frequency_hours_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        # Check headers contain interested heights only (>120m, ≤160m) with 频率/出现小时数 suffixes
+        headers_text = " ".join(table.headers)
+        assert "130m 频率" in headers_text
+        assert "130m 出现小时数" in headers_text
+        assert "140m" in headers_text or "140m(外推)" in headers_text
+        assert "150m(外推) 频率" in headers_text
+        assert "100m" not in headers_text
+
+        # Check data has 25 rows for bins 0-24 (up to 25 m/s)
+        assert len(table.data) == 25
+
+        # Each row: 风速区间 + 2 columns per interested height (frequency + hours)
+        for row in table.data:
+            assert len(row) == 1 + 2 * 3
+
+    def test_render_table_values_have_frequency_and_hours(
+        self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom
     ) -> None:
-        """Test renderImage creates a PNG file with grouped bar chart."""
-        image_path = wind_frequency_distribution_atom.renderImage(tmp_path)
-        
+        """Test table cell values alternate between % frequency and integer hours."""
+        table = wind_frequency_hours_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        for row in table.data:
+            # Even-indexed height cells (0-based within height cells) should be percentages
+            # Odd-indexed should be integer hours
+            for idx, cell in enumerate(row[1:]):
+                if idx % 2 == 0:
+                    assert "%" in cell
+                else:
+                    assert "%" not in cell
+                    assert int(cell) > 0
+
+    def test_render_table_bin_rows(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom) -> None:
+        """Test rows cover 0-25 m/s bins in 1 m/s increments as ranges."""
+        table = wind_frequency_hours_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        bin_ranges = [row[0] for row in table.data]
+        assert bin_ranges[0] == "0-1"
+        assert bin_ranges[1] == "1-2"
+        assert bin_ranges[-1] == "24-25"
+        assert len(bin_ranges) == 25
+
+    def test_render_summary(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom) -> None:
+        """Test renderSummary returns Chinese text summarizing 3-25 m/s frequency and hours."""
+        summary = wind_frequency_hours_atom.renderSummary()
+
+        assert isinstance(summary, list)
+        assert len(summary) > 0
+        assert isinstance(summary[0], TypstParagraph)
+        summary_text = summary[0].text
+        assert "测风塔" in summary_text
+        assert "M01" in summary_text
+        assert "3-25" in summary_text or "3~25" in summary_text
+        assert "小时数" in summary_text or "频率" in summary_text
+
+    def test_render_image(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom, tmp_path: Path) -> None:
+        """Test renderImage returns empty Path (no image for hours table)."""
+        image_path = wind_frequency_hours_atom.renderImage(tmp_path)
+        assert image_path == Path()
+
+    def test_caption_properties(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom) -> None:
+        assert wind_frequency_hours_atom.default_image_caption is None
+        assert wind_frequency_hours_atom.default_table_caption == "M01 各风速区间风速频率和出现小时数"
+
+    def test_content_hash_consistency(
+        self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom
+    ) -> None:
+        """Test that same data produces same hash."""
+        hash1 = wind_frequency_hours_atom.get_or_compute_df_hashkey()
+        hash2 = wind_frequency_hours_atom.get_or_compute_df_hashkey()
+        assert hash1 == hash2
+        assert "SingleMastWindFrequencyHoursAtom_" in hash1
+
+
+# =============================================================================
+# Test SingleMastWindPowerHoursAtom
+# =============================================================================
+
+
+class TestSingleMastWindPowerHoursAtom:
+    """Tests for SingleMastWindPowerHoursAtom."""
+
+    def test_render_table_structure(self, wind_power_hours_atom: SingleMastWindPowerHoursAtom) -> None:
+        """Test renderTable has same bin structure with paired power freq/hours columns."""
+        table = wind_power_hours_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        # 25 rows for bins 0-24 (up to 25 m/s)
+        assert len(table.data) == 25
+
+        headers_text = " ".join(table.headers)
+        assert "130m 风能频率" in headers_text
+        assert "130m 风能出现小时数" in headers_text
+        assert "150m(外推) 风能频率" in headers_text
+        assert "100m" not in headers_text
+
+    def test_render_table_values_have_power_frequency_and_hours(
+        self, wind_power_hours_atom: SingleMastWindPowerHoursAtom
+    ) -> None:
+        """Test table cell values alternate between % power frequency and integer hours."""
+        table = wind_power_hours_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        for row in table.data:
+            for idx, cell in enumerate(row[1:]):
+                if idx % 2 == 0:
+                    assert "%" in cell
+                else:
+                    assert "%" not in cell
+                    assert int(cell) >= 0
+
+    def test_render_image(self, wind_power_hours_atom: SingleMastWindPowerHoursAtom, tmp_path: Path) -> None:
+        """Test renderImage returns empty Path (no image for power hours table)."""
+        image_path = wind_power_hours_atom.renderImage(tmp_path)
+        assert image_path == Path()
+
+    def test_caption_properties(self, wind_power_hours_atom: SingleMastWindPowerHoursAtom) -> None:
+        assert wind_power_hours_atom.default_image_caption is None
+        assert wind_power_hours_atom.default_table_caption == "M01 各风速区间风能频率和出现小时数"
+
+    def test_content_hash_consistency(
+        self, wind_power_hours_atom: SingleMastWindPowerHoursAtom
+    ) -> None:
+        """Test that same data produces same hash."""
+        hash1 = wind_power_hours_atom.get_or_compute_df_hashkey()
+        hash2 = wind_power_hours_atom.get_or_compute_df_hashkey()
+        assert hash1 == hash2
+        assert "SingleMastWindPowerHoursAtom_" in hash1
+
+
+# =============================================================================
+# Test SingleMastWindProductiveRangeAtom
+# =============================================================================
+
+
+class TestSingleMastWindProductiveRangeAtom:
+    """Tests for SingleMastWindProductiveRangeAtom."""
+
+    def test_render_table_structure(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom) -> None:
+        """Test renderTable has one row per interested height with correct columns."""
+        table = wind_productive_range_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        # Columns should be: 高度(m), 风速出现小时数, 风能出现小时数
+        headers_text = " ".join(table.headers)
+        assert "高度(m)" in headers_text or "高度" in headers_text
+        assert "风速出现小时数" in headers_text
+        assert "风能出现小时数" in headers_text
+
+        # One row per interested height
+        assert len(table.data) == 3
+
+    def test_render_table_values_are_summed_3_25_hours(
+        self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom
+    ) -> None:
+        """Test values are summed hours for bins 3-25 m/s."""
+        table = wind_productive_range_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        for row in table.data:
+            # Each row: height, occurrence_hours, power_hours
+            assert len(row) == 3
+            occurrence_hours = int(row[1])
+            power_hours = int(row[2])
+            assert occurrence_hours > 0
+            assert power_hours > 0
+
+    def test_render_image(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom, tmp_path: Path) -> None:
+        """Test renderImage returns empty Path (no image for productive range table)."""
+        image_path = wind_productive_range_atom.renderImage(tmp_path)
+        assert image_path == Path()
+
+    def test_render_summary(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom) -> None:
+        """Test renderSummary returns Chinese text."""
+        summary = wind_productive_range_atom.renderSummary()
+
+        assert isinstance(summary, list)
+        assert len(summary) > 0
+        assert isinstance(summary[0], TypstParagraph)
+        assert "测风塔" in summary[0].text
+
+    def test_caption_properties(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom) -> None:
+        assert wind_productive_range_atom.default_image_caption is None
+        assert wind_productive_range_atom.default_table_caption == "M01 有效风速范围(3~25m/s)统计表"
+
+    def test_content_hash_consistency(
+        self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom
+    ) -> None:
+        """Test that same data produces same hash."""
+        hash1 = wind_productive_range_atom.get_or_compute_df_hashkey()
+        hash2 = wind_productive_range_atom.get_or_compute_df_hashkey()
+        assert hash1 == hash2
+        assert "SingleMastWindProductiveRangeAtom_" in hash1
+
+
+# =============================================================================
+# Test SingleMastWindDistributionSubgridAtom
+# =============================================================================
+
+
+class TestSingleMastWindDistributionSubgridAtom:
+    """Tests for SingleMastWindDistributionSubgridAtom."""
+
+    def test_render_image(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom, tmp_path: Path) -> None:
+        """Test renderImage creates a valid PNG file."""
+        image_path = wind_distribution_subgrid_atom.renderImage(tmp_path)
+
         assert image_path.exists()
         assert image_path.suffix == ".png"
         assert image_path.stat().st_size > 0
 
-    def test_render_table(self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom) -> None:
-        """Test renderTable returns empty string (chart only)."""
-        table = wind_frequency_distribution_atom.renderTable()
-        
-        # Distribution atom returns empty table (chart only)
-        assert table == ""
+    def test_render_table(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom) -> None:
+        """Test renderTable returns None (image-only atom)."""
+        table = wind_distribution_subgrid_atom.renderTable()
+        assert table is None
 
-    def test_render_summary(self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
-        summary = wind_frequency_distribution_atom.renderSummary()
-        
-        assert isinstance(summary, str)
+    def test_render_summary(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom) -> None:
+        """Test renderSummary returns Chinese text."""
+        summary = wind_distribution_subgrid_atom.renderSummary()
+
+        assert isinstance(summary, list)
         assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "M01" in summary
-        assert "风频" in summary or "风能" in summary
+        assert isinstance(summary[0], TypstParagraph)
+        assert "测风塔" in summary[0].text
+
+    def test_caption_properties(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom) -> None:
+        assert wind_distribution_subgrid_atom.default_image_caption == "M01 风速频率分布图"
+        assert wind_distribution_subgrid_atom.default_table_caption is None
 
     def test_content_hash_consistency(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom
+        self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom
     ) -> None:
         """Test that same data produces same hash."""
-        hash1 = wind_frequency_distribution_atom.get_or_compute_df_hashkey()
-        hash2 = wind_frequency_distribution_atom.get_or_compute_df_hashkey()
-        
+        hash1 = wind_distribution_subgrid_atom.get_or_compute_df_hashkey()
+        hash2 = wind_distribution_subgrid_atom.get_or_compute_df_hashkey()
         assert hash1 == hash2
-        assert "SingleMastWindFrequencyDistributionAtom_" in hash1
+        assert "SingleMastWindDistributionSubgridAtom_" in hash1
 
-    def test_summary_has_distribution_analysis(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom
+    def test_image_caching(
+        self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom, tmp_path: Path
     ) -> None:
-        """Test summary includes distribution analysis."""
-        summary = wind_frequency_distribution_atom.renderSummary()
-        
-        # Should contain statistical information
-        assert "风速频率峰值" in summary
-        assert "风能频率峰值" in summary
-        assert "平均风速" in summary
+        """Verify images are cached."""
+        path1 = wind_distribution_subgrid_atom.renderImage(tmp_path)
+        mtime1 = path1.stat().st_mtime
 
-    def test_summary_has_multiple_heights(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom
-    ) -> None:
-        """Test summary includes analysis for all heights."""
-        summary = wind_frequency_distribution_atom.renderSummary()
-        
-        # Should mention all heights
-        assert "100m" in summary
-        assert "120m" in summary
-        assert "140m" in summary
+        path2 = wind_distribution_subgrid_atom.renderImage(tmp_path)
+        mtime2 = path2.stat().st_mtime
 
-    def test_single_height_render_image(
-        self, sample_wind_frequency_df_single: pl.DataFrame,
-        sample_mast_meta: SingleMastMeta,
-        tmp_path: Path
-    ) -> None:
-        """Test renderImage with single height data."""
-        atom = SingleMastWindFrequencyDistributionAtom.create(
-            schema=WindFrequencySchema,
-            df=sample_wind_frequency_df_single,
-            meta=sample_mast_meta,
-        )
-        
-        image_path = atom.renderImage(tmp_path)
-        
-        assert image_path.exists()
-        assert image_path.suffix == ".png"
-
-
-# =============================================================================
-# Test SingleMastWindFrequencyTableAtom
-# =============================================================================
-
-
-class TestSingleMastWindFrequencyTableAtom:
-    """Tests for SingleMastWindFrequencyTableAtom."""
-
-    def test_render_image(
-        self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom, tmp_path: Path
-    ) -> None:
-        """Test renderImage returns empty Path (no image for table)."""
-        image_path = wind_frequency_table_atom.renderImage(tmp_path)
-        
-        # Table atom returns empty Path (no image generation)
-        assert image_path == Path()
-
-    def test_render_table(self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom) -> None:
-        """Test renderTable returns non-empty Typst table."""
-        table = wind_frequency_table_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "风速(m/s)" in table
-        assert "合计" in table
-
-    def test_render_summary(self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
-        summary = wind_frequency_table_atom.renderSummary()
-        
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "风速频率分布" in summary
-
-    def test_content_hash_consistency(
-        self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom
-    ) -> None:
-        """Test that same data produces same hash."""
-        hash1 = wind_frequency_table_atom.get_or_compute_df_hashkey()
-        hash2 = wind_frequency_table_atom.get_or_compute_df_hashkey()
-        
-        assert hash1 == hash2
-        assert "SingleMastWindFrequencyTableAtom_" in hash1
-
-    def test_table_has_all_heights(
-        self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom
-    ) -> None:
-        """Test table includes all heights."""
-        table = wind_frequency_table_atom.renderTable()
-        
-        assert "100m" in table
-        assert "120m" in table
-        assert "140m" in table
-
-    def test_table_has_frequency_percentages(
-        self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom
-    ) -> None:
-        """Test table includes frequency as percentages."""
-        table = wind_frequency_table_atom.renderTable()
-        
-        # Should have percentage signs
-        assert "%" in table
-
-    def test_table_has_total_row(
-        self, wind_frequency_table_atom: SingleMastWindFrequencyTableAtom
-    ) -> None:
-        """Test table includes total row."""
-        table = wind_frequency_table_atom.renderTable()
-        
-        assert "合计" in table
-
-
-# =============================================================================
-# Test SingleMastWindPowerFrequencyTableAtom
-# =============================================================================
-
-
-class TestSingleMastWindPowerFrequencyTableAtom:
-    """Tests for SingleMastWindPowerFrequencyTableAtom."""
-
-    def test_render_image(
-        self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom,
-        tmp_path: Path
-    ) -> None:
-        """Test renderImage returns empty Path (no image for table)."""
-        image_path = wind_power_frequency_table_atom.renderImage(tmp_path)
-        
-        # Power frequency table atom returns empty Path
-        assert image_path == Path()
-
-    def test_render_table(self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom) -> None:
-        """Test renderTable returns non-empty Typst table."""
-        table = wind_power_frequency_table_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "风速(m/s)" in table
-
-    def test_render_summary(self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
-        summary = wind_power_frequency_table_atom.renderSummary()
-        
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "风能频率" in summary
-
-    def test_content_hash_consistency(
-        self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom
-    ) -> None:
-        """Test that same data produces same hash."""
-        hash1 = wind_power_frequency_table_atom.get_or_compute_df_hashkey()
-        hash2 = wind_power_frequency_table_atom.get_or_compute_df_hashkey()
-        
-        assert hash1 == hash2
-        assert "SingleMastWindPowerFrequencyTableAtom_" in hash1
-
-    def test_summary_has_energy_analysis(
-        self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom
-    ) -> None:
-        """Test summary includes energy distribution analysis."""
-        summary = wind_power_frequency_table_atom.renderSummary()
-        
-        # Should mention energy contribution
-        assert "能量贡献" in summary
-        assert "有效风速" in summary
-
-    def test_summary_has_v3_explanation(
-        self, wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom
-    ) -> None:
-        """Test summary explains v³ relationship."""
-        summary = wind_power_frequency_table_atom.renderSummary()
-        
-        # Should mention cubic relationship
-        assert "三次方" in summary or "v³" in summary
-
-
-# =============================================================================
-# Test SingleMastWindRangeSummaryAtom
-# =============================================================================
-
-
-class TestSingleMastWindRangeSummaryAtom:
-    """Tests for SingleMastWindRangeSummaryAtom."""
-
-    def test_render_image(
-        self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom, tmp_path: Path
-    ) -> None:
-        """Test renderImage returns empty Path (no image for summary)."""
-        image_path = wind_range_summary_atom.renderImage(tmp_path)
-        
-        # Range summary atom returns empty Path
-        assert image_path == Path()
-
-    def test_render_table(self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom) -> None:
-        """Test renderTable returns non-empty Typst summary table."""
-        table = wind_range_summary_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "高度" in table
-        assert "3-25m/s频率" in table
-        assert "3-25m/s小时数" in table
-        assert "风能频率" in table
-        assert "风能小时数" in table
-
-    def test_render_summary(self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
-        summary = wind_range_summary_atom.renderSummary()
-        
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "有效风速区间" in summary
-        assert "3-25m/s" in summary
-
-    def test_content_hash_consistency(
-        self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom
-    ) -> None:
-        """Test that same data produces same hash."""
-        hash1 = wind_range_summary_atom.get_or_compute_df_hashkey()
-        hash2 = wind_range_summary_atom.get_or_compute_df_hashkey()
-        
-        assert hash1 == hash2
-        assert "SingleMastWindRangeSummaryAtom_" in hash1
-
-    def test_table_has_all_heights(
-        self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom
-    ) -> None:
-        """Test table includes all heights."""
-        table = wind_range_summary_atom.renderTable()
-        
-        assert "100m" in table
-        assert "120m" in table
-        assert "140m" in table
-
-    def test_summary_has_productivity_assessment(
-        self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom
-    ) -> None:
-        """Test summary includes productivity assessment."""
-        summary = wind_range_summary_atom.renderSummary()
-        
-        # Should have resource level assessment
-        assert "资源等级" in summary or "评定" in summary
-
-    def test_summary_has_best_height(
-        self, wind_range_summary_atom: SingleMastWindRangeSummaryAtom
-    ) -> None:
-        """Test summary identifies best height."""
-        summary = wind_range_summary_atom.renderSummary()
-        
-        # Should mention optimal height
-        assert "最优高度" in summary
+        assert path1 == path2
+        assert mtime1 == mtime2
 
 
 # =============================================================================
@@ -513,22 +423,22 @@ class TestSingleMastWindRangeSummaryAtom:
 
 
 class TestAllWindFrequencyAtoms:
-    """Tests that apply to all wind frequency atoms."""
+    """Tests that apply to all simplified wind frequency atoms."""
 
     @pytest.fixture
     def all_wind_frequency_atoms(
         self,
-        wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom,
-        wind_frequency_table_atom: SingleMastWindFrequencyTableAtom,
-        wind_power_frequency_table_atom: SingleMastWindPowerFrequencyTableAtom,
-        wind_range_summary_atom: SingleMastWindRangeSummaryAtom,
+        wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom,
+        wind_power_hours_atom: SingleMastWindPowerHoursAtom,
+        wind_productive_range_atom: SingleMastWindProductiveRangeAtom,
+        wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom,
     ) -> list[Any]:
         """Return a list of all wind frequency atom types for testing."""
         return [
-            wind_frequency_distribution_atom,
-            wind_frequency_table_atom,
-            wind_power_frequency_table_atom,
-            wind_range_summary_atom,
+            wind_frequency_hours_atom,
+            wind_power_hours_atom,
+            wind_productive_range_atom,
+            wind_distribution_subgrid_atom,
         ]
 
     def test_all_atoms_have_mast_name(self, all_wind_frequency_atoms: list[Any]) -> None:
@@ -544,135 +454,10 @@ class TestAllWindFrequencyAtoms:
             assert hash1 == hash2
             assert len(hash1) > 0
 
-    def test_summary_output_is_string(self, all_wind_frequency_atoms: list[Any]) -> None:
-        """Verify all atoms return string from renderSummary."""
+    def test_summary_output_is_list_of_paragraphs(self, all_wind_frequency_atoms: list[Any]) -> None:
+        """Verify all atoms return list of TypstParagraph from renderSummary."""
         for atom in all_wind_frequency_atoms:
             summary = atom.renderSummary()
-            assert isinstance(summary, str)
+            assert isinstance(summary, list)
             assert len(summary) > 0
-
-
-class TestImageCaching:
-    """Tests for image caching behavior."""
-
-    def test_distribution_image_caching(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom,
-        tmp_path: Path
-    ) -> None:
-        """Verify distribution images are cached."""
-        # First render
-        path1 = wind_frequency_distribution_atom.renderImage(tmp_path)
-        mtime1 = path1.stat().st_mtime
-        
-        # Second render (should use cache)
-        path2 = wind_frequency_distribution_atom.renderImage(tmp_path)
-        mtime2 = path2.stat().st_mtime
-        
-        assert path1 == path2
-        assert mtime1 == mtime2  # File not modified
-
-    def test_distribution_force_regenerate(
-        self, wind_frequency_distribution_atom: SingleMastWindFrequencyDistributionAtom,
-        tmp_path: Path
-    ) -> None:
-        """Verify force=True regenerates distribution images."""
-        # First render
-        path1 = wind_frequency_distribution_atom.renderImage(tmp_path)
-        
-        # Force regenerate
-        path2 = wind_frequency_distribution_atom.renderImage(tmp_path, force=True)
-        
-        assert path1 == path2
-        assert path2.exists()
-
-
-# =============================================================================
-# Edge Case Tests
-# =============================================================================
-
-
-class TestEdgeCases:
-    """Tests for edge cases and error conditions."""
-
-    def test_single_row_data(self, sample_mast_meta: SingleMastMeta) -> None:
-        """Test atoms with single row of data."""
-        single_row_df = pl.DataFrame({
-            "height": [100.0],
-            "interpolation_marker": [None],
-            "bin_start": [5.0],
-            "bin_end": [6.0],
-            "bin_center": [5.5],
-            "frequency": [1.0],
-            "occurrence_hours": [8760.0],
-            "power_frequency": [1.0],
-            "power_hours": [8760.0],
-        })
-        
-        atom = SingleMastWindFrequencyTableAtom.create(
-            schema=WindFrequencySchema,
-            df=single_row_df,
-            meta=sample_mast_meta,
-        )
-        
-        table = atom.renderTable()
-        assert "100m" in table
-        
-        summary = atom.renderSummary()
-        assert isinstance(summary, str)
-
-    def test_frequency_sum_constraint(
-        self, sample_wind_frequency_df_single: pl.DataFrame
-    ) -> None:
-        """Test that frequency sums to 1.0."""
-        total_freq = sample_wind_frequency_df_single["frequency"].sum()
-        assert total_freq == pytest.approx(1.0, abs=0.01)
-
-    def test_power_frequency_sum_constraint(
-        self, sample_wind_frequency_df_single: pl.DataFrame
-    ) -> None:
-        """Test that power frequency sums to 1.0."""
-        total_power_freq = sample_wind_frequency_df_single["power_frequency"].sum()
-        assert total_power_freq == pytest.approx(1.0, abs=0.01)
-
-    def test_occurrence_hours_calculation(
-        self, sample_wind_frequency_df_single: pl.DataFrame
-    ) -> None:
-        """Test that occurrence_hours = frequency * 8760."""
-        for row in sample_wind_frequency_df_single.iter_rows(named=True):
-            expected_hours = row["frequency"] * 8760.0
-            assert row["occurrence_hours"] == pytest.approx(expected_hours, abs=0.1)
-
-    def test_power_hours_calculation(
-        self, sample_wind_frequency_df_single: pl.DataFrame
-    ) -> None:
-        """Test that power_hours = power_frequency * 8760."""
-        for row in sample_wind_frequency_df_single.iter_rows(named=True):
-            expected_hours = row["power_frequency"] * 8760.0
-            assert row["power_hours"] == pytest.approx(expected_hours, abs=0.1)
-
-    @pytest.mark.xfail(reason="Empty dataframe handling not yet implemented in atoms")
-    def test_empty_dataframe(self, sample_mast_meta: SingleMastMeta) -> None:
-        """Test wind frequency atoms with empty DataFrame."""
-        empty_df = pl.DataFrame({
-            "height": pl.Series([], dtype=pl.Float64),
-            "interpolation_marker": pl.Series([], dtype=pl.String),
-            "bin_start": pl.Series([], dtype=pl.Float64),
-            "bin_end": pl.Series([], dtype=pl.Float64),
-            "bin_center": pl.Series([], dtype=pl.Float64),
-            "frequency": pl.Series([], dtype=pl.Float64),
-            "occurrence_hours": pl.Series([], dtype=pl.Float64),
-            "power_frequency": pl.Series([], dtype=pl.Float64),
-            "power_hours": pl.Series([], dtype=pl.Float64),
-        })
-        
-        atom = SingleMastWindFrequencyTableAtom.create(
-            schema=WindFrequencySchema,
-            df=empty_df,
-            meta=sample_mast_meta,
-        )
-        
-        table = atom.renderTable()
-        assert isinstance(table, str)
-        
-        summary = atom.renderSummary()
-        assert isinstance(summary, str)
+            assert isinstance(summary[0], TypstParagraph)

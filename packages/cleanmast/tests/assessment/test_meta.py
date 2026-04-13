@@ -17,7 +17,7 @@ class TestSingleMastMeta:
 
         assert meta.mast_name == "M01"
         assert meta.air_density == 1.225  # Default value
-        assert meta.caption == ""
+        assert meta.caption is None
         assert meta.width == "80%"
 
     def test_custom_values(self):
@@ -33,6 +33,18 @@ class TestSingleMastMeta:
         assert meta.air_density == 1.18
         assert meta.caption == "Test Caption"
         assert meta.width == "90%"
+
+    def test_caption_defaults_to_none(self):
+        """Test that caption defaults to None."""
+        meta = SingleMastMeta(mast_name="M01")
+
+        assert meta.caption is None
+
+    def test_caption_override(self):
+        """Test that caption can be overridden."""
+        meta = SingleMastMeta(mast_name="M01", caption="override")
+
+        assert meta.caption == "override"
 
 
 class TestDetectInterpolationMarker:

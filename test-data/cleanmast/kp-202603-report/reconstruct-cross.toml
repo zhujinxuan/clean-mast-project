@@ -1,0 +1,56 @@
+# Cross-Mast Reconstruction Configuration
+# Generated from training results: projects/kp-202603/train-reconstruct-cross\train-results.toml
+# Generated on: 2026-03-21T01:03:30.248
+
+[training_metadata]
+qualified_direction_pairs = 2
+total_mast_pairs = 2
+train_results_file = "projects/kp-202603/train-reconstruct-cross\\train-results.toml"
+qualified_speed_pairs = 2
+training_date = "2026-03-21T01:03:30.248"
+
+[[masts]]
+name = "L32261"
+
+    [masts.output]
+    data = "./reconstruct-cross/L32261_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/L32261.parquet"
+[[masts]]
+name = "M245228"
+
+    [masts.output]
+    data = "./reconstruct-cross/M245228_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/M245228.parquet"
+
+[settings]
+min_confidence = 0.7
+max_direction_uncertainty = 45.0
+output_dir = "./reconstruct-cross"
+
+[[reconstruction_priorities]]
+priority_level = 1
+min_correlation = 0.7
+max_direction_std = 15.0
+
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\L32261\\M245228"
+    priority = 1
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 296.59722222222223
+    target_mast = "L32261"
+    speed_correlation = 0.9566363256390997
+    source_mast = "M245228"
+    direction_std = 15.923368139237752
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M245228\\L32261"
+    priority = 2
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 296.59722222222223
+    target_mast = "M245228"
+    speed_correlation = 0.9566363256390997
+    source_mast = "L32261"
+    direction_std = 15.923368139237752

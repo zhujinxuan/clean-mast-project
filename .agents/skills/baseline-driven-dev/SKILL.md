@@ -27,6 +27,7 @@ uv run python scripts/verify_baseline.py --package {package}
 uv run ty check packages/{package} --output-format full
 uv run ruff check packages/{package}
 uv run pytest packages/{package}/tests -v
+uv run ast-grep scan --config packages/{package}/sgconfig.yml
 ```
 
 ## What is a Wave?
@@ -78,6 +79,7 @@ uv run python scripts/verify_baseline.py --package {package}
 | ty | N errors | M errors | Improved/Worsened/Same |
 | ruff | N errors | M errors | Improved/Worsened/Same |
 | pytest | N failed | M failed | Improved/Worsened/Same |
+| ast-grep | N violations | M violations | Improved/Worsened/Same |
 
 **Decision rules:**
 - ✅ **Baseline improved** → Wave complete, commit and proceed
@@ -114,10 +116,15 @@ For each wave, consider which checks are relevant:
 - **Target:** Should always pass
 - **Acceptable increase:** Never
 
+### ast-grep (Custom Rules)
+- **When to care:** Adding or modifying custom static analysis rules
+- **Target:** Should always pass (0 rule violations)
+- **Acceptable increase:** Only if adding a new rule that catches existing issues (document this)
+
 ## Example Waves
 
 **Wave: "Discovery - analyze current codebase"**
-1. Baseline: 66 ty errors, 0 ruff errors, 891 tests passing
+1. Baseline: 66 ty errors, 0 ruff errors, 891 tests passing, 14 ast-grep violations
 2. Work: Run discovery tasks, inventory files, check imports
 3. Verify: Same baseline (discovery doesn't change code)
 4. Result: ✅ Same is acceptable for pure discovery
@@ -129,15 +136,15 @@ For each wave, consider which checks are relevant:
 4. Result: ✅ Improved - commit and proceed
 
 **Wave: "Refactor report builder without logic changes"**
-1. Baseline: ty 0 errors, ruff 0 errors, pytest 100 passing
+1. Baseline: ty 0 errors, ruff 0 errors, pytest 100 passing, ast-grep 0 violations
 2. Work: Extract methods, rename variables, no logic changes
-3. Verify: ty 0 errors, ruff 0 errors, pytest 100 passing
+3. Verify: ty 0 errors, ruff 0 errors, pytest 100 passing, ast-grep 0 violations
 4. Result: ✅ Same is acceptable for pure refactoring
 
 **Wave: "Add new feature with tests"**
-1. Baseline: pytest 100 passing
+1. Baseline: pytest 100 passing, ast-grep 0 violations
 2. Work: Add feature + tests
-3. Verify: pytest 105 passing, 0 new failures
+3. Verify: pytest 105 passing, 0 new failures, ast-grep 0 violations
 4. Result: ✅ Improved
 
 ## Output Files

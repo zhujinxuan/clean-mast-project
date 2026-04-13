@@ -165,16 +165,29 @@ clean-mast-project/
 │   │   ├── src/preprocess_tools/
 │   │   ├── tests/
 │   │   └── docs/
-│   └── cleanmast/             # 主分析工具包
-│       ├── src/cleanmast/
-│       │   ├── types/         # 核心类型定义
-│       │   ├── parse_sensors/ # 数据解析和列映射
-│       │   ├── process/       # 数据清理规则
-│       │   ├── reconstruct/   # 数据重构
-│       │   ├── analyze/       # 分析模块
-│       │   └── reports/       # 报告生成
-│       ├── tests/
-│       └── docs/
+│   ├── cleanmast/             # 主分析工具包
+│   │   ├── src/cleanmast/
+│   │   │   ├── types/         # 核心类型定义
+│   │   │   ├── parse_sensors/ # 数据解析和列映射
+│   │   │   ├── process/       # 数据清理规则
+│   │   │   ├── reconstruct/   # 数据重构
+│   │   │   ├── analyze/       # 分析模块
+│   │   │   └── reports/       # 报告生成
+│   │   ├── tests/
+│   │   └── docs/
+│   └── typst_ir/              # Typst IR文档处理库
+│       ├── src/typst_ir/
+│       │   ├── nodes.py       # IR节点类型
+│       │   ├── serializer.py  # Typst标记转换
+│       │   ├── renderer.py    # PDF/DOCX渲染
+│       │   ├── mapping/       # DOCX映射模块
+│       │   │   ├── types.py   # 映射类型定义
+│       │   │   ├── registry.py # 节点注册表
+│       │   │   ├── visitor.py # 节点访问器
+│       │   │   ├── builder.py # 映射构建器
+│       │   │   └── injector.py # ID注入工具
+│       │   └── validation.py  # 内容验证
+│       └── tests/
 │
 ├── docs/                      # 共享文档
 │   ├── migration/             # 迁移指南

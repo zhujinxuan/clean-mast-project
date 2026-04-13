@@ -1,0 +1,53 @@
+# Mesoscale Reconstruction Configuration
+# Uses trained models to fill remaining gaps with mesoscale data
+
+[[mesos]]
+name = "ERA5Lidar"
+
+    [mesos.input]
+    data = "./raw/ERA5Lidar.parquet"
+
+[[masts]]
+name = "L32261"
+
+    [masts.output]
+    data = "./reconstruct-meso\\L32261.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/L32261/ERA5Lidar/windspeed/1-sector.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/L32261/ERA5Lidar/winddirection/constant-offset.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.input]
+    data = "./reconstruct-cross/L32261_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2026-02-28T23:59:59.000Z
+    min = 2025-03-01T00:00:00.000Z
+[[masts]]
+name = "M245228"
+
+    [masts.output]
+    data = "./reconstruct-meso\\M245228.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/M245228/ERA5Lidar/windspeed/1-sector.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/M245228/ERA5Lidar/winddirection/constant-offset.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.input]
+    data = "./reconstruct-cross/M245228_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2026-02-28T23:59:59.000Z
+    min = 2025-03-01T00:00:00.000Z

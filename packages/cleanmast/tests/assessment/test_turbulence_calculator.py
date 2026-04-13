@@ -14,6 +14,9 @@ from cleanmast.subdomains.assessment.domain.services.calculators.turbulence_calc
     TurbulenceCalculator,
     TurbulenceConstants,
 )
+from cleanmast.subdomains.assessment.domain.services.utils.height_filter import (
+    select_interested_heights,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_input import (
     SingleMastAnalysisInput,
 )
@@ -111,9 +114,22 @@ def sample_input_single_height(sample_turbulence_data: pl.DataFrame) -> SingleMa
             stat_type="avg",
             unit="m/s",
         ),
+        SensorColumn(
+            column_name="WS_100m_sd",
+            sensor_type="WindSpeed",
+            sensor_direction="",
+            height=100.0,
+            stat_type="sd",
+            unit="m/s",
+        ),
     ]
     
-    time_series = TimeSeriesData(df=sample_turbulence_data, sensors=sensors)
+    # Add SD column to dataframe (simulated std dev values)
+    df_with_sd = sample_turbulence_data.with_columns([
+        (pl.col("WS_100m_avg") * 0.15).alias("WS_100m_sd")
+    ])
+    
+    time_series = TimeSeriesData(df=df_with_sd, sensors=sensors)
     parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
     
     return SingleMastAnalysisInput(
@@ -138,6 +154,14 @@ def sample_input_multiple_heights(
             unit="m/s",
         ),
         SensorColumn(
+            column_name="WS_100m_sd",
+            sensor_type="WindSpeed",
+            sensor_direction="",
+            height=100.0,
+            stat_type="sd",
+            unit="m/s",
+        ),
+        SensorColumn(
             column_name="WS_120m_avg",
             sensor_type="WindSpeed",
             sensor_direction="",
@@ -145,11 +169,24 @@ def sample_input_multiple_heights(
             stat_type="avg",
             unit="m/s",
         ),
+        SensorColumn(
+            column_name="WS_120m_sd",
+            sensor_type="WindSpeed",
+            sensor_direction="",
+            height=120.0,
+            stat_type="sd",
+            unit="m/s",
+        ),
     ]
-    
-    time_series = TimeSeriesData(df=sample_turbulence_data_multi_height, sensors=sensors)
+
+    df_with_sd = sample_turbulence_data_multi_height.with_columns([
+        (pl.col("WS_100m_avg") * 0.15).alias("WS_100m_sd"),
+        (pl.col("WS_120m_avg") * 0.15).alias("WS_120m_sd"),
+    ])
+
+    time_series = TimeSeriesData(df=df_with_sd, sensors=sensors)
     parameters = AnalysisParameters(heights=[100.0, 120.0], air_density=1.225)
-    
+
     return SingleMastAnalysisInput(
         time_series=time_series,
         parameters=parameters,
@@ -389,58 +426,77 @@ class TestIECCategoryClassification:
 
     def test_classify_iec_category_high_turbulence(self, calculator: TurbulenceCalculator) -> None:
         """Test classification for high turbulence (A+)."""
-        # At V=8 m/s: IEC A+ reference = 0.18 * (0.75 + 5.6/8) = 0.261
-        # Need measured TI close to 0.26 for A+ classification
-        ti_values = [0.25, 0.26, 0.27, 0.28] * 30
-        wind_speeds = [8.0] * len(ti_values)
-        
-        category = calculator.classify_iec_category(ti_values, wind_speeds)
-        
+        # At V=15 m/s: IEC A reference = 0.16 * (0.75 + 5.6/15) ≈ 0.1797
+        # rep_ti clearly above A threshold → A+
+        rep_ti = 0.20
+        wind_speed = 15.0
+
+        category = calculator.classify_iec_category(rep_ti, wind_speed)
+
         assert category == "A+"
-    
+
     def test_classify_iec_category_medium_turbulence(self, calculator: TurbulenceCalculator) -> None:
         """Test classification for medium turbulence (B)."""
-        # At V=8 m/s: IEC B reference = 0.14 * (0.75 + 5.6/8) = 0.203
-        # Need measured TI close to 0.20 for B classification
-        ti_values = [0.19, 0.20, 0.21, 0.205] * 30
-        wind_speeds = [8.0] * len(ti_values)
-        
-        category = calculator.classify_iec_category(ti_values, wind_speeds)
-        
+        # At V=15 m/s: IEC B reference = 0.14 * (0.75 + 5.6/15) ≈ 0.1573
+        # IEC C reference = 0.12 * (0.75 + 5.6/15) ≈ 0.1348
+        # rep_ti between C and B thresholds → B
+        rep_ti = 0.15
+        wind_speed = 15.0
+
+        category = calculator.classify_iec_category(rep_ti, wind_speed)
+
         assert category == "B"
-    
+
     def test_classify_iec_category_low_turbulence(self, calculator: TurbulenceCalculator) -> None:
         """Test classification for low turbulence (C)."""
-        # Low TI values that should result in C category
-        ti_values = [0.10, 0.11, 0.12, 0.13] * 30
-        wind_speeds = [8.0] * len(ti_values)
-        
-        category = calculator.classify_iec_category(ti_values, wind_speeds)
-        
+        # At V=15 m/s: IEC C reference ≈ 0.1348
+        # rep_ti clearly below C threshold → C
+        rep_ti = 0.10
+        wind_speed = 15.0
+
+        category = calculator.classify_iec_category(rep_ti, wind_speed)
+
         assert category == "C"
-    
+
+    def test_classify_iec_category_exactly_at_a_threshold(
+        self, calculator: TurbulenceCalculator
+    ) -> None:
+        """Test classification uses strict > for thresholds."""
+        # At V=15 m/s: IEC A reference = 0.16 * (0.75 + 5.6/15) ≈ 0.1797
+        # rep_ti exactly equal to A threshold → A (not A+)
+        rep_ti = 0.16 * (0.75 + 5.6 / 15.0)
+        wind_speed = 15.0
+
+        category = calculator.classify_iec_category(rep_ti, wind_speed)
+
+        assert category == "A"
+
+    def test_classify_iec_category_between_b_and_c(
+        self, calculator: TurbulenceCalculator
+    ) -> None:
+        """Test classification returns B when rep_ti is above C but below B."""
+        # At V=15 m/s: IEC C reference ≈ 0.1348
+        # rep_ti above C threshold but below B threshold → B
+        rep_ti = 0.14
+        wind_speed = 15.0
+
+        category = calculator.classify_iec_category(rep_ti, wind_speed)
+
+        assert category == "B"
+
     def test_classify_iec_category_insufficient_data(
         self, calculator: TurbulenceCalculator
     ) -> None:
-        """Test classification defaults to C for insufficient data."""
-        ti_values = [0.15] * 5  # Less than MIN_SAMPLES
-        wind_speeds = [8.0] * 5
-        
-        category = calculator.classify_iec_category(ti_values, wind_speeds)
-        
+        """Test classification defaults to C for None representative TI."""
+        category = calculator.classify_iec_category(None, 15.0)
+
         assert category == "C"
-    
+
     def test_classify_iec_category_with_none_values(self, calculator: TurbulenceCalculator) -> None:
-        """Test classification handles None values correctly."""
-        # At V=8 m/s: IEC C reference = 0.12 * (0.75 + 5.6/8) = 0.174
-        # TI around 0.15 will be closest to C category
-        ti_values = [0.14, None, 0.15, None, 0.145] * 30
-        wind_speeds = [8.0] * len(ti_values)
-        
-        category = calculator.classify_iec_category(ti_values, wind_speeds)
-        
-        # Should classify based on valid values (around 0.15 = C category)
-        assert category in ["B", "C"]
+        """Test classification handles None representative TI correctly."""
+        category = calculator.classify_iec_category(None, 8.0)
+
+        assert category == "C"
 
 
 # =============================================================================
@@ -463,7 +519,7 @@ class TestWindSpeedAnalysis:
         # Check data has expected columns
         expected_columns = {
             "wind_speed_bin", "height", "interpolation_marker", "mean_ti",
-            "std_ti", "representative_ti", "iec_category"
+            "std_ti", "representative_ti", "iec_category", "count"
         }
         assert set(result.data.columns) == expected_columns
         
@@ -815,3 +871,47 @@ class TestTimeRangeExtraction:
         time_range = calculator._get_time_range(df)
         
         assert time_range == "Unknown"
+
+
+# =============================================================================
+# Test Height Filter
+# =============================================================================
+
+
+class TestSelectInterestedHeights:
+    """Tests for select_interested_heights utility."""
+
+    @pytest.mark.parametrize(
+        ("heights", "expected"),
+        [
+            ([70, 90, 100], [90, 100]),
+            ([120, 130, 140, 170], [120, 130, 140]),
+            ([50], [50]),
+            ([125], [125]),
+            ([], []),
+        ],
+    )
+    def test_height_filter_cases(
+        self, heights: list[float], expected: list[float]
+    ) -> None:
+        """Test select_interested_heights with expected input/output pairs."""
+        result = select_interested_heights(heights)
+        assert result == expected
+
+    def test_height_filter_exact_boundaries(self) -> None:
+        """Test exact boundary values are included."""
+        assert select_interested_heights([120.0, 160.0]) == [120.0, 160.0]
+
+    def test_height_filter_fallback_to_highest(self) -> None:
+        """Test fallback returns top min_count heights when range is empty."""
+        heights = [40.0, 80.0, 100.0]
+        result = select_interested_heights(heights, min_height=120.0, max_height=160.0)
+        assert result == [80.0, 100.0]
+
+    def test_height_filter_custom_min_count(self) -> None:
+        """Test custom min_count returns expected number of heights."""
+        heights = [50.0, 60.0, 70.0, 80.0]
+        result = select_interested_heights(
+            heights, min_height=120.0, max_height=160.0, min_count=3
+        )
+        assert result == [60.0, 70.0, 80.0]

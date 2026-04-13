@@ -1,6 +1,7 @@
 """Tests for ReportAtom base class."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, overload
 
@@ -12,6 +13,11 @@ from cleanmast.subdomains.assessment.domain.entities.report_atom import (
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern import (
     SingleMastMonthlyPatternAtom,
+)
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstFigure,
+    TypstParagraph,
+    TypstTable,
 )
 from cleanmast.subdomains.assessment.domain.value_objects import (
     SingleMastMeta,
@@ -75,7 +81,7 @@ class MockSchema:
 class MockMeta:
     """Mock metadata for testing."""
 
-    caption: str = "Test Caption"
+    caption: str | None = "Test Caption"
     width: str = "80%"
 
 
@@ -84,16 +90,16 @@ class ConcreteAtom(ReportAtom[MockSchema, MockMeta]):
     """Concrete implementation of ReportAtom for testing."""
 
     @override
-    def renderTable(self) -> str:
-        return "#table(test)"
+    def renderTable(self) -> TypstTable | None:
+        return TypstTable(headers=["Test"], data=[["test"]])
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
         return output_dir / "test.png"
 
     @override
-    def renderSummary(self) -> str:
-        return "Test summary"
+    def renderSummary(self) -> list[TypstParagraph]:
+        return [TypstParagraph(text="Test summary")]
 
 
 class TestReportAtomCreate:
@@ -102,7 +108,7 @@ class TestReportAtomCreate:
     def test_create_validates_dataframe(self):
         """Test that create validates the DataFrame with the schema."""
         df = pl.DataFrame({
-            "timestamp": ["2024-01-01 00:00:00", "2024-01-01 01:00:00"],
+            "timestamp": [datetime(2024, 1, 1, 0, 0), datetime(2024, 1, 1, 1, 0)],
             "hour": [0, 1],
             "month": [1, 1],
             "wind_speed": [5.0, 6.0],
@@ -232,11 +238,10 @@ class TestReportAtomRenderImageTypst:
 
         result = atom.renderImageTypst(output_dir)
 
-        # Should contain figure markup
-        assert "#figure(" in result
-        assert "caption: [Test Figure]" in result
-        assert "width: 70%" in result
-        assert "test.png" in result
+        assert result is not None
+        assert isinstance(result, TypstFigure)
+        assert result.content == "images/test.png"
+        assert result.caption == "Test Figure"
 
     def test_render_image_typst_includes_label(self, tmp_path: Path):
         """Test that renderImageTypst includes proper label reference."""
@@ -249,9 +254,140 @@ class TestReportAtomRenderImageTypst:
 
         result = atom.renderImageTypst(output_dir)
         hashkey = atom.get_or_compute_df_hashkey()
+        reference = atom.getReference()
 
-        # Should contain label with hashkey
-        assert f"<fig-{hashkey}>" in result
+        assert result is not None
+        assert result.content == "images/test.png"
+        assert reference == f"@fig-{hashkey}"
+
+
+class TestReportAtomCaptionProperties:
+    """Tests for default caption properties."""
+
+    def test_default_image_caption_is_none(self):
+        """Test that default_image_caption returns None by default."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta()
+
+        atom = ConcreteAtom.create(schema=MockSchema, df=df, meta=meta)
+
+        assert hasattr(atom, "default_image_caption")
+        assert atom.default_image_caption is None
+
+    def test_default_table_caption_is_none(self):
+        """Test that default_table_caption returns None by default."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta()
+
+        atom = ConcreteAtom.create(schema=MockSchema, df=df, meta=meta)
+
+        assert hasattr(atom, "default_table_caption")
+        assert atom.default_table_caption is None
+
+
+@dataclass
+class ConcreteAtomWithDefaultCaption(ReportAtom[MockSchema, MockMeta]):
+    """Concrete atom with default captions for testing."""
+
+    @property
+    def default_image_caption(self) -> str | None:
+        return "Default Image Caption"
+
+    @property
+    def default_table_caption(self) -> str | None:
+        return "Default Table Caption"
+
+    @override
+    def renderTable(self) -> TypstTable | None:
+        return TypstTable(headers=["Test"], data=[["test"]])
+
+    @override
+    def renderImage(self, output_dir: Path, force: bool = False) -> Path:
+        return output_dir / "test.png"
+
+    @override
+    def renderSummary(self) -> list[TypstParagraph]:
+        return [TypstParagraph(text="Test summary")]
+
+
+class TestReportAtomCaptionResolution:
+    """Tests for caption resolution chain."""
+
+    def test_meta_caption_overrides_default(self, tmp_path: Path):
+        """When meta.caption is set, it takes precedence."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta(caption="Meta Caption")
+
+        atom = ConcreteAtomWithDefaultCaption.create(schema=MockSchema, df=df, meta=meta)
+        output_dir = tmp_path / "images"
+        output_dir.mkdir()
+
+        result = atom.renderImageTypst(output_dir)
+
+        assert result is not None
+        assert result.caption == "Meta Caption"
+
+    def test_default_image_caption_used_when_meta_is_none(self, tmp_path: Path):
+        """When meta.caption is None, fall back to default_image_caption."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta(caption=None)
+
+        atom = ConcreteAtomWithDefaultCaption.create(schema=MockSchema, df=df, meta=meta)
+        output_dir = tmp_path / "images"
+        output_dir.mkdir()
+
+        result = atom.renderImageTypst(output_dir)
+
+        assert result is not None
+        assert result.caption == "Default Image Caption"
+
+    def test_falls_back_to_figure_when_both_none(self, tmp_path: Path):
+        """When both meta.caption and default_image_caption are None, fall back to 'Figure'."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta(caption=None)
+
+        atom = ConcreteAtom.create(schema=MockSchema, df=df, meta=meta)
+        output_dir = tmp_path / "images"
+        output_dir.mkdir()
+
+        result = atom.renderImageTypst(output_dir)
+
+        assert result is not None
+        assert result.caption == "Figure"
+
+
+@dataclass
+class NoImageAtom(ReportAtom[MockSchema, MockMeta]):
+    """Atom that generates no actual image file."""
+
+    @override
+    def renderTable(self) -> TypstTable | None:
+        return TypstTable(headers=["Test"], data=[["test"]])
+
+    @override
+    def renderImage(self, output_dir: Path, force: bool = False) -> Path:
+        return output_dir
+
+    @override
+    def renderSummary(self) -> list[TypstParagraph]:
+        return [TypstParagraph(text="No image")]
+
+
+class TestReportAtomNoImage:
+    """Tests for atoms that do not produce images."""
+
+    def test_render_image_typst_returns_none_when_no_image(self, tmp_path: Path):
+        """Test that renderImageTypst returns None when renderImage returns output_dir."""
+        df = pl.DataFrame({"col": [1, 2, 3]})
+        meta = MockMeta()
+
+        atom = NoImageAtom.create(schema=MockSchema, df=df, meta=meta)
+        output_dir = tmp_path / "images"
+        output_dir.mkdir()
+
+        result = atom.renderImageTypst(output_dir)
+
+        assert result is None
 
 
 class TestReportAtomGetReference:
@@ -301,8 +437,8 @@ class TestReportAtomAbstractMethods:
             def renderImage(self, output_dir: Path, force: bool = False) -> Path:
                 return output_dir / "test.png"
 
-            def renderSummary(self) -> str:
-                return "summary"
+            def renderSummary(self) -> list[TypstParagraph]:
+                return [TypstParagraph(text="summary")]
 
         with pytest.raises(TypeError):
             NoRenderTable()  # type: ignore
@@ -311,11 +447,11 @@ class TestReportAtomAbstractMethods:
         """Test that renderImage must be implemented."""
 
         class NoRenderImage(ReportAtom[MockSchema, MockMeta]):
-            def renderTable(self) -> str:
-                return "table"
+            def renderTable(self) -> TypstTable | None:
+                return TypstTable(headers=["Test"], data=[["test"]])
 
-            def renderSummary(self) -> str:
-                return "summary"
+            def renderSummary(self) -> list[TypstParagraph]:
+                return [TypstParagraph(text="summary")]
 
         with pytest.raises(TypeError):
             NoRenderImage()  # type: ignore
@@ -324,8 +460,8 @@ class TestReportAtomAbstractMethods:
         """Test that renderSummary must be implemented."""
 
         class NoRenderSummary(ReportAtom[MockSchema, MockMeta]):
-            def renderTable(self) -> str:
-                return "table"
+            def renderTable(self) -> TypstTable | None:
+                return TypstTable(headers=["Test"], data=[["test"]])
 
             def renderImage(self, output_dir: Path, force: bool = False) -> Path:
                 return output_dir / "test.png"

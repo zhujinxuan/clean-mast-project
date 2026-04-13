@@ -4,14 +4,22 @@ ADR-GUARDRAILS: ddd-t-001-aggregates, ddd-t-002-entities-value-objects, ddd-t-00
 Compliance: Aggregate ✓ | Entity ✓ | Content-Addressable ✓
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 
-import altair as alt
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np
 import polars as pl
+from matplotlib.figure import Figure
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import TypstParagraph, TypstTable
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -20,6 +28,19 @@ from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas im
     WindRoseSchema,
 )
 
+plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
+plt.rcParams["axes.unicode_minus"] = False
+
+WIND_ROSE_COLORS = [
+    "#1f77b4",
+    "#d62728",
+    "#2ca02c",
+    "#ff7f0e",
+    "#9467bd",
+    "#17becf",
+    "#8c564b",
+    "#e377c2",
+]
 
 @dataclass
 class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
@@ -30,37 +51,74 @@ class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, SingleMastMet
     - Summary: Chinese description of seasonal patterns
     """
 
-    @override
-    def renderTable(self) -> str:
-        """Render summary table of monthly dominant directions.
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 各高度（100m 以上）各月风向玫瑰图"
 
-        Shows each month with its dominant sector and frequency.
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 月风向频率分布表"
+
+    @override
+    def renderTable(self) -> "TypstTable" | None:
+        """Return None — the example report does not include a monthly dominant direction summary table."""
+        return None
+
+    def _build_monthly_grid_chart(self, plot_df: pl.DataFrame) -> Figure:
+        """Build the 3x4 monthly wind rose grid matplotlib chart.
+
+        Args:
+            plot_df: Filtered DataFrame with height_display column.
+
+        Returns:
+            Matplotlib Figure with 3 rows x 4 columns of polar subplots.
         """
-        # Find dominant sector for each month
-        monthly_dominant = (
-            self.df.group_by(["month", "month_name"])
-            .agg([
-                pl.col("sector_name").get(pl.col("frequency").arg_max()).alias("dominant_sector"),
-                pl.col("frequency").max().alias("max_frequency"),
-            ])
-            .sort("month")
+        plot_df = plot_df.with_columns(
+            (pl.col("frequency") * 100).alias("frequency_pct")
+        )
+        height_order = (
+            plot_df.select(["height", "height_display"])
+            .unique()
+            .sort("height", descending=True)["height_display"]
+            .to_list()
         )
 
-        rows = []
-        for row in monthly_dominant.iter_rows(named=True):
-            freq_pct = row["max_frequency"] * 100
-            rows.append(f'  [{row["month_name"]}], [{row["dominant_sector"]}], [{freq_pct:.1f}%],')
+        months_info = plot_df.select(["month", "month_name"]).unique().sort("month")
+        months = months_info["month"].to_list()
+        month_names = months_info["month_name"].to_list()
 
-        return f"""#table(
-  columns: (auto, auto, auto),
-  inset: 8pt,
-  align: center,
-  table.header(
-    [月份], [主导风向], [频率]
-  ),
-{chr(10).join(rows)}
-)
-"""
+        fig = plt.figure(figsize=(20, 15))
+
+        for i, (month_num, month_name) in enumerate(zip(months, month_names), start=1):
+            ax = fig.add_subplot(3, 4, i, projection="polar")
+            ax.set_theta_zero_location("N")  # type: ignore[attr-defined]
+            ax.set_theta_direction(-1)  # type: ignore[attr-defined]
+            month_data = plot_df.filter(pl.col("month") == month_num)
+
+            for h_idx, height_label in enumerate(height_order):
+                color = WIND_ROSE_COLORS[h_idx % len(WIND_ROSE_COLORS)]
+                group = month_data.filter(pl.col("height_display") == height_label).sort("sector")
+                if group.height == 0:
+                    continue
+                group_sectors = group["sector"].to_numpy()
+                freqs = group["frequency_pct"].to_numpy()
+                angles = 2 * np.pi * group_sectors / 16
+                angles = np.append(angles, angles[0])
+                freqs = np.append(freqs, freqs[0])
+                ax.plot(angles, freqs, label=height_label if i == 1 else "", color=color, linewidth=1.5)
+
+            ax.set_title(month_name, fontsize=11, pad=10)
+            ax.set_yticklabels([])
+            ax.set_xticklabels([])
+
+        if fig.axes:
+            handles, labels = fig.axes[0].get_legend_handles_labels()
+            if handles:
+                fig.legend(handles, labels, title="高度", loc="upper right", bbox_to_anchor=(0.98, 0.98))
+
+        fig.suptitle(f"{self.meta.mast_name} 各月风向频率玫瑰图", fontsize=16, y=0.98)
+        plt.tight_layout(rect=(0, 0, 1, 0.96))
+        return fig
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -94,61 +152,16 @@ class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, SingleMastMet
             .alias("height_display")
         )
 
-        # Create base chart with polar coordinates
-        base = alt.Chart(plot_df).mark_arc(stroke="white", strokeWidth=1).encode(
-            theta=alt.Theta("sector:O", sort=None, title=None),
-            radius=alt.Radius(
-                "frequency:Q",
-                scale=alt.Scale(zero=True),
-                title=None,
-            ),
-            radius2=alt.datum(0),
-            color=alt.Color(
-                "height_display:N",
-                title="高度",
-                legend=alt.Legend(
-                    orient="right",
-                    titleFontSize=12,
-                    labelFontSize=10,
-                ),
-            ),
-            tooltip=[
-                alt.Tooltip("month_name:N", title="月份"),
-                alt.Tooltip("sector_name:N", title="风向"),
-                alt.Tooltip("height_display:N", title="高度"),
-                alt.Tooltip("frequency:Q", title="频率", format=".1%"),
-            ],
-        )
+        chart = self._build_monthly_grid_chart(plot_df)
 
-        # Facet by month (3 rows x 4 columns)
-        chart = base.facet(
-            facet=alt.Facet(
-                "month_name:N",
-                title=None,
-                header=alt.Header(
-                    labelFontSize=11,
-                    labelAngle=0,
-                ),
-            ),
-            columns=4,
-        ).properties(
-            title=alt.TitleParams(
-                text=f"{self.meta.mast_name} 各月风向频率玫瑰图",
-                fontSize=16,
-                anchor="middle",
-            ),
-        ).configure_view(
-            strokeWidth=0.5,
-            stroke="#cccccc",
-        )
-
-        # Save with high resolution
-        chart.save(image_path, format="png", scale_factor=2)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        chart.savefig(image_path, format="png", dpi=150, bbox_inches="tight")
+        plt.close(chart)
 
         return image_path
 
     @override
-    def renderSummary(self) -> str:
+    def renderSummary(self) -> list["TypstParagraph"]:
         """Render Chinese narrative about seasonal wind patterns.
 
         Summarizes the dominant wind directions and seasonal variations.
@@ -173,9 +186,5 @@ class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, SingleMastMet
         dominant_sectors = sector_counts["dominant_sector"].to_list()[:3]
         sectors_str = "、".join(dominant_sectors)
 
-        return (
-            f"由图@fig-{self.get_or_compute_df_hashkey()} 可知，"
-            f"测风塔{self.meta.mast_name}在观测期间各月主导风向以{sectors_str}为主，"
-            f"反映了该测风塔的风能资源方向特征。"
-            f"各月风向频率玫瑰图显示，风向分布存在季节性变化特征。"
-        )
+        summary_text = f"{self.meta.mast_name}测风塔各月主导风向为{sectors_str}。"
+        return [TypstParagraph(text=summary_text)]

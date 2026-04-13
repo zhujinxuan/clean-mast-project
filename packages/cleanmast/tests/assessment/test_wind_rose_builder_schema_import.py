@@ -80,10 +80,11 @@ class TestWindRoseBuilderSchemaImport:
             "interpolation_marker",
             "frequency",
             "wind_power_density",
+            "energy_frequency",
         }
 
         assert correct_columns == expected_columns, (
-            f"Correct WindRoseSchema should have 8 columns: {expected_columns}, "
+            f"Correct WindRoseSchema should have 9 columns: {expected_columns}, "
             f"but got: {correct_columns}"
         )
 
@@ -247,6 +248,7 @@ class TestWindRoseCalculatorMonthColumns:
             "interpolation_marker",
             "frequency",
             "wind_power_density",
+            "energy_frequency",
         }
 
         actual_columns = set(result.data.columns)

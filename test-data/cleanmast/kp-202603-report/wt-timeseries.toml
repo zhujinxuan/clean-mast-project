@@ -1,0 +1,48 @@
+[[masts]]
+name = "L32261"
+csv_heights = [
+    100.0,
+    120.0,
+    125.0,
+    140.0,
+    160.0,
+    180.0,
+    200.0,
+]
+turbulence_heights = [
+    40.0,
+    50.0,
+    60.0,
+    70.0,
+    80.0,
+    90.0,
+    100.0,
+    120.0,
+    140.0,
+    160.0,
+    180.0,
+    200.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/L32261.parquet"
+
+[[masts]]
+name = "M245228"
+csv_heights = [
+    125.0,
+    140.0,
+    160.0,
+]
+turbulence_heights = [
+    30.0,
+    50.0,
+    70.0,
+    90.0,
+    110.0,
+    130.0,
+    140.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/M245228.parquet"

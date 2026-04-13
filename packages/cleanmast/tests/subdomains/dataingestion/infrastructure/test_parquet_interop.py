@@ -70,14 +70,14 @@ class TestJuliaInterop:
         assert len(result.sensors) == 2
 
         # Verify sensor metadata was preserved
-        ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed")
+        ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed" and s.stat_type == "avg")
         assert ws_sensor.height == 100.0
         assert ws_sensor.column_name == "WindSpeed_100m_avg [m/s]"
         assert ws_sensor.sensor_direction == "N"
         assert ws_sensor.stat_type == "avg"
         assert ws_sensor.unit == "m/s"
 
-        wd_sensor = next(s for s in result.sensors if s.sensor_type == "WindDirection")
+        wd_sensor = next(s for s in result.sensors if s.sensor_type == "WindDirection" and s.stat_type == "avg")
         assert wd_sensor.height == 100.0
         assert wd_sensor.sensor_direction == "N"
 
@@ -315,7 +315,7 @@ class TestRoundTrip:
 
         for orig_sensor, loaded_sensor in zip(sensors_original, ts_loaded.sensors):
             assert orig_sensor.column_name == loaded_sensor.column_name
-            assert orig_sensor.sensor_type == loaded_sensor.sensor_type
+            assert orig_sensor.sensor_type == loaded_sensor.sensor_type and orig_sensor.stat_type == loaded_sensor.stat_type
             assert orig_sensor.height == loaded_sensor.height
             assert orig_sensor.stat_type == loaded_sensor.stat_type
             assert orig_sensor.unit == loaded_sensor.unit

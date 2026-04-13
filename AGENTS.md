@@ -70,7 +70,7 @@ uv run python scripts/verify_baseline.py --package cleanmast  # Single package
 1. **ty** - Type checking
 2. **ruff** - Linting  
 3. **pytest** - Unit tests
-4. **dvc-verify** - Dataset verification
+4. **dvc-verify** - Dataset verification (10 min timeout for DVC experiments)
 
 **Output:** Per-package baseline files at `packages/{package}/baseline-{timestamp}.md`
 - Small errors (<500 chars): Inline in markdown

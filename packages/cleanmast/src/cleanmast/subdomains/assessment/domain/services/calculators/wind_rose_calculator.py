@@ -129,6 +129,7 @@ class WindRoseCalculator:
             month_sector_stats = df_with_sector_month.group_by(["month", "sector"]).agg([
                 pl.len().alias("count"),
                 (0.5 * air_density * pl.col(ws_col) ** 3).mean().alias("wind_power_density"),
+                (0.5 * air_density * pl.col(ws_col) ** 3).sum().alias("total_power"),
             ]).sort(["month", "sector"])
 
             # Calculate frequency per month based on valid (non-null) rows per month
@@ -153,9 +154,20 @@ class WindRoseCalculator:
                     "interpolation_marker": marker,
                     "frequency": frequency,
                     "wind_power_density": power_density,
+                    "total_power": row["total_power"],
                 })
 
-        return pl.DataFrame(rows)
+        result_df = pl.DataFrame(rows)
+
+        total_power = pl.col("total_power").sum().over(["month", "height"])
+        result_df = result_df.with_columns(
+            pl.when(total_power.is_null() | (total_power == 0))
+            .then(0.0)
+            .otherwise(pl.col("total_power") / total_power)
+            .alias("energy_frequency")
+        ).drop("total_power")
+
+        return result_df
 
     def _get_time_range(self, df: pl.DataFrame) -> str:
         """Get time range string from DataFrame.

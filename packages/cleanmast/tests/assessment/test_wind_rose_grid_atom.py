@@ -11,13 +11,18 @@ Tests cover wind rose grid atom functionality:
 
 from pathlib import Path
 
+import matplotlib.figure
 import numpy as np
 import polars as pl
 import pytest
 from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid import (
     SingleMastMonthlyWindRoseGridAtom,
 )
-from cleanmast.subdomains.assessment.domain.value_objects import SingleMastMeta
+from cleanmast.subdomains.assessment.domain.types import TypstParagraph, TypstTable
+from cleanmast.subdomains.assessment.domain.value_objects import (
+    SingleMastMeta,
+    get_height_display_name,
+)
 from cleanmast.subdomains.assessment.domain.value_objects import (
     SingleMastWindRoseSchema as WindRoseSchema,
 )
@@ -84,6 +89,8 @@ def sample_wind_rose_df() -> pl.DataFrame:
 
             frequency = base_freq + np.random.uniform(-0.01, 0.01)
             frequency = max(0.001, frequency)
+            wind_power_density = 500.0 + np.random.uniform(-100, 100)
+            energy_frequency = frequency * (wind_power_density / 500.0)
 
             rows.append({
                 "month": month_num,
@@ -93,7 +100,8 @@ def sample_wind_rose_df() -> pl.DataFrame:
                 "height": 100.0,
                 "interpolation_marker": None,
                 "frequency": frequency,
-                "wind_power_density": 500.0 + np.random.uniform(-100, 100),
+                "wind_power_density": wind_power_density,
+                "energy_frequency": energy_frequency,
             })
 
     return pl.DataFrame(rows)
@@ -136,6 +144,8 @@ def sample_wind_rose_df_multiple_heights() -> pl.DataFrame:
                     base_freq = 0.08
 
                 frequency = base_freq * height_factor
+                wind_power_density = 500.0 + (height - 100) * 2.0 + np.random.uniform(-50, 50)
+                energy_frequency = frequency * (wind_power_density / 500.0)
 
                 rows.append({
                     "month": month_num,
@@ -145,7 +155,8 @@ def sample_wind_rose_df_multiple_heights() -> pl.DataFrame:
                     "height": height,
                     "interpolation_marker": marker,
                     "frequency": frequency,
-                    "wind_power_density": 500.0 + (height - 100) * 2.0 + np.random.uniform(-50, 50),
+                    "wind_power_density": wind_power_density,
+                    "energy_frequency": energy_frequency,
                 })
 
     return pl.DataFrame(rows)
@@ -170,6 +181,7 @@ def sample_wind_rose_df_below_100m() -> pl.DataFrame:
                     "interpolation_marker": None,
                     "frequency": 0.25,
                     "wind_power_density": 450.0,
+                    "energy_frequency": 0.25 * (450.0 / 500.0),
                 })
 
     return pl.DataFrame(rows)
@@ -231,26 +243,22 @@ class TestSingleMastMonthlyWindRoseGridAtom:
         assert image_path.stat().st_size > 0
 
     def test_render_table(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test renderTable returns valid Typst table."""
+        """Test renderTable returns None by design."""
         table = wind_rose_grid_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "月份" in table
-        assert "主导风向" in table
-        assert "频率" in table
+
+        assert table is None
 
     def test_render_summary(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = wind_rose_grid_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "M01" in summary
-        assert "主导风向" in summary
-        assert "@fig-" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        # Verify summary content
+        summary_node = summary[0]
+        assert "测风塔" in summary_node.text
+        assert "M01" in summary_node.text
+        assert "主导风向" in summary_node.text
 
     def test_content_hash_consistency(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
         """Test that same data produces same hash."""
@@ -261,41 +269,33 @@ class TestSingleMastMonthlyWindRoseGridAtom:
         assert "SingleMastMonthlyWindRoseGridAtom_" in hash1
 
     def test_table_has_all_months(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test table includes all 12 months."""
+        """Test table is not rendered for this atom."""
         table = wind_rose_grid_atom.renderTable()
-        
-        # Should have all months
-        assert "1月" in table
-        assert "6月" in table
-        assert "12月" in table
+        assert table is None
 
     def test_table_has_dominant_sectors(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test table includes dominant sector information."""
         table = wind_rose_grid_atom.renderTable()
-        
-        # Should contain sector names
-        assert "N" in table or "NE" in table or "NW" in table or "S" in table
+        assert table is None
 
     def test_table_has_frequency_percentages(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test table includes frequency percentages."""
         table = wind_rose_grid_atom.renderTable()
-        
-        # Should contain percentage values
-        assert "%" in table
+        assert table is None
 
-    def test_summary_has_seasonal_patterns(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test summary includes seasonal pattern description."""
+    def test_summary_has_concise_format(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
+        """Test summary uses concise format without fluff."""
         summary = wind_rose_grid_atom.renderSummary()
+        summary_node = summary[0]
         
-        # Should mention seasonal characteristics
-        assert "季节性" in summary or "季节" in summary
+        assert "主导风向为" in summary_node.text
+        assert "反映了" not in summary_node.text
+        assert "季节性" not in summary_node.text
 
     def test_summary_has_dominant_sectors(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
         """Test summary includes dominant sectors list."""
         summary = wind_rose_grid_atom.renderSummary()
+        summary_node = summary[0]
         
-        # Should list dominant sectors
-        assert "、" in summary or "主导风向" in summary
+        assert "、" in summary_node.text or "主导风向" in summary_node.text
 
     def test_render_image_with_multiple_heights(
         self, wind_rose_grid_atom_multi_height: SingleMastMonthlyWindRoseGridAtom, tmp_path: Path
@@ -321,15 +321,98 @@ class TestSingleMastMonthlyWindRoseGridAtom:
         
         assert image_path.exists()
 
-    def test_figure_reference_in_summary(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        """Test that summary includes correct figure reference."""
+    def test_summary_has_content(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
         summary = wind_rose_grid_atom.renderSummary()
-        
-        # Should reference figure with hash key
-        assert "@fig-" in summary
-        # Extract hashkey to verify format
-        hashkey = wind_rose_grid_atom.get_or_compute_df_hashkey()
-        assert f"@fig-{hashkey}" in summary
+        summary_node = summary[0]
+
+        assert isinstance(summary_node, TypstParagraph)
+        assert "测风塔" in summary_node.text
+        assert "主导风向" in summary_node.text
+
+    def test_monthly_grid_angle_mapping(
+        self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom
+    ) -> None:
+        """Assert polar line angles follow correct sector mapping."""
+        plot_df = wind_rose_grid_atom.df.filter(pl.col("height") >= 100)
+        plot_df = plot_df.with_columns(
+            pl.struct(["height", "interpolation_marker"])
+            .map_elements(
+                lambda x: get_height_display_name(
+                    x["height"], x["interpolation_marker"]
+                )
+            )
+            .alias("height_display")
+        )
+        chart = wind_rose_grid_atom._build_monthly_grid_chart(plot_df)
+
+        ax = None
+        for candidate in chart.axes:
+            if candidate.get_lines():
+                ax = candidate
+                break
+
+        assert ax is not None, "Expected at least one polar axis with lines"
+        line = ax.get_lines()[0]
+        angles = np.asarray(line.get_xdata())
+
+        assert angles[0] == pytest.approx(0.0, abs=1e-5)
+        assert angles[4] == pytest.approx(np.pi / 2, abs=1e-5)
+        assert angles[0] == pytest.approx(angles[-1], abs=1e-5)
+        assert np.all(np.diff(angles[:-1]) >= -1e-6)
+
+    def test_monthly_grid_mark_type(
+        self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom
+    ) -> None:
+        """Assert the returned chart is a matplotlib Figure."""
+        plot_df = wind_rose_grid_atom.df.filter(pl.col("height") >= 100)
+        plot_df = plot_df.with_columns(
+            pl.struct(["height", "interpolation_marker"])
+            .map_elements(
+                lambda x: get_height_display_name(
+                    x["height"], x["interpolation_marker"]
+                )
+            )
+            .alias("height_display")
+        )
+        chart = wind_rose_grid_atom._build_monthly_grid_chart(plot_df)
+        assert isinstance(chart, matplotlib.figure.Figure)
+
+    def test_monthly_grid_facet_encoding(
+        self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom
+    ) -> None:
+        """Assert figure has 12 polar axes (one per month)."""
+        plot_df = wind_rose_grid_atom.df.filter(pl.col("height") >= 100)
+        plot_df = plot_df.with_columns(
+            pl.struct(["height", "interpolation_marker"])
+            .map_elements(
+                lambda x: get_height_display_name(
+                    x["height"], x["interpolation_marker"]
+                )
+            )
+            .alias("height_display")
+        )
+        chart = wind_rose_grid_atom._build_monthly_grid_chart(plot_df)
+        assert len(chart.axes) == 12
+
+    def test_monthly_grid_height_filter(
+        self,
+        wind_rose_grid_atom_multi_height: SingleMastMonthlyWindRoseGridAtom,
+    ) -> None:
+        """Assert height filter removes below-100m data."""
+        plot_df = wind_rose_grid_atom_multi_height.df.filter(pl.col("height") >= 100)
+        assert plot_df.filter(pl.col("height") < 100).is_empty()
+        plot_df = plot_df.with_columns(
+            pl.struct(["height", "interpolation_marker"])
+            .map_elements(
+                lambda x: get_height_display_name(
+                    x["height"], x["interpolation_marker"]
+                )
+            )
+            .alias("height_display")
+        )
+        chart = wind_rose_grid_atom_multi_height._build_monthly_grid_chart(plot_df)
+        assert chart is not None
+        assert plot_df.filter(pl.col("height") < 100).is_empty()
 
 
 # =============================================================================
@@ -389,6 +472,7 @@ class TestEdgeCases:
             "interpolation_marker": pl.Series([], dtype=pl.String),
             "frequency": pl.Series([], dtype=pl.Float64),
             "wind_power_density": pl.Series([], dtype=pl.Float64),
+            "energy_frequency": pl.Series([], dtype=pl.Float64),
         })
         
         atom = SingleMastMonthlyWindRoseGridAtom.create(
@@ -398,10 +482,10 @@ class TestEdgeCases:
         )
         
         table = atom.renderTable()
-        assert isinstance(table, str)
+        assert table is None or isinstance(table, TypstTable)
         
         summary = atom.renderSummary()
-        assert isinstance(summary, str)
+        assert isinstance(summary, list)
 
     def test_single_month_data(self, sample_mast_meta: SingleMastMeta) -> None:
         """Test atom with single month of data."""
@@ -415,6 +499,7 @@ class TestEdgeCases:
             "interpolation_marker": [None] * 16,
             "frequency": [0.06] * 16,
             "wind_power_density": [500.0] * 16,
+            "energy_frequency": [0.06] * 16,
         })
         
         atom = SingleMastMonthlyWindRoseGridAtom.create(
@@ -424,16 +509,19 @@ class TestEdgeCases:
         )
         
         table = atom.renderTable()
-        assert "1月" in table
-        
+        assert table is None
+
         summary = atom.renderSummary()
-        assert isinstance(summary, str)
-        assert "测风塔" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert "测风塔" in summary[0].text
 
     def test_unequal_frequencies(self, sample_mast_meta: SingleMastMeta) -> None:
         """Test atom with very uneven frequency distribution."""
         rows = []
         for sector in range(16):
+            frequency = 0.50 if sector == 0 else 0.033
+            wind_power_density = 800.0 if sector == 0 else 400.0
             rows.append({
                 "month": 1,
                 "month_name": "1月",
@@ -442,8 +530,9 @@ class TestEdgeCases:
                                "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"][sector],
                 "height": 100.0,
                 "interpolation_marker": None,
-                "frequency": 0.50 if sector == 0 else 0.033,
-                "wind_power_density": 800.0 if sector == 0 else 400.0,
+                "frequency": frequency,
+                "wind_power_density": wind_power_density,
+                "energy_frequency": frequency * (wind_power_density / 500.0),
             })
 
         df = pl.DataFrame(rows)
@@ -455,8 +544,7 @@ class TestEdgeCases:
         )
         
         table = atom.renderTable()
-        assert "N" in table
-        assert "50.0%" in table or "50%" in table
+        assert table is None
 
     def test_all_same_frequency(self, sample_mast_meta: SingleMastMeta) -> None:
         """Test atom with all sectors having same frequency."""
@@ -472,6 +560,7 @@ class TestEdgeCases:
                 "interpolation_marker": None,
                 "frequency": 0.0625,
                 "wind_power_density": 500.0,
+                "energy_frequency": 0.0625 * (500.0 / 500.0),
             })
 
         df = pl.DataFrame(rows)
@@ -483,8 +572,7 @@ class TestEdgeCases:
         )
 
         table = atom.renderTable()
-        assert "1月" in table
-        assert "N" in table
+        assert table is None
 
     def test_data_with_null_interpolation_marker(self, sample_mast_meta: SingleMastMeta) -> None:
         """Test atom handles null interpolation markers correctly."""
@@ -499,6 +587,7 @@ class TestEdgeCases:
                 "interpolation_marker": None,
                 "frequency": 0.125,
                 "wind_power_density": 500.0,
+                "energy_frequency": 0.125 * (500.0 / 500.0),
             })
 
         df = pl.DataFrame(rows)
@@ -510,10 +599,11 @@ class TestEdgeCases:
         )
 
         table = atom.renderTable()
-        assert isinstance(table, str)
+        assert table is None
 
         summary = atom.renderSummary()
-        assert isinstance(summary, str)
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
 
 
 # =============================================================================

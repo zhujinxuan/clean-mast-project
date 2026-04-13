@@ -8,22 +8,27 @@ This module provides the use case for generating representative timeseries repor
 from processed mast data.
 """
 
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Callable
 
 from cleanmast.infrastructure.path_utils import to_posix_path
-from cleanmast.infrastructure.typst_ir.serializer import serialize
 from cleanmast.subdomains.assessment.application.services.report_generation_service import (
     ReportGenerationService,
 )
+from cleanmast.subdomains.assessment.domain.types import TypstHeading, TypstSection
+from cleanmast.subdomains.assessment.domain.value_objects.analysis_input import (
+    SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_collection import (
+    AtomCollection,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.rep_ts_report_config import (
+    CONTAINER_SUBSECTION_TYPES,
     RepTsReportConfig,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
-)
-from cleanmast.subdomains.assessment.infrastructure.compiler import (
-    compile_typst_to_docx,
-    compile_typst_to_pdf,
 )
 from cleanmast.subdomains.assessment.infrastructure.report_builder import (
     AssessmentReportBuilder as ReportBuilder,
@@ -31,22 +36,38 @@ from cleanmast.subdomains.assessment.infrastructure.report_builder import (
 from cleanmast.subdomains.assessment.infrastructure.report_builder import (
     BuildResult,
 )
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+
+
+@dataclass(frozen=True)
+class HeadingSection:
+    """Minimal section that renders only a heading (no content)."""
+
+    title: str
+    atoms: AtomCollection = field(default_factory=lambda: AtomCollection.from_dict({}))
+    subsections: list[Any] = field(default_factory=list)
+
+    def render_ir(self, images_dir: Path) -> TypstSection:
+        return TypstSection(
+            heading=TypstHeading(text=self.title),
+            body=[],
+            subsections=[s.render_ir(images_dir) for s in self.subsections],
+        )
 
 
 def generate_report(
     config_path: str,
     no_pdf: bool = False,
     no_docx: bool = False,
-    use_ir_path: bool = True,
 ) -> BuildResult:
     """Generate representative timeseries report from config.
 
     This use case:
     1. Reads the TOML config file from the given path
-    2. For each mast, loads the parquet file specified in config
+    2. For each section, iterates over timeseries subsections and their nested leaf subsections
     3. Uses ReportGenerationService to process data and create report sections
-    4. Generates a complete Typst report with images and tables
+    4. Generates a complete Typst report with images and tables using IR-based rendering
 
     Prerequisites:
     - Config file (rep-ts-report.toml) must exist at the given path
@@ -56,16 +77,13 @@ def generate_report(
         config_path: Path to the TOML config file (e.g., rep-ts-report.toml)
         no_pdf: Skip PDF generation
         no_docx: Skip DOCX generation
-        use_ir_path: Use new IR-based path with serialization at boundary
-            (default: True). When True, uses build_typst() + serialize().
-            When False, uses the legacy build() path.
 
     Returns:
         Dict with report generation results including paths
 
     Raises:
         FileNotFoundError: If config file not found
-        ValueError: If no masts found in config
+        ValueError: If a document section contains a non-timeseries subsection directly
     """
     config_file_path = Path(config_path)
     base_dir = config_file_path.parent
@@ -78,128 +96,134 @@ def generate_report(
 
     config = RepTsReportConfig.from_toml(config_file_path)
 
-    masts_config = config.masts
-    if not masts_config:
-        raise ValueError("No masts found in config file")
-
     output_dir = base_dir / "rep-ts"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    service = ReportGenerationService()
-    builder = ReportBuilder("代表年测风报告", output_dir)
+    service = ReportGenerationService(project_dir=base_dir)
+    report_title = (
+        config.document.sections[0].title
+        if config.document.sections
+        else "风资源评估报告"
+    )
+    builder = ReportBuilder(report_title, output_dir)
 
-    # Storage for all sections (added in canonical order per mast)
+    # Storage for all sections (added in canonical order per leaf subsection)
     all_sections: list = []
 
-    for mast in masts_config:
-        mast_name = mast.name
-        air_density = mast.air_density
+    # Build subsection type → method mapping
+    # Each entry is a tuple of (requires_input_data, method)
+    subsection_method_map: dict[str, tuple[bool, Callable]] = {
+        "air_density": (True, service.generate_air_density_section),
+        "representative_year_calibration": (True, service.generate_representative_year_calibration_section),
+        "wind_rose": (False, service.generate_wind_rose_section),
+        "vertical_profile": (True, service.generate_vertical_profile_section),
+        "wind_frequency": (True, service.generate_wind_frequency_section),
+        "weibull": (True, service.generate_weibull_section),
+        "turbulence": (True, service.generate_turbulence_section),
+        "temporal": (True, service.generate_temporal_section),
+        "fifty_year_max_wind": (True, service.generate_fifty_year_max_wind_section),
+    }
 
-        timeseries = load_timeseries(mast.input, to_posix_path(base_dir))
+    # Process each document section
+    for section in config.document.sections:
+        for subsection in section.subsections:
+            if subsection.type not in CONTAINER_SUBSECTION_TYPES:
+                raise ValueError(
+                    f"Document sections may only contain container subsections ("
+                    f"{', '.join(sorted(CONTAINER_SUBSECTION_TYPES))}), "
+                    f"got '{subsection.type}'. Move analysis subsections inside a timeseries container."
+                )
+            if not subsection.masts:
+                continue
 
-        meta = SingleMastMeta(
-            mast_name=mast_name,
-            air_density=air_density,
-            caption=f"{mast_name} 测风数据分析",
-            width="80%",
-        )
+            if subsection.type == "fifty_year_max_wind":
+                fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+                for mast in subsection.masts:
+                    timeseries = load_timeseries(mast.input, to_posix_path(base_dir))
+                    meta = SingleMastMeta(
+                        mast_name=mast.name,
+                        air_density=mast.air_density,
+                        width="80%",
+                    )
+                    input_data = service._create_analysis_input(timeseries, meta, mast.air_density)
+                    fifty_input_items.append((input_data, meta))
 
-        # Create input_data once per mast for efficiency
-        input_data = service._create_analysis_input(timeseries, meta, air_density)
+                section_result = service.generate_fifty_year_max_wind_section(fifty_input_items)
+                if section_result is not None:
+                    all_sections.append(section_result)
+                continue
 
-        # Check for wind direction sensors (needed for wind_rose)
-        wd_sensors = [
-            s for s in timeseries.sensors
-            if s.sensor_type == "WindDirection" and s.stat_type == "avg"
-        ]
-        has_wd_sensors = len(wd_sensors) > 0
+            if not subsection.subsections:
+                continue
 
-        # 1. Monthly Wind Section
-        if config.subsections.monthly_wind:
-            wind_section = service.generate_monthly_wind_section(timeseries, meta)
-            all_sections.append(wind_section)
+            leaf_sections: list[TypstSection] = []
 
-        # 2. Monthly Power Section
-        if config.subsections.monthly_power:
-            power_section = service.generate_monthly_power_section(
-                timeseries, meta, air_density
-            )
-            all_sections.append(power_section)
+            # Collect data from all masts for multi-mast subsection generation
+            ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
+            input_items = []
+            any_has_wd_sensors = False
 
-        # 3. Wind Rose Section (requires wind direction sensors)
-        if config.subsections.wind_rose and has_wd_sensors:
-            wind_rose_section = service.generate_wind_rose_section(timeseries, meta)
-            all_sections.append(wind_rose_section)
+            for mast in subsection.masts:
+                timeseries = load_timeseries(mast.input, to_posix_path(base_dir))
+                meta = SingleMastMeta(
+                    mast_name=mast.name,
+                    air_density=mast.air_density,
+                    width="80%",
+                )
+                input_data = service._create_analysis_input(timeseries, meta, mast.air_density)
+                if _has_wind_direction_sensors(timeseries):
+                    any_has_wd_sensors = True
 
-        # 4. Vertical Profile Section
-        if config.subsections.vertical_profile:
-            vertical_profile_section = service.generate_vertical_profile_section(
-                input_data, meta
-            )
-            all_sections.append(vertical_profile_section)
+                ts_items.append((timeseries, meta))
+                input_items.append((input_data, meta))
 
-        # 5. Wind Frequency Section
-        if config.subsections.wind_frequency:
-            wind_frequency_section = service.generate_wind_frequency_section(
-                input_data, meta
-            )
-            all_sections.append(wind_frequency_section)
+            for leaf_subsection in subsection.subsections:
+                subsection_type = leaf_subsection.type
 
-        # 6. Weibull Section
-        if config.subsections.weibull:
-            weibull_section = service.generate_weibull_section(input_data, meta)
-            all_sections.append(weibull_section)
+                # Special case: wind_rose requires wind direction sensors
+                if subsection_type == "wind_rose" and not any_has_wd_sensors:
+                    continue
 
-        # 7. Turbulence Section
-        if config.subsections.turbulence:
-            turbulence_section = service.generate_turbulence_section(input_data, meta)
-            all_sections.append(turbulence_section)
+                if subsection_type not in subsection_method_map:
+                    continue
 
-        # 8. Temporal Section
-        if config.subsections.temporal:
-            temporal_section = service.generate_temporal_section(input_data, meta)
-            all_sections.append(temporal_section)
+                requires_input_data, method = subsection_method_map[subsection_type]
+
+                if requires_input_data:
+                    section_result = method(input_items)
+                else:
+                    section_result = method(ts_items)
+
+                if section_result is not None:
+                    leaf_sections.append(section_result)
+
+            if leaf_sections:
+                all_sections.append(HeadingSection(
+                    title=subsection.title or "",
+                    subsections=leaf_sections,
+                ))
 
     # Add all sections to builder
     for section in all_sections:
         builder.add_section(section)
 
-    if use_ir_path:
-        doc = builder.build_typst(compile_pdf=False, compile_docx=False)
-        typst_markup = serialize(doc)
-
-        preamble = '''// Chinese text support
-#set text(font: ("Linux Libertine", "Source Han Serif SC"))
-#set heading(numbering: "1.")
-
-'''
-        full_markup = preamble + typst_markup
-
-        report_path = output_dir / "report.typ"
-        report_path.write_text(full_markup, encoding="utf-8")
-
-        results: BuildResult = {"typ": report_path}
-        compile_pdf = not no_pdf
-        compile_docx = not no_docx
-
-        if compile_pdf:
-            try:
-                results["pdf"] = compile_typst_to_pdf(report_path, output_dir)
-            except RuntimeError as e:
-                raise RuntimeError(
-                    f"PDF generation failed: {e}\n"
-                    f"Typst file created at: {report_path}"
-                ) from e
-
-        if compile_docx:
-            try:
-                results["docx"] = compile_typst_to_docx(report_path, output_dir)
-            except (ImportError, RuntimeError) as e:
-                results["docx_warning"] = str(e)
-
-        return results
-
     return builder.build(
         compile_pdf=not no_pdf,
         compile_docx=not no_docx,
     )
+
+
+def _has_wind_direction_sensors(timeseries: TimeSeriesData) -> bool:
+    """Check if timeseries has wind direction sensors.
+
+    Args:
+        timeseries: TimeSeriesData with sensors
+
+    Returns:
+        True if wind direction sensors exist
+    """
+    wd_sensors = [
+        s for s in timeseries.sensors
+        if s.sensor_type == "WindDirection" and s.stat_type == "avg"
+    ]
+    return len(wd_sensors) > 0

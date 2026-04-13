@@ -11,6 +11,12 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose impor
     SingleMastMonthlyWindFrequencyRoseAtom,
     SingleMastWindPowerRoseAtom,
 )
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid import (
+    SingleMastMonthlyWindRoseGridAtom,
+)
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_power_grid import (
+    SingleMastMonthlyWindPowerRoseGridAtom,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
     AnalysisResult,
 )
@@ -26,7 +32,7 @@ class WindRoseSectionBuilder:
     """Builds wind rose section from analysis results into report atoms.
 
     Bridges the analysis layer (WindRoseCalculator) with the reporting layer,
-    converting analysis results into the 2 wind rose-related report atoms.
+    converting analysis results into the 4 wind rose-related report atoms.
     """
 
     def build(
@@ -41,9 +47,11 @@ class WindRoseSectionBuilder:
             results: List of wind rose results, one per height
 
         Returns:
-            List of 2 report atoms in order:
+            List of 4 report atoms in order:
             1. SingleMastMonthlyWindFrequencyRoseAtom (wind frequency by direction sector)
             2. SingleMastWindPowerRoseAtom (wind power density by direction sector)
+            3. SingleMastMonthlyWindRoseGridAtom (monthly 3x4 grid of wind frequency roses)
+            4. SingleMastMonthlyWindPowerRoseGridAtom (monthly 3x4 grid of wind power density roses)
         """
         # Concatenate all results into single DataFrame
         df = pl.concat([r.data for r in results])
@@ -56,6 +64,16 @@ class WindRoseSectionBuilder:
                 meta=meta,
             ),
             SingleMastWindPowerRoseAtom.create(
+                schema=WindRoseSchema,
+                df=df,
+                meta=meta,
+            ),
+            SingleMastMonthlyWindRoseGridAtom.create(
+                schema=WindRoseSchema,
+                df=df,
+                meta=meta,
+            ),
+            SingleMastMonthlyWindPowerRoseGridAtom.create(
                 schema=WindRoseSchema,
                 df=df,
                 meta=meta,

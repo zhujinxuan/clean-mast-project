@@ -1,0 +1,19 @@
+# Tower Shading Configuration
+# Merges wind speed sensors at nearby heights (within 2m) to handle tower shading effects
+
+[[masts]]
+name = "L32261"
+
+    [masts.output]
+    data = "./tower-shading/L32261.parquet"
+
+    [masts.input]
+    data = "./clean\\L32261.parquet"
+[[masts]]
+name = "M245228"
+
+    [masts.output]
+    data = "./tower-shading/M245228.parquet"
+
+    [masts.input]
+    data = "./clean\\M245228.parquet"

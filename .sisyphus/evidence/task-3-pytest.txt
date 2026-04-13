@@ -1,6 +1,17 @@
-Pytest results for task-3 (temporal fixes)
-Command: uv run pytest packages/cleanmast/tests/ -x -q
-Result: 32 passed, 1 failed
-Note: The 1 failure is pre-existing and unrelated to temporal fixes
-      (ColumnNotFoundError: mean_speed in monthly_pattern.py atom)
-Timestamp: 2025-04-02
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\turbulence-small-fix\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\zhu_j\workspace\developing\turbulence-small-fix\packages\cleanmast
+configfile: pyproject.toml
+plugins: cov-7.1.0
+collecting ... collected 7 items
+
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_high_turbulence PASSED [ 14%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_medium_turbulence PASSED [ 28%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_low_turbulence PASSED [ 42%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_exactly_at_a_threshold PASSED [ 57%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_between_b_and_c PASSED [ 71%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_insufficient_data PASSED [ 85%]
+packages\cleanmast\tests\assessment\test_turbulence_calculator.py::TestIECCategoryClassification::test_classify_iec_category_with_none_values PASSED [100%]
+
+============================== 7 passed in 0.43s ==============================

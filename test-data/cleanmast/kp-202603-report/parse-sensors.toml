@@ -1,0 +1,26 @@
+# Parse Sensors Configuration
+# This file defines which data files to process and their sensor formats
+# Output data is stored as Parquet files in the raw/ directory
+
+[[mesos]]
+name = "ERA5Lidar"
+sensor = "formats/sensor/freemeso-meso.toml"
+input = "mesos\\ERA5Lidar.txt"
+
+    [mesos.output]
+    data = "./raw/ERA5Lidar.parquet"
+
+[[masts]]
+name = "L32261"
+sensor = "formats/sensor/lidar.toml"
+input = "masts\\L32261.csv"
+
+    [masts.output]
+    data = "./raw/L32261.parquet"
+[[masts]]
+name = "M245228"
+sensor = "formats/sensor/nrg.toml"
+input = "masts\\M245228.csv"
+
+    [masts.output]
+    data = "./raw/M245228.parquet"

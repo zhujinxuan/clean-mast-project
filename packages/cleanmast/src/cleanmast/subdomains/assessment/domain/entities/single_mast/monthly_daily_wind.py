@@ -12,6 +12,10 @@ import polars as pl
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -46,43 +50,21 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, SingleMas
     - Summary: Chinese description of daily wind patterns
     """
 
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 月日风速分布图"
+
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 月日风速分布表"
+
     @override
-    def renderTable(self) -> str:
-        """Render summary table of monthly wind statistics.
+    def renderTable(self) -> TypstTable | None:
+        """Render summary table of monthly wind statistics as TypstTable IR node.
 
-        Shows each month with its average wind speed and diurnal range.
+        This atom is figure-only, so no table is rendered.
         """
-        # Calculate monthly statistics (using mean_speed which analyzer produces)
-        monthly_stats = (
-            self.df.group_by("month")
-            .agg([
-                pl.col("mean_speed").mean().alias("avg_speed"),
-                pl.col("mean_speed").max().alias("max_speed"),
-                pl.col("mean_speed").min().alias("min_speed"),
-                (pl.col("mean_speed").max() - pl.col("mean_speed").min()).alias("diurnal_range"),
-            ])
-            .sort("month")
-        )
-
-        rows = []
-        for row in monthly_stats.iter_rows(named=True):
-            month_name = _MONTH_NAMES.get(row["month"], f"{row['month']}月")
-            rows.append(
-                f'  [{month_name}], [{row["avg_speed"]:.2f}], '
-                f'[{row["max_speed"]:.2f}], [{row["min_speed"]:.2f}], '
-                f'[{row["diurnal_range"]:.2f}],'
-            )
-
-        return f"""#table(
-  columns: (auto, auto, auto, auto, auto),
-  inset: 8pt,
-  align: center,
-  table.header(
-    [月份], [平均风速(m/s)], [最大风速(m/s)], [最小风速(m/s)], [日较差(m/s)]
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return None
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -128,7 +110,7 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, SingleMas
         # Calculate hourly averages for smoother curves
         hourly_avg = (
             plot_df.group_by(["month", "month_name", "hour", "height_display"])
-            .agg(pl.col("wind_speed").mean().alias("wind_speed"))
+            .agg(pl.col("mean_speed").mean().alias("wind_speed"))
             .sort(["month", "hour", "height_display"])
         )
 
@@ -208,61 +190,9 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, SingleMas
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Render Chinese narrative about daily wind patterns.
+    def renderSummary(self) -> list[TypstParagraph]:
+        """Render Chinese narrative about daily wind patterns as TypstParagraph IR node.
 
-        Summarizes the diurnal wind speed variations and seasonal characteristics.
+        This atom is figure-only, so no summary is rendered.
         """
-        # Handle empty DataFrame case
-        if self.df.is_empty():
-            return (
-                f"由图@fig-{self.get_or_compute_df_hashkey()} 可知，"
-                f"测风塔{self.meta.mast_name}暂无有效的月日变化数据可供分析。"
-            )
-
-        # Calculate hourly averages across all months
-        hourly_pattern = (
-            self.df.group_by("hour")
-            .agg(pl.col("mean_speed").mean().alias("avg_speed"))
-            .sort("hour")
-        )
-
-        # Handle case where grouped data is empty or all null
-        if hourly_pattern.is_empty() or hourly_pattern["avg_speed"].null_count() == len(hourly_pattern):
-            return (
-                f"由图@fig-{self.get_or_compute_df_hashkey()} 可知，"
-                f"测风塔{self.meta.mast_name}暂无有效的月日变化数据可供分析。"
-            )
-
-        # Find peak and minimum hours
-        max_row = hourly_pattern.filter(
-            pl.col("avg_speed") == pl.col("avg_speed").max()
-        ).row(0, named=True)
-        min_row = hourly_pattern.filter(
-            pl.col("avg_speed") == pl.col("avg_speed").min()
-        ).row(0, named=True)
-
-        peak_hour = max_row["hour"]
-        min_hour = min_row["hour"]
-
-        # Calculate monthly averages to identify windy/quiet months
-        monthly_avg = (
-            self.df.group_by("month")
-            .agg(pl.col("mean_speed").mean().alias("avg_speed"))
-            .sort("avg_speed", descending=True)
-        )
-
-        windiest_month = monthly_avg.row(0, named=True)["month"]
-        calmest_month = monthly_avg.row(-1, named=True)["month"]
-
-        windiest_name = _MONTH_NAMES.get(windiest_month, f"{windiest_month}月")
-        calmest_name = _MONTH_NAMES.get(calmest_month, f"{calmest_month}月")
-
-        return (
-            f"由图@fig-{self.get_or_compute_df_hashkey()} 可知，"
-            f"测风塔{self.meta.mast_name}在观测期间各月风速呈现明显的日变化特征。"
-            f"一般而言，风速在{peak_hour}:00左右达到峰值，在{min_hour}:00左右达到谷值，"
-            f"这种日变化规律与大气边界层的发展密切相关。"
-            f"从季节分布来看，{windiest_name}风速较大，{calmest_name}风速相对较小，"
-            f"反映了该地区风能资源的季节性变化特征。"
-        )
+        return []

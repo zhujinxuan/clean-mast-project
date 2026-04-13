@@ -1,13 +1,14 @@
 """Tests for wind temporal pattern atoms.
 
-Tests cover all 7 temporal pattern atoms:
-- SingleMastWindTimeseriesAtom
+Tests cover all 6 temporal pattern atoms:
 - SingleMastDailyPatternAtom
 - SingleMastDailyPowerPatternAtom
 - SingleMastMonthlyPatternAtom
 - SingleMastMonthlyPowerPatternAtom
 - SingleMastMonthlyDailyWindAtom
 - SingleMastMonthlyDailyPowerAtom
+
+SingleMastWindTimeseriesAtom is tested independently.
 """
 
 from datetime import datetime, timedelta
@@ -38,9 +39,17 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries impo
     SingleMastWindTimeseriesAtom,
 )
 from cleanmast.subdomains.assessment.domain.value_objects import SingleMastMeta
+from cleanmast.subdomains.assessment.domain.value_objects.single_mast.monthly_wind import (
+    SingleMastMonthlyWindAtom,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.single_mast.monthly_wind_speed import (
+    MonthlyWindSpeedAtom,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
+    MonthlyWindSchema,
     TemporalPatternSchema,
 )
+from typst_ir import TypstParagraph, TypstTable
 
 # =============================================================================
 # Fixtures
@@ -193,6 +202,154 @@ def sample_monthly_daily_df_full() -> pl.DataFrame:
 
 
 @pytest.fixture
+def sample_monthly_pattern_agree_df() -> pl.DataFrame:
+    """Create monthly pattern DataFrame where both heights agree on peak/min months."""
+    rows = []
+    base_time = datetime(2023, 1, 15)
+
+    for height in [100.0, 120.0]:
+        marker = "外推" if height > 100 else None
+        for month in range(1, 13):
+            if month == 4:
+                speed = 10.0
+            elif month == 7:
+                speed = 4.0
+            else:
+                speed = 7.0
+
+            power = 0.5 * 1.225 * (speed ** 3)
+
+            rows.append({
+                "timestamp": base_time.replace(month=month),
+                "hour": 0,
+                "month": month,
+                "wind_speed": None,
+                "wind_power": None,
+                "height": height,
+                "mean_speed": speed,
+                "mean_power": power,
+                "interpolation_marker": marker,
+            })
+
+    return pl.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_monthly_pattern_disagree_df() -> pl.DataFrame:
+    """Create monthly pattern DataFrame where heights disagree on peak/min months."""
+    rows = []
+    base_time = datetime(2023, 1, 15)
+
+    for height in [100.0, 120.0]:
+        marker = "外推" if height > 100 else None
+        for month in range(1, 13):
+            if height == 100.0:
+                if month == 4:
+                    speed = 10.0
+                elif month == 7:
+                    speed = 4.0
+                else:
+                    speed = 7.0
+            else:
+                if month == 5:
+                    speed = 10.0
+                elif month == 8:
+                    speed = 4.0
+                else:
+                    speed = 7.0
+
+            power = 0.5 * 1.225 * (speed ** 3)
+
+            rows.append({
+                "timestamp": base_time.replace(month=month),
+                "hour": 0,
+                "month": month,
+                "wind_speed": None,
+                "wind_power": None,
+                "height": height,
+                "mean_speed": speed,
+                "mean_power": power,
+                "interpolation_marker": marker,
+            })
+
+    return pl.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_daily_pattern_agree_df() -> pl.DataFrame:
+    """Create daily pattern DataFrame where both heights agree on peak/min hours."""
+    rows = []
+    base_time = datetime(2023, 1, 1)
+
+    for height in [100.0, 120.0]:
+        for hour in range(24):
+            if hour == 14:
+                speed = 10.0
+            elif hour == 8:
+                speed = 4.0
+            else:
+                speed = 7.0
+
+            power = 0.5 * 1.225 * (speed ** 3)
+            marker = "外推" if height > 100 else None
+
+            rows.append({
+                "timestamp": base_time + timedelta(hours=hour),
+                "hour": hour,
+                "month": 1,
+                "wind_speed": None,
+                "wind_power": None,
+                "height": height,
+                "mean_speed": speed,
+                "mean_power": power,
+                "interpolation_marker": marker,
+            })
+
+    return pl.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_daily_pattern_disagree_df() -> pl.DataFrame:
+    """Create daily pattern DataFrame where heights disagree on peak/min hours."""
+    rows = []
+    base_time = datetime(2023, 1, 1)
+
+    for height in [100.0, 120.0]:
+        for hour in range(24):
+            if height == 100.0:
+                if hour == 14:
+                    speed = 10.0
+                elif hour == 8:
+                    speed = 4.0
+                else:
+                    speed = 7.0
+            else:
+                if hour == 16:
+                    speed = 10.0
+                elif hour == 6:
+                    speed = 4.0
+                else:
+                    speed = 7.0
+
+            power = 0.5 * 1.225 * (speed ** 3)
+            marker = "外推" if height > 100 else None
+
+            rows.append({
+                "timestamp": base_time + timedelta(hours=hour),
+                "hour": hour,
+                "month": 1,
+                "wind_speed": None,
+                "wind_power": None,
+                "height": height,
+                "mean_speed": speed,
+                "mean_power": power,
+                "interpolation_marker": marker,
+            })
+
+    return pl.DataFrame(rows)
+
+
+@pytest.fixture
 def timeseries_atom(
     sample_timeseries_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
@@ -283,6 +440,156 @@ def monthly_daily_power_atom(
     )
 
 
+@pytest.fixture
+def sample_monthly_wind_df() -> pl.DataFrame:
+    """Create sample monthly wind DataFrame for monthly wind atoms."""
+    rows = []
+
+    for height in [100.0, 120.0]:
+        marker = "外推" if height > 100 else None
+        for month in range(1, 13):
+            rows.append({
+                "month": month,
+                "height": height,
+                "interpolation_marker": marker,
+                "wind_speed_mean": 5.0 + month * 0.2,
+                "wind_speed_max": 10.0 + month * 0.3,
+                "wind_speed_min": 2.0 + month * 0.1,
+            })
+
+    return pl.DataFrame(rows)
+
+
+@pytest.fixture
+def monthly_wind_atom(
+    sample_monthly_wind_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastMonthlyWindAtom:
+    """Create a SingleMastMonthlyWindAtom for testing."""
+    return SingleMastMonthlyWindAtom.create(
+        schema=MonthlyWindSchema,
+        df=sample_monthly_wind_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def monthly_wind_speed_atom(
+    sample_monthly_wind_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> MonthlyWindSpeedAtom:
+    """Create a MonthlyWindSpeedAtom for testing."""
+    return MonthlyWindSpeedAtom.create(
+        schema=MonthlyWindSchema,
+        df=sample_monthly_wind_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def monthly_pattern_agree_atom(
+    sample_monthly_pattern_agree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastMonthlyPatternAtom:
+    """Create a SingleMastMonthlyPatternAtom with agreeing heights."""
+    return SingleMastMonthlyPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_monthly_pattern_agree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def monthly_power_pattern_agree_atom(
+    sample_monthly_pattern_agree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastMonthlyPowerPatternAtom:
+    """Create a SingleMastMonthlyPowerPatternAtom with agreeing heights."""
+    return SingleMastMonthlyPowerPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_monthly_pattern_agree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def monthly_pattern_disagree_atom(
+    sample_monthly_pattern_disagree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastMonthlyPatternAtom:
+    """Create a SingleMastMonthlyPatternAtom with disagreeing heights."""
+    return SingleMastMonthlyPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_monthly_pattern_disagree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def monthly_power_pattern_disagree_atom(
+    sample_monthly_pattern_disagree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastMonthlyPowerPatternAtom:
+    """Create a SingleMastMonthlyPowerPatternAtom with disagreeing heights."""
+    return SingleMastMonthlyPowerPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_monthly_pattern_disagree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def daily_pattern_agree_atom(
+    sample_daily_pattern_agree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastDailyPatternAtom:
+    """Create a SingleMastDailyPatternAtom with agreeing heights."""
+    return SingleMastDailyPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_daily_pattern_agree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def daily_power_pattern_agree_atom(
+    sample_daily_pattern_agree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastDailyPowerPatternAtom:
+    """Create a SingleMastDailyPowerPatternAtom with agreeing heights."""
+    return SingleMastDailyPowerPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_daily_pattern_agree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def daily_pattern_disagree_atom(
+    sample_daily_pattern_disagree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastDailyPatternAtom:
+    """Create a SingleMastDailyPatternAtom with disagreeing heights."""
+    return SingleMastDailyPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_daily_pattern_disagree_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
+def daily_power_pattern_disagree_atom(
+    sample_daily_pattern_disagree_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> SingleMastDailyPowerPatternAtom:
+    """Create a SingleMastDailyPowerPatternAtom with disagreeing heights."""
+    return SingleMastDailyPowerPatternAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_daily_pattern_disagree_df,
+        meta=sample_mast_meta,
+    )
+
+
 # =============================================================================
 # Test SingleMastWindTimeseriesAtom
 # =============================================================================
@@ -303,20 +610,20 @@ class TestSingleMastWindTimeseriesAtom:
         """Test renderTable returns non-empty Typst table."""
         table = timeseries_atom.renderTable()
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "高度" in table
-        assert "平均风速" in table
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "高度" in table.headers
+        assert any("平均风速" in h for h in table.headers)
 
     def test_render_summary(self, timeseries_atom: SingleMastWindTimeseriesAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = timeseries_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "风速时间序列" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert len(summary[0].text) > 0
+        assert "测风塔" in summary[0].text
+        assert "风速时间序列" in summary[0].text
 
     def test_content_hash_consistency(self, timeseries_atom: SingleMastWindTimeseriesAtom) -> None:
         """Test that same data produces same hash."""
@@ -354,22 +661,21 @@ class TestSingleMastDailyPatternAtom:
         """Test renderTable returns non-empty Typst table with 24 hours."""
         table = daily_pattern_atom.renderTable()
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "小时" in table
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "小时" in table.headers
         # Should have 24 hour rows
-        assert table.count(":00") == 24
+        assert len(table.data) == 24
 
     def test_render_summary(self, daily_pattern_atom: SingleMastDailyPatternAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = daily_pattern_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "日变化风速" in summary
-        assert "风速峰值" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert len(summary[0].text) > 0
+        assert "测风塔" in summary[0].text
+        assert "日平均风速" in summary[0].text
 
     def test_content_hash_consistency(self, daily_pattern_atom: SingleMastDailyPatternAtom) -> None:
         """Test that same data produces same hash."""
@@ -400,21 +706,19 @@ class TestSingleMastDailyPowerPatternAtom:
         """Test renderTable returns non-empty Typst table with power data."""
         table = daily_power_pattern_atom.renderTable()
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "小时" in table
-        assert "W/m" in table  # Power density unit
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "小时" in table.headers
 
     def test_render_summary(self, daily_power_pattern_atom: SingleMastDailyPowerPatternAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = daily_power_pattern_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "日变化风功率密度" in summary
-        assert "风功率密度峰值" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert len(summary[0].text) > 0
+        assert "测风塔" in summary[0].text
+        assert "日平均风功率密度" in summary[0].text
 
     def test_content_hash_consistency(self, daily_power_pattern_atom: SingleMastDailyPowerPatternAtom) -> None:
         """Test that same data produces same hash."""
@@ -442,26 +746,24 @@ class TestSingleMastMonthlyPatternAtom:
         assert image_path.stat().st_size > 0
 
     def test_render_table(self, monthly_pattern_atom: SingleMastMonthlyPatternAtom) -> None:
-        """Test renderTable returns non-empty Typst table with 12 months."""
+        """Test renderTable returns non-empty Typst table with 13 rows including average."""
         table = monthly_pattern_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "月份" in table
-        # Should have 12 month rows
-        for month in range(1, 13):
-            assert f"{month}月" in table
+
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "月份" in table.headers
+        assert len(table.data) == 13
+        assert table.data[0][0] == "平均"
 
     def test_render_summary(self, monthly_pattern_atom: SingleMastMonthlyPatternAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = monthly_pattern_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "月变化风速" in summary
-        assert "季节" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert len(summary[0].text) > 0
+        assert "测风塔" in summary[0].text
+        assert "月平均风速" in summary[0].text
 
     def test_content_hash_consistency(self, monthly_pattern_atom: SingleMastMonthlyPatternAtom) -> None:
         """Test that same data produces same hash."""
@@ -489,24 +791,24 @@ class TestSingleMastMonthlyPowerPatternAtom:
         assert image_path.stat().st_size > 0
 
     def test_render_table(self, monthly_power_pattern_atom: SingleMastMonthlyPowerPatternAtom) -> None:
-        """Test renderTable returns non-empty Typst table with power data."""
+        """Test renderTable returns non-empty Typst table with 13 rows including average."""
         table = monthly_power_pattern_atom.renderTable()
-        
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "月份" in table
-        assert "W/m" in table
+
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "月份" in table.headers
+        assert len(table.data) == 13
+        assert table.data[0][0] == "平均"
 
     def test_render_summary(self, monthly_power_pattern_atom: SingleMastMonthlyPowerPatternAtom) -> None:
         """Test renderSummary returns non-empty Chinese text."""
         summary = monthly_power_pattern_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "月变化风功率密度" in summary
-        assert "季节" in summary
+        assert isinstance(summary, list)
+        assert isinstance(summary[0], TypstParagraph)
+        assert len(summary[0].text) > 0
+        assert "测风塔" in summary[0].text
+        assert "月平均风功率密度" in summary[0].text
 
     def test_content_hash_consistency(self, monthly_power_pattern_atom: SingleMastMonthlyPowerPatternAtom) -> None:
         """Test that same data produces same hash."""
@@ -533,26 +835,17 @@ class TestSingleMastMonthlyDailyWindAtom:
         assert image_path.suffix == ".png"
         assert image_path.stat().st_size > 0
 
-    def test_render_table(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
-        """Test renderTable returns non-empty Typst table."""
+    def test_render_table_returns_none(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
+        """Test renderTable returns None for monthly-daily wind atom."""
         table = monthly_daily_wind_atom.renderTable()
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "月份" in table
-        assert "平均风速" in table
-        assert "日较差" in table
+        assert table is None
 
-    def test_render_summary(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
+    def test_render_summary_returns_empty(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
+        """Test renderSummary returns empty list for monthly-daily wind atom."""
         summary = monthly_daily_wind_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "日变化" in summary
-        assert "峰值" in summary
+        assert summary == []
 
     def test_content_hash_consistency(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
         """Test that same data produces same hash."""
@@ -561,12 +854,6 @@ class TestSingleMastMonthlyDailyWindAtom:
         
         assert hash1 == hash2
         assert "SingleMastMonthlyDailyWindAtom_" in hash1
-
-    def test_figure_reference_in_summary(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
-        """Test summary includes figure reference."""
-        summary = monthly_daily_wind_atom.renderSummary()
-        
-        assert "@fig-" in summary
 
 
 # =============================================================================
@@ -585,25 +872,17 @@ class TestSingleMastMonthlyDailyPowerAtom:
         assert image_path.suffix == ".png"
         assert image_path.stat().st_size > 0
 
-    def test_render_table(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
-        """Test renderTable returns non-empty Typst table with power data."""
+    def test_render_table_returns_none(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
+        """Test renderTable returns None for monthly-daily power atom."""
         table = monthly_daily_power_atom.renderTable()
         
-        assert isinstance(table, str)
-        assert len(table) > 0
-        assert "#table(" in table
-        assert "月份" in table
-        assert "功率密度" in table
+        assert table is None
 
-    def test_render_summary(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
-        """Test renderSummary returns non-empty Chinese text."""
+    def test_render_summary_returns_empty(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
+        """Test renderSummary returns empty list for monthly-daily power atom."""
         summary = monthly_daily_power_atom.renderSummary()
         
-        assert isinstance(summary, str)
-        assert len(summary) > 0
-        assert "测风塔" in summary
-        assert "风功率密度" in summary
-        assert "日变化" in summary
+        assert summary == []
 
     def test_content_hash_consistency(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
         """Test that same data produces same hash."""
@@ -615,17 +894,159 @@ class TestSingleMastMonthlyDailyPowerAtom:
 
 
 # =============================================================================
+# Test SingleMastMonthlyWindAtom
+# =============================================================================
+
+
+class TestSingleMastMonthlyWindAtom:
+    """Tests for SingleMastMonthlyWindAtom."""
+
+    def test_render_table(self, monthly_wind_atom: SingleMastMonthlyWindAtom) -> None:
+        """Test renderTable returns non-empty Typst table with 13 rows."""
+        table = monthly_wind_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "月份" in table.headers
+        assert len(table.data) == 13
+        assert table.data[0][0] == "平均"
+
+
+# =============================================================================
+# Test MonthlyWindSpeedAtom
+# =============================================================================
+
+
+class TestMonthlyWindSpeedAtom:
+    """Tests for MonthlyWindSpeedAtom."""
+
+    def test_render_table(self, monthly_wind_speed_atom: MonthlyWindSpeedAtom) -> None:
+        """Test renderTable returns non-empty Typst table with 13 rows."""
+        table = monthly_wind_speed_atom.renderTable()
+
+        assert isinstance(table, TypstTable)
+        assert len(table.headers) > 0
+        assert "月份" in table.headers
+        assert len(table.data) == 13
+        assert table.data[0][0] == "平均"
+
+
+# =============================================================================
+# Agreement Tests
+# =============================================================================
+
+
+class TestMonthlyPatternAgreement:
+    """Tests for monthly pattern agreement behavior."""
+
+    def test_agree_renders_exact_summary_text(
+        self,
+        monthly_pattern_agree_atom: SingleMastMonthlyPatternAtom,
+    ) -> None:
+        """When all heights agree, summary contains exact expected text."""
+        summary = monthly_pattern_agree_atom.renderSummary()
+
+        assert len(summary) == 1
+        assert isinstance(summary[0], TypstParagraph)
+        expected = "M01测风塔 100m、120m 高度月平均风速 7.00m/s、7.00m/s，最大值都出现在 4 月，最小值都出现在 7 月。"
+        assert summary[0].text == expected
+
+    def test_disagree_renders_empty_summary(
+        self,
+        monthly_pattern_disagree_atom: SingleMastMonthlyPatternAtom,
+    ) -> None:
+        """When heights disagree, summary is empty."""
+        summary = monthly_pattern_disagree_atom.renderSummary()
+
+        assert summary == []
+
+
+class TestMonthlyPowerPatternAgreement:
+    """Tests for monthly power pattern agreement behavior."""
+
+    def test_agree_renders_exact_summary_text(
+        self,
+        monthly_power_pattern_agree_atom: SingleMastMonthlyPowerPatternAtom,
+    ) -> None:
+        """When all heights agree, summary contains exact expected text."""
+        summary = monthly_power_pattern_agree_atom.renderSummary()
+
+        assert len(summary) == 1
+        assert isinstance(summary[0], TypstParagraph)
+        expected = "M01测风塔 100m、120m 高度月平均风功率密度 229.4W/m²、229.4W/m²，最大值都出现在 4 月，最小值都出现在 7 月。"
+        assert summary[0].text == expected
+
+    def test_disagree_renders_empty_summary(
+        self,
+        monthly_power_pattern_disagree_atom: SingleMastMonthlyPowerPatternAtom,
+    ) -> None:
+        """When heights disagree, summary is empty."""
+        summary = monthly_power_pattern_disagree_atom.renderSummary()
+
+        assert summary == []
+
+
+class TestDailyPatternAgreement:
+    """Tests for daily pattern agreement behavior."""
+
+    def test_agree_renders_exact_summary_text(
+        self,
+        daily_pattern_agree_atom: SingleMastDailyPatternAtom,
+    ) -> None:
+        """When all heights agree, summary contains exact expected text."""
+        summary = daily_pattern_agree_atom.renderSummary()
+
+        assert len(summary) == 1
+        assert isinstance(summary[0], TypstParagraph)
+        expected = "M01测风塔 100m、120m 高度日平均风速最大值都出现在 14 时，最小值都出现在 08 时。"
+        assert summary[0].text == expected
+
+    def test_disagree_renders_empty_summary(
+        self,
+        daily_pattern_disagree_atom: SingleMastDailyPatternAtom,
+    ) -> None:
+        """When heights disagree, summary is empty."""
+        summary = daily_pattern_disagree_atom.renderSummary()
+
+        assert summary == []
+
+
+class TestDailyPowerPatternAgreement:
+    """Tests for daily power pattern agreement behavior."""
+
+    def test_agree_renders_exact_summary_text(
+        self,
+        daily_power_pattern_agree_atom: SingleMastDailyPowerPatternAtom,
+    ) -> None:
+        """When all heights agree, summary contains exact expected text."""
+        summary = daily_power_pattern_agree_atom.renderSummary()
+
+        assert len(summary) == 1
+        assert isinstance(summary[0], TypstParagraph)
+        expected = "M01测风塔 100m、120m 高度日平均风功率密度最大值都出现在 14 时，最小值都出现在 08 时。"
+        assert summary[0].text == expected
+
+    def test_disagree_renders_empty_summary(
+        self,
+        daily_power_pattern_disagree_atom: SingleMastDailyPowerPatternAtom,
+    ) -> None:
+        """When heights disagree, summary is empty."""
+        summary = daily_power_pattern_disagree_atom.renderSummary()
+
+        assert summary == []
+
+
+# =============================================================================
 # Cross-cutting Tests
 # =============================================================================
 
 
 class TestAllAtoms:
-    """Tests that apply to all temporal atoms."""
+    """Tests that apply to all 6 temporal pattern atoms."""
 
     @pytest.fixture
     def all_atoms(
         self,
-        timeseries_atom: SingleMastWindTimeseriesAtom,
         daily_pattern_atom: SingleMastDailyPatternAtom,
         daily_power_pattern_atom: SingleMastDailyPowerPatternAtom,
         monthly_pattern_atom: SingleMastMonthlyPatternAtom,
@@ -633,9 +1054,8 @@ class TestAllAtoms:
         monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom,
         monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom,
     ) -> list[Any]:
-        """Return a list of all atom types for testing."""
+        """Return a list of all 6 atom types for testing."""
         return [
-            timeseries_atom,
             daily_pattern_atom,
             daily_power_pattern_atom,
             monthly_pattern_atom,
@@ -656,23 +1076,6 @@ class TestAllAtoms:
             assert image_path.exists()
             assert image_path.suffix == ".png"
             assert image_path.stat().st_size > 100  # At least 100 bytes
-
-    def test_all_atoms_produce_non_empty_tables(self, all_atoms: list[Any]) -> None:
-        """Verify all atoms produce non-empty tables."""
-        for atom in all_atoms:
-            table = atom.renderTable()
-            assert isinstance(table, str)
-            assert len(table) > 0
-            assert "#table(" in table
-
-    def test_all_atoms_produce_chinese_summaries(self, all_atoms: list[Any]) -> None:
-        """Verify all atoms produce Chinese summaries."""
-        for atom in all_atoms:
-            summary = atom.renderSummary()
-            assert isinstance(summary, str)
-            assert len(summary) > 0
-            # Should contain Chinese characters
-            assert any("\u4e00" <= char <= "\u9fff" for char in summary)
 
     def test_all_atoms_have_consistent_hashes(self, all_atoms: list[Any]) -> None:
         """Verify all atoms produce consistent hashes."""

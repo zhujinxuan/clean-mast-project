@@ -72,6 +72,25 @@ class WindFrequencyCalculator:
         """Initialize the wind frequency calculator with constants."""
         self.constants = WindFrequencyConstants()
 
+    def calculate_air_density(self, height: float, ground_density: float = 1.225) -> float:
+        """Calculate air density at a specific height using the barometric formula.
+
+        Formula:
+            T = 288.15 - 0.0065 * height
+            ratio = (T / 288.15) ** (9.81 / (287.05 * 0.0065))
+            rho = ground_density * ratio
+
+        Args:
+            height: Height in meters above ground level
+            ground_density: Air density at ground level in kg/m³ (default: 1.225)
+
+        Returns:
+            Air density at the specified height in kg/m³
+        """
+        T = 288.15 - 0.0065 * height
+        ratio = (T / 288.15) ** (9.81 / (287.05 * 0.0065))
+        return ground_density * ratio
+
     def analyze_by_height(
         self,
         input: "SingleMastAnalysisInput",
@@ -308,8 +327,9 @@ class WindFrequencyCalculator:
             if total_count == 0:
                 continue
 
-            # Calculate power frequency by bin
-            power_freq = self.calculate_power_frequency(wind_speeds)
+            # Calculate power frequency by bin using height-adjusted air density
+            rho = self.calculate_air_density(height)
+            power_freq = self.calculate_power_frequency(wind_speeds, air_density=rho)
 
             # Create rows for each bin
             for bin_idx in range(int(self.constants.MAX_BIN) + 1):
@@ -321,12 +341,12 @@ class WindFrequencyCalculator:
                 count = histogram.get(bin_idx, 0)
                 frequency = count / total_count if total_count > 0 else 0.0
 
-                # Calculate occurrence hours
-                occurrence_hours = frequency * self.constants.HOURS_PER_YEAR
+                # Calculate occurrence hours (rounded to integer)
+                occurrence_hours = int(round(frequency * self.constants.HOURS_PER_YEAR))
 
                 # Get power frequency for this bin
                 p_freq = power_freq.get(bin_idx, 0.0)
-                power_hours = p_freq * self.constants.HOURS_PER_YEAR
+                power_hours = int(round(p_freq * self.constants.HOURS_PER_YEAR))
 
                 rows.append({
                     "height": height,

@@ -13,6 +13,10 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -56,8 +60,18 @@ class SingleMastTurbulenceIntensityAtom(ReportAtom[TurbulenceSchema, SingleMastM
     - Summary: Chinese description of IEC classification statistics
     """
 
+    @property
     @override
-    def renderTable(self) -> str:
+    def default_image_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 湍流强度分布图"
+
+    @property
+    @override
+    def default_table_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 湍流强度分布表"
+
+    @override
+    def renderTable(self) -> TypstTable | None:
         """Render as Typst table with turbulence intensity data.
 
         Columns: 风速(m/s) | 高度 | 平均TI | 代表TI | IEC类别
@@ -73,20 +87,13 @@ class SingleMastTurbulenceIntensityAtom(ReportAtom[TurbulenceSchema, SingleMastM
             mean_ti = row["mean_ti"]
             rep_ti = row["representative_ti"]
             iec_cat = row["iec_category"]
-            rows.append(
-                f"  [{wind_speed}], [{height_display}], [{mean_ti:.3f}], [{rep_ti:.3f}], [{iec_cat}],"
-            )
+            rows.append([f"{wind_speed}", height_display, f"{mean_ti:.3f}", f"{rep_ti:.3f}", iec_cat])
 
-        return f"""#table(
-  columns: (auto, auto, auto, auto, auto),
-  inset: 8pt,
-  align: center,
-  table.header(
-    [风速(m/s)], [高度], [平均TI], [代表TI], [IEC类别]
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return TypstTable(
+            headers=["风速(m/s)", "高度", "平均TI", "代表TI", "IEC类别"],
+            data=rows,
+            caption=self._resolve_table_caption(),
+        )
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -241,7 +248,7 @@ class SingleMastTurbulenceIntensityAtom(ReportAtom[TurbulenceSchema, SingleMastM
         return image_path
 
     @override
-    def renderSummary(self) -> str:
+    def renderSummary(self) -> list[TypstParagraph]:
         """Generate Chinese summary of IEC classification statistics."""
         # Get unique heights
         heights_df = self.df.select(["height", "interpolation_marker"]).unique().sort("height")
@@ -309,7 +316,7 @@ class SingleMastTurbulenceIntensityAtom(ReportAtom[TurbulenceSchema, SingleMastM
         }
         dominant_meaning = cat_meanings.get(dominant_cat, "未知")
 
-        return (
+        text = (
             f"{self.meta.mast_name}测风塔湍流强度分析。"
             f"分析高度包括{', '.join(height_strs)}。"
             f"整体主导IEC类别为{dominant_cat}类({dominant_meaning})，占比{dominant_pct:.0f}%。"
@@ -317,3 +324,4 @@ class SingleMastTurbulenceIntensityAtom(ReportAtom[TurbulenceSchema, SingleMastM
             f"各高度详细情况：{'；'.join(height_descriptions)}。"
             f"湍流强度数据可用于风电机组选型和控制策略制定。"
         )
+        return [TypstParagraph(text=text)]

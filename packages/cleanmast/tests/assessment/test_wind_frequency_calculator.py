@@ -311,6 +311,18 @@ class TestWindFrequencyCalculatorCore:
         
         # All power is zero, so should return empty dict
         assert power_freq == {}
+
+    def test_calculate_air_density(self, calculator: WindFrequencyCalculator) -> None:
+        """Test air density calculation matches Julia barometric formula."""
+        # Julia barometric formula:
+        # T = 288.15 - 0.0065 * height
+        # ratio = (T / 288.15)^(9.81 / (287.05 * 0.0065))
+        # rho = 1.225 * ratio
+        rho_120 = calculator.calculate_air_density(120.0)
+        rho_160 = calculator.calculate_air_density(160.0)
+
+        assert rho_120 == pytest.approx(1.2076656476755538, rel=1e-9)
+        assert rho_160 == pytest.approx(1.2019318778832613, rel=1e-9)
     
     def test_calculate_range_summary(self, calculator: WindFrequencyCalculator) -> None:
         """Test range summary calculation."""
@@ -408,24 +420,24 @@ class TestWindFrequencyAnalysis:
     def test_analyze_by_height_occurrence_hours_calculation(
         self, calculator: WindFrequencyCalculator, sample_input_single_height: SingleMastAnalysisInput
     ) -> None:
-        """Test that occurrence_hours = frequency * 8760."""
+        """Test that occurrence_hours = int(round(frequency * 8760))."""
         result = calculator.analyze_by_height(sample_input_single_height)
-        
+
         if len(result.data) > 0:
             for row in result.data.iter_rows(named=True):
-                expected_hours = row["frequency"] * 8760.0
-                assert row["occurrence_hours"] == pytest.approx(expected_hours, abs=0.1)
-    
+                expected_hours = int(round(row["frequency"] * 8760.0))
+                assert row["occurrence_hours"] == expected_hours
+
     def test_analyze_by_height_power_hours_calculation(
         self, calculator: WindFrequencyCalculator, sample_input_single_height: SingleMastAnalysisInput
     ) -> None:
-        """Test that power_hours = power_frequency * 8760."""
+        """Test that power_hours = int(round(power_frequency * 8760))."""
         result = calculator.analyze_by_height(sample_input_single_height)
-        
+
         if len(result.data) > 0:
             for row in result.data.iter_rows(named=True):
-                expected_hours = row["power_frequency"] * 8760.0
-                assert row["power_hours"] == pytest.approx(expected_hours, abs=0.1)
+                expected_hours = int(round(row["power_frequency"] * 8760.0))
+                assert row["power_hours"] == expected_hours
     
     def test_analyze_by_height_multiple_heights(
         self, calculator: WindFrequencyCalculator, sample_input_multiple_heights: SingleMastAnalysisInput

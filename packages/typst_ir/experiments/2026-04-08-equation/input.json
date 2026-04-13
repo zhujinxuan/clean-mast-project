@@ -1,0 +1,1 @@
+{"children":[{"text":"Text before equation unique P1"},{"latex":"E = mc^2","display":true},{"text":"Text with inline equation $a^2 + b^2 = c^2$"},{"latex":"\\sum_{i=1}^n x_i","display":true},{"text":"Text after equation unique P2"}]}

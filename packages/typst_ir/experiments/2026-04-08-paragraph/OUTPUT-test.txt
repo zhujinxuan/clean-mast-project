@@ -1,0 +1,11 @@
+=== Test 1: Text Retrieval ===
+Paragraph 0: expected='First paragraph unique hash ab...' actual='First paragraph unique hash ab...'
+Paragraph 1: expected='Second paragraph unique hash d...' actual='Second paragraph unique hash d...'
+Paragraph 2: expected='Third paragraph unique hash gh...' actual='Third paragraph unique hash gh...'
+
+=== Test 2: Content Hash Matching ===
+Paragraph 0: expected_hash=d4cba26af1088abf... actual_hash=d4cba26af1088abf...
+Paragraph 1: expected_hash=9610b2c7b57cc6a6... actual_hash=9610b2c7b57cc6a6...
+Paragraph 2: expected_hash=07248a4580bc1e4f... actual_hash=07248a4580bc1e4f...
+
+✓ All tests passed

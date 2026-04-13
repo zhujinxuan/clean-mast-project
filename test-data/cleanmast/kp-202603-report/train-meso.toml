@@ -1,0 +1,47 @@
+[[mesos]]
+name = "ERA5Lidar"
+
+    [mesos.input]
+    data = "./raw/ERA5Lidar.parquet"
+
+[[masts]]
+name = "L32261"
+
+    [masts.input]
+    data = "./tower-shading/L32261.parquet"
+[[masts]]
+name = "M245228"
+
+    [masts.input]
+    data = "./tower-shading/M245228.parquet"
+
+[[models]]
+method = "16-sector"
+output = "./meso-models/L32261/ERA5Lidar/windspeed/16-sector.jld2"
+mast_name = "L32261"
+meso_name = "ERA5Lidar"
+[[models]]
+method = "1-sector"
+output = "./meso-models/L32261/ERA5Lidar/windspeed/1-sector.jld2"
+mast_name = "L32261"
+meso_name = "ERA5Lidar"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/L32261/ERA5Lidar/winddirection/constant-offset.jld2"
+mast_name = "L32261"
+meso_name = "ERA5Lidar"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M245228/ERA5Lidar/windspeed/16-sector.jld2"
+mast_name = "M245228"
+meso_name = "ERA5Lidar"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M245228/ERA5Lidar/windspeed/1-sector.jld2"
+mast_name = "M245228"
+meso_name = "ERA5Lidar"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M245228/ERA5Lidar/winddirection/constant-offset.jld2"
+mast_name = "M245228"
+meso_name = "ERA5Lidar"

@@ -1,0 +1,5 @@
+outs:
+- md5: 027230f0b7a5dddf810bd9496756ad93
+  size: 7026534
+  hash: md5
+  path: ERA5Lidar.parquet

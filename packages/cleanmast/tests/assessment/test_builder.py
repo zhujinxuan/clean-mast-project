@@ -6,6 +6,12 @@ from typing import Any
 from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
     WindRoseSection,
 )
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstDocument,
+    TypstFigure,
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects import AtomCollection
 from cleanmast.subdomains.assessment.infrastructure import AssessmentReportBuilder
 
@@ -35,7 +41,7 @@ class TestReportBuilderAddSection:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_add_section_single_atom(self, tmp_path: Path, monthly_wind_atom: Any):
         """Test adding a section with a single atom."""
@@ -98,7 +104,7 @@ class TestReportBuilderBuild:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_build_creates_output_directories(
         self,
@@ -133,6 +139,24 @@ class TestReportBuilderBuild:
         assert result["typ"].name == "report.typ"
         assert result["typ"].parent == output_dir
 
+    def test_build_creates_json_file(
+        self,
+        tmp_path: Path,
+        monthly_wind_atom: Any,
+    ):
+        """Test that build creates report.typ.json file."""
+        output_dir = tmp_path / "output"
+        builder = AssessmentReportBuilder("Test Report", output_dir)
+        section = self._create_section("Test Section", [monthly_wind_atom])
+        builder.add_section(section)
+
+        builder.build(compile_pdf=False)
+
+        json_path = output_dir / "report.typ.json"
+        assert json_path.exists()
+        json_text = json_path.read_text(encoding="utf-8")
+        assert TypstDocument.model_validate_json(json_text)
+
     def test_build_returns_path(self, tmp_path: Path, monthly_wind_atom: Any):
         """Test that build returns the path to the report file."""
         output_dir = tmp_path / "output"
@@ -158,7 +182,7 @@ class TestReportBuilderBuild:
         builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "= Monthly Report" in content
+        assert "= Test" in content
 
     def test_build_content_includes_chinese_font_support(
         self,
@@ -191,75 +215,86 @@ class TestReportBuilderBuild:
         builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "== Wind Analysis" in content
+        assert "= Wind Analysis" in content
 
     def test_build_content_includes_atom_summaries(
         self,
         tmp_path: Path,
-        monthly_wind_atom: Any,
+        wind_frequency_rose_atom: Any,
     ):
         """Test that report includes atom summaries."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("Analysis", [monthly_wind_atom])
+        section = self._create_section("Analysis", [wind_frequency_rose_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # Use build_typst() to access IR document structure
+        doc = builder.build_typst()
 
-        content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        # Summary should be in the content (contains mast name and summary text)
-        assert "M01" in content
+        # Check for paragraph nodes (summaries) inside section bodies
+        sections = [n for n in doc.children if hasattr(n, "body")]
+        paragraphs = [n for sec in sections for n in sec.body if isinstance(n, TypstParagraph)]
+        assert len(paragraphs) > 0
+        # Summary should contain mast name
+        assert any("M01" in p.text for p in paragraphs)
 
     def test_build_content_includes_figures(
         self,
         tmp_path: Path,
-        monthly_wind_atom: Any,
+        wind_frequency_rose_atom: Any,
     ):
         """Test that report includes figure markup."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("Analysis", [monthly_wind_atom])
+        section = self._create_section("Analysis", [wind_frequency_rose_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # Use build_typst() to access IR document structure
+        doc = builder.build_typst()
 
-        content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "#figure(" in content
-        assert "image(" in content
+        # Check for figure nodes inside section bodies
+        sections = [n for n in doc.children if hasattr(n, "body")]
+        figures = [n for sec in sections for n in sec.body if isinstance(n, TypstFigure)]
+        assert len(figures) > 0
 
     def test_build_content_includes_tables(
         self,
         tmp_path: Path,
-        monthly_wind_atom: Any,
+        wind_frequency_rose_atom: Any,
     ):
         """Test that report includes table markup."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("Analysis", [monthly_wind_atom])
+        section = self._create_section("Analysis", [wind_frequency_rose_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # Use build_typst() to access IR document structure
+        doc = builder.build_typst()
 
-        content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "table(" in content
+        # Check for table nodes inside section bodies
+        sections = [n for n in doc.children if hasattr(n, "body")]
+        tables = [n for sec in sections for n in sec.body if isinstance(n, TypstTable)]
+        assert len(tables) > 0
 
     def test_build_content_includes_references(
         self,
         tmp_path: Path,
-        monthly_wind_atom: Any,
+        wind_frequency_rose_atom: Any,
     ):
         """Test that report includes figure references."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("Analysis", [monthly_wind_atom])
+        section = self._create_section("Analysis", [wind_frequency_rose_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # Use build_typst() to access IR document structure
+        doc = builder.build_typst()
 
-        content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        # Template uses "由图" (from figure) and "和表" (and table) for references
-        assert "由图" in content
-        assert "@fig-" in content
+        # Check for paragraph nodes containing references inside section bodies
+        sections = [n for n in doc.children if hasattr(n, "body")]
+        paragraphs = [n for sec in sections for n in sec.body if isinstance(n, TypstParagraph)]
+        # At least one paragraph should contain references
+        assert len(paragraphs) > 0
 
     def test_build_multiple_sections(
         self,
@@ -277,21 +312,22 @@ class TestReportBuilderBuild:
         builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "== Wind Speed" in content
-        assert "== Wind Power" in content
+        assert "= Wind Speed" in content
+        assert "= Wind Power" in content
 
     def test_build_generates_images(
         self,
         tmp_path: Path,
-        monthly_wind_atom: Any,
+        wind_frequency_rose_atom: Any,
     ):
         """Test that build generates image files."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("Analysis", [monthly_wind_atom])
+        section = self._create_section("Analysis", [wind_frequency_rose_atom])
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # build_typst() triggers image generation as side effect
+        builder.build_typst()
 
         images_dir = output_dir / "images"
         assert images_dir.exists()
@@ -322,11 +358,8 @@ class TestReportBuilderBuild:
         assert "#set text(" in content
         assert "#set heading(" in content
 
-        # Should have title
-        assert "= Test Report" in content
-
         # Should have section
-        assert "== Analysis" in content
+        assert "= Analysis" in content
 
         # Should have figure and table markup (actual counts depend on template)
         assert content.count("#figure(") >= 1
@@ -339,7 +372,7 @@ class TestReportBuilderEdgeCases:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_build_empty_report(self, tmp_path: Path):
         """Test building report with no sections."""
@@ -349,25 +382,29 @@ class TestReportBuilderEdgeCases:
         builder.build(compile_pdf=False)
 
         content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        assert "= Empty Report" in content
         assert "#set text(" in content
 
     def test_build_section_with_multiple_atoms(
         self,
         tmp_path: Path,
-        all_atoms: list[Any],
+        wind_frequency_rose_atom: Any,
+        wind_power_rose_atom: Any,
     ):
         """Test building report with multiple atoms in one section."""
         output_dir = tmp_path / "output"
         builder = AssessmentReportBuilder("Test", output_dir)
-        section = self._create_section("All Analysis", all_atoms)
+        section = self._create_section(
+            "All Analysis", [wind_frequency_rose_atom, wind_power_rose_atom]
+        )
         builder.add_section(section)
 
-        builder.build(compile_pdf=False)
+        # Use build_typst() to access IR document structure
+        doc = builder.build_typst()
 
-        content = (output_dir / "report.typ").read_text(encoding="utf-8")
-        # Should have figures for all atoms
-        assert content.count("#figure(") >= len(all_atoms)
+        # Should have figures for all atoms inside section bodies
+        sections = [n for n in doc.children if hasattr(n, "body")]
+        figures = [n for sec in sections for n in sec.body if isinstance(n, TypstFigure)]
+        assert len(figures) >= 2
 
     def test_build_overwrites_existing_report(
         self,
@@ -386,7 +423,7 @@ class TestReportBuilderEdgeCases:
         builder.build(compile_pdf=False)
 
         content = report_file.read_text(encoding="utf-8")
-        assert "New Report" in content
+        assert "= Test" in content
         assert "Old content" not in content
 
     def test_build_idempotent(

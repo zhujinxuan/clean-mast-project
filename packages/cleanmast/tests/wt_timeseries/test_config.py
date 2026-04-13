@@ -1,5 +1,7 @@
 """Tests for wt_timeseries configuration module."""
 
+from pathlib import Path
+
 import pytest
 from cleanmast.subdomains.configuration import (
     WtTimeSeriesConfiguration,
@@ -183,7 +185,7 @@ turbulence_heights = [80.0]
         config = load_wt_timeseries_config(config_file)
         # Path should be resolved to absolute (concatenated with config dir)
         expected_path = str(config_dir / "../data/TGL1.parquet")
-        assert config.masts[0].input.data == expected_path
+        assert Path(config.masts[0].input.data) == Path(expected_path)
 
     def test_absolute_path_preserved(self, tmp_path):
         """Test that absolute paths are preserved."""

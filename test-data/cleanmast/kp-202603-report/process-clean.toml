@@ -1,0 +1,18 @@
+[[masts]]
+name = "L32261"
+rules = "formats/clean/lidar-availability.toml"
+
+    [masts.output]
+    data = "./clean\\L32261.parquet"
+
+    [masts.input]
+    data = "./raw/L32261.parquet"
+[[masts]]
+name = "M245228"
+rules = "formats/clean/default.toml"
+
+    [masts.output]
+    data = "./clean\\M245228.parquet"
+
+    [masts.input]
+    data = "./raw/M245228.parquet"

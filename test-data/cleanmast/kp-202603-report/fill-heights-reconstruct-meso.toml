@@ -1,0 +1,197 @@
+strategy = "default"
+
+[[masts]]
+name = "L32261"
+
+[masts.input]
+data = "./reconstruct-meso\\L32261.parquet"
+
+[masts.output]
+data = "./reconstruct-meso-fill-heights/L32261.parquet"
+sensors = "./reconstruct-meso-fill-heights/L32261.sensors.yaml"
+
+[[masts.windspeed]]
+shear = 0.3118639767635174
+
+[masts.windspeed.target_sensor]
+column_name = "WS_125m_fill:interpolated"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 125.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed.references]]
+weight = 0.75
+
+[masts.windspeed.references.sensor]
+column_name = "WindSpeed_120m_avg [m/s]"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 120.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed.references]]
+weight = 0.25
+
+[masts.windspeed.references.sensor]
+column_name = "WindSpeed_140m_avg [m/s]"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 140.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.winddirection]]
+deg_diff_per_m = 0.07279877446556769
+
+[masts.winddirection.target_sensor]
+column_name = "WD_125m_fill:interpolated"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 125.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection.references]]
+weight = 0.75
+
+[masts.winddirection.references.sensor]
+column_name = "WindDirection_120m_avg [deg]"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 120.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection.references]]
+weight = 0.25
+
+[masts.winddirection.references.sensor]
+column_name = "WindDirection_140m_avg [deg]"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 140.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts]]
+name = "M245228"
+
+[masts.input]
+data = "./reconstruct-meso\\M245228.parquet"
+
+[masts.output]
+data = "./reconstruct-meso-fill-heights/M245228.parquet"
+sensors = "./reconstruct-meso-fill-heights/M245228.sensors.yaml"
+
+[[masts.windspeed]]
+shear = 0.3670385781718469
+
+[masts.windspeed.target_sensor]
+column_name = "WS_125m_fill:interpolated"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 125.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed.references]]
+weight = 0.25
+
+[masts.windspeed.references.sensor]
+column_name = "WindSpeed_110m_avg [m/s]"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 110.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed.references]]
+weight = 0.75
+
+[masts.windspeed.references.sensor]
+column_name = "WindSpeed_130m_avg [m/s]"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 130.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed]]
+shear = 0.3467689360668313
+
+[masts.windspeed.target_sensor]
+column_name = "WS_160m_fill:extrapolated"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 160.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.windspeed.references]]
+weight = 1.0
+
+[masts.windspeed.references.sensor]
+column_name = "WindSpeed_140m_avg [m/s]"
+sensor_type = "WindSpeed"
+sensor_direction = ""
+height = 140.0
+stat_type = "avg"
+unit = "m/s"
+
+[[masts.winddirection]]
+deg_diff_per_m = 0.25666832401711925
+
+[masts.winddirection.target_sensor]
+column_name = "WD_125m_fill:interpolated"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 125.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection.references]]
+weight = 0.37500000000000006
+
+[masts.winddirection.references.sensor]
+column_name = "WindDirection_100m_avg [deg]"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 100.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection.references]]
+weight = 0.625
+
+[masts.winddirection.references.sensor]
+column_name = "WindDirection_140m_avg [deg]"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 140.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection]]
+deg_diff_per_m = 0.17725334974843146
+
+[masts.winddirection.target_sensor]
+column_name = "WD_160m_fill:extrapolated"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 160.0
+stat_type = "avg"
+unit = "deg"
+
+[[masts.winddirection.references]]
+weight = 1.0
+
+[masts.winddirection.references.sensor]
+column_name = "WindDirection_140m_avg [deg]"
+sensor_type = "WindDirection"
+sensor_direction = ""
+height = 140.0
+stat_type = "avg"
+unit = "deg"

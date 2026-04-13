@@ -1,0 +1,44 @@
+# Representative Year Calibration Configuration
+# Calibrates data to a representative year using mesoscale patterns
+# Note: Prefers 16-sector windspeed model for directional calibration
+
+[[mesos]]
+name = "ERA5Lidar"
+
+    [mesos.input]
+    data = "./raw/ERA5Lidar.parquet"
+
+[[masts]]
+name = "L32261"
+
+    [masts.output]
+    data = "./representative-year\\L32261.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/L32261/ERA5Lidar/windspeed/16-sector.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.input]
+    data = "./reconstruct-meso\\L32261.parquet"
+
+    [masts.time_range]
+    max = 2026-02-28T23:59:59.000Z
+    min = 2025-03-01T00:00:00.000Z
+[[masts]]
+name = "M245228"
+
+    [masts.output]
+    data = "./representative-year\\M245228.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/M245228/ERA5Lidar/windspeed/16-sector.jld2"
+    meso_name = "ERA5Lidar"
+
+    [masts.input]
+    data = "./reconstruct-meso\\M245228.parquet"
+
+    [masts.time_range]
+    max = 2026-02-28T23:59:59.000Z
+    min = 2025-03-01T00:00:00.000Z

@@ -1,0 +1,33 @@
+=== Equation Structure ===
+Paragraphs: 5
+
+--- Paragraph 0 ---
+Text: Text before equation unique P1...
+Has m:oMathPara (display): False
+Has m:oMath (inline): False
+
+--- Paragraph 1 ---
+Text: ...
+Has m:oMathPara (display): True
+Has m:oMath (inline): True
+  ** Display equation (entire paragraph is equation)
+  m:oMathPara tag present
+
+--- Paragraph 2 ---
+Text: Text with inline equation ...
+Has m:oMathPara (display): False
+Has m:oMath (inline): True
+  ** Inline equation (mixed with text)
+  Found: {http://schemas.openxmlformats.org/officeDocument/2006/math}oMath
+
+--- Paragraph 3 ---
+Text: ...
+Has m:oMathPara (display): True
+Has m:oMath (inline): True
+  ** Display equation (entire paragraph is equation)
+  m:oMathPara tag present
+
+--- Paragraph 4 ---
+Text: Text after equation unique P2...
+Has m:oMathPara (display): False
+Has m:oMath (inline): False

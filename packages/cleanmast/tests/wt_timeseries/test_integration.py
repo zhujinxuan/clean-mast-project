@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -576,7 +577,7 @@ turbulence_heights = []
 
         # Path should be resolved to absolute
         expected_path = (project_dir / "representative-year" / "filled" / "TGL1.parquet").resolve()
-        assert config.masts[0].input.data == str(expected_path)
+        assert Path(config.masts[0].input.data) == expected_path
 
         # Should be able to process with resolved path
         process_single_mast_csv(config.masts[0], project_dir)

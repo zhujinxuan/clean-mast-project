@@ -11,10 +11,17 @@ import io
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Generic, Literal, Protocol, Self, TypeVar, overload
+from typing import TYPE_CHECKING, Generic, Literal, Protocol, Self, TypeVar, overload
 
 import dataframely as dy
 import polars as pl
+
+if TYPE_CHECKING:
+    from cleanmast.subdomains.assessment.domain.types import (
+        TypstFigure,
+        TypstParagraph,
+        TypstTable,
+    )
 
 
 class SchemaProtocol(Protocol):
@@ -58,7 +65,15 @@ class SchemaProtocol(Protocol):
 
 
 T = TypeVar("T", bound=SchemaProtocol)
-M = TypeVar("M")
+
+
+class MetaWithCaption(Protocol):
+    """Protocol for metadata objects that provide a caption."""
+
+    caption: str | None
+
+
+M = TypeVar("M", bound=MetaWithCaption)
 
 
 @dataclass
@@ -118,12 +133,32 @@ class ReportAtom(ABC, Generic[T, M]):
             self._df_hashkey = f"{atom_type}_{content_hash}"
         return self._df_hashkey
 
+    @property
+    def default_image_caption(self) -> str | None:
+        """Default caption for images rendered by this atom."""
+        return None
+
+    @property
+    def default_table_caption(self) -> str | None:
+        """Default caption for tables rendered by this atom."""
+        return None
+
+    def _resolve_image_caption(self) -> str:
+        """Resolve image caption from metadata, default, or fallback."""
+        meta_caption = self.meta.caption
+        return meta_caption or self.default_image_caption or "Figure"
+
+    def _resolve_table_caption(self) -> str | None:
+        """Resolve table caption from metadata or default."""
+        meta_caption = self.meta.caption
+        return meta_caption or self.default_table_caption
+
     @abstractmethod
-    def renderTable(self) -> str:
-        """Render as Typst/markdown table.
+    def renderTable(self) -> "TypstTable" | None:
+        """Render as TypstTable IR node.
 
         Returns:
-            A string representation of the data as a table
+            A TypstTable IR node, or None if this atom does not render a table
         """
         pass
 
@@ -141,18 +176,18 @@ class ReportAtom(ABC, Generic[T, M]):
         pass
 
     @abstractmethod
-    def renderSummary(self) -> str:
-        """Render as text summary/paragraph.
+    def renderSummary(self) -> list["TypstParagraph"]:
+        """Render as TypstParagraph IR node.
 
         Returns:
-            A text summary suitable for inclusion in a report
+            A list containing a TypstParagraph IR node with the summary text
         """
         pass
 
-    def renderImageTypst(self, output_dir: Path, force: bool = False) -> str:
-        """Generate image AND return Typst figure code with caption.
+    def renderImageTypst(self, output_dir: Path, force: bool = False) -> "TypstFigure" | None:
+        """Generate image AND return TypstFigure IR node.
 
-        This method combines image generation with Typst figure markup,
+        This method combines image generation with Typst figure IR node creation,
         automatically extracting caption and width from metadata.
 
         Args:
@@ -160,19 +195,17 @@ class ReportAtom(ABC, Generic[T, M]):
             force: If True, regenerate even if file exists
 
         Returns:
-            Typst figure markup string with embedded image reference
+            A TypstFigure IR node, or None if no image was generated
         """
-        image_path = self.renderImage(output_dir, force)
-        rel_path = image_path.relative_to(output_dir.parent)
-        hashkey = self.get_or_compute_df_hashkey()
-        caption = getattr(self.meta, "caption", "Figure")
-        width = getattr(self.meta, "width", "80%")
+        from cleanmast.subdomains.assessment.domain.types import TypstFigure
 
-        return f"""#figure(
-  image("{rel_path.as_posix()}", width: {width}),
-  caption: [{caption}],
-) <fig-{hashkey}>
-"""
+        image_path = self.renderImage(output_dir, force)
+        if not image_path or not image_path.name or image_path == output_dir:
+            return None
+        rel_path = image_path.relative_to(output_dir.parent)
+        caption = self._resolve_image_caption()
+
+        return TypstFigure(content=rel_path.as_posix(), caption=caption)
 
     def getReference(self) -> str:
         """Get Typst reference string.

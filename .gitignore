@@ -49,3 +49,7 @@ tmpclaude*
 #omo
 .sisyphus/*
 !.sisyphus/rules/
+
+# Baseline files
+baseline-*.md
+baseline-refs/

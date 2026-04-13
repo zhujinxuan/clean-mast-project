@@ -11,6 +11,10 @@ import polars as pl
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
     MonthlyWindSchema,
 )
@@ -22,10 +26,17 @@ from .report_meta import SingleMastMeta, get_height_display_name
 class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
     """Renders monthly wind speed statistics for representative year reports."""
 
+    @property
+    def default_image_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 代表年月风速图"
+
+    @property
+    def default_table_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 代表年月风速表"
+
     @override
-    def renderTable(self) -> str:
-        """Render as Typst table with pivoted format."""
-        # Similar to SingleMastMonthlyWindAtom.renderTable
+    def renderTable(self) -> TypstTable | None:
+        """Render as TypstTable IR node with monthly wind speed by height."""
         # Get unique heights and their display names
         heights_df = self.df.select(["height", "interpolation_marker"]).unique().sort("height")
         height_cols = []
@@ -34,7 +45,7 @@ class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
             height_cols.append((row["height"], display))
 
         # Build the table rows
-        rows = []
+        rows: list[list[str]] = []
         months = sorted(self.df["month"].unique().to_list())
 
         for month in months:
@@ -43,26 +54,26 @@ class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
             for row in month_df.iter_rows(named=True):
                 data_by_height[row["height"]] = row["wind_speed_mean"]
 
-            row_cells = [f"  [{month}]"]
+            row_cells: list[str] = [f"{month}"]
             for height, _ in height_cols:
                 val = data_by_height.get(height, 0)
-                row_cells.append(f"[{val:.2f}]")
-            rows.append(", ".join(row_cells) + ",")
+                row_cells.append(f"{val:.2f}")
+            rows.append(row_cells)
 
-        header_cells = "[月份], " + ", ".join([f"[{h[1]}]" for h in height_cols])
-        num_cols = 1 + len(height_cols)
-        col_spec = ", ".join(["auto"] * num_cols)
+        avg_row: list[str] = ["平均"]
+        for height, _ in height_cols:
+            height_df = self.df.filter(pl.col("height") == height)
+            mean_val = height_df["wind_speed_mean"].mean()
+            if mean_val is not None and not (mean_val != mean_val):
+                avg_row.append(f"{mean_val:.2f}")
+            else:
+                avg_row.append("-")
+        rows.insert(0, avg_row)
 
-        return f"""#table(
-  columns: ({col_spec}),
-  inset: 8pt,
-  align: center,
-  table.header(
-    {header_cells}
-  ),
-{chr(10).join(rows)}
-)
-"""
+        # Build header: month + one column per height
+        headers = ["月份"] + [f"{display}(m/s)" for _, display in height_cols]
+
+        return TypstTable(headers=headers, data=rows, caption=self._resolve_table_caption())
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -120,14 +131,8 @@ class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Generate representative year wind speed summary in Chinese.
-        
-        Format:
-        由图@fig-{hashkey}和表@tbl-{hashkey}可知，M1 在 120m，125m（外推），
-        140m（外推）高度处年平均风速分别为5.2m/s、5.5m/s、5.8m/s，
-        在7月最大为8.5m/s，在1月最小为3.2m/s。
-        """
+    def renderSummary(self) -> list[TypstParagraph]:
+        """Generate representative year wind speed summary in Chinese."""
         # Get heights > 100m
         heights_df = (
             self.df.filter(pl.col("height") > 100)
@@ -142,11 +147,11 @@ class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
             height_strs.append(display)
 
         # Calculate stats per height
-        annual_means = []
-        max_months = []
-        max_values = []
-        min_months = []
-        min_values = []
+        annual_means: list[str] = []
+        max_months: list[int] = []
+        max_values: list[float] = []
+        min_months: list[int] = []
+        min_values: list[float] = []
 
         for row in heights_df.iter_rows(named=True):
             height = row["height"]
@@ -171,10 +176,12 @@ class MonthlyWindSpeedAtom(ReportAtom[MonthlyWindSchema, SingleMastMeta]):
             min_values.append(min_value)
 
         # Build narrative
-        return (
+        summary = (
             f"由图{self.getReference()}和表{self.getTableReference()}可知，"
             f"{self.meta.mast_name} 在 {', '.join(height_strs)}高度处"
             f"年平均风速分别为{'、'.join(annual_means)}，"
             f"在{max_months[0]}月最大为{max_values[0]:.2f}m/s，"
             f"在{min_months[0]}月最小为{min_values[0]:.2f}m/s。"
         )
+
+        return [TypstParagraph(text=summary)]

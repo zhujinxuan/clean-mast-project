@@ -1,0 +1,46 @@
+[styles.Normal]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 12.0
+
+[styles."Heading 1"]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 12.0
+font_style = "bold"
+
+[styles."Heading 2"]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 12.0
+font_style = "bold"
+
+[styles."Heading 3"]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 12.0
+font_style = "bold"
+
+[styles.Caption]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 12.0
+line_spacing_before = 3.0
+line_spacing_after = 3.0
+
+[styles."Table Grid"]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 10.0
+line_spacing = 10.0
+
+[styles."Table Normal"]
+font_name_latin = "Times New Roman"
+font_name_chinese = "SimSun"
+font_size = 10.0
+line_spacing = 10.0
+
+[renumber]
+headings = true
+figures = true
+tables = true

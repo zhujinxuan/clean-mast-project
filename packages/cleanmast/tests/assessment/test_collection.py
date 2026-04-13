@@ -6,6 +6,10 @@ from pathlib import Path
 import polars as pl
 import pytest
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects import AtomCollection
 
 
@@ -20,6 +24,8 @@ class MockSchema:
 class MockMeta:
     """Mock metadata for testing."""
 
+    caption: str | None = None
+
     def __init__(self, mast_name: str):
         self.mast_name = mast_name
 
@@ -27,27 +33,27 @@ class MockMeta:
 class MockReportAtom(ReportAtom[MockSchema, MockMeta]):
     """Mock ReportAtom subclass for testing."""
 
-    def renderTable(self) -> str:
-        return "mock table"
+    def renderTable(self) -> TypstTable | None:
+        return TypstTable(headers=["Mock"], data=[["mock table"]])
 
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
         return output_dir / "mock.png"
 
-    def renderSummary(self) -> str:
-        return "mock summary"
+    def renderSummary(self) -> list[TypstParagraph]:
+        return [TypstParagraph(text="mock summary")]
 
 
 class AnotherMockReportAtom(ReportAtom[MockSchema, MockMeta]):
     """Another mock ReportAtom subclass for testing."""
 
-    def renderTable(self) -> str:
-        return "another mock table"
+    def renderTable(self) -> TypstTable | None:
+        return TypstTable(headers=["Another"], data=[["another mock table"]])
 
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
         return output_dir / "another_mock.png"
 
-    def renderSummary(self) -> str:
-        return "another mock summary"
+    def renderSummary(self) -> list[TypstParagraph]:
+        return [TypstParagraph(text="another mock summary")]
 
 
 def create_mock_atom(atom_class: type[ReportAtom], mast_name: str) -> ReportAtom:
@@ -110,16 +116,20 @@ class TestAtomCollectionCreation:
         collection_reversed = AtomCollection.from_dict(data_reversed)
         assert collection_reversed.masts == ["mast3", "mast2", "mast1"]
 
-    def test_from_dict_rejects_duplicates(self):
-        """Test that from_dict raises ValueError for duplicate atom types."""
+    def test_from_dict_accepts_duplicates(self):
+        """Test that from_dict accepts duplicate atom types per mast."""
         # Arrange
         atom1 = create_mock_atom(MockReportAtom, "mast1")
         atom2 = create_mock_atom(MockReportAtom, "mast1")  # Same type!
         data = {"mast1": [atom1, atom2]}
 
-        # Act & Assert
-        with pytest.raises(ValueError, match="Duplicate atom type MockReportAtom for mast 'mast1'"):
-            AtomCollection.from_dict(data)
+        # Act
+        collection = AtomCollection.from_dict(data)
+
+        # Assert
+        assert len(collection) == 2
+        assert collection.get("mast1", MockReportAtom) is atom1
+        assert collection.get_all_by_type(MockReportAtom) == [atom1, atom2]
 
 
 class TestAtomCollectionGet:
@@ -168,6 +178,92 @@ class TestAtomCollectionGet:
 class TestAtomCollectionGetAllByType:
     """Tests for AtomCollection.get_all_by_type method."""
 
+    def test_get_all_by_type_all_masts_have_type(self):
+        """Test that get_all_by_type returns atoms from ALL masts when each mast has the type."""
+        # Arrange - create atoms for multiple masts, all with MockReportAtom
+        atom1 = create_mock_atom(MockReportAtom, "mast1")
+        atom2 = create_mock_atom(MockReportAtom, "mast2")
+        atom3 = create_mock_atom(MockReportAtom, "mast3")
+
+        data = {
+            "mast1": [atom1],
+            "mast2": [atom2],
+            "mast3": [atom3],
+        }
+        collection = AtomCollection.from_dict(data)
+
+        # Act
+        results = collection.get_all_by_type(MockReportAtom)
+
+        # Assert - should return atom from every mast
+        assert len(results) == 3
+        assert results[0].meta.mast_name == "mast1"
+        assert results[1].meta.mast_name == "mast2"
+        assert results[2].meta.mast_name == "mast3"
+
+    def test_get_all_by_type_some_masts_have_type(self):
+        """Test that get_all_by_type returns atoms only from masts that have the type."""
+        # Arrange - mix of masts with and without MockReportAtom
+        atom1 = create_mock_atom(MockReportAtom, "mast1")
+        atom2 = create_mock_atom(AnotherMockReportAtom, "mast2")
+        atom3 = create_mock_atom(MockReportAtom, "mast3")
+        atom4 = create_mock_atom(AnotherMockReportAtom, "mast4")
+
+        data = {
+            "mast1": [atom1],
+            "mast2": [atom2],
+            "mast3": [atom3],
+            "mast4": [atom4],
+        }
+        collection = AtomCollection.from_dict(data)
+
+        # Act
+        results = collection.get_all_by_type(MockReportAtom)
+
+        # Assert - only mast1 and mast3 have MockReportAtom
+        assert len(results) == 2
+        assert results[0].meta.mast_name == "mast1"
+        assert results[1].meta.mast_name == "mast3"
+
+    def test_get_all_by_type_no_masts_have_type(self):
+        """Test that get_all_by_type returns empty list when no mast has the type."""
+        # Arrange - no mast has MockReportAtom
+        atom1 = create_mock_atom(AnotherMockReportAtom, "mast1")
+        atom2 = create_mock_atom(AnotherMockReportAtom, "mast2")
+
+        data = {
+            "mast1": [atom1],
+            "mast2": [atom2],
+        }
+        collection = AtomCollection.from_dict(data)
+
+        # Act
+        results = collection.get_all_by_type(MockReportAtom)
+
+        # Assert
+        assert results == []
+
+    def test_get_all_by_type_order_stability(self):
+        """Test that get_all_by_type preserves mast insertion order exactly."""
+        # Arrange - create atoms for multiple masts in a specific non-alphabetical order
+        atom_z = create_mock_atom(MockReportAtom, "mast_z")
+        atom_a = create_mock_atom(MockReportAtom, "mast_a")
+        atom_m = create_mock_atom(MockReportAtom, "mast_m")
+
+        data = {
+            "mast_z": [atom_z],
+            "mast_a": [atom_a],
+            "mast_m": [atom_m],
+        }
+        collection = AtomCollection.from_dict(data)
+
+        # Act
+        results = collection.get_all_by_type(MockReportAtom)
+
+        # Assert - order must exactly match insertion order
+        mast_names = [r.meta.mast_name for r in results]
+        assert mast_names == ["mast_z", "mast_a", "mast_m"]
+
     def test_get_all_by_type_follows_mast_order(self):
         """Test that get_all_by_type returns atoms in mast order."""
         # Arrange - create atoms for multiple masts
@@ -212,6 +308,30 @@ class TestAtomCollectionGetAllByType:
         # Assert
         assert len(results) == 2
         assert all(r.meta.mast_name in ["mast1", "mast3"] for r in results)
+
+    def test_get_all_by_type_preserves_order_with_gaps(self):
+        """Test order stability when some masts in the middle lack the requested type."""
+        # Arrange - gaps in the middle should not break order for remaining matches
+        atom1 = create_mock_atom(MockReportAtom, "mast1")
+        atom2 = create_mock_atom(AnotherMockReportAtom, "mast2")
+        atom3 = create_mock_atom(AnotherMockReportAtom, "mast3")
+        atom4 = create_mock_atom(MockReportAtom, "mast4")
+
+        data = {
+            "mast1": [atom1],
+            "mast2": [atom2],
+            "mast3": [atom3],
+            "mast4": [atom4],
+        }
+        collection = AtomCollection.from_dict(data)
+
+        # Act
+        results = collection.get_all_by_type(MockReportAtom)
+
+        # Assert - mast1 and mast4 should remain in insertion order
+        assert len(results) == 2
+        assert results[0].meta.mast_name == "mast1"
+        assert results[1].meta.mast_name == "mast4"
 
 
 class TestAtomCollectionImmutability:
@@ -374,3 +494,61 @@ class TestAtomCollectionEdgeCases:
 
         nonexistent = collection.get_by_mast("nonexistent")
         assert nonexistent == []
+
+
+class TestAtomCollectionMultiAtomSupport:
+    """Tests for AtomCollection supporting multiple atoms of the same type per mast."""
+
+    @pytest.fixture
+    def multi_atom_collection(self):
+        """Create a collection with multiple atoms of the same type per mast."""
+        atom1 = create_mock_atom(MockReportAtom, "mast1")
+        atom2 = create_mock_atom(MockReportAtom, "mast1")
+        atom3 = create_mock_atom(MockReportAtom, "mast2")
+        atom4 = create_mock_atom(MockReportAtom, "mast2")
+        atom5 = create_mock_atom(AnotherMockReportAtom, "mast1")
+
+        data = {
+            "mast1": [atom1, atom2, atom5],
+            "mast2": [atom3, atom4],
+        }
+        return AtomCollection.from_dict(data)
+
+    def test_get_returns_first_atom(self, multi_atom_collection):
+        """Test that get returns the first atom when duplicates exist."""
+        collection = multi_atom_collection
+        result = collection.get("mast1", MockReportAtom)
+        assert result is not None
+        assert result.meta.mast_name == "mast1"
+
+    def test_get_all_by_type_returns_all_atoms_in_order(self, multi_atom_collection):
+        """Test that get_all_by_type returns all atoms preserving mast and intra-mast order."""
+        collection = multi_atom_collection
+        results = collection.get_all_by_type(MockReportAtom)
+
+        assert len(results) == 4
+        mast_names = [r.meta.mast_name for r in results]
+        assert mast_names == ["mast1", "mast1", "mast2", "mast2"]
+
+    def test_contains_checks_list_membership(self, multi_atom_collection):
+        """Test that __contains__ correctly identifies atoms in multi-atom lists."""
+        collection = multi_atom_collection
+        atom1 = collection.get("mast1", MockReportAtom)
+        assert atom1 is not None
+        assert atom1 in collection
+
+        atom3 = collection.get("mast2", MockReportAtom)
+        assert atom3 is not None
+        assert atom3 in collection
+
+        outside_atom = create_mock_atom(MockReportAtom, "mast1")
+        assert outside_atom not in collection
+
+    def test_get_by_mast_returns_all_atoms_for_multi_atom_mast(self, multi_atom_collection):
+        """Test that get_by_mast returns all atoms including duplicates."""
+        collection = multi_atom_collection
+        mast1_atoms = collection.get_by_mast("mast1")
+        assert len(mast1_atoms) == 3
+
+        mast2_atoms = collection.get_by_mast("mast2")
+        assert len(mast2_atoms) == 2

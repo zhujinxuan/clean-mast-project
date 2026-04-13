@@ -13,6 +13,10 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
     MonthlyWindPowerSchema,
 )
@@ -29,59 +33,46 @@ class SingleMastMonthlyWindPowerAtom(ReportAtom[MonthlyWindPowerSchema, SingleMa
     - Summary: Chinese description of power density patterns
     """
 
-    @override
-    def renderTable(self) -> str:
-        """Render as Typst table with pivoted format.
+    @property
+    def default_image_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 代表年月风功率密度图"
 
-        Columns: 月份 | 10m | 50m | ... | 125m 外推 | 140m 外推 | 160m 外推
+    @property
+    def default_table_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 代表年月风功率密度表"
+
+    @override
+    def renderTable(self) -> TypstTable | None:
+        """Render as TypstTable IR node with monthly wind power density by height.
+
+        Rows: 12 months (1-12)
+        Columns: 月份 | 各高度平均风功率密度...
         """
-        # Get unique heights and their display names
+        # Get unique heights and their display names (sorted)
         heights_df = self.df.select(["height", "interpolation_marker"]).unique().sort("height")
         height_cols = []
         for row in heights_df.iter_rows(named=True):
             display = get_height_display_name(row["height"], row["interpolation_marker"])
             height_cols.append((row["height"], display))
 
-        # Build the table rows
+        # Build the table rows (12 months)
         rows = []
-        months = sorted(self.df["month"].unique().to_list())
-
-        for month in months:
+        for month in range(1, 13):
             month_df = self.df.filter(pl.col("month") == month)
-
-            # Create a lookup dict for this month's data by height
             data_by_height = {}
             for row in month_df.iter_rows(named=True):
                 data_by_height[row["height"]] = row["wind_power_density"]
 
-            # Add row for this month with wind power density
-            row_cells = [f"  [{month}]"]
+            cells = [f"{month}月"]
             for height, _ in height_cols:
                 val = data_by_height.get(height, 0)
-                row_cells.append(f"[{val:.2f}]")
-            rows.append(", ".join(row_cells) + ",")
+                cells.append(f"{val:.2f}")
+            rows.append(cells)
 
-        # Build header with height columns
-        header_cells = "[月份], " + ", ".join([f"[{h[1]}]" for h in height_cols])
+        # Build header: month + one column per height
+        headers = ["月份"] + [f"{display}(W/m²)" for _, display in height_cols]
 
-        # Build column spec
-        num_cols = 1 + len(height_cols)
-        col_spec = ", ".join(["auto"] * num_cols)
-
-        hashkey = self.get_or_compute_df_hashkey()
-        return f"""#figure(
-  table(
-    columns: ({col_spec}),
-    inset: 8pt,
-    align: center,
-    table.header(
-      {header_cells}
-    ),
-{chr(10).join(rows)}
-  ),
-  caption: [{self.meta.mast_name} 月平均风功率密度统计],
-) <tbl-{hashkey}>
-"""
+        return TypstTable(headers=headers, data=rows, caption=self._resolve_table_caption())
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -132,14 +123,8 @@ class SingleMastMonthlyWindPowerAtom(ReportAtom[MonthlyWindPowerSchema, SingleMa
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Generate representative year wind power density summary in Chinese.
-        
-        Format:
-        由图@fig-{hashkey}和表@tbl-{hashkey}可知，M1 在 120m，125m（外推），
-        140m（外推）高度处年平均风功率密度分别为XXXW/m²、YYY、ZZZ，
-        在X月最大为AAA，在Y月最小为BBB。
-        """
+    def renderSummary(self) -> list[TypstParagraph]:
+        """Generate representative year wind power density summary in Chinese."""
         # Get heights > 100m
         heights_df = (
             self.df.filter(pl.col("height") > 100)
@@ -147,11 +132,6 @@ class SingleMastMonthlyWindPowerAtom(ReportAtom[MonthlyWindPowerSchema, SingleMa
             .unique()
             .sort("height")
         )
-
-        height_strs = []
-        for row in heights_df.iter_rows(named=True):
-            display = get_height_display_name(row["height"], row["interpolation_marker"])
-            height_strs.append(display)
 
         # Calculate stats per height
         annual_means = []
@@ -182,11 +162,19 @@ class SingleMastMonthlyWindPowerAtom(ReportAtom[MonthlyWindPowerSchema, SingleMa
             min_months.append(min_month)
             min_values.append(min_value)
 
+        # Build height strings for narrative
+        height_strs = []
+        for row in heights_df.iter_rows(named=True):
+            display = get_height_display_name(row["height"], row["interpolation_marker"])
+            height_strs.append(display)
+
         # Build narrative
-        return (
+        summary = (
             f"由图{self.getReference()} 和表{self.getTableReference()} 可知，"
             f"{self.meta.mast_name} 在 {', '.join(height_strs)}高度处"
             f"年平均风功率密度分别为{'、'.join(annual_means)}，"
             f"在{max_months[0]}月最大为{max_values[0]:.0f}W/m²，"
             f"在{min_months[0]}月最小为{min_values[0]:.0f}W/m²。"
         )
+
+        return [TypstParagraph(text=summary)]

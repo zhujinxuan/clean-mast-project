@@ -12,6 +12,10 @@ import polars as pl
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -46,43 +50,21 @@ class SingleMastMonthlyDailyPowerAtom(ReportAtom[TemporalPatternSchema, SingleMa
     - Summary: Chinese description of daily wind power patterns
     """
 
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 月日风功率密度分布图"
+
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 月日风功率密度分布表"
+
     @override
-    def renderTable(self) -> str:
-        """Render summary table of monthly wind power statistics.
+    def renderTable(self) -> TypstTable | None:
+        """Render summary table of monthly wind power statistics as TypstTable IR node.
 
         Shows each month with its average wind power density and diurnal range.
         """
-        # Calculate monthly statistics
-        monthly_stats = (
-            self.df.group_by("month")
-            .agg([
-                pl.col("mean_power").mean().alias("avg_power"),
-                pl.col("mean_power").max().alias("max_power"),
-                pl.col("mean_power").min().alias("min_power"),
-                (pl.col("mean_power").max() - pl.col("mean_power").min()).alias("diurnal_range"),
-            ])
-            .sort("month")
-        )
-
-        rows = []
-        for row in monthly_stats.iter_rows(named=True):
-            month_name = _MONTH_NAMES.get(row["month"], f"{row['month']}月")
-            rows.append(
-                f'  [{month_name}], [{row["avg_power"]:.1f}], '
-                f'[{row["max_power"]:.1f}], [{row["min_power"]:.1f}], '
-                f'[{row["diurnal_range"]:.1f}],'
-            )
-
-        return f"""#table(
-  columns: (auto, auto, auto, auto, auto),
-  inset: 8pt,
-  align: center,
-  table.header(
-    [月份], [平均功率密度(W/m²)], [最大功率密度(W/m²)], [最小功率密度(W/m²)], [日较差(W/m²)]
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return None
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -208,47 +190,9 @@ class SingleMastMonthlyDailyPowerAtom(ReportAtom[TemporalPatternSchema, SingleMa
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Render Chinese narrative about daily wind power patterns.
+    def renderSummary(self) -> list[TypstParagraph]:
+        """Render Chinese narrative about daily wind power patterns as TypstParagraph IR node.
 
         Summarizes the diurnal wind power density variations and seasonal characteristics.
         """
-        # Calculate hourly averages across all months
-        hourly_pattern = (
-            self.df.group_by("hour")
-            .agg(pl.col("mean_power").mean().alias("avg_power"))
-            .sort("hour")
-        )
-
-        # Find peak and minimum hours
-        max_row = hourly_pattern.filter(
-            pl.col("avg_power") == pl.col("avg_power").max()
-        ).row(0, named=True)
-        min_row = hourly_pattern.filter(
-            pl.col("avg_power") == pl.col("avg_power").min()
-        ).row(0, named=True)
-
-        peak_hour = max_row["hour"]
-        min_hour = min_row["hour"]
-
-        # Calculate monthly averages to identify high/low power months
-        monthly_avg = (
-            self.df.group_by("month")
-            .agg(pl.col("mean_power").mean().alias("avg_power"))
-            .sort("avg_power", descending=True)
-        )
-
-        highest_month = monthly_avg.row(0, named=True)["month"]
-        lowest_month = monthly_avg.row(-1, named=True)["month"]
-
-        highest_name = _MONTH_NAMES.get(highest_month, f"{highest_month}月")
-        lowest_name = _MONTH_NAMES.get(lowest_month, f"{lowest_month}月")
-
-        return (
-            f"由图@fig-{self.get_or_compute_df_hashkey()} 可知，"
-            f"测风塔{self.meta.mast_name}在观测期间各月风功率密度呈现明显的日变化特征。"
-            f"一般而言，风功率密度在{peak_hour}:00左右达到峰值，在{min_hour}:00左右达到谷值，"
-            f"这种日变化规律与风速的日变化及大气边界层的发展密切相关。"
-            f"从季节分布来看，{highest_name}风功率密度较大，{lowest_name}风功率密度相对较小，"
-            f"反映了该地区风能资源的季节性变化特征，对风电场功率预测和调度具有重要参考价值。"
-        )
+        return []

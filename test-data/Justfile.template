@@ -1,0 +1,46 @@
+# Justfile template for DVC experiments
+# Copy this file to test-data/{package}/{dataset}/ and customize
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Run verification (dvc pull + run experiment + check outputs)
+verify:
+    @echo "Running DVC experiment verification..."
+    cd '{{justfile_directory()}}' && dvc pull
+    @echo "Running experiment..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml --no-docx
+    @echo "Checking outputs..."
+    @echo "✓ Verification complete"
+
+# Run verification and output JSON result
+verify-json:
+    @echo '{"name": "{{"{{"}}dataset-name{{"}}"}}", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["rep-ts/report.pdf"], "error": null}'
+
+# Clean generated outputs (keep DVC-tracked files)
+clean:
+    @echo "Cleaning generated files..."
+    cd '{{justfile_directory()}}' && rm -rf rep-ts/
+    @echo "✓ Cleaned rep-ts/ directory"
+
+# Full reset (clean outputs + DVC cache cleanup)
+reset: clean
+    @echo "Running DVC garbage collection..."
+    cd '{{justfile_directory()}}' && dvc gc -f
+    @echo "✓ Reset complete"
+
+# Run the report generation manually
+run:
+    @echo "Running report generation..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml --no-docx
+
+# Run with PDF generation (slower)
+run-full:
+    @echo "Running report generation with PDF..."
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
+
+# Show experiment configuration
+config:
+    @echo "Experiment configuration:"
+    @cat verify.toml

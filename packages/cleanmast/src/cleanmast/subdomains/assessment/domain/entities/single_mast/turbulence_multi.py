@@ -12,6 +12,13 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.services.utils.height_filter import (
+    select_interested_heights,
+)
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -44,10 +51,20 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
     - Summary: Chinese comparison of TI across heights
     """
 
+    @property
     @override
-    def renderTable(self) -> str:
-        """Return empty string (no table, chart only)."""
-        return ""
+    def default_image_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 多高度湍流强度对比图"
+
+    @property
+    @override
+    def default_table_caption(self) -> str | None:
+        return None
+
+    @override
+    def renderTable(self) -> TypstTable | None:
+        """Return None (no table, chart only)."""
+        return None
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -91,60 +108,58 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
         # Get unique wind speed bins for IEC band calculation
         wind_speeds = sorted(self.df["wind_speed_bin"].unique().to_list())
 
-        # Create IEC reference bands data
         iec_data = []
         for ws in wind_speeds:
-            for category, i_ref in IEC_CATEGORIES.items():
-                ti_value = compute_iec_ti(float(ws), i_ref)
-                iec_data.append({
-                    "wind_speed": ws,
-                    "ti": ti_value,
-                    "category": category,
-                })
+            ti_a_plus = compute_iec_ti(float(ws), IEC_CATEGORIES["A+"])
+            ti_a = compute_iec_ti(float(ws), IEC_CATEGORIES["A"])
+            ti_b = compute_iec_ti(float(ws), IEC_CATEGORIES["B"])
+            ti_c = compute_iec_ti(float(ws), IEC_CATEGORIES["C"])
+
+            iec_data.extend([
+                {"wind_speed": ws, "lower": ti_a, "upper": ti_a_plus, "category": "A+"},
+                {"wind_speed": ws, "lower": ti_b, "upper": ti_a, "category": "A"},
+                {"wind_speed": ws, "lower": ti_c, "upper": ti_b, "category": "B"},
+                {"wind_speed": ws, "lower": 0.0, "upper": ti_c, "category": "C"},
+            ])
 
         iec_df = pl.DataFrame(iec_data)
 
-        # Create IEC bands using area marks
-        # Order: C (bottom), B, A, A+ (top) - each showing as area from 0 to TI value
         iec_colors: dict[str, str] = {
-            "C": "#E8F5E9",    # Light green
-            "B": "#FFF9C4",    # Light yellow
-            "A": "#FFE0B2",    # Light orange
-            "A+": "#FFCDD2",   # Light red
+            "C": "#8DD3C7",
+            "B": "#FFFFB3",
+            "A": "#80B1D3",
+            "A+": "#FB8072",
         }
 
-        iec_bands = None
-        for category in ["C", "B", "A", "A+"]:
-            category_data = iec_df.filter(pl.col("category") == category)
-            band = (
-                alt.Chart(category_data)
-                .mark_area(opacity=0.6)
-                .encode(
-                    x=alt.X("wind_speed:Q", title="风速 (m/s)"),
-                    y=alt.Y("ti:Q", title="湍流强度"),
-                    color=alt.Color(
-                        "category:N",
-                        scale=alt.Scale(
-                            domain=["C", "B", "A", "A+"],
-                            range=[iec_colors["C"], iec_colors["B"], iec_colors["A"], iec_colors["A+"]],
-                        ),
-                        legend=alt.Legend(
-                            title="IEC参考类别",
-                            orient="right",
-                            titleFontSize=12,
-                            labelFontSize=10,
-                        ),
+        iec_bands = (
+            alt.Chart(iec_df)
+            .mark_area(opacity=0.4)
+            .encode(
+                x=alt.X("wind_speed:Q", title="风速 (m/s)"),
+                y=alt.Y("upper:Q", title="湍流强度"),
+                y2=alt.Y2("lower:Q"),
+                color=alt.Color(
+                    "category:N",
+                    scale=alt.Scale(
+                        domain=["A+", "A", "B", "C"],
+                        range=[iec_colors["A+"], iec_colors["A"], iec_colors["B"], iec_colors["C"]],
                     ),
-                )
+                    legend=alt.Legend(
+                        title="IEC参考类别",
+                        orient="right",
+                        titleFontSize=12,
+                        labelFontSize=10,
+                    ),
+                ),
             )
-            if iec_bands is None:
-                iec_bands = band
-            else:
-                iec_bands = iec_bands + band
+        )
+
+        unique_heights = sorted(self.df["height"].unique().to_list())
+        selected_heights = set(select_interested_heights(unique_heights))
 
         # Prepare multi-height TI data
         ti_data = []
-        for row in self.df.iter_rows(named=True):
+        for row in self.df.filter(pl.col("height").is_in(list(selected_heights))).iter_rows(named=True):
             height = row["height"]
             marker = row.get("interpolation_marker", "")
             height_label = get_height_display_name(height, marker or "")
@@ -158,10 +173,9 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
 
         ti_df = pl.DataFrame(ti_data)
 
-        # Multi-height TI lines with distinct colors
         ti_lines = (
             alt.Chart(ti_df)
-            .mark_line(strokeWidth=2.5, point=True)
+            .mark_line(strokeWidth=1.5)
             .encode(
                 x=alt.X("wind_speed:Q", title="风速 (m/s)"),
                 y=alt.Y("representative_ti:Q", title="湍流强度"),
@@ -184,23 +198,30 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
         )
 
         # Combine IEC bands (bottom layer) with TI lines (top layer)
-        combined_chart = (iec_bands + ti_lines).properties(
-            title=alt.TitleParams(
-                text=f"{self.meta.mast_name} 多高度湍流强度对比",
-                fontSize=16,
-                anchor="middle",
-            ),
-            width=700,
-            height=450,
-        ).configure_axis(
-            labelFontSize=11,
-            titleFontSize=12,
-        ).configure_view(
-            strokeWidth=0.5,
-            stroke="#cccccc",
-        ).configure_legend(
-            labelFontSize=10,
-            titleFontSize=12,
+        combined_chart = (
+            (iec_bands + ti_lines)
+            .resolve_scale(color="independent")
+            .properties(
+                title=alt.TitleParams(
+                    text=f"{self.meta.mast_name} 多高度湍流强度对比",
+                    fontSize=16,
+                    anchor="middle",
+                ),
+                width=700,
+                height=450,
+            )
+            .configure_axis(
+                labelFontSize=11,
+                titleFontSize=12,
+            )
+            .configure_view(
+                strokeWidth=0.5,
+                stroke="#cccccc",
+            )
+            .configure_legend(
+                labelFontSize=10,
+                titleFontSize=12,
+            )
         )
 
         # Export to PNG using vl_convert
@@ -210,7 +231,7 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
         return image_path
 
     @override
-    def renderSummary(self) -> str:
+    def renderSummary(self) -> list[TypstParagraph]:
         """Render Chinese narrative comparing turbulence across heights.
 
         Summarizes the representative TI values and IEC categories,
@@ -258,15 +279,12 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, SingleMas
             for h in ti_by_height
         ])
 
-        return (
-            f"由图{self.getReference()}可知，"
+        text = (
             f"测风塔{self.meta.mast_name}在{', '.join(height_strs)}各高度的"
             f"湍流强度分布特征明显。{height_summary}。"
             f"从高度分布来看，{max_ti['height']}湍流强度最大（{max_ti['avg_rep_ti']:.3f}），"
             f"{min_ti['height']}湍流强度最小（{min_ti['avg_rep_ti']:.3f}），"
             f"整体呈现随高度增加湍流强度逐渐降低的趋势。"
-            f"根据IEC分类标准，各高度数据主要属于{top_category['iec_category']}类（占比{top_pct:.1f}%），"
-            f"参考图中IEC标准带可知，实测湍流强度与IEC参考值基本吻合，"
-            f"风电场湍流条件{'较好' if top_category['iec_category'] in ['C', 'B'] else '一般'}，"
-            f"适合安装{'主流机型' if top_category['iec_category'] in ['A', 'B', 'C'] else '高湍流适应性机型'}。"
+            f"根据IEC分类标准，各高度数据主要属于{top_category['iec_category']}类（占比{top_pct:.1f}%）。"
         )
+        return [TypstParagraph(text=text)]

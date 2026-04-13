@@ -1,0 +1,13 @@
+=== Document Structure ===
+Paragraphs: 3
+
+--- Paragraph 0 ---
+Text: First paragraph unique hash abc123....
+Style: Heading 1
+XML length: 296 chars
+XML preview: <ns0:p xmlns:ns0="http://schemas.openxmlformats.org/wordprocessingml/2006/main">First paragraph unique hash abc123.<ns0:pPr><ns0:pStyle ns0:val="Heading1" /></ns0:pPr><ns0:r>First paragraph unique has...
+Traceback (most recent call last):
+  File "C:\Users\zhu_j\workspace\developing\docx-typst-polish\packages\typst_ir\tests\experiments\paragraph\examine_docx_xml.py", line 29, in <module>
+    print(f"outline_level: {para.paragraph_format.outline_level}")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ParagraphFormat' object has no attribute 'outline_level'

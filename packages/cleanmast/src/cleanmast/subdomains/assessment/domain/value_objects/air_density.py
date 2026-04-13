@@ -111,3 +111,46 @@ def calculate_air_density(data: TimeSeriesData) -> float:
     except (TypeError, ValueError, ZeroDivisionError):
         # Return standard value on any calculation error
         return STANDARD_AIR_DENSITY
+
+
+def convert_to_standard_air_density(wind_speed: float, actual_density: float) -> float:
+    """Convert wind speed to standard air density equivalent.
+
+    Formula: v_std = v * sqrt(ρ_actual / ρ_std)
+
+    Args:
+        wind_speed: Wind speed at actual air density (m/s)
+        actual_density: Actual air density (kg/m³)
+
+    Returns:
+        Wind speed equivalent at standard air density (m/s)
+    """
+    return wind_speed * math.sqrt(actual_density / STANDARD_AIR_DENSITY)
+
+
+def calculate_air_density_for_height(
+    height: float, reference_density: float, reference_height: float
+) -> float:
+    """Extrapolate air density from a reference height to target height.
+
+    Uses the barometric formula for density extrapolation.
+
+    Formula:
+        ρ = ρ_ref * exp(-g * (h - h_ref) / (R * (288.15 - 0.0065 * h_ref)))
+    where:
+    - g = 9.81 m/s² (gravitational acceleration)
+    - R = 287.05 J/(kg·K) (specific gas constant for dry air)
+    - 288.15 K = temperature at sea level in standard atmosphere
+    - 0.0065 K/m = temperature lapse rate
+
+    Args:
+        height: Target height (m)
+        reference_density: Air density at reference height (kg/m³)
+        reference_height: Reference height (m)
+
+    Returns:
+        Extrapolated air density at target height (kg/m³)
+    """
+    return reference_density * math.exp(
+        -9.81 * (height - reference_height) / (287.05 * (288.15 - 0.0065 * reference_height))
+    )

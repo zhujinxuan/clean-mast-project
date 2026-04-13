@@ -14,6 +14,10 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -32,9 +36,17 @@ class SingleMastWindTimeseriesAtom(ReportAtom[TemporalPatternSchema, SingleMastM
     - Summary: Chinese description of time series patterns
     """
 
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 风速时间序列图"
+
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 风速时间序列表"
+
     @override
-    def renderTable(self) -> str:
-        """Render as Typst table with summary statistics by height.
+    def renderTable(self) -> TypstTable | None:
+        """Render as TypstTable IR node with summary statistics by height.
 
         Columns: 高度 | 平均风速 | 最大风速 | 最小风速 | 标准差
         """
@@ -70,25 +82,19 @@ class SingleMastWindTimeseriesAtom(ReportAtom[TemporalPatternSchema, SingleMastM
             min_val = data["min_speed"] if data["min_speed"] is not None else 0
             std_val = data["std_speed"] if data["std_speed"] is not None else 0
 
-            row_cells = f"  [{display}], [{mean_val:.2f}], [{max_val:.2f}], [{min_val:.2f}], [{std_val:.2f}]"
-            rows.append(row_cells + ",")
+            rows.append([
+                display,
+                f"{mean_val:.2f}",
+                f"{max_val:.2f}",
+                f"{min_val:.2f}",
+                f"{std_val:.2f}",
+            ])
 
-        # Build header
-        header_cells = "[高度], [平均风速(m/s)], [最大风速(m/s)], [最小风速(m/s)], [标准差]"
-
-        # Build column spec
-        col_spec = "auto, auto, auto, auto, auto"
-
-        return f"""#table(
-  columns: ({col_spec}),
-  inset: 8pt,
-  align: center,
-  table.header(
-    {header_cells}
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return TypstTable(
+            headers=["高度", "平均风速(m/s)", "最大风速(m/s)", "最小风速(m/s)", "标准差"],
+            data=rows,
+            caption=self._resolve_table_caption(),
+        )
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -151,7 +157,7 @@ class SingleMastWindTimeseriesAtom(ReportAtom[TemporalPatternSchema, SingleMastM
         return image_path
 
     @override
-    def renderSummary(self) -> str:
+    def renderSummary(self) -> list[TypstParagraph]:
         """Generate Chinese summary of wind speed time series patterns."""
         # Filter to >=100m heights and valid wind speeds
         high_df = self.df.filter(
@@ -198,7 +204,7 @@ class SingleMastWindTimeseriesAtom(ReportAtom[TemporalPatternSchema, SingleMastM
 
             assert isinstance(time_min, datetime) and isinstance(time_max, datetime)
 
-            return (
+            text = (
                 f"{self.meta.mast_name}测风塔风速时间序列分析。"
                 f"时间范围：{time_min.strftime('%Y年%m月%d日')}至{time_max.strftime('%Y年%m月%d日')}，"
                 f"分析高度包括{', '.join(height_strs)}。"
@@ -210,8 +216,10 @@ class SingleMastWindTimeseriesAtom(ReportAtom[TemporalPatternSchema, SingleMastM
                 f"展现了风速随高度的变化特征。"
             )
         else:
-            return (
+            text = (
                 f"{self.meta.mast_name}测风塔风速时间序列分析。"
                 f"分析高度包括{', '.join(height_strs)}。"
                 f"暂无有效风速数据。"
             )
+
+        return [TypstParagraph(text=text)]

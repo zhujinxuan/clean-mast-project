@@ -12,7 +12,7 @@ class SingleMastMeta:
     """Metadata for single mast report atoms."""
     mast_name: str
     air_density: float = 1.225  # Calculated in recommend phase
-    caption: str = ""
+    caption: str | None = None
     width: str = "80%"
 
 

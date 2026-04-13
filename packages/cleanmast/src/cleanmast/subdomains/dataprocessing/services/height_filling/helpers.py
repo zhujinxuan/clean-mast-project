@@ -136,9 +136,7 @@ def get_sensor_for_height(
 ) -> SensorColumn | None:
     """Find sensor for given type and height."""
     for s in sensors:
-        if (s.sensor_type == sensor_type and
-            s.height == height and
-            s.stat_type == "avg"):
+        if s.sensor_type == sensor_type and s.height == height and s.stat_type == "avg":
             return s
     return None
 

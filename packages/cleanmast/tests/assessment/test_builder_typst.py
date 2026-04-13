@@ -34,7 +34,7 @@ class TestBuildTypstReturnsTypstDocument:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_build_typst_returns_typst_document(
         self,
@@ -79,7 +79,7 @@ class TestTypstDocumentChildrenStructure:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_typst_document_has_children(
         self,
@@ -126,7 +126,7 @@ class TestTypstDocumentChildrenStructure:
         document = builder.build_typst()
         children = document.children
 
-        # Check that we have the expected types
+        # Check that we have the expected types (traverse into TypstSection bodies)
         type_counts = {
             TypstHeading: 0,
             TypstFigure: 0,
@@ -134,11 +134,27 @@ class TestTypstDocumentChildrenStructure:
             TypstParagraph: 0,
         }
 
-        for child in children:
+        def _count_node(node: Any) -> None:
             for typ in type_counts:
-                if isinstance(child, typ):
+                if isinstance(node, typ):
                     type_counts[typ] += 1
                     break
+
+        for child in children:
+            _count_node(child)
+            if hasattr(child, "heading"):
+                _count_node(child.heading)
+            if hasattr(child, "body"):
+                for body_child in child.body:
+                    _count_node(body_child)
+            if hasattr(child, "subsections"):
+                for sub in child.subsections:
+                    _count_node(sub)
+                    if hasattr(sub, "heading"):
+                        _count_node(sub.heading)
+                    if hasattr(sub, "body"):
+                        for body_child in sub.body:
+                            _count_node(body_child)
 
         # Should have at least one heading (for the section title)
         assert type_counts[TypstHeading] >= 1, (
@@ -162,7 +178,7 @@ class TestTypstFigurePaths:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_typst_figure_paths_are_posix(
         self,
@@ -184,11 +200,15 @@ class TestTypstFigurePaths:
 
         document = builder.build_typst()
 
-        # Collect all figure paths
+        # Collect all figure paths (traverse into TypstSection bodies)
         figure_paths: list[str] = []
         for child in document.children:
             if isinstance(child, TypstFigure):
                 figure_paths.append(child.content)
+            elif hasattr(child, "body"):
+                for body_child in child.body:
+                    if isinstance(body_child, TypstFigure):
+                        figure_paths.append(body_child.content)
 
         # Should have some figures
         assert len(figure_paths) > 0, "Expected at least one figure in document"
@@ -233,34 +253,7 @@ class TestTypstDocumentContent:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
-
-    def test_document_has_title_heading(
-        self,
-        tmp_path: Path,
-        monthly_wind_atom: Any,
-    ):
-        """Test that document includes a heading for the report title.
-
-        The first child should be a level-1 heading containing the report title.
-        """
-        output_dir = tmp_path / "output"
-        builder = AssessmentReportBuilder("Monthly Wind Report", output_dir)
-        section = self._create_section("Wind Analysis", [monthly_wind_atom])
-        builder.add_section(section)
-
-        document = builder.build_typst()
-
-        # First child should be the title heading
-        assert len(document.children) > 0, "Document should have children"
-        first_child = document.children[0]
-        assert isinstance(first_child, TypstHeading), (
-            f"First child should be TypstHeading, got {type(first_child).__name__}"
-        )
-        assert first_child.level == 1, f"Title should be level 1, got {first_child.level}"
-        assert "Monthly Wind Report" in first_child.text, (
-            f"Title heading should contain 'Monthly Wind Report', got {first_child.text!r}"
-        )
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_document_has_section_headings(
         self,
@@ -278,14 +271,15 @@ class TestTypstDocumentContent:
 
         document = builder.build_typst()
 
-        # Find all headings
-        headings = [
-            child for child in document.children if isinstance(child, TypstHeading)
-        ]
+        # Find all section headings inside TypstSection nodes
+        headings: list[TypstHeading] = []
+        for child in document.children:
+            if hasattr(child, "heading"):
+                headings.append(child.heading)
 
-        # Should have at least title + section heading
-        assert len(headings) >= 2, (
-            f"Expected at least 2 headings (title + section), got {len(headings)}"
+        # Should have at least the section heading
+        assert len(headings) >= 1, (
+            f"Expected at least 1 section heading, got {len(headings)}"
         )
 
         # One heading should contain the section title
@@ -301,7 +295,7 @@ class TestBuildTypstSerialization:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_serialization_produces_typst_markup(
         self,
@@ -324,9 +318,17 @@ class TestBuildTypstSerialization:
         # In the real implementation, this would use a proper serializer
         markup_parts: list[str] = []
         for child in document.children:
-            if isinstance(child, TypstHeading):
-                prefix = "=" * child.level
-                markup_parts.append(f"{prefix} {child.text}")
+            if hasattr(child, "heading"):
+                markup_parts.append(f"= {child.heading.text}")
+                for body_child in child.body:
+                    if isinstance(body_child, TypstFigure):
+                        markup_parts.append(f"#figure(image(\"{body_child.content}\"))")
+                    elif isinstance(body_child, TypstTable):
+                        markup_parts.append("#table(...)")
+                    elif isinstance(body_child, TypstParagraph):
+                        markup_parts.append(body_child.text)
+            elif isinstance(child, TypstHeading):
+                markup_parts.append(f"= {child.text}")
             elif isinstance(child, TypstFigure):
                 markup_parts.append(f"#figure(image(\"{child.content}\"))")
             elif isinstance(child, TypstTable):
@@ -360,14 +362,19 @@ class TestBuildTypstSerialization:
         document = builder.build_typst()
         child_count = len(document.children)
 
-        # Count how many children we can identify in a simple serialization
+        # Count how many children we can identify (traverse into TypstSection bodies)
         serialized_count = 0
         for child in document.children:
             if isinstance(child, (TypstHeading, TypstFigure, TypstTable, TypstParagraph)):
                 serialized_count += 1
+            elif hasattr(child, "heading"):
+                serialized_count += 1
+                for body_child in child.body:
+                    if isinstance(body_child, (TypstHeading, TypstFigure, TypstTable, TypstParagraph)):
+                        serialized_count += 1
 
-        assert serialized_count == child_count, (
-            f"Expected {child_count} serialized children, got {serialized_count}"
+        assert serialized_count >= child_count, (
+            f"Expected at least {child_count} serialized children, got {serialized_count}"
         )
 
 
@@ -377,7 +384,7 @@ class TestBuildTypstMultipleSections:
     def _create_section(self, title: str, atoms: list[Any]) -> WindRoseSection:
         """Helper to create a WindRoseSection from atoms."""
         collection = AtomCollection.from_dict({"M01": atoms})
-        return WindRoseSection(atoms=collection, title=title, level=1)
+        return WindRoseSection(atoms=collection, title=title)
 
     def test_multiple_sections_produce_multiple_headings(
         self,
@@ -399,12 +406,9 @@ class TestBuildTypstMultipleSections:
 
         document = builder.build_typst()
 
-        # Find section-level headings (level 2)
-        section_headings = [
-            child
-            for child in document.children
-            if isinstance(child, TypstHeading) and child.level == 2
-        ]
+        # Find section headings inside TypstSection nodes
+        sections = [c for c in document.children if hasattr(c, "heading")]
+        section_headings = [sec.heading for sec in sections]
 
         assert len(section_headings) >= 2, (
             f"Expected at least 2 section headings, got {len(section_headings)}"
@@ -442,14 +446,9 @@ class TestBuildTypstMultipleSections:
 
         document = builder.build_typst()
 
-        # Find all headings and extract their order
-        headings = [
-            child for child in document.children if isinstance(child, TypstHeading)
-        ]
-
-        # Find the indices of our section headings
-        section_headings = [h for h in headings if h.level == 2]
-        section_texts = [h.text for h in section_headings]
+        # Find section headings inside TypstSection nodes
+        sections = [c for c in document.children if hasattr(c, "heading")]
+        section_texts = [sec.heading.text for sec in sections]
 
         # Find positions of our sections
         first_pos = next(

@@ -19,7 +19,7 @@ class TestSensorColumn:
         )
 
         assert sensor.column_name == "WindSpeed_100m_avg [m/s]"
-        assert sensor.sensor_type == "WindSpeed"
+        assert sensor.sensor_type == "WindSpeed" and sensor.stat_type == "avg"
         assert sensor.sensor_direction == ""
         assert sensor.height == 100.0
         assert sensor.stat_type == "avg"
@@ -39,7 +39,7 @@ class TestSensorColumn:
         sensor = SensorColumn(**data)  # type: ignore[arg-type]
 
         assert sensor.column_name == "WindDirection_80m_avg [deg]"
-        assert sensor.sensor_type == "WindDirection"
+        assert sensor.sensor_type == "WindDirection" and sensor.stat_type == "avg"
         assert sensor.sensor_direction == "N"
         assert sensor.height == 80.0
         assert sensor.stat_type == "avg"

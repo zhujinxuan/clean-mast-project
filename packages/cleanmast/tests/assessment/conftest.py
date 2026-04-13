@@ -24,6 +24,9 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern
 from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
     SingleMastMonthlyPowerPatternAtom,
 )
+from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
+    SingleMastWindTimeseriesAtom,
+)
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_intensity import (
     SingleMastTurbulenceIntensityAtom,
 )
@@ -33,26 +36,17 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_sect
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.vertical_profile import (
-    SingleMastVerticalProfileAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
+    SingleMastWeibullSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_distribution import (
-    SingleMastWeibullDistributionAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+    SingleMastWindFrequencyHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_multi import (
-    SingleMastWeibullMultiHeightAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_hours import (
+    SingleMastWindPowerHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_parameters import (
-    SingleMastWeibullParametersAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_table import (
-    SingleMastWindFrequencyTableAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_frequency_table import (
-    SingleMastWindPowerFrequencyTableAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_range_summary import (
-    SingleMastWindRangeSummaryAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_productive_range import (
+    SingleMastWindProductiveRangeAtom,
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
     SingleMastMonthlyWindFrequencyRoseAtom,
@@ -63,9 +57,6 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid 
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
     SingleMastWindShearExponentAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_table import (
-    SingleMastWindShearTableAtom,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
     VerticalProfileSchema,
@@ -113,6 +104,7 @@ def sample_wind_rose_df() -> pl.DataFrame:
         "height": [],
         "interpolation_marker": [],
         "frequency": [],
+        "energy_frequency": [],
         "wind_power_density": [],
     }
 
@@ -131,6 +123,7 @@ def sample_wind_rose_df() -> pl.DataFrame:
                 data["height"].append(height)
                 data["interpolation_marker"].append(marker if marker else None)
                 data["frequency"].append(freq)
+                data["energy_frequency"].append(0.8 * freq)
                 data["wind_power_density"].append(power)
 
     return pl.DataFrame(data)
@@ -241,6 +234,7 @@ def turbulence_intensity_atom(
         "std_ti": [0.03, 0.02, 0.02, 0.015, 0.01, 0.01],
         "representative_ti": [0.218, 0.176, 0.146, 0.119, 0.103, 0.093],
         "iec_category": ["B", "B", "A", "A", "A", "A"],
+        "count": [42, 42, 42, 42, 42, 42],
     })
     return SingleMastTurbulenceIntensityAtom.create(
         schema=TurbulenceSchema,
@@ -305,6 +299,7 @@ def turbulence_summary_atom(
                              0.202, 0.166, 0.133, 0.108, 0.093, 0.082],
         "iec_category": ["B", "B", "A", "A", "A", "A",
                         "B", "B", "A", "A", "A", "A"],
+        "count": [42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42],
     })
     return SingleMastTurbulenceSummaryAtom.create(
         schema=TurbulenceSchema,
@@ -335,80 +330,14 @@ def sample_weibull_df() -> pl.DataFrame:
 
 
 @pytest.fixture
-def weibull_distribution_atom(
+def weibull_subgrid_atom(
     sample_weibull_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
 ) -> Any:
-    """Create a SingleMastWeibullDistributionAtom for testing."""
-    return SingleMastWeibullDistributionAtom.create(
+    """Create a SingleMastWeibullSubgridAtom for testing."""
+    return SingleMastWeibullSubgridAtom.create(
         schema=WeibullSchema,
         df=sample_weibull_df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def weibull_parameters_atom(
-    sample_weibull_df: pl.DataFrame,
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastWeibullParametersAtom for testing."""
-    return SingleMastWeibullParametersAtom.create(
-        schema=WeibullSchema,
-        df=sample_weibull_df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def weibull_multi_atom(
-    sample_weibull_df: pl.DataFrame,
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastWeibullMultiHeightAtom for testing."""
-    return SingleMastWeibullMultiHeightAtom.create(
-        schema=WeibullSchema,
-        df=sample_weibull_df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def vertical_profile_atom(
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastVerticalProfileAtom for testing."""
-    df = pl.DataFrame({
-        "height": [50.0, 80.0, 100.0, 120.0],
-        "interpolation_marker": [None, None, None, "外推"],
-        "wind_speed_mean": [5.2, 6.1, 6.8, 7.2],
-        "wind_speed_std": [1.8, 2.0, 2.1, 2.2],
-        "alpha": [0.15, 0.15, 0.15, 0.15],
-        "r_squared": [0.98, 0.98, 0.98, 0.98],
-    })
-    return SingleMastVerticalProfileAtom.create(
-        schema=VerticalProfileSchema,
-        df=df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def wind_shear_table_atom(
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastWindShearTableAtom for testing."""
-    df = pl.DataFrame({
-        "from_height": [50.0, 50.0, 80.0],
-        "to_height": [80.0, 120.0, 120.0],
-        "alpha_mean": [0.15, 0.14, 0.13],
-        "alpha_std": [0.03, 0.025, 0.02],
-        "alpha_min": [0.08, 0.07, 0.06],
-        "alpha_max": [0.25, 0.22, 0.20],
-    })
-    return SingleMastWindShearTableAtom.create(
-        schema=WindShearSchema,
-        df=df,
         meta=sample_mast_meta,
     )
 
@@ -418,7 +347,15 @@ def wind_shear_matrix_atom(
     sample_mast_meta: SingleMastMeta,
 ) -> Any:
     """Create a SingleMastWindShearExponentAtom for testing."""
-    df = pl.DataFrame({
+    profile_df = pl.DataFrame({
+        "height": [50.0, 80.0, 100.0, 120.0],
+        "interpolation_marker": [None, None, None, "外推"],
+        "wind_speed_mean": [5.2, 6.1, 6.8, 7.2],
+        "wind_speed_std": [1.8, 2.0, 2.1, 2.2],
+        "alpha": [0.15, 0.15, 0.15, 0.15],
+        "r_squared": [0.98, 0.98, 0.98, 0.98],
+    })
+    shear_df = pl.DataFrame({
         "from_height": [50.0, 50.0, 80.0],
         "to_height": [80.0, 120.0, 120.0],
         "alpha_mean": [0.15, 0.14, 0.13],
@@ -427,8 +364,10 @@ def wind_shear_matrix_atom(
         "alpha_max": [0.25, 0.22, 0.20],
     })
     return SingleMastWindShearExponentAtom.create(
-        schema=WindShearSchema,
-        df=df,
+        profile_schema=VerticalProfileSchema,
+        profile_df=profile_df,
+        shear_schema=WindShearSchema,
+        shear_df=shear_df,
         meta=sample_mast_meta,
     )
 
@@ -477,8 +416,8 @@ def wind_frequency_table_atom(
     sample_wind_frequency_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
 ) -> Any:
-    """Create a SingleMastWindFrequencyTableAtom for testing."""
-    return SingleMastWindFrequencyTableAtom.create(
+    """Create a SingleMastWindFrequencyHoursAtom for testing."""
+    return SingleMastWindFrequencyHoursAtom.create(
         schema=WindFrequencySchema,
         df=sample_wind_frequency_df,
         meta=sample_mast_meta,
@@ -490,8 +429,8 @@ def wind_power_frequency_table_atom(
     sample_wind_frequency_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
 ) -> Any:
-    """Create a SingleMastWindPowerFrequencyTableAtom for testing."""
-    return SingleMastWindPowerFrequencyTableAtom.create(
+    """Create a SingleMastWindPowerHoursAtom for testing."""
+    return SingleMastWindPowerHoursAtom.create(
         schema=WindFrequencySchema,
         df=sample_wind_frequency_df,
         meta=sample_mast_meta,
@@ -503,8 +442,8 @@ def wind_range_summary_atom(
     sample_wind_frequency_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
 ) -> Any:
-    """Create a SingleMastWindRangeSummaryAtom for testing."""
-    return SingleMastWindRangeSummaryAtom.create(
+    """Create a SingleMastWindProductiveRangeAtom for testing."""
+    return SingleMastWindProductiveRangeAtom.create(
         schema=WindFrequencySchema,
         df=sample_wind_frequency_df,
         meta=sample_mast_meta,
@@ -612,6 +551,19 @@ def monthly_daily_power_atom(
 
 
 @pytest.fixture
+def wind_timeseries_atom(
+    sample_temporal_pattern_df: pl.DataFrame,
+    sample_mast_meta: SingleMastMeta,
+) -> Any:
+    """Create a SingleMastWindTimeseriesAtom for testing."""
+    return SingleMastWindTimeseriesAtom.create(
+        schema=TemporalPatternSchema,
+        df=sample_temporal_pattern_df,
+        meta=sample_mast_meta,
+    )
+
+
+@pytest.fixture
 def wind_power_rose_atom_null_power(
     sample_wind_rose_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
@@ -619,7 +571,8 @@ def wind_power_rose_atom_null_power(
     """Create a SingleMastWindPowerRoseAtom with null power data for testing."""
     # Create DataFrame with null power density
     df_null_power = sample_wind_rose_df.with_columns(
-        pl.lit(None).alias("wind_power_density")
+        pl.lit(None).alias("wind_power_density"),
+        pl.lit(None).alias("energy_frequency"),
     )
     return SingleMastWindPowerRoseAtom.create(
         schema=WindRoseSchema,
@@ -637,11 +590,7 @@ def all_atoms(
     turbulence_intensity_atom: Any,
     turbulence_sector_atom: Any,
     turbulence_summary_atom: Any,
-    weibull_distribution_atom: Any,
-    weibull_parameters_atom: Any,
-    weibull_multi_atom: Any,
-    vertical_profile_atom: Any,
-    wind_shear_table_atom: Any,
+    weibull_subgrid_atom: Any,
     wind_shear_matrix_atom: Any,
     wind_frequency_table_atom: Any,
     wind_power_frequency_table_atom: Any,
@@ -661,11 +610,7 @@ def all_atoms(
         turbulence_intensity_atom,
         turbulence_sector_atom,
         turbulence_summary_atom,
-        weibull_distribution_atom,
-        weibull_parameters_atom,
-        weibull_multi_atom,
-        vertical_profile_atom,
-        wind_shear_table_atom,
+        weibull_subgrid_atom,
         wind_shear_matrix_atom,
         wind_frequency_table_atom,
         wind_power_frequency_table_atom,

@@ -38,7 +38,7 @@ class TestHeightFillingServices:
 
         ws_sensors = get_existing_sensors(sensors, "WindSpeed")
         assert len(ws_sensors) == 1
-        assert ws_sensors[0].sensor_type == "WindSpeed"
+        assert ws_sensors[0].sensor_type == "WindSpeed" and ws_sensors[0].stat_type == "avg"
 
     def test_get_top_sensors_returns_highest(self):
         """Test that get_top_sensors returns highest sensors."""
@@ -136,7 +136,7 @@ class TestHeightFillingServices:
 
         assert target.column_name == "WS_120m_fill:extrapolated"
         assert target.height == 120.0
-        assert target.sensor_type == "WindSpeed"
+        assert target.sensor_type == "WindSpeed" and target.stat_type == "avg"
         assert target.unit == "m/s"
 
     def test_build_sensor_column_map(self):

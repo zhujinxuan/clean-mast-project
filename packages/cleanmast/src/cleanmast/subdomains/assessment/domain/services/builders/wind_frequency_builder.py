@@ -7,17 +7,17 @@ Compliance: Subdomain layout ✓ | Service ✓ | Builder Pattern ✓
 import polars as pl
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_distribution import (
-    SingleMastWindFrequencyDistributionAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_distribution_subgrid import (
+    SingleMastWindDistributionSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_table import (
-    SingleMastWindFrequencyTableAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+    SingleMastWindFrequencyHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_frequency_table import (
-    SingleMastWindPowerFrequencyTableAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_hours import (
+    SingleMastWindPowerHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_range_summary import (
-    SingleMastWindRangeSummaryAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_productive_range import (
+    SingleMastWindProductiveRangeAtom,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
     AnalysisResult,
@@ -50,32 +50,32 @@ class WindFrequencySectionBuilder:
 
         Returns:
             List of 4 report atoms in order:
-            1. SingleMastWindFrequencyTableAtom (wind frequency by speed bin)
-            2. SingleMastWindPowerFrequencyTableAtom (power frequency by speed bin)
-            3. SingleMastWindFrequencyDistributionAtom (visualization chart)
-            4. SingleMastWindRangeSummaryAtom (productive range 3-25 m/s summary)
+            1. SingleMastWindFrequencyHoursAtom (wind frequency hours by speed bin)
+            2. SingleMastWindPowerHoursAtom (power frequency hours by speed bin)
+            3. SingleMastWindProductiveRangeAtom (productive range 3-25 m/s summary)
+            4. SingleMastWindDistributionSubgridAtom (faceted distribution chart)
         """
         # Concatenate all results into single DataFrame
         df = pl.concat([r.data for r in results])
         meta = SingleMastMeta(mast_name=mast_name)
 
         atoms: list[ReportAtom] = [
-            SingleMastWindFrequencyTableAtom.create(
+            SingleMastWindFrequencyHoursAtom.create(
                 schema=WindFrequencySchema,
                 df=df,
                 meta=meta,
             ),
-            SingleMastWindPowerFrequencyTableAtom.create(
+            SingleMastWindPowerHoursAtom.create(
                 schema=WindFrequencySchema,
                 df=df,
                 meta=meta,
             ),
-            SingleMastWindFrequencyDistributionAtom.create(
+            SingleMastWindProductiveRangeAtom.create(
                 schema=WindFrequencySchema,
                 df=df,
                 meta=meta,
             ),
-            SingleMastWindRangeSummaryAtom.create(
+            SingleMastWindDistributionSubgridAtom.create(
                 schema=WindFrequencySchema,
                 df=df,
                 meta=meta,

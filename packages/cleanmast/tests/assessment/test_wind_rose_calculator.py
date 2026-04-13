@@ -1,6 +1,7 @@
 """Tests for wind rose calculator service."""
 
 import polars as pl
+import polars.exceptions
 import pytest
 from cleanmast.subdomains.assessment.domain.services.calculators.wind_rose_calculator import (
     SECTOR_NAMES,
@@ -96,6 +97,7 @@ class TestWindRoseCalculator:
             "interpolation_marker",
             "frequency",
             "wind_power_density",
+            "energy_frequency",
         }
         assert set(result.data.columns) == expected_columns
 
@@ -184,8 +186,7 @@ class TestWindRoseCalculator:
 
         calculator = WindRoseCalculator()
 
-        # Empty result due to missing wind direction - should raise SchemaError
-        with pytest.raises(Exception):
+        with pytest.raises(polars.exceptions.ColumnNotFoundError):
             calculator.calculate(input_data)
 
     def test_ignores_null_wind_direction(self) -> None:
@@ -331,8 +332,7 @@ class TestWindRoseCalculator:
 
         calculator = WindRoseCalculator()
 
-        # Empty DataFrame should raise SchemaError during validation
-        with pytest.raises(Exception):
+        with pytest.raises(polars.exceptions.ColumnNotFoundError):
             calculator.calculate(input_data)
 
     def test_wind_direction_boundary_conditions(self) -> None:
@@ -372,3 +372,33 @@ class TestWindRoseCalculator:
                 month_frequencies = month_data["frequency"].to_list()
                 total = sum(month_frequencies)
                 assert pytest.approx(total, rel=0.001) == 1.0
+
+    def test_energy_frequency_sums_to_100_per_month_height(self) -> None:
+        wind_speeds = [5.0] * 16
+        wind_directions = [0.0, 22.5, 45.0, 67.5, 90.0, 112.5, 135.0, 157.5,
+                          180.0, 202.5, 225.0, 247.5, 270.0, 292.5, 315.0, 337.5]
+        input_data = self._create_test_input(wind_speeds, wind_directions, air_density=1.225)
+
+        calculator = WindRoseCalculator()
+        result = calculator.calculate(input_data)
+
+        # energy_frequency should sum to 100.0 for each (month, height) group
+        for month in result.data["month"].unique():
+            for height in result.data["height"].unique():
+                group = result.data.filter((pl.col("month") == month) & (pl.col("height") == height))
+                if len(group) > 0:
+                    total = group["energy_frequency"].sum()
+                    assert pytest.approx(total, abs=0.001) == 1.0
+
+    def test_energy_frequency_zero_sum_guard(self) -> None:
+        wind_speeds = [0.0, 0.0, 0.0, 0.0]
+        wind_directions = [0.0, 90.0, 180.0, 270.0]
+        input_data = self._create_test_input(wind_speeds, wind_directions, air_density=1.225)
+
+        calculator = WindRoseCalculator()
+        result = calculator.calculate(input_data)
+
+        # All wind_power_density values are 0, so energy_frequency should be 0.0 without crashing
+        assert len(result.data) == 4
+        for value in result.data["energy_frequency"].to_list():
+            assert value == 0.0

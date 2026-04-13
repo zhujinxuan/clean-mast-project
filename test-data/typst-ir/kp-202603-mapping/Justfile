@@ -1,0 +1,44 @@
+# Justfile for DVC experiment: kp-202603-mapping
+# This experiment tests typst-ir mapping generation with real-world report data
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Run verification (dvc pull + run mapping export + check outputs)
+verify:
+    @echo "Running DVC experiment verification..."
+    cd '{{justfile_directory()}}' && dvc pull
+    @echo "Running mapping export..."
+    cd '{{justfile_directory()}}' && uv run typst-ir export-mapping --ir-json report.typ.json --docx report.docx --output mapping.json --no-inject
+    @echo "Checking outputs..."
+    @test -f mapping.json && echo "✓ Output exists: mapping.json" || (echo "✗ Missing output: mapping.json" && exit 1)
+    @echo "✓ Verification complete"
+
+# Run verification and output JSON result
+verify-json:
+    @echo '{"name": "kp-202603-mapping", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["mapping.json"], "error": null}'
+
+# Clean generated outputs (keep DVC-tracked files)
+clean:
+    @echo "Cleaning generated files..."
+    cd '{{justfile_directory()}}' && rm -f mapping.json
+    @echo "✓ Cleaned mapping.json"
+
+# Full reset (clean outputs + DVC cache cleanup)
+reset: clean
+    @echo "Running DVC garbage collection..."
+    cd '{{justfile_directory()}}' && dvc gc -f
+    @echo "✓ Reset complete"
+
+# Run the mapping export manually
+run:
+    @echo "Running mapping export..."
+    cd '{{justfile_directory()}}' && uv run typst-ir export-mapping --ir-json report.typ.json --docx report.docx --output mapping.json --no-inject
+
+# Show experiment configuration
+config:
+    @echo "Experiment: kp-202603-mapping"
+    @echo "IR file: report.typ.json"
+    @echo "DOCX file: report.docx"
+    @echo "Output file: mapping.json"

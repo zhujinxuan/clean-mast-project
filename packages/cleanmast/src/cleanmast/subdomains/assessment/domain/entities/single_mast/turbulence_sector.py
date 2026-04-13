@@ -14,6 +14,10 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -32,8 +36,18 @@ class SingleMastTurbulenceSectorAtom(ReportAtom[TurbulenceSectorSchema, SingleMa
     - Summary: Chinese description of dominant turbulent directions
     """
 
+    @property
     @override
-    def renderTable(self) -> str:
+    def default_image_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 按风向扇区湍流强度图"
+
+    @property
+    @override
+    def default_table_caption(self) -> str | None:
+        return f"{self.meta.mast_name} 按风向扇区湍流强度表"
+
+    @override
+    def renderTable(self) -> TypstTable | None:
         """Render as Typst table: 风向 | 高度 | 平均TI | 代表TI | IEC类别."""
         rows = []
         sorted_df = self.df.sort(["sector", "height"])
@@ -47,21 +61,13 @@ class SingleMastTurbulenceSectorAtom(ReportAtom[TurbulenceSectorSchema, SingleMa
             rep_ti = row["representative_ti"] * 100
             iec_category = row["iec_category"]
 
-            rows.append(
-                f"  [{sector_name}], [{height_display}], "
-                f"[{mean_ti:.2f}], [{rep_ti:.2f}], [{iec_category}],"
-            )
+            rows.append([sector_name, height_display, f"{mean_ti:.2f}", f"{rep_ti:.2f}", iec_category])
 
-        return f"""#table(
-  columns: (auto, auto, auto, auto, auto),
-  inset: 8pt,
-  align: center,
-  table.header(
-    [风向], [高度], [平均TI(%)], [代表TI(%)], [IEC类别]
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return TypstTable(
+            headers=["风向", "高度", "平均TI(%)", "代表TI(%)", "IEC类别"],
+            data=rows,
+            caption=self._resolve_table_caption(),
+        )
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -116,7 +122,7 @@ class SingleMastTurbulenceSectorAtom(ReportAtom[TurbulenceSectorSchema, SingleMa
         return image_path
 
     @override
-    def renderSummary(self) -> str:
+    def renderSummary(self) -> list[TypstParagraph]:
         """Generate Chinese summary of dominant turbulent directions."""
         high_df = self.df.filter(pl.col("height") > 100)
         heights = (
@@ -142,10 +148,11 @@ class SingleMastTurbulenceSectorAtom(ReportAtom[TurbulenceSectorSchema, SingleMa
         _ti_val = cast(float | None, high_df["mean_ti"].mean())
         avg_ti = float(_ti_val or 0)
 
-        return (
+        text = (
             f"{self.meta.mast_name}测风塔湍流强度玫瑰图分析。"
             f"图表显示{', '.join(height_strs)}高度的湍流强度分布，"
             f"主导湍流方向为{'、'.join(dominant_directions)}，"
             f"平均湍流强度为{avg_ti*100:.2f}%，"
             f"为风机选型与载荷计算提供参考依据。"
         )
+        return [TypstParagraph(text=text)]

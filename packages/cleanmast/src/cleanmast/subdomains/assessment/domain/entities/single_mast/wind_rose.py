@@ -4,15 +4,22 @@ ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-vo-001-value-objects
 Compliance: Subdomain layout ✓ | Value Object ✓ | Atom Pattern ✓
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 
-import altair as alt
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np
 import polars as pl
-import vl_convert as vlc
+from matplotlib.figure import Figure
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import TypstParagraph, TypstTable
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -21,72 +28,119 @@ from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas im
     WindRoseSchema,
 )
 
+plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
+plt.rcParams["axes.unicode_minus"] = False
+
+WIND_ROSE_COLORS = [
+    "#1f77b4",
+    "#d62728",
+    "#2ca02c",
+    "#ff7f0e",
+    "#9467bd",
+    "#17becf",
+    "#8c564b",
+    "#e377c2",
+]
 
 @dataclass
 class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
     """Renders wind frequency rose for a single mast.
 
     - Table: All heights with sector frequencies
-    - Image: Polar chart showing >100m heights only
+    - Image: Polar chart showing ≥100m heights only
     - Summary: Chinese description of wind direction patterns
     """
 
-    @override
-    def renderTable(self) -> str:
-        """Render as Typst table with pivoted format.
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 风向频率玫瑰图"
 
-        Columns: 风向 | 10m | 50m | ... | 125m 外推 | 140m 外推 | 160m 外推
-        """
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 风向频率分布表"
+
+    @override
+    def renderTable(self) -> "TypstTable" | None:
+        """Render as TypstTable IR node."""
+        table_df = self.df.filter(pl.col("height") >= 100)
+        table_df = table_df.group_by([
+            "sector",
+            "sector_name",
+            "height",
+            "interpolation_marker",
+        ]).agg(pl.col("frequency").mean().alias("frequency"))
+
         # Get unique heights and their display names
-        heights_df = self.df.select(["height", "interpolation_marker"]).unique().sort("height")
+        heights_df = table_df.select(["height", "interpolation_marker"]).unique().sort("height")
         height_cols = []
         for row in heights_df.iter_rows(named=True):
             display = get_height_display_name(row["height"], row["interpolation_marker"])
             height_cols.append((row["height"], display))
 
-        # Build the table rows - one row per sector
-        rows = []
-        sectors = sorted(self.df["sector"].unique().to_list())
+        # Build headers
+        headers = ["风向"] + [h[1] for h in height_cols]
+
+        # Build the table data - one row per sector
+        data: list[list[str]] = []
+        sectors = sorted(table_df["sector"].unique().to_list())
 
         for sector in sectors:
-            sector_df = self.df.filter(pl.col("sector") == sector)
+            sector_df = table_df.filter(pl.col("sector") == sector)
             sector_name = sector_df["sector_name"].first()
 
             # Create a lookup dict for this sector's data by height
             data_by_height = {}
             for row in sector_df.iter_rows(named=True):
-                data_by_height[row["height"]] = row["frequency"] * 100
+                data_by_height[row["height"]] = f"{row['frequency'] * 100:.2f}"
 
             # Add row for this sector with frequencies
-            row_cells = [f"  [{sector_name}]"]
-            for height, _ in height_cols:
-                val = data_by_height.get(height, 0)
-                row_cells.append(f"[{val:.2f}]")
-            rows.append(", ".join(row_cells) + ",")
+            row_data = [str(sector_name)] + [
+                data_by_height.get(height, "0.00") for height, _ in height_cols
+            ]
+            data.append(row_data)
 
-        # Build header with height columns
-        header_cells = "[风向], " + ", ".join([f"[{h[1]}]" for h in height_cols])
+        return TypstTable(headers=headers, data=data, caption=self._resolve_table_caption())
 
-        # Build column spec
-        num_cols = 1 + len(height_cols)
-        col_spec = ", ".join(["auto"] * num_cols)
+    def _build_frequency_rose_chart(self, plot_df: pl.DataFrame) -> Figure:
+        plot_df = plot_df.with_columns(
+            pl.when(pl.col("frequency_pct") == 0)
+            .then(0.01)
+            .otherwise(pl.col("frequency_pct"))
+            .alias("frequency_pct")
+        )
+        height_order = (
+            plot_df.select(["height", "height_display"])
+            .unique()
+            .sort("height", descending=True)["height_display"]
+            .to_list()
+        )
 
-        return f"""#table(
-  columns: ({col_spec}),
-  inset: 8pt,
-  align: center,
-  table.header(
-    {header_cells}
-  ),
-{chr(10).join(rows)}
-)
-"""
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection="polar"))
+
+        for idx, height_label in enumerate(height_order):
+            color = WIND_ROSE_COLORS[idx % len(WIND_ROSE_COLORS)]
+            group = plot_df.filter(pl.col("height_display") == height_label).sort("sector")
+            group_sectors = group["sector"].to_numpy()
+            freqs = group["frequency_pct"].to_numpy()
+            angles = 2 * np.pi * group_sectors / 16
+            angles = np.append(angles, angles[0])
+            freqs = np.append(freqs, freqs[0])
+            ax.plot(angles, freqs, label=height_label, color=color, linewidth=2)
+
+        ax.set_theta_zero_location("N")  # type: ignore[attr-defined]
+        ax.set_theta_direction(-1)  # type: ignore[attr-defined]
+        ax.set_xticks(np.linspace(0, 2 * np.pi, 16, endpoint=False))
+        ax.set_xticklabels(["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"])
+        ax.set_title(f"{self.meta.mast_name} 风向频率玫瑰图", pad=20)
+        ax.legend(title="高度", loc="upper left", bbox_to_anchor=(1.05, 1))
+        plt.tight_layout()
+        return fig
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate wind frequency rose polar chart with >100m heights only.
+        """Generate wind frequency rose polar chart with ≥100m heights only.
 
-        Uses Altair polar coordinates, exports to PNG via vl-convert.
+        Uses matplotlib polar projection.
         """
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"windfreqrose_{self.meta.mast_name}_{cache_key}.png"
@@ -94,8 +148,8 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, SingleMa
         if not force and image_path.exists():
             return image_path
 
-        # Filter to >100m heights for visualization
-        plot_df = self.df.filter(pl.col("height") > 100)
+        # Filter to ≥100m heights for visualization
+        plot_df = self.df.filter(pl.col("height") >= 100)
 
         # Add display name for legend
         plot_df = plot_df.with_columns(
@@ -110,141 +164,169 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, SingleMa
         plot_df = plot_df.with_columns(
             (pl.col("frequency") * 100).alias("frequency_pct")
         )
-
-        # Convert to pandas for Altair compatibility
-        plot_df_pd = plot_df.to_pandas()
-
-        # Create Altair polar chart (wind rose) using mark_arc
-        # Each sector is a bar extending from center to frequency value
-        chart = alt.Chart(plot_df_pd).mark_arc(stroke="white").encode(
-            theta=alt.Theta(
-                "sector:O",
-                title="风向",
-                sort=None,
-            ),
-            radius=alt.Radius(
-                "frequency_pct:Q",
-                title="频率(%)",
-                scale=alt.Scale(zero=True),
-            ),
-            radius2=alt.datum(0),  # Start from center
-            color=alt.Color("height_display:N", title="高度"),
-            tooltip=["sector_name", "height_display", "frequency_pct"],
-        ).properties(
-            title=f"{self.meta.mast_name} 风向频率玫瑰图",
-            width=500,
-            height=500,
+        plot_df = (
+            plot_df.group_by(["sector", "sector_name", "height", "height_display"])
+            .agg(pl.col("frequency_pct").mean().alias("frequency_pct"))
         )
 
-        # Export to PNG
+        chart = self._build_frequency_rose_chart(plot_df)
+
         output_dir.mkdir(parents=True, exist_ok=True)
-        png_bytes = vlc.vegalite_to_png(chart.to_dict(), scale=2.0)
-        image_path.write_bytes(png_bytes)
+        chart.savefig(image_path, format="png", dpi=150, bbox_inches="tight")
+        plt.close(chart)
 
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Generate Chinese summary of wind direction frequency patterns."""
-        # Filter to >100m heights
-        high_df = self.df.filter(pl.col("height") > 100)
+    def renderSummary(self) -> list["TypstParagraph"]:
+        summary_df = self.df.filter(
+            (pl.col("height") >= 125) & (pl.col("height") <= 160)
+        )
 
-        # Get unique heights for mention
         heights = (
-            high_df.select(["height", "interpolation_marker"])
+            summary_df.select(["height", "interpolation_marker"])
             .unique()
-            .sort("height")
+            .sort("height", descending=True)
         )
-        height_strs = [
-            get_height_display_name(row["height"], row["interpolation_marker"])
-            for row in heights.iter_rows(named=True)
-        ]
 
-        # Find dominant wind directions (top 3 by frequency averaged across heights)
-        dominant = (
-            high_df.group_by("sector_name")
-            .agg(pl.col("frequency").mean().alias("avg_freq"))
-            .sort("avg_freq", descending=True)
-            .head(3)
-        )
-        dominant_directions = [row["sector_name"] for row in dominant.iter_rows(named=True)]
+        parts: list[str] = []
+        for idx, row in enumerate(heights.iter_rows(named=True)):
+            height = row["height"]
+            marker = row["interpolation_marker"]
+            height_label = f"{int(height)}m({marker})" if marker else f"{int(height)}m"
 
-        return (
-            f"{self.meta.mast_name}测风塔风向频率玫瑰图分析。"
-            f"图表显示{', '.join(height_strs)}高度的风向频率分布，"
-            f"主导风向为{'、'.join(dominant_directions)}，"
-            f"反映了该测风塔的风能资源方向特征。"
-        )
+            top_sectors = (
+                summary_df.filter(pl.col("height") == height)
+                .group_by("sector_name")
+                .agg(pl.col("frequency").mean().alias("avg_freq"))
+                .sort("avg_freq", descending=True)
+                .head(2)
+            )
+
+            rows_list = list(top_sectors.iter_rows(named=True))
+            if len(rows_list) < 2:
+                continue
+
+            sector1 = rows_list[0]["sector_name"]
+            pct1 = rows_list[0]["avg_freq"] * 100
+            sector2 = rows_list[1]["sector_name"]
+            pct2 = rows_list[1]["avg_freq"] * 100
+
+            if idx == 0:
+                parts.append(
+                    f"{self.meta.mast_name}测风塔在{height_label}主风向为 {sector1}({pct1:.1f}%)，"
+                    f"次主风向为 {sector2}({pct2:.1f}%)。"
+                )
+            else:
+                parts.append(
+                    f"其{height_label}主风向为 {sector1}({pct1:.1f}%)，"
+                    f"次主风向为 {sector2}({pct2:.1f}%)。"
+                )
+
+        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无125m~160m高度风向频率数据。"
+        return [TypstParagraph(text=summary_text)]
 
 
 @dataclass
 class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
-    """Renders wind power rose for a single mast.
+    """Renders wind energy frequency rose for a single mast.
 
-    - Table: All heights with sector frequencies and power density
-    - Image: Polar chart showing >100m heights only
-    - Summary: Chinese description of wind power patterns
+    - Table: All heights with sector energy frequencies
+    - Image: Polar chart showing ≥100m heights only
+    - Summary: Chinese description of wind energy patterns
     """
 
-    @override
-    def renderTable(self) -> str:
-        """Render as Typst table with pivoted format.
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 风能频率玫瑰图"
 
-        Columns: 风向 | 10m | 50m | ... | 125m 外推 | 140m 外推 | 160m 外推
-        Shows wind power density values.
-        """
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 风能频率分布表"
+
+    @override
+    def renderTable(self) -> "TypstTable" | None:
+        """Render as TypstTable IR node with energy frequency values."""
+        table_df = self.df.filter(pl.col("height") >= 100)
+        table_df = table_df.group_by([
+            "sector",
+            "sector_name",
+            "height",
+            "interpolation_marker",
+        ]).agg(pl.col("energy_frequency").mean().alias("energy_frequency"))
+
         # Get unique heights and their display names
-        heights_df = self.df.select(["height", "interpolation_marker"]).unique().sort("height")
+        heights_df = table_df.select(["height", "interpolation_marker"]).unique().sort("height")
         height_cols = []
         for row in heights_df.iter_rows(named=True):
             display = get_height_display_name(row["height"], row["interpolation_marker"])
             height_cols.append((row["height"], display))
 
-        # Build the table rows - one row per sector
-        rows = []
-        sectors = sorted(self.df["sector"].unique().to_list())
+        # Build headers
+        headers = ["风向"] + [h[1] for h in height_cols]
+
+        # Build the table data - one row per sector
+        data: list[list[str]] = []
+        sectors = sorted(table_df["sector"].unique().to_list())
 
         for sector in sectors:
-            sector_df = self.df.filter(pl.col("sector") == sector)
+            sector_df = table_df.filter(pl.col("sector") == sector)
             sector_name = sector_df["sector_name"].first()
 
             # Create a lookup dict for this sector's data by height
             data_by_height = {}
             for row in sector_df.iter_rows(named=True):
-                power = row["wind_power_density"]
-                data_by_height[row["height"]] = f"{power:.2f}" if power is not None else "-"
+                val = row["energy_frequency"]
+                data_by_height[row["height"]] = f"{val * 100:.2f}" if val is not None else "—"
 
-            # Add row for this sector with power density values
-            row_cells = [f"  [{sector_name}]"]
-            for height, _ in height_cols:
-                val = data_by_height.get(height, "-")
-                row_cells.append(f"[{val}]")
-            rows.append(", ".join(row_cells) + ",")
+            row_data = [str(sector_name)] + [
+                data_by_height.get(height, "0.00") for height, _ in height_cols
+            ]
+            data.append(row_data)
 
-        # Build header with height columns
-        header_cells = "[风向], " + ", ".join([f"[{h[1]}]" for h in height_cols])
+        return TypstTable(headers=headers, data=data, caption=self._resolve_table_caption())
 
-        # Build column spec
-        num_cols = 1 + len(height_cols)
-        col_spec = ", ".join(["auto"] * num_cols)
+    def _build_power_rose_chart(self, plot_df: pl.DataFrame) -> Figure:
+        """Build matplotlib wind power rose chart from prepared data."""
+        plot_df = plot_df.with_columns(
+            pl.when(pl.col("frequency_pct") == 0)
+            .then(0.01)
+            .otherwise(pl.col("frequency_pct"))
+            .alias("frequency_pct")
+        )
+        height_order = (
+            plot_df.select(["height", "height_display"])
+            .unique()
+            .sort("height", descending=True)["height_display"]
+            .to_list()
+        )
 
-        return f"""#table(
-  columns: ({col_spec}),
-  inset: 8pt,
-  align: center,
-  table.header(
-    {header_cells}
-  ),
-{chr(10).join(rows)}
-)
-"""
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection="polar"))
+
+        for idx, height_label in enumerate(height_order):
+            color = WIND_ROSE_COLORS[idx % len(WIND_ROSE_COLORS)]
+            group = plot_df.filter(pl.col("height_display") == height_label).sort("sector")
+            group_sectors = group["sector"].to_numpy()
+            freqs = group["frequency_pct"].to_numpy()
+            angles = 2 * np.pi * group_sectors / 16
+            angles = np.append(angles, angles[0])
+            freqs = np.append(freqs, freqs[0])
+            ax.plot(angles, freqs, label=height_label, color=color, linewidth=2)
+
+        ax.set_theta_zero_location("N")  # type: ignore[attr-defined]
+        ax.set_theta_direction(-1)  # type: ignore[attr-defined]
+        ax.set_xticks(np.linspace(0, 2 * np.pi, 16, endpoint=False))
+        ax.set_xticklabels(["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"])
+        ax.set_title(f"{self.meta.mast_name} 风能频率玫瑰图", pad=20)
+        ax.legend(title="高度", loc="upper left", bbox_to_anchor=(1.05, 1))
+        plt.tight_layout()
+        return fig
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate wind power rose polar chart with >100m heights only.
+        """Generate wind energy frequency rose polar chart with ≥100m heights only.
 
-        Uses Altair polar coordinates with frequency as radius,
-        wind power density represented by point size.
+        Uses matplotlib polar projection.
         """
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"windpowerrose_{self.meta.mast_name}_{cache_key}.png"
@@ -252,8 +334,8 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
         if not force and image_path.exists():
             return image_path
 
-        # Filter to >100m heights for visualization
-        plot_df = self.df.filter(pl.col("height") > 100)
+        # Filter to ≥100m heights for visualization
+        plot_df = self.df.filter(pl.col("height") >= 100)
 
         # Add display name for legend
         plot_df = plot_df.with_columns(
@@ -264,107 +346,67 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
             .alias("height_display")
         )
 
-        # Convert frequency to percentage for display
         plot_df = plot_df.with_columns(
-            (pl.col("frequency") * 100).alias("frequency_pct")
+            (pl.col("energy_frequency") * 100).alias("frequency_pct")
+        )
+        plot_df = (
+            plot_df.group_by(["sector", "sector_name", "height", "height_display"])
+            .agg(pl.col("frequency_pct").mean().alias("frequency_pct"))
         )
 
-        # Convert to pandas for Altair compatibility
-        plot_df_pd = plot_df.to_pandas()
+        chart = self._build_power_rose_chart(plot_df)
 
-        # Create Altair polar chart (wind power rose) using mark_arc
-        # Each sector is a bar with color representing power density
-        chart = alt.Chart(plot_df_pd).mark_arc(stroke="white").encode(
-            theta=alt.Theta(
-                "sector:O",
-                title="风向",
-                sort=None,
-            ),
-            radius=alt.Radius(
-                "frequency_pct:Q",
-                title="频率(%)",
-                scale=alt.Scale(zero=True),
-            ),
-            radius2=alt.datum(0),  # Start from center
-            color=alt.Color(
-                "wind_power_density:Q",
-                title="风功率密度(W/m²)",
-                scale=alt.Scale(scheme="reds"),
-            ),
-            tooltip=["sector_name", "height_display", "frequency_pct", "wind_power_density"],
-        ).properties(
-            title=f"{self.meta.mast_name} 风功率玫瑰图",
-            width=500,
-            height=500,
-        )
-
-        # Export to PNG
         output_dir.mkdir(parents=True, exist_ok=True)
-        png_bytes = vlc.vegalite_to_png(chart.to_dict(), scale=2.0)
-        image_path.write_bytes(png_bytes)
+        chart.savefig(image_path, format="png", dpi=150, bbox_inches="tight")
+        plt.close(chart)
 
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Generate Chinese summary of wind power patterns."""
-        # Filter to >100m heights
-        high_df = self.df.filter(pl.col("height") > 100)
-
-        # Get unique heights for mention
-        heights = (
-            high_df.select(["height", "interpolation_marker"])
-            .unique()
-            .sort("height")
+    def renderSummary(self) -> list["TypstParagraph"]:
+        summary_df = self.df.filter(
+            (pl.col("height") >= 125) & (pl.col("height") <= 160)
         )
-        height_strs = [
-            get_height_display_name(row["height"], row["interpolation_marker"])
-            for row in heights.iter_rows(named=True)
-        ]
 
-        # Find dominant wind directions by power (considering both frequency and power density)
-        # Filter out null power density values
-        power_df = high_df.filter(pl.col("wind_power_density").is_not_null())
+        heights = (
+            summary_df.select(["height", "interpolation_marker"])
+            .unique()
+            .sort("height", descending=True)
+        )
 
-        if power_df.height > 0:
-            # Calculate average power density by direction
-            dominant_power = (
-                power_df.group_by("sector_name")
-                .agg(
-                    pl.col("wind_power_density").mean().alias("avg_power"),
-                    pl.col("frequency").mean().alias("avg_freq"),
+        parts: list[str] = []
+        for idx, row in enumerate(heights.iter_rows(named=True)):
+            height = row["height"]
+            marker = row["interpolation_marker"]
+            height_label = f"{int(height)}m({marker})" if marker else f"{int(height)}m"
+
+            top_sectors = (
+                summary_df.filter(pl.col("height") == height)
+                .group_by("sector_name")
+                .agg(pl.col("energy_frequency").mean().alias("avg_energy_freq"))
+                .sort("avg_energy_freq", descending=True)
+                .head(2)
+            )
+
+            rows_list = list(top_sectors.iter_rows(named=True))
+            if len(rows_list) < 2:
+                continue
+
+            sector1 = rows_list[0]["sector_name"]
+            pct1 = rows_list[0]["avg_energy_freq"] * 100
+            sector2 = rows_list[1]["sector_name"]
+            pct2 = rows_list[1]["avg_energy_freq"] * 100
+
+            if idx == 0:
+                parts.append(
+                    f"{self.meta.mast_name}测风塔在{height_label}主导风能方向为 {sector1}({pct1:.1f}%)，"
+                    f"次主导风能方向为 {sector2}({pct2:.1f}%)。"
                 )
-                .sort("avg_power", descending=True)
-                .head(3)
-            )
-            dominant_directions = [
-                row["sector_name"] for row in dominant_power.iter_rows(named=True)
-            ]
+            else:
+                parts.append(
+                    f"其{height_label}主导风能方向为 {sector1}({pct1:.1f}%)，"
+                    f"次主导风能方向为 {sector2}({pct2:.1f}%)。"
+                )
 
-            # Get average power density across all sectors and heights
-            avg_power = power_df["wind_power_density"].mean()
-
-            return (
-                f"{self.meta.mast_name}测风塔风功率玫瑰图分析。"
-                f"图表显示{', '.join(height_strs)}高度的风向频率与风功率密度分布，"
-                f"主导能流方向为{'、'.join(dominant_directions)}，"
-                f"平均风功率密度为{avg_power:.2f}W/m²，"
-                f"为风电机组布局优化提供重要参考。"
-            )
-        else:
-            # Fallback if no power density data available
-            dominant_freq = (
-                high_df.group_by("sector_name")
-                .agg(pl.col("frequency").mean().alias("avg_freq"))
-                .sort("avg_freq", descending=True)
-                .head(3)
-            )
-            dominant_directions = [
-                row["sector_name"] for row in dominant_freq.iter_rows(named=True)
-            ]
-
-            return (
-                f"{self.meta.mast_name}测风塔风功率玫瑰图分析。"
-                f"图表显示{', '.join(height_strs)}高度的风向频率分布，"
-                f"主导风向为{'、'.join(dominant_directions)}。"
-            )
+        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无125m~160m高度风能频率数据。"
+        return [TypstParagraph(text=summary_text)]

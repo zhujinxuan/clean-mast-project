@@ -29,7 +29,7 @@ class TestCalculateWsShear:
         # Get SensorColumn objects for the heights
         sensors = [
             s for s in known_shear_timeseries.sensors
-            if s.height in [50.0, 80.0, 100.0] and s.sensor_type == "WindSpeed"
+            if s.height in [50.0, 80.0, 100.0] and s.sensor_type == "WindSpeed" and s.stat_type == "avg"
         ]
         shear = calculate_ws_shear(
             known_shear_timeseries,
@@ -44,7 +44,7 @@ class TestCalculateWsShear:
         # Use only two heights
         sensors = [
             s for s in known_shear_timeseries.sensors
-            if s.height in [50.0, 100.0] and s.sensor_type == "WindSpeed"
+            if s.height in [50.0, 100.0] and s.sensor_type == "WindSpeed" and s.stat_type == "avg"
         ]
         shear = calculate_ws_shear(
             known_shear_timeseries,
@@ -57,7 +57,7 @@ class TestCalculateWsShear:
         """Test that error is raised with fewer than 2 heights."""
         sensors = [
             s for s in known_shear_timeseries.sensors
-            if s.height in [80.0] and s.sensor_type == "WindSpeed"
+            if s.height in [80.0] and s.sensor_type == "WindSpeed" and s.stat_type == "avg"
         ]
         with pytest.raises(ValueError, match="At least 2 sensors required"):
             calculate_ws_shear(
@@ -130,7 +130,7 @@ class TestCalculateWdDegDiff:
         """
         sensors = [
             s for s in wraparound_wd_timeseries.sensors
-            if s.height in [50.0, 100.0] and s.sensor_type == "WindDirection"
+            if s.height in [50.0, 100.0] and s.sensor_type == "WindDirection" and s.stat_type == "avg"
         ]
         deg_diff = calculate_wd_deg_diff(
             wraparound_wd_timeseries,

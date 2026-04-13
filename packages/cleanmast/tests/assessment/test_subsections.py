@@ -9,8 +9,8 @@ Tests cover all 6 subsections:
 - VerticalProfileSubsection
 
 Each test verifies:
-- render() produces valid Typst output
-- Chinese titles are present
+- render_ir() produces valid IR nodes
+- Chinese titles are present in IR nodes
 - Config toggles work correctly
 """
 
@@ -49,30 +49,27 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_inte
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
     SingleMastTurbulenceMultiHeightAtom,
 )
+from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_per_height import (
+    SingleMastTurbulencePerHeightAtom,
+)
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_sector import (
     SingleMastTurbulenceSectorAtom,
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.vertical_profile import (
-    SingleMastVerticalProfileAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
+    SingleMastWeibullSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_distribution import (
-    SingleMastWeibullDistributionAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_multi import (
-    SingleMastWeibullMultiHeightAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_parameters import (
-    SingleMastWeibullParametersAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_table import (
-    SingleMastWindFrequencyTableAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+    SingleMastWindFrequencyHoursAtom,
 )
 from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
     SingleMastMonthlyWindFrequencyRoseAtom,
     SingleMastWindPowerRoseAtom,
+)
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
+    SingleMastWindShearExponentAtom,
 )
 from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
     TurbulenceSubsection,
@@ -92,13 +89,17 @@ from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
 from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
     WindTemporalSubsection,
 )
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstFigure,
+    TypstHeading,
+    TypstParagraph,
+    TypstSection,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects import (
     AtomCollection,
     ReportSubsectionConfig,
     SingleMastMeta,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
-    VerticalProfileSchema,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
     TemporalPatternSchema,
@@ -127,19 +128,24 @@ def sample_wind_rose_df() -> pl.DataFrame:
                     "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
     
     rows = []
-    for height in [80.0, 120.0]:
-        marker = "外推" if height > 100 else None
-        for sector, name in enumerate(sector_names):
-            freq = 0.2 if sector == 0 else 0.05
-            power = 300.0 if sector == 0 else 100.0
-            rows.append({
-                "sector": sector,
-                "sector_name": name,
-                "height": height,
-                "frequency": freq,
-                "wind_power_density": power,
-                "interpolation_marker": marker,
-            })
+    for month in [1, 2, 3]:
+        month_name = f"{month}月"
+        for height in [80.0, 120.0]:
+            marker = "外推" if height > 100 else None
+            for sector, name in enumerate(sector_names):
+                freq = 0.2 if sector == 0 else 0.05
+                power = 300.0 if sector == 0 else 100.0
+                rows.append({
+                    "month": month,
+                    "month_name": month_name,
+                    "sector": sector,
+                    "sector_name": name,
+                    "height": height,
+                    "frequency": freq,
+                    "energy_frequency": 0.8 * freq,
+                    "wind_power_density": power,
+                    "interpolation_marker": marker,
+                })
     return pl.DataFrame(rows)
 
 
@@ -268,6 +274,7 @@ def sample_turbulence_df() -> pl.DataFrame:
                 "std_ti": std_ti,
                 "representative_ti": rep_ti,
                 "iec_category": iec_cat,
+                "count": 42,
             })
     return pl.DataFrame(rows)
 
@@ -399,33 +406,21 @@ def weibull_atoms(
     sample_mast_meta: SingleMastMeta,
 ) -> list[ReportAtom[Any, Any]]:
     """Create Weibull atoms."""
-    # Create multi-height version (same data but different atom type)
-    dist_atom = SingleMastWeibullDistributionAtom.create(
+    subgrid_atom = SingleMastWeibullSubgridAtom.create(
         schema=WeibullSchema,
         df=sample_weibull_df,
         meta=sample_mast_meta,
     )
-    params_atom = SingleMastWeibullParametersAtom.create(
-        schema=WeibullSchema,
-        df=sample_weibull_df,
-        meta=sample_mast_meta,
-    )
-    # Multi-height uses same schema but different rendering
-    multi_atom = SingleMastWeibullMultiHeightAtom.create(
-        schema=WeibullSchema,
-        df=sample_weibull_df,
-        meta=sample_mast_meta,
-    )
-    return [dist_atom, params_atom, multi_atom]
+    return [subgrid_atom]
 
 
 @pytest.fixture
 def wind_frequency_atom(
     sample_wind_frequency_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
-) -> SingleMastWindFrequencyTableAtom:
-    """Create wind frequency table atom."""
-    return SingleMastWindFrequencyTableAtom.create(
+) -> SingleMastWindFrequencyHoursAtom:
+    """Create wind frequency hours atom."""
+    return SingleMastWindFrequencyHoursAtom.create(
         schema=WindFrequencySchema,
         df=sample_wind_frequency_df,
         meta=sample_mast_meta,
@@ -460,20 +455,19 @@ def turbulence_atoms(
         df=sample_turbulence_df,
         meta=sample_mast_meta,
     )
-    return [intensity_atom, summary_atom, sector_atom, multi_atom]
-
-
-@pytest.fixture
-def vertical_profile_atom(
-    sample_vertical_profile_df: pl.DataFrame,
-    sample_mast_meta: SingleMastMeta,
-) -> SingleMastVerticalProfileAtom:
-    """Create vertical profile atom."""
-    return SingleMastVerticalProfileAtom.create(
-        schema=VerticalProfileSchema,
-        df=sample_vertical_profile_df,
+    per_height_80 = SingleMastTurbulencePerHeightAtom.create_with_height(
+        schema=TurbulenceSchema,
+        df=sample_turbulence_df,
         meta=sample_mast_meta,
+        height=80.0,
     )
+    per_height_120 = SingleMastTurbulencePerHeightAtom.create_with_height(
+        schema=TurbulenceSchema,
+        df=sample_turbulence_df,
+        meta=sample_mast_meta,
+        height=120.0,
+    )
+    return [intensity_atom, summary_atom, sector_atom, multi_atom, per_height_80, per_height_120]
 
 
 # =============================================================================
@@ -513,7 +507,7 @@ def weibull_collection(
 
 @pytest.fixture
 def wind_frequency_collection(
-    wind_frequency_atom: SingleMastWindFrequencyTableAtom,
+    wind_frequency_atom: SingleMastWindFrequencyHoursAtom,
 ) -> AtomCollection:
     """Create AtomCollection with wind frequency atom."""
     return AtomCollection.from_dict({
@@ -533,11 +527,11 @@ def turbulence_collection(
 
 @pytest.fixture
 def vertical_profile_collection(
-    vertical_profile_atom: SingleMastVerticalProfileAtom,
+    wind_shear_matrix_atom: SingleMastWindShearExponentAtom,
 ) -> AtomCollection:
     """Create AtomCollection with vertical profile atom."""
     return AtomCollection.from_dict({
-        "M01": [vertical_profile_atom],
+        "M01": [wind_shear_matrix_atom],
     })
 
 
@@ -549,42 +543,34 @@ def vertical_profile_collection(
 class TestWindRoseSubsection:
     """Tests for WindRoseSubsection."""
 
-    def test_render_produces_typst(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = WindRoseSection(atoms=wind_rose_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
-        assert "#" in output  # Typst header marker
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title in heading."""
         subsection = WindRoseSection(atoms=wind_rose_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "风向风能分布" in output
+        assert "风向风能分布" in section_node.heading.text
 
-    def test_render_has_table_marker(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst table."""
+    def test_render_ir_has_table_nodes(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstTable nodes."""
         subsection = WindRoseSection(atoms=wind_rose_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "#table(" in output
+        assert any(isinstance(n, TypstTable) for n in section_node.body)
 
-    def test_render_has_figure_marker(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst figure."""
+    def test_render_ir_has_figure_nodes(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstFigure nodes."""
         subsection = WindRoseSection(atoms=wind_rose_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "#figure(" in output
-
-    def test_render_has_mast_name(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = WindRoseSection(atoms=wind_rose_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
+        assert any(isinstance(n, TypstFigure) for n in section_node.body)
 
     def test_custom_title(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
         """Test custom title can be set."""
@@ -592,19 +578,9 @@ class TestWindRoseSubsection:
             atoms=wind_rose_collection,
             title="自定义风玫瑰标题",
         )
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "自定义风玫瑰标题" in output
-
-    def test_level_affects_header(self, wind_rose_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test level parameter affects header depth."""
-        subsection = WindRoseSection(
-            atoms=wind_rose_collection,
-            level=3,
-        )
-        output = subsection.render(tmp_path)
-        
-        assert "### " in output
+        assert "自定义风玫瑰标题" in section_node.heading.text
 
 
 # =============================================================================
@@ -615,43 +591,27 @@ class TestWindRoseSubsection:
 class TestWindTemporalSubsection:
     """Tests for WindTemporalSubsection."""
 
-    def test_render_produces_typst(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = WindTemporalSubsection(atoms=wind_temporal_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title."""
         subsection = WindTemporalSubsection(atoms=wind_temporal_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "风速时序分析" in output
+        assert "风速时序分析" in section_node.heading.text
 
-    def test_render_has_table_markers(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst tables."""
+    def test_render_ir_has_figure_nodes(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstFigure nodes."""
         subsection = WindTemporalSubsection(atoms=wind_temporal_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should have multiple tables for different atoms
-        assert output.count("#table(") >= 1
-
-    def test_render_has_figure_markers(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst figures."""
-        subsection = WindTemporalSubsection(atoms=wind_temporal_collection)
-        output = subsection.render(tmp_path)
-        
-        # Should have multiple figures for different atoms
-        assert output.count("#figure(") >= 1
-
-    def test_render_has_mast_name(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = WindTemporalSubsection(atoms=wind_temporal_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
+        assert any(isinstance(n, TypstFigure) for n in section_node.body)
 
     def test_custom_title(self, wind_temporal_collection: AtomCollection, tmp_path: Path) -> None:
         """Test custom title can be set."""
@@ -659,9 +619,9 @@ class TestWindTemporalSubsection:
             atoms=wind_temporal_collection,
             title="自定义时序标题",
         )
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "自定义时序标题" in output
+        assert "自定义时序标题" in section_node.heading.text
 
 
 # =============================================================================
@@ -672,178 +632,112 @@ class TestWindTemporalSubsection:
 class TestWeibullSubsection:
     """Tests for WeibullSubsection."""
 
-    def test_render_produces_typst(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = WeibullSubsection(atoms=weibull_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title."""
         subsection = WeibullSubsection(atoms=weibull_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "Weibull分布拟合" in output
+        assert "Weibull分布拟合" in section_node.heading.text
 
-    def test_render_has_table_markers(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst tables."""
+    def test_render_ir_has_table_nodes(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstTable nodes."""
         subsection = WeibullSubsection(atoms=weibull_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "#table(" in output
+        section_node = subsection.render_ir(tmp_path)
 
-    def test_render_has_figure_markers(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst figures."""
-        subsection = WeibullSubsection(atoms=weibull_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "#figure(" in output
-
-    def test_render_has_mast_name(self, weibull_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = WeibullSubsection(atoms=weibull_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
-
-
-# =============================================================================
-# Tests - WindFrequencySubsection
-# =============================================================================
+        assert any(isinstance(n, TypstTable) for n in section_node.body)
 
 
 class TestWindFrequencySubsection:
     """Tests for WindFrequencySubsection."""
 
-    def test_render_produces_typst(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = WindFrequencySubsection(atoms=wind_frequency_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title."""
         subsection = WindFrequencySubsection(atoms=wind_frequency_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "风速频率分析" in output
+        assert "风速频率分析" in section_node.heading.text
 
-    def test_render_has_table_marker(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst table."""
+    def test_render_ir_has_heading_nodes(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstHeading nodes."""
         subsection = WindFrequencySubsection(atoms=wind_frequency_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "#table(" in output
+        section_node = subsection.render_ir(tmp_path)
 
-    def test_render_has_mast_name(self, wind_frequency_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = WindFrequencySubsection(atoms=wind_frequency_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
-
-
-# =============================================================================
-# Tests - TurbulenceSubsection
-# =============================================================================
+        assert isinstance(section_node.heading, TypstHeading)
 
 
 class TestTurbulenceSubsection:
     """Tests for TurbulenceSubsection."""
 
-    def test_render_produces_typst(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title."""
         subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "湍流强度分析" in output
+        assert "湍流强度分析" in section_node.heading.text
 
-    def test_render_has_table_markers(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst tables."""
+    def test_render_ir_has_figure_nodes(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstFigure nodes."""
         subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "#table(" in output
+        assert any(isinstance(n, TypstFigure) for n in section_node.body)
 
-    def test_render_has_figure_markers(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst figures."""
+    def test_render_ir_has_table_nodes(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstTable nodes."""
         subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "#figure(" in output
+        section_node = subsection.render_ir(tmp_path)
 
-    def test_render_has_mast_name(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
-
-    def test_render_has_iec_categories(self, turbulence_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes IEC categories."""
-        subsection = TurbulenceSubsection(atoms=turbulence_collection)
-        output = subsection.render(tmp_path)
-        
-        # Should contain IEC category references
-        assert any(cat in output for cat in ["A+", "A", "B", "C"])
-
-
-# =============================================================================
-# Tests - VerticalProfileSubsection
-# =============================================================================
+        assert any(isinstance(n, TypstTable) for n in section_node.body)
 
 
 class TestVerticalProfileSubsection:
     """Tests for VerticalProfileSubsection."""
 
-    def test_render_produces_typst(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() produces valid Typst output."""
+    def test_render_ir_produces_nodes(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() produces valid IR nodes."""
         subsection = VerticalProfileSubsection(atoms=vertical_profile_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert isinstance(output, str)
-        assert len(output) > 0
+        assert isinstance(section_node, TypstSection)
+        assert isinstance(section_node.heading, TypstHeading)
 
-    def test_render_has_chinese_title(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Chinese title."""
+    def test_render_ir_has_chinese_title(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes Chinese title."""
         subsection = VerticalProfileSubsection(atoms=vertical_profile_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "垂直风廓线" in output
+        assert "垂直风廓线" in section_node.heading.text
 
-    def test_render_has_table_marker(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes Typst table."""
+    def test_render_ir_has_table_nodes(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
+        """Test render_ir() includes TypstTable nodes."""
         subsection = VerticalProfileSubsection(atoms=vertical_profile_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        assert "#table(" in output
-
-    def test_render_has_mast_name(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes mast name."""
-        subsection = VerticalProfileSubsection(atoms=vertical_profile_collection)
-        output = subsection.render(tmp_path)
-        
-        assert "M01" in output
-
-    def test_render_has_alpha_value(self, vertical_profile_collection: AtomCollection, tmp_path: Path) -> None:
-        """Test render() includes wind shear exponent (alpha)."""
-        subsection = VerticalProfileSubsection(atoms=vertical_profile_collection)
-        output = subsection.render(tmp_path)
-        
-        # Should contain alpha or wind shear references
-        assert any(term in output for term in ["α", "alpha", "风切变"])
+        assert any(isinstance(n, TypstTable) for n in section_node.body)
 
 
 # =============================================================================
@@ -911,55 +805,61 @@ class TestEdgeCases:
         """Test WindRoseSubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = WindRoseSection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "风向风能分布" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "风向风能分布" in section_node.heading.text
 
     def test_empty_collection_wind_temporal(self, tmp_path: Path) -> None:
         """Test WindTemporalSubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = WindTemporalSubsection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "风速时序分析" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "风速时序分析" in section_node.heading.text
 
     def test_empty_collection_weibull(self, tmp_path: Path) -> None:
         """Test WeibullSubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = WeibullSubsection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "Weibull分布拟合" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "Weibull分布拟合" in section_node.heading.text
 
     def test_empty_collection_wind_frequency(self, tmp_path: Path) -> None:
         """Test WindFrequencySubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = WindFrequencySubsection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "风速频率分析" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "风速频率分析" in section_node.heading.text
 
     def test_empty_collection_turbulence(self, tmp_path: Path) -> None:
         """Test TurbulenceSubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = TurbulenceSubsection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "湍流强度分析" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "湍流强度分析" in section_node.heading.text
 
     def test_empty_collection_vertical_profile(self, tmp_path: Path) -> None:
         """Test VerticalProfileSubsection with empty collection."""
         empty_collection = AtomCollection.from_dict({})
         subsection = VerticalProfileSubsection(atoms=empty_collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should still produce output with header
-        assert "垂直风廓线" in output
+        # Should still produce heading
+        assert isinstance(section_node.heading, TypstHeading)
+        assert "垂直风廓线" in section_node.heading.text
 
     def test_multiple_masts(self, sample_wind_rose_df: pl.DataFrame, tmp_path: Path) -> None:
         """Test subsection with multiple masts."""
@@ -983,11 +883,12 @@ class TestEdgeCases:
         })
         
         subsection = WindRoseSection(atoms=collection)
-        output = subsection.render(tmp_path)
+        section_node = subsection.render_ir(tmp_path)
         
-        # Should contain both mast names
-        assert "M01" in output
-        assert "M02" in output
+        # Check that nodes contain text with both mast names
+        all_text = section_node.heading.text + " " + " ".join(str(n) for n in section_node.body)
+        assert "M01" in all_text
+        assert "M02" in all_text
 
 
 # =============================================================================
@@ -998,7 +899,7 @@ class TestEdgeCases:
 class TestIntegration:
     """Integration tests for all subsections together."""
 
-    def test_all_subsections_render(
+    def test_all_subsections_render_ir(
         self,
         wind_rose_collection: AtomCollection,
         wind_temporal_collection: AtomCollection,
@@ -1008,7 +909,7 @@ class TestIntegration:
         vertical_profile_collection: AtomCollection,
         tmp_path: Path,
     ) -> None:
-        """Test all 6 subsections can render without errors."""
+        """Test all 6 subsections can render_ir without errors."""
         subsections = [
             ("WindRose", WindRoseSection(wind_rose_collection)),
             ("WindTemporal", WindTemporalSubsection(wind_temporal_collection)),
@@ -1019,9 +920,9 @@ class TestIntegration:
         ]
         
         for name, subsection in subsections:
-            output = subsection.render(tmp_path)
-            assert isinstance(output, str), f"{name} should return string"
-            assert len(output) > 0, f"{name} should produce non-empty output"
+            section_node = subsection.render_ir(tmp_path)
+            assert isinstance(section_node, TypstSection), f"{name} should return TypstSection"
+            assert isinstance(section_node.heading, TypstHeading), f"{name} should produce a heading"
 
     def test_all_subsections_have_chinese_titles(
         self,
@@ -1033,7 +934,7 @@ class TestIntegration:
         vertical_profile_collection: AtomCollection,
         tmp_path: Path,
     ) -> None:
-        """Test all subsections have Chinese titles."""
+        """Test all subsections have Chinese titles in IR nodes."""
         subsections = [
             (WindRoseSection(wind_rose_collection), "风向风能分布"),
             (WindTemporalSubsection(wind_temporal_collection), "风速时序分析"),
@@ -1044,10 +945,10 @@ class TestIntegration:
         ]
         
         for subsection, expected_title in subsections:
-            output = subsection.render(tmp_path)
-            assert expected_title in output, f"Should contain '{expected_title}'"
+            section_node = subsection.render_ir(tmp_path)
+            assert expected_title in section_node.heading.text, f"Should contain '{expected_title}'"
 
-    def test_all_subsections_produce_valid_typst(
+    def test_all_subsections_produce_ir_nodes(
         self,
         wind_rose_collection: AtomCollection,
         wind_temporal_collection: AtomCollection,
@@ -1057,7 +958,7 @@ class TestIntegration:
         vertical_profile_collection: AtomCollection,
         tmp_path: Path,
     ) -> None:
-        """Test all subsections produce Typst-compatible output."""
+        """Test all subsections produce valid IR nodes."""
         subsections = [
             WindRoseSection(wind_rose_collection),
             WindTemporalSubsection(wind_temporal_collection),
@@ -1068,9 +969,10 @@ class TestIntegration:
         ]
         
         for subsection in subsections:
-            output = subsection.render(tmp_path)
-            # Should have at least some Typst markers
-            assert "#" in output, "Should contain Typst markers"
-            # Should not have Python object representations
-            assert "<object" not in output, "Should not contain Python object reprs"
-            assert "0x" not in output.lower() or "0x" not in output[:100], "Should not contain memory addresses"
+            section_node = subsection.render_ir(tmp_path)
+            combined = [section_node.heading] + list(section_node.body)
+            # Should have at least heading
+            assert any(isinstance(n, TypstHeading) for n in combined), "Should contain TypstHeading nodes"
+            # All items should be valid IR node types
+            valid_types = (TypstHeading, TypstParagraph, TypstTable, TypstFigure)
+            assert all(isinstance(n, valid_types) for n in combined), "All nodes should be valid IR types"

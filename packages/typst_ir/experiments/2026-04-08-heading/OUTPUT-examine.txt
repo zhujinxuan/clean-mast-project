@@ -1,0 +1,11 @@
+=== Heading Structure ===
+Paragraphs: 6
+
+--- Paragraph 0 ---
+Text: Level One Unique Hash X1
+Style name: Heading 1
+Traceback (most recent call last):
+  File "C:\Users\zhu_j\workspace\developing\docx-typst-polish\packages\typst_ir\tests\experiments\heading\examine_docx_xml.py", line 24, in <module>
+    outline = para.paragraph_format.outline_level
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ParagraphFormat' object has no attribute 'outline_level'

@@ -14,6 +14,8 @@ from cleanmast.subdomains.assessment.domain.value_objects.air_density import (
     _normalize_pressure,
     _normalize_temperature,
     calculate_air_density,
+    calculate_air_density_for_height,
+    convert_to_standard_air_density,
 )
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
@@ -267,3 +269,53 @@ class TestCalculateAirDensity:
         # ρ = P / (R * T) = 101000 / (287.05 * 293.15) ≈ 1.199
         assert result > 0
         assert result != STANDARD_AIR_DENSITY
+
+
+class TestConvertToStandardAirDensity:
+    """Tests for convert_to_standard_air_density function."""
+
+    def test_standard_density_returns_same_value(self) -> None:
+        """Test that standard air density returns the same wind speed."""
+        wind_speed = 10.0
+        result = convert_to_standard_air_density(wind_speed, STANDARD_AIR_DENSITY)
+        assert result == wind_speed
+
+    def test_non_standard_density_scales_correctly(self) -> None:
+        """Test conversion with non-standard air density."""
+        wind_speed = 10.0
+        actual_density = 1.189
+        result = convert_to_standard_air_density(wind_speed, actual_density)
+        expected = 10.0 * (1.189 / 1.225) ** 0.5
+        assert pytest.approx(result, rel=1e-6) == expected
+
+
+class TestCalculateAirDensityForHeight:
+    """Tests for calculate_air_density_for_height function."""
+
+    def test_same_height_returns_reference_density(self) -> None:
+        """Test that same height returns reference density unchanged."""
+        reference_density = 1.225
+        reference_height = 70.0
+        result = calculate_air_density_for_height(70.0, reference_density, reference_height)
+        assert result == pytest.approx(reference_density, rel=1e-6)
+
+    def test_higher_height_returns_lower_density(self) -> None:
+        """Test that higher height returns lower air density."""
+        reference_density = 1.225
+        reference_height = 10.0
+        result = calculate_air_density_for_height(100.0, reference_density, reference_height)
+        assert result < reference_density
+        assert result > 0
+
+    def test_known_reference_values(self) -> None:
+        """Test with known reference values."""
+        # Extrapolate from 10m to 70m with density 1.225 at 10m
+        reference_density = 1.225
+        reference_height = 10.0
+        target_height = 70.0
+        result = calculate_air_density_for_height(
+            target_height, reference_density, reference_height
+        )
+        # ρ = 1.225 * exp(-9.81 * 60 / (287.05 * (288.15 - 0.0065 * 10)))
+        expected = 1.225 * (2.718281828459045 ** (-9.81 * 60 / (287.05 * (288.15 - 0.065))))
+        assert pytest.approx(result, rel=1e-6) == expected

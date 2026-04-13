@@ -1,0 +1,6 @@
+=== Test: outline_level Reliability ===
+Traceback (most recent call last):
+  File "C:\Users\zhu_j\workspace\developing\docx-typst-polish\packages\typst_ir\tests\experiments\heading\test_property_retrieval.py", line 24, in <module>
+    outline_level = actual_para.paragraph_format.outline_level
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ParagraphFormat' object has no attribute 'outline_level'

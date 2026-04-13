@@ -10,14 +10,18 @@ from cleanmast.subdomains.assessment.domain.types.ir import (
     TypstFigure,
     TypstHeading,
     TypstParagraph,
+    TypstSection,
     TypstTable,
 )
+from cleanmast.subdomains.assessment.domain.types.section import Section
 
 __all__ = [
+    "Section",
     "TypstChild",
     "TypstDocument",
     "TypstFigure",
     "TypstHeading",
     "TypstParagraph",
+    "TypstSection",
     "TypstTable",
 ]

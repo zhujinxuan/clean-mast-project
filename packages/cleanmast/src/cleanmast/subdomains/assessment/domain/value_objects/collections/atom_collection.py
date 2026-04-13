@@ -27,7 +27,7 @@ class AtomCollection:
     """
 
     _by_mast: dict[str, list[ReportAtom]] = field(default_factory=dict)
-    _by_key: dict[tuple[str, type[ReportAtom]], ReportAtom] = field(
+    _by_key: dict[tuple[str, type[ReportAtom]], list[ReportAtom]] = field(
         default_factory=dict
     )
 
@@ -40,24 +40,14 @@ class AtomCollection:
 
         Returns:
             New frozen AtomCollection instance
-
-        Raises:
-            ValueError: If duplicate atom types found for same mast
         """
         by_mast = dict(data)
-        by_key: dict[tuple[str, type[ReportAtom]], ReportAtom] = {}
+        by_key: dict[tuple[str, type[ReportAtom]], list[ReportAtom]] = {}
 
         for mast, atoms in by_mast.items():
-            seen_types: set[type[ReportAtom]] = set()
             for atom in atoms:
                 atom_type = type(atom)
-                if atom_type in seen_types:
-                    raise ValueError(
-                        f"Duplicate atom type {atom_type.__name__} "
-                        f"for mast '{mast}'"
-                    )
-                seen_types.add(atom_type)
-                by_key[(mast, atom_type)] = atom
+                by_key.setdefault((mast, atom_type), []).append(atom)
 
         return cls(_by_mast=by_mast, _by_key=by_key)
 
@@ -74,11 +64,12 @@ class AtomCollection:
             atom_type: Concrete atom class to retrieve
 
         Returns:
-            The atom if found and matches type, None otherwise
+            The first atom if found and matches type, None otherwise
         """
-        atom = self._by_key.get((mast, atom_type))
-        if atom is None:
+        atoms = self._by_key.get((mast, atom_type))
+        if not atoms:
             return None
+        atom = atoms[0]
         if not isinstance(atom, atom_type):
             return None
         return cast(T, atom)
@@ -94,9 +85,10 @@ class AtomCollection:
         """
         result: list[T] = []
         for mast in self.masts:
-            atom = self.get(mast, atom_type)
-            if atom is not None:
-                result.append(atom)
+            atoms = self._by_key.get((mast, atom_type), [])
+            for atom in atoms:
+                if isinstance(atom, atom_type):
+                    result.append(cast(T, atom))
         return result
 
     def get_by_mast(self, mast: str) -> list[ReportAtom]:
@@ -132,4 +124,4 @@ class AtomCollection:
         if mast is None:
             return False
         key = (mast, type(item))
-        return key in self._by_key and self._by_key[key] is item
+        return key in self._by_key and any(atom is item for atom in self._by_key[key])

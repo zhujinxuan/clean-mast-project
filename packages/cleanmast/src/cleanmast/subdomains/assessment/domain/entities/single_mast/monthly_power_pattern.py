@@ -13,6 +13,10 @@ import vl_convert as vlc
 from typing_extensions import override
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstParagraph,
+    TypstTable,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
     get_height_display_name,
@@ -31,9 +35,17 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
     - Summary: Chinese description of seasonal power pattern characteristics
     """
 
+    @property
+    def default_image_caption(self) -> str:
+        return f"{self.meta.mast_name} 月风功率密度变化图"
+
+    @property
+    def default_table_caption(self) -> str:
+        return f"{self.meta.mast_name} 月风功率密度变化表"
+
     @override
-    def renderTable(self) -> str:
-        """Render as Typst table with monthly wind power density by height.
+    def renderTable(self) -> TypstTable | None:
+        """Render as TypstTable IR node with monthly wind power density by height.
 
         Rows: 12 months (1-12)
         Columns: 月份 | 各高度平均风功率密度...
@@ -59,33 +71,34 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
         for month in range(1, 13):
             month_data = monthly.filter(pl.col("month") == month)
 
-            cells = [f"  [{month}月]"]
+            cells = [f"{month}月"]
             for height, _ in height_cols:
                 power_row = month_data.filter(pl.col("height") == height)
                 if power_row.height > 0:
                     power = power_row.row(0, named=True)["avg_monthly_power"]
                     power_val = power if power is not None else 0
-                    cells.append(f"[{power_val:.1f}]")
+                    cells.append(f"{power_val:.1f}")
                 else:
-                    cells.append("[-]")
-            rows.append(", ".join(cells) + ",")
+                    cells.append("-")
+            rows.append(cells)
+
+        avg_cells = ["平均"]
+        for col_idx in range(1, len(height_cols) + 1):
+            values = []
+            for row in rows:
+                cell = row[col_idx]
+                if cell != "-":
+                    values.append(float(cell))
+            if values:
+                avg_cells.append(f"{sum(values) / len(values):.1f}")
+            else:
+                avg_cells.append("-")
+        rows.insert(0, avg_cells)
 
         # Build header: month + one column per height
-        header_cells = "[月份], " + ", ".join([f"[{display}(W/m²)]" for _, display in height_cols])
+        headers = ["月份"] + [display for _, display in height_cols]
 
-        # Build column spec
-        col_spec = "auto, " + ", ".join(["auto"] * len(height_cols))
-
-        return f"""#table(
-  columns: ({col_spec}),
-  inset: 8pt,
-  align: center,
-  table.header(
-    {header_cells}
-  ),
-{chr(10).join(rows)}
-)
-"""
+        return TypstTable(headers=headers, data=rows, caption=self._resolve_table_caption())
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
@@ -121,9 +134,22 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
             )
             .alias("height_display")
         )
+        plot_df = plot_df.sort(["month", "height"], descending=[False, True])
 
         # Convert to pandas for Altair compatibility
         plot_df_pd = plot_df.to_pandas()
+        _PALETTE = [
+            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+            "#9467bd", "#8c564b", "#e377c2", "#bcbd22",
+            "#17becf", "#aec7e8",
+        ]
+        height_display_order = (
+            plot_df.select(["height", "height_display"])
+            .unique()
+            .sort("height", descending=True)["height_display"]
+            .to_list()
+        )
+        color_range = [_PALETTE[i % len(_PALETTE)] for i in range(len(height_display_order))]
 
         # Create Altair grouped bar chart
         bars = alt.Chart(plot_df_pd).mark_bar().encode(
@@ -142,8 +168,12 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
                 "height_display:N",
                 title="高度",
                 legend=alt.Legend(orient="right"),
+                scale=alt.Scale(domain=height_display_order, range=color_range),
             ),
-            xOffset=alt.XOffset("height_display:N"),
+            xOffset=alt.XOffset(
+                "height_display:N",
+                sort=alt.EncodingSortField(field="height", op="mean", order="descending"),
+            ),
             tooltip=["month", "height_display", alt.Tooltip("avg_power:Q", format=".1f")],
         )
 
@@ -161,8 +191,8 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
         return image_path
 
     @override
-    def renderSummary(self) -> str:
-        """Generate Chinese summary of monthly wind power density pattern."""
+    def renderSummary(self) -> list[TypstParagraph]:
+        """Generate simplified Chinese summary when all heights agree on peak/min months."""
         # Aggregate by month and height (mean of mean_power)
         monthly_df = (
             self.df.group_by(["month", "height", "interpolation_marker"])
@@ -172,98 +202,50 @@ class SingleMastMonthlyPowerPatternAtom(ReportAtom[TemporalPatternSchema, Single
             .sort(["month", "height"])
         )
 
-        # Filter to >=100m heights
         high_df = monthly_df.filter(
             (pl.col("height") >= 100) & (pl.col("avg_power").is_not_null())
         )
 
-        # Get unique heights for mention
-        heights = (
-            high_df.select(["height", "interpolation_marker"])
-            .unique()
-            .sort("height")
-        )
-        height_strs = [
-            get_height_display_name(row["height"], row["interpolation_marker"])
-            for row in heights.iter_rows(named=True)
-        ]
+        if high_df.height == 0:
+            return []
 
-        if high_df.height > 0:
-            # Find peak and minimum months across all heights
-            by_month = (
-                high_df.group_by("month")
-                .agg([
-                    pl.col("avg_power").mean().alias("overall_avg"),
-                ])
-                .sort("month")
-            )
+        height_stats = []
+        for h in high_df["height"].unique().sort():
+            h_df = high_df.filter(pl.col("height") == h)
 
-            peak_month = by_month.sort("overall_avg", descending=True).row(0, named=True)
-            min_month = by_month.sort("overall_avg", descending=False).row(0, named=True)
+            annual_avg = h_df["avg_power"].mean()
+            max_row = h_df.sort("avg_power", descending=True).row(0, named=True)
+            min_row = h_df.sort("avg_power", descending=False).row(0, named=True)
 
-            # Calculate overall statistics
-            yearly_avg = high_df["avg_power"].mean()
-            yearly_max = high_df["avg_power"].max()
-            yearly_min = high_df["avg_power"].min()
+            display = get_height_display_name(h)
+            height_stats.append({
+                "display": display,
+                "annual_avg": annual_avg,
+                "max_month": max_row["month"],
+                "min_month": min_row["month"],
+            })
 
-            # Find which height has strongest/weakest seasonal variation
-            variation_stats = (
-                high_df.group_by(["height", "interpolation_marker"])
-                .agg([
-                    pl.col("avg_power").max().alias("max_power"),
-                    pl.col("avg_power").min().alias("min_power"),
-                ])
-                .with_columns(
-                    (pl.col("max_power") - pl.col("min_power")).alias("variation")
-                )
-                .sort("variation", descending=True)
-            )
+        if len(height_stats) == 0:
+            return []
 
-            most_variable = variation_stats.row(0, named=True)
-            most_var_str = get_height_display_name(
-                most_variable["height"], most_variable["interpolation_marker"]
-            )
+        max_months = {s["max_month"] for s in height_stats}
+        min_months = {s["min_month"] for s in height_stats}
 
-            # Determine seasonal pattern description
-            peak_month_num = peak_month["month"]
-            min_month_num = min_month["month"]
+        max_agrees = len(max_months) == 1
+        min_agrees = len(min_months) == 1
 
-            # Classify seasonal pattern
-            if peak_month_num in [12, 1, 2]:
-                peak_season = "冬季"
-            elif peak_month_num in [3, 4, 5]:
-                peak_season = "春季"
-            elif peak_month_num in [6, 7, 8]:
-                peak_season = "夏季"
-            else:
-                peak_season = "秋季"
+        if not max_agrees and not min_agrees:
+            return []
 
-            if min_month_num in [12, 1, 2]:
-                min_season = "冬季"
-            elif min_month_num in [3, 4, 5]:
-                min_season = "春季"
-            elif min_month_num in [6, 7, 8]:
-                min_season = "夏季"
-            else:
-                min_season = "秋季"
+        height_parts = "、".join(s["display"] for s in height_stats)
+        avg_parts = "、".join(f"{s['annual_avg']:.1f}W/m²" for s in height_stats)
 
-            return (
-                f"{self.meta.mast_name}测风塔月变化风功率密度分析。"
-                f"分析高度包括{', '.join(height_strs)}。"
-                f"年平均风功率密度{yearly_avg:.1f}W/m²，"
-                f"全年最高月均风功率密度{yearly_max:.1f}W/m²，"
-                f"全年最低月均风功率密度{yearly_min:.1f}W/m²。"
-                f"风功率密度峰值出现在{peak_month_num}月({peak_month['overall_avg']:.1f}W/m²)，"
-                f"属于{peak_season}；"
-                f"风功率密度低谷出现在{min_month_num}月({min_month['overall_avg']:.1f}W/m²)，"
-                f"属于{min_season}，"
-                f"呈现明显的季节性变化规律。"
-                f"{most_var_str}季节变化幅度最大({most_variable['variation']:.1f}W/m²)，"
-                f"展现了风功率密度随季节变化的动态特征。"
-            )
-        else:
-            return (
-                f"{self.meta.mast_name}测风塔月变化风功率密度分析。"
-                f"分析高度包括{', '.join(height_strs)}。"
-                f"暂无有效风功率密度数据。"
-            )
+        sentences = [f"{self.meta.mast_name}测风塔 {height_parts} 高度月平均风功率密度 {avg_parts}"]
+
+        if max_agrees:
+            sentences.append(f"最大值都出现在 {height_stats[0]['max_month']} 月")
+        if min_agrees:
+            sentences.append(f"最小值都出现在 {height_stats[0]['min_month']} 月")
+
+        summary = "，".join(sentences) + "。"
+        return [TypstParagraph(text=summary)]

@@ -21,7 +21,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-
 # Configuration
 ERROR_THRESHOLD = 500  # Characters
 PACKAGES_DIR = Path("packages")
@@ -161,6 +160,28 @@ def parse_pyright_output(result: CheckResult) -> CheckResult:
     return result
 
 
+def parse_ast_grep_output(result: CheckResult) -> CheckResult:
+    """Parse ast-grep JSON output."""
+    try:
+        data = json.loads(result.stdout)
+        result.error_count = len(data)
+        result.warning_count = 0
+
+        for violation in data:
+            entry = {
+                "file": violation.get("file", "unknown"),
+                "line": violation.get("range", {}).get("start", {}).get("line", 0) + 1,
+                "message": violation.get("message", ""),
+                "severity": violation.get("severity", "error"),
+            }
+            result.errors.append(entry)
+
+    except json.JSONDecodeError:
+        result.stderr = result.stdout or "Failed to parse ast-grep output"
+
+    return result
+
+
 def parse_ruff_output(result: CheckResult) -> CheckResult:
     """Parse ruff JSON output."""
     try:
@@ -280,10 +301,18 @@ def run_pytest_check(package: str) -> CheckResult:
 
 
 def run_dvc_verify_check(package: str) -> CheckResult:
-    """Run cleanmast verify --dry-run --json for a package."""
-    cmd = ["uv", "run", "cleanmast", "verify", "--dry-run", "--json", "-p", package]
-    result = run_check("dvc-verify", cmd, timeout=120)
+    """Run cleanmast verify --json for a package."""
+    cmd = ["uv", "run", "cleanmast", "verify", "--json", "-p", package]
+    result = run_check("dvc-verify", cmd, timeout=600)
     return parse_dvc_verify_output(result)
+
+
+def run_ast_grep_check(package: str) -> CheckResult:
+    """Run ast-grep scan for a package."""
+    config_path = f"packages/{package}/sgconfig.yml"
+    cmd = ["uv", "run", "ast-grep", "scan", "--json", "--config", config_path]
+    result = run_check("ast-grep", cmd, timeout=120)
+    return parse_ast_grep_output(result)
 
 
 def format_error_content(result: CheckResult) -> str:
@@ -295,6 +324,8 @@ def format_error_content(result: CheckResult) -> str:
     elif result.name == "pytest":
         return result.stdout + result.stderr
     elif result.name == "dvc-verify":
+        return json.dumps(result.errors, indent=2)
+    elif result.name == "ast-grep":
         return json.dumps(result.errors, indent=2)
     return ""
 
@@ -464,6 +495,16 @@ def run_verification(
         if result.status != "PASS":
             all_passed = False
     
+    # 5. ast-grep custom rules
+    if "ast-grep" not in skip_checks:
+        print("  [ast-grep] Running custom rule checks...", end=" ")
+        result = run_ast_grep_check(package)
+        results.append(result)
+        status = "✓" if result.status == "PASS" else "✗"
+        print(f"{status} ({format_duration(result.duration)})")
+        if result.status != "PASS":
+            all_passed = False
+    
     data = BaselineData(
         package=package,
         timestamp=timestamp,
@@ -512,7 +553,7 @@ def main() -> int:
     parser.add_argument(
         "--skip",
         action="append",
-        choices=["ty", "ruff", "pytest", "dvc"],
+        choices=["ty", "ruff", "pytest", "dvc", "ast-grep"],
         help="Skip a specific check (can be used multiple times)",
     )
     

@@ -9,15 +9,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Self, TypedDict
 
-from cleanmast.subdomains.assessment.domain.protocols.section import Section
-from cleanmast.subdomains.assessment.domain.types import (
-    TypstChild,
-    TypstDocument,
-    TypstHeading,
-)
-from cleanmast.subdomains.assessment.infrastructure.compiler import (
+from typst_ir import (
     compile_typst_to_docx,
     compile_typst_to_pdf,
+    serialize,
+)
+
+from cleanmast.subdomains.assessment.domain.protocols.section import Section
+from cleanmast.subdomains.assessment.domain.types import (
+    TypstDocument,
+    TypstSection,
 )
 
 
@@ -37,7 +38,7 @@ class BuildResult(TypedDict, total=False):
 
 
 class AssessmentReportBuilder:
-    """Builds reports from atoms.
+    """Builds reports from atoms using IR-based rendering.
 
     Orchestrates the generation of Typst documents by collecting sections
     of ReportAtoms and rendering them into a complete report with images,
@@ -45,8 +46,8 @@ class AssessmentReportBuilder:
 
     Example:
         >>> builder = AssessmentReportBuilder("Monthly Wind Report", Path("output/"))
-        >>> builder.add_section("Wind Analysis", [atom1, atom2])
-        >>> report_path = builder.build()
+        >>> builder.add_section(wind_section)
+        >>> results = builder.build()
     """
 
     def __init__(self, title: str, output_dir: Path) -> None:
@@ -64,7 +65,7 @@ class AssessmentReportBuilder:
         """Add any Section implementation.
 
         Args:
-            section: Section instance (TemplatedSection, WindRoseSection, etc.)
+            section: Section instance (WindRoseSection, TurbulenceSubsection, etc.)
 
         Returns:
             Self for method chaining
@@ -73,11 +74,10 @@ class AssessmentReportBuilder:
         return self
 
     def build(self, compile_pdf: bool = True, compile_docx: bool = True) -> BuildResult:
-        """Generate complete Typst document.
+        """Generate complete Typst document using IR-based rendering.
 
         Creates the output directory structure, generates images for all atoms,
-        and assembles a complete Typst document with sections, figures, tables,
-        and summaries.
+        and assembles a complete Typst document from IR nodes.
 
         Args:
             compile_pdf: Whether to compile the report to PDF (default: True)
@@ -92,63 +92,52 @@ class AssessmentReportBuilder:
         images_dir = self.output_dir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
 
-        # Build Typst document content
-        lines: list[str] = []
+        # Build Typst IR document
+        all_children: list[TypstSection] = [section.render_ir(images_dir) for section in self._sections]
 
-        # Preamble with Chinese font support
-        lines.append('// Chinese text support')
-        lines.append('#set text(font: ("Linux Libertine", "Source Han Serif SC"))')
-        lines.append('#set heading(numbering: "1.")')
-        lines.append('')
+        doc = TypstDocument(children=all_children)
+        json_str = doc.model_dump_json()
 
-        # Report title
-        lines.append(f'= {self.title}')
-        lines.append('')
+        # Serialize to Typst markup
+        typst_markup = serialize(doc)
 
-        # Process each section
-        for section in self._sections:
-            content = section.render(images_dir)
-            lines.append(content)
-            lines.append('')  # Extra blank line between sections
+        preamble = '''// Chinese text support
+#set text(font: ("Linux Libertine", "Source Han Serif SC"))
+#set heading(numbering: "1.")
+
+'''
+        full_markup = preamble + typst_markup
 
         # Write document to file
         report_path = self.output_dir / "report.typ"
-        report_path.write_text('\n'.join(lines), encoding='utf-8')
+        report_path.write_text(full_markup, encoding='utf-8')
 
         results: BuildResult = {"typ": report_path}
 
-        # PDF is required
+        # PDF compilation
         if compile_pdf:
             try:
-                results["pdf"] = compile_typst_to_pdf(report_path, self.output_dir)
+                results["pdf"] = compile_typst_to_pdf(report_path, self.output_dir, json_content=json_str)
             except RuntimeError as e:
                 raise RuntimeError(
                     f"PDF generation failed: {e}\n"
                     f"Typst file created at: {report_path}"
                 ) from e
 
-        # DOCX is optional
+        # DOCX compilation
         if compile_docx:
             try:
-                results["docx"] = compile_typst_to_docx(report_path, self.output_dir)
+                results["docx"] = compile_typst_to_docx(report_path, self.output_dir, json_content=json_str)
             except (ImportError, RuntimeError) as e:
                 results["docx_warning"] = str(e)
 
         return results
 
-    def build_typst(
-        self,
-        compile_pdf: bool = True,
-        compile_docx: bool = True
-    ) -> TypstDocument:
-        """Build Typst IR document.
+    def build_typst(self) -> TypstDocument:
+        """Build Typst IR document without compilation.
 
         Constructs a TypstDocument from all sections using their
         render_ir() methods. Images are generated as side effects.
-
-        Args:
-            compile_pdf: Whether to compile PDF (for compatibility, not used in IR path)
-            compile_docx: Whether to compile DOCX (for compatibility, not used in IR path)
 
         Returns:
             TypstDocument containing all section IR nodes
@@ -157,23 +146,6 @@ class AssessmentReportBuilder:
         images_dir = self.output_dir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
 
-        all_children: list[TypstChild] = [TypstHeading(text=self.title, level=1)]
-
-        for section in self._sections:
-            section_nodes = section.render_ir(images_dir)
-            adjusted_nodes = self._adjust_heading_levels(section_nodes, base_level=2)
-            all_children.extend(adjusted_nodes)
+        all_children: list[TypstSection] = [section.render_ir(images_dir) for section in self._sections]
 
         return TypstDocument(children=all_children)
-
-    def _adjust_heading_levels(
-        self, nodes: list[TypstChild], base_level: int
-    ) -> list[TypstChild]:
-        adjusted: list[TypstChild] = []
-        for node in nodes:
-            if isinstance(node, TypstHeading):
-                new_level = max(base_level, node.level + 1)
-                adjusted.append(TypstHeading(text=node.text, level=new_level))
-            else:
-                adjusted.append(node)
-        return adjusted

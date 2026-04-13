@@ -1,0 +1,15 @@
+id: sensor-type-stat-type-check
+language: python
+severity: error
+rule:
+  pattern: $OBJ.sensor_type == $VALUE
+  not:
+    inside:
+      kind: boolean_operator
+      has:
+        pattern: $_.stat_type == $_
+message: sensor_type comparison must be paired with stat_type check
+note: |
+  When filtering sensors by sensor_type, also verify stat_type in the same boolean
+  expression to avoid mixing avg/sd/max columns. Example:
+  `s.sensor_type == 'X' and s.stat_type == 'avg' and ...`

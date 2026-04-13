@@ -7,14 +7,8 @@ Compliance: Subdomain layout ✓ | Service ✓ | Builder Pattern ✓
 import polars as pl
 
 from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_distribution import (
-    SingleMastWeibullDistributionAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_multi import (
-    SingleMastWeibullMultiHeightAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_parameters import (
-    SingleMastWeibullParametersAtom,
+from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
+    SingleMastWeibullSubgridAtom,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
     AnalysisResult,
@@ -31,7 +25,7 @@ class WeibullSectionBuilder:
     """Builds Weibull section from analysis results into report atoms.
 
     Bridges the analysis layer (WeibullAnalyzer) with the reporting layer,
-    converting analysis results into the 3 Weibull-related report atoms.
+    converting analysis results into the Weibull-related report atom.
     """
 
     def build(
@@ -46,27 +40,15 @@ class WeibullSectionBuilder:
             results: List of analysis results, one per height
 
         Returns:
-            List of 3 report atoms in order:
-            1. SingleMastWeibullParametersAtom (all heights in one table)
-            2. SingleMastWeibullDistributionAtom (per-height distribution charts)
-            3. SingleMastWeibullMultiHeightAtom (multi-height comparison)
+            List containing 1 report atom:
+            1. SingleMastWeibullSubgridAtom (combined parameters and distribution)
         """
         # Concatenate all results into single DataFrame
         df = pl.concat([r.data for r in results])
         meta = SingleMastMeta(mast_name=mast_name)
 
         atoms: list[ReportAtom] = [
-            SingleMastWeibullParametersAtom.create(
-                schema=WeibullSchema,
-                df=df,
-                meta=meta,
-            ),
-            SingleMastWeibullDistributionAtom.create(
-                schema=WeibullSchema,
-                df=df,
-                meta=meta,
-            ),
-            SingleMastWeibullMultiHeightAtom.create(
+            SingleMastWeibullSubgridAtom.create(
                 schema=WeibullSchema,
                 df=df,
                 meta=meta,

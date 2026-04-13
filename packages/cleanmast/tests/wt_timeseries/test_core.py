@@ -148,8 +148,8 @@ class TestFilterSensorsByHeight:
 
         assert len(result) == 3
         for height, ws_sensor, wd_sensor in result:
-            assert ws_sensor.sensor_type == "WindSpeed"
-            assert wd_sensor.sensor_type == "WindDirection"
+            assert ws_sensor.sensor_type == "WindSpeed" and ws_sensor.stat_type == "avg"
+            assert wd_sensor.sensor_type == "WindDirection" and wd_sensor.stat_type == "avg"
             assert ws_sensor.height == height
             assert wd_sensor.height == height
 
@@ -157,7 +157,7 @@ class TestFilterSensorsByHeight:
         """Test filtering finds nearest WS sensor when exact match missing."""
         # Remove WS at 100m - function should find nearest (80m)
         sensors_without_100m_ws = [
-            s for s in complete_sensor_set if not (s.height == 100.0 and s.sensor_type == "WindSpeed")
+            s for s in complete_sensor_set if not (s.height == 100.0 and s.sensor_type == "WindSpeed" and s.stat_type == "avg")
         ]
 
         csv_heights = [80.0, 100.0, 120.0]
@@ -174,7 +174,7 @@ class TestFilterSensorsByHeight:
         """Test filtering finds nearest WD sensor when exact match missing."""
         # Remove WD at 80m - function should find nearest (100m)
         sensors_without_80m_wd = [
-            s for s in complete_sensor_set if not (s.height == 80.0 and s.sensor_type == "WindDirection")
+            s for s in complete_sensor_set if not (s.height == 80.0 and s.sensor_type == "WindDirection" and s.stat_type == "avg")
         ]
 
         csv_heights = [80.0, 100.0, 120.0]

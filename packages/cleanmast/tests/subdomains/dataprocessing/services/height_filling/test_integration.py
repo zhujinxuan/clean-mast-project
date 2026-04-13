@@ -524,7 +524,7 @@ class TestOutputSensorColumns:
         # Verify output sensors include new WS sensor at 120m
         assert len(result_timeseries.sensors) == 2
         new_sensor = result_timeseries.sensors[1]
-        assert new_sensor.sensor_type == "WindSpeed"
+        assert new_sensor.sensor_type == "WindSpeed" and new_sensor.stat_type == "avg"
         assert new_sensor.stat_type == "avg"
         assert new_sensor.height == 120.0
         assert new_sensor.unit == "m/s"
@@ -568,7 +568,7 @@ class TestOutputSensorColumns:
         # Verify output sensors include new WD sensor at 120m
         assert len(result_timeseries.sensors) == 2
         new_sensor = result_timeseries.sensors[1]
-        assert new_sensor.sensor_type == "WindDirection"
+        assert new_sensor.sensor_type == "WindDirection" and new_sensor.stat_type == "avg"
         assert new_sensor.stat_type == "avg"
         assert new_sensor.height == 120.0
         assert new_sensor.unit == "deg"
@@ -629,7 +629,7 @@ class TestOutputSensorColumns:
         assert len(result_timeseries.df.columns) == 5  # timestamp + 2 original + 2 filled
 
         # Verify sensor types
-        sensor_types = [s.sensor_type for s in result_timeseries.sensors]
+        sensor_types = [s.sensor_type for s in result_timeseries.sensors if s.stat_type == "avg"]
         assert sensor_types.count("WindSpeed") == 2
         assert sensor_types.count("WindDirection") == 2
 

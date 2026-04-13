@@ -66,8 +66,8 @@ class TestLoadTimeseries:
         # Verify
         assert ts_data.df.shape == (3, 3)
         assert len(ts_data.sensors) == 2
-        assert ts_data.sensors[0].sensor_type == "WindSpeed"
-        assert ts_data.sensors[1].sensor_type == "WindDirection"
+        assert ts_data.sensors[0].sensor_type == "WindSpeed" and ts_data.sensors[0].stat_type == "avg"
+        assert ts_data.sensors[1].sensor_type == "WindDirection" and ts_data.sensors[1].stat_type == "avg"
 
     def test_load_with_relative_paths(self, tmp_path: Path):
         """Test loading with paths relative to base_dir."""
@@ -131,7 +131,7 @@ unit = "C"
         ts_data = load_timeseries(source, str(tmp_path))
 
         assert len(ts_data.sensors) == 1
-        assert ts_data.sensors[0].sensor_type == "Temperature"
+        assert ts_data.sensors[0].sensor_type == "Temperature" and ts_data.sensors[0].stat_type == "avg"
 
     def test_load_with_missing_values(self, tmp_path: Path):
         """Test loading CSV with missing values."""
@@ -303,7 +303,7 @@ class TestSaveTimeseries:
         # Verify data matches
         assert loaded.df.shape == original.df.shape
         assert len(loaded.sensors) == len(original.sensors)
-        assert loaded.sensors[0].sensor_type == original.sensors[0].sensor_type
+        assert loaded.sensors[0].sensor_type == original.sensors[0].sensor_type and loaded.sensors[0].stat_type == original.sensors[0].stat_type
         assert loaded.sensors[0].height == original.sensors[0].height
 
         # Verify values

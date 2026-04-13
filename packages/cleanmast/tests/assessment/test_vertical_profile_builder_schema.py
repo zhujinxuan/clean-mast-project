@@ -3,8 +3,20 @@
 RED Phase: Tests asserting vertical_profile_builder imports from correct schema module.
 """
 
+from datetime import datetime
+
+import polars as pl
+from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
+    SingleMastWindShearExponentAtom,
+)
 from cleanmast.subdomains.assessment.domain.services.builders.vertical_profile_builder import (
     VerticalProfileSectionBuilder,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.analysis_metadata import (
+    AnalysisMetadata,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.analysis_result import (
+    AnalysisResult,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
     VerticalProfileSchema,
@@ -117,6 +129,54 @@ class TestVerticalProfileBuilderBuildMethod:
             "profile_results should have type annotation"
         assert shear_param.annotation is not inspect.Parameter.empty, \
             "shear_results should have type annotation"
+
+
+class TestVerticalProfileBuilderAtoms:
+    """Tests that builder returns exactly one atom in the new layout."""
+
+    def test_builder_returns_exactly_one_atom(self) -> None:
+        """Assert builder returns a single SingleMastWindShearExponentAtom."""
+        builder = VerticalProfileSectionBuilder()
+
+        meta = AnalysisMetadata(
+            mast_name="TestMast",
+            time_range="2023-01-01 to 2023-12-31",
+            created_at=datetime(2024, 1, 1),
+        )
+
+        profile_results = [
+            AnalysisResult(
+                data=pl.DataFrame({
+                    "height": [50.0, 80.0, 100.0, 120.0],
+                    "interpolation_marker": [None, None, None, "外推"],
+                    "wind_speed_mean": [5.2, 6.1, 6.8, 7.2],
+                    "wind_speed_std": [1.8, 2.0, 2.1, 2.2],
+                    "alpha": [0.15, None, None, None],
+                    "r_squared": [0.98, None, None, None],
+                }),
+                schema=VerticalProfileSchema,
+                metadata=meta,
+            )
+        ]
+        shear_results = [
+            AnalysisResult(
+                data=pl.DataFrame({
+                    "from_height": [50.0, 80.0, 100.0],
+                    "to_height": [80.0, 100.0, 120.0],
+                    "alpha_mean": [0.15, 0.14, 0.13],
+                    "alpha_std": [0.03, 0.025, 0.02],
+                    "alpha_min": [0.08, 0.07, 0.06],
+                    "alpha_max": [0.25, 0.22, 0.20],
+                }),
+                schema=WindShearSchema,
+                metadata=meta,
+            )
+        ]
+
+        atoms = builder.build("TestMast", profile_results, shear_results)
+
+        assert len(atoms) == 1
+        assert isinstance(atoms[0], SingleMastWindShearExponentAtom)
 
 
 class TestSchemaConsistency:

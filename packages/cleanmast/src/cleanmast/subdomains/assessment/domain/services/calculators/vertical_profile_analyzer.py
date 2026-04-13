@@ -219,8 +219,8 @@ class VerticalProfileAnalyzer:
 
         Properties:
         - Diagonal: None (same height, no shear defined)
-        - Antisymmetric: α_ij = -α_ji
-        - Formula: α_ij = ln(v_i/v_j) / ln(h_i/h_j)
+        - Symmetric: α_ij = α_ji
+        - Formula: α_ij = ln(v_j/v_i) / ln(h_j/h_i)
 
         Args:
             heights: List of N heights in meters

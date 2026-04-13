@@ -25,13 +25,12 @@ from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern
 from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
     SingleMastMonthlyPowerPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
-    SingleMastWindTimeseriesAtom,
+from cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer import (
+    render_subsection_content,
 )
 from cleanmast.subdomains.assessment.domain.types import (
-    TypstChild,
-    TypstFigure,
     TypstHeading,
+    TypstSection,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_collection import (
     AtomCollection,
@@ -42,86 +41,32 @@ from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_colle
 class WindTemporalSubsection:
     """Subsection for wind temporal (timeseries) analysis.
 
-    Renders 7 temporal atoms for each mast:
-    1. SingleMastWindTimeseriesAtom - Raw time series
-    2. SingleMastDailyPatternAtom - Daily (24h) wind pattern
-    3. SingleMastDailyPowerPatternAtom - Daily (24h) power density pattern
-    4. SingleMastMonthlyPatternAtom - Monthly wind pattern
-    5. SingleMastMonthlyPowerPatternAtom - Monthly power density pattern
-    6. SingleMastMonthlyDailyWindAtom - Monthly-daily combined wind pattern
-    7. SingleMastMonthlyDailyPowerAtom - Monthly-daily combined power pattern
+    Renders 6 temporal atoms for each mast:
+    1. SingleMastMonthlyPatternAtom - Monthly wind pattern
+    2. SingleMastMonthlyPowerPatternAtom - Monthly power density pattern
+    3. SingleMastDailyPatternAtom - Daily (24h) wind pattern
+    4. SingleMastDailyPowerPatternAtom - Daily (24h) power density pattern
+    5. SingleMastMonthlyDailyWindAtom - Monthly-daily combined wind pattern
+    6. SingleMastMonthlyDailyPowerAtom - Monthly-daily combined power pattern
     """
 
     atoms: AtomCollection
     title: str = "风速时序分析"
-    level: int = 2
 
-    def render(self, images_dir: Path) -> str:
-        """Render subsection with all temporal atoms.
-
-        Args:
-            images_dir: Directory for image output
-
-        Returns:
-            Typst-formatted string for the subsection
-        """
-        lines = [f"{'=' * self.level} {self.title}", ""]
-
-        # Temporal atoms to render in order
-        atom_types = [
-            SingleMastWindTimeseriesAtom,
-            SingleMastDailyPatternAtom,
-            SingleMastDailyPowerPatternAtom,
-            SingleMastMonthlyPatternAtom,
-            SingleMastMonthlyPowerPatternAtom,
-            SingleMastMonthlyDailyWindAtom,
-            SingleMastMonthlyDailyPowerAtom,
-        ]
-
-        # Render each atom type for all masts
-        for atom_type in atom_types:
-            for mast in self.atoms.masts:
-                atom = self.atoms.get(mast, atom_type)
-                if atom:
-                    # Summary text
-                    lines.append(atom.renderSummary())
-                    lines.append("")
-                    # Table
-                    lines.append(atom.renderTable())
-                    lines.append("")
-                    # Image reference
-                    lines.append(atom.renderImageTypst(images_dir))
-                    lines.append("")
-
-        return "\n".join(lines)
-
-    def render_ir(self, images_dir: Path) -> list[TypstChild]:
+    def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""
-        nodes: list[TypstChild] = []
-
-        nodes.append(TypstHeading(text=self.title, level=self.level))
-
-        atom_types = [
-            SingleMastWindTimeseriesAtom,
-            SingleMastDailyPatternAtom,
-            SingleMastDailyPowerPatternAtom,
-            SingleMastMonthlyPatternAtom,
-            SingleMastMonthlyPowerPatternAtom,
-            SingleMastMonthlyDailyWindAtom,
-            SingleMastMonthlyDailyPowerAtom,
+        atom_configs = [
+            (SingleMastMonthlyPatternAtom, True),
+            (SingleMastMonthlyPowerPatternAtom, True),
+            (SingleMastDailyPatternAtom, True),
+            (SingleMastDailyPowerPatternAtom, True),
+            (SingleMastMonthlyDailyWindAtom, False),
+            (SingleMastMonthlyDailyPowerAtom, False),
         ]
 
-        for atom_type in atom_types:
-            for mast in self.atoms.masts:
-                atom = self.atoms.get(mast, atom_type)
-                if atom:
-                    image_path = atom.renderImage(images_dir)
-                    if image_path and image_path.name and image_path != images_dir:
-                        try:
-                            rel_path = image_path.relative_to(images_dir.parent)
-                            caption = getattr(atom.meta, "caption", "Figure")
-                            nodes.append(TypstFigure(content=rel_path.as_posix(), caption=caption))
-                        except ValueError:
-                            pass
-
-        return nodes
+        body = render_subsection_content(self.atoms, atom_configs, images_dir)
+        return TypstSection(
+            heading=TypstHeading(text=self.title),
+            body=body,
+            subsections=[],
+        )
