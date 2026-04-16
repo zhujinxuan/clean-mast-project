@@ -58,7 +58,7 @@ class WindFrequencyCalculator:
     This is a domain service that encapsulates the calculation logic for:
     - Wind speed histogram (frequency by 1 m/s bins)
     - Power frequency distribution (energy contribution by bin)
-    - Productive range statistics (3-25 m/s)
+    - Productive range statistics (3~25 m/s)
 
     Key formulas:
         P = 0.5 * ρ * v³ (wind power density, W/m²)
@@ -217,7 +217,7 @@ class WindFrequencyCalculator:
     ) -> dict[str, float]:
         """Calculate summary statistics for a wind speed range.
 
-        Default range is the productive range for wind turbines: 3-25 m/s.
+        Default range is the productive range for wind turbines: 3~25 m/s.
 
         Args:
             wind_speeds: List of wind speed measurements in m/s

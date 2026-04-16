@@ -342,7 +342,7 @@ class TestWindFrequencyCalculatorCore:
     def test_calculate_range_summary_default_range(
         self, calculator: WindFrequencyCalculator
     ) -> None:
-        """Test range summary with default productive range (3-25 m/s)."""
+        """Test range summary with default productive range (3~25 m/s)."""
         wind_speeds = [2.0, 5.0, 10.0, 20.0, 30.0]  # 3 in range [3,25), 2 outside
         
         summary = calculator.calculate_range_summary(wind_speeds)

@@ -29,4 +29,4 @@ def recommend_wt_timeseries_cli(project_dir: str):
 
     click.echo(f"\nGenerated: {output_path}")
     click.echo("\nNext steps:")
-    click.echo(f"  uv run cleanmast execute wt-timeseries {project_dir}")
+    click.echo(f"  uv run cleanmast wt-timeseries {output_path}")

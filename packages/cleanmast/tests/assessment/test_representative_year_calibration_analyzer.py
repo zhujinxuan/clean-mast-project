@@ -104,7 +104,7 @@ class TestAnalyzeRepresentativeYearCalibration:
 
         assert result.shape == (1, 7)
         row = result.row(0, named=True)
-        assert row["year_range"] == "199401~202312"
+        assert row["year_range"] == "202401~202406"
         assert row["mast_name"] == "M01"
         assert row["era5_name"] == "era5"
         assert row["climatology_mean_ws"] == pytest.approx(7.0, rel=1e-9)
@@ -128,7 +128,7 @@ class TestAnalyzeRepresentativeYearCalibration:
 
         assert result.shape == (1, 7)
         row = result.row(0, named=True)
-        assert row["year_range"] == "201501~201912"
+        assert row["year_range"] == "202001~202006"
         assert row["climatology_mean_ws"] == pytest.approx(7.0, rel=1e-9)
         assert row["rep_year_mean_ws"] == pytest.approx(7.07, rel=1e-9)
         assert row["anomaly_percent"] == 1.0

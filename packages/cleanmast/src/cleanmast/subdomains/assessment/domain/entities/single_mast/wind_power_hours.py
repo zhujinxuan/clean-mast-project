@@ -113,15 +113,5 @@ class SingleMastWindPowerHoursAtom(ReportAtom[WindFrequencySchema, SingleMastMet
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        """Generate Chinese summary of wind power occurrence hours."""
-        heights = self._interested_heights()
-        height_strs = [
-            _height_label(row["height"], row["interpolation_marker"])
-            for row in heights
-        ]
-        summary_text = (
-            f"{self.meta.mast_name}测风塔风能频率分析。"
-            f"关注高度层为{', '.join(height_strs)}。"
-            f"风能出现小时数反映了各风速区间对风能资源总量的贡献。"
-        )
-        return [TypstParagraph(text=summary_text)]
+        """No standalone summary (table-only atom)."""
+        return []

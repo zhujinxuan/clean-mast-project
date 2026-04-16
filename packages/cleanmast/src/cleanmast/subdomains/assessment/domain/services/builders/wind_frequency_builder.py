@@ -52,7 +52,7 @@ class WindFrequencySectionBuilder:
             List of 4 report atoms in order:
             1. SingleMastWindFrequencyHoursAtom (wind frequency hours by speed bin)
             2. SingleMastWindPowerHoursAtom (power frequency hours by speed bin)
-            3. SingleMastWindProductiveRangeAtom (productive range 3-25 m/s summary)
+            3. SingleMastWindProductiveRangeAtom (productive range 3~25 m/s summary)
             4. SingleMastWindDistributionSubgridAtom (faceted distribution chart)
         """
         # Concatenate all results into single DataFrame

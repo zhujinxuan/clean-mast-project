@@ -43,7 +43,7 @@ class SingleMastWindDistributionSubgridAtom(ReportAtom[WindFrequencySchema, Sing
 
     @property
     def default_image_caption(self) -> str:
-        return f"{self.meta.mast_name} 风速频率分布图"
+        return f"{self.meta.mast_name} 各高度风速频率和风能频率"
 
     @property
     def default_table_caption(self) -> None:
@@ -144,22 +144,5 @@ class SingleMastWindDistributionSubgridAtom(ReportAtom[WindFrequencySchema, Sing
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        """Generate Chinese summary of wind frequency distribution subgrid."""
-        interested_df = self.df.filter(
-            (pl.col("height") > 120.0) & (pl.col("height") <= 160.0)
-        )
-        heights_df = (
-            interested_df.select(["height", "interpolation_marker"])
-            .unique()
-            .sort("height")
-        )
-        height_strs = [
-            _height_label(row["height"], row["interpolation_marker"])
-            for row in heights_df.iter_rows(named=True)
-        ]
-        summary_text = (
-            f"{self.meta.mast_name}测风塔风频与风能分布分析。"
-            f"关注高度层包括{', '.join(height_strs)}。"
-            f"图中展示了各高度层不同风速区间的风速频率与风能频率对比。"
-        )
-        return [TypstParagraph(text=summary_text)]
+        """No standalone summary (image-only atom)."""
+        return []

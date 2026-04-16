@@ -26,4 +26,4 @@ def recommend_timeseries_report(project_dir: str):
 
     click.echo(f"\nGenerated: {output_path}")
     click.echo("\nNext steps:")
-    click.echo(f"  uv run cleanmast report timeseries {project_dir}")
+    click.echo(f"  uv run cleanmast report timeseries {output_path}")

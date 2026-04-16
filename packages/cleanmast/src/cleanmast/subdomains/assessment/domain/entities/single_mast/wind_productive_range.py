@@ -32,7 +32,7 @@ def _height_label(height: float, marker: str | None) -> str:
 
 @dataclass
 class SingleMastWindProductiveRangeAtom(ReportAtom[WindFrequencySchema, SingleMastMeta]):
-    """Renders productive wind range (3-25 m/s) summary per interested height.
+    """Renders productive wind range (3~25 m/s) summary per interested height.
 
     - Table: One row per interested height with summed occurrence_hours and power_hours
     - Image: No image (returns empty Path)
@@ -49,7 +49,7 @@ class SingleMastWindProductiveRangeAtom(ReportAtom[WindFrequencySchema, SingleMa
 
     @override
     def renderTable(self) -> TypstTable | None:
-        """Render as Typst table with 3-25 m/s productive range summary."""
+        """Render as Typst table with 3~25 m/s productive range summary."""
         productive_df = self.df.filter(
             (pl.col("bin_start") >= 3.0)
             & (pl.col("bin_end") <= 25.0)
@@ -83,9 +83,5 @@ class SingleMastWindProductiveRangeAtom(ReportAtom[WindFrequencySchema, SingleMa
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        """Generate Chinese summary of productive wind range assessment."""
-        summary_text = (
-            f"{self.meta.mast_name}测风塔有效风速区间(3~25m/s)分析。"
-            f"统计了关注高度层内风速与风能的出现小时数总和。"
-        )
-        return [TypstParagraph(text=summary_text)]
+        """No standalone summary (table-only atom)."""
+        return []

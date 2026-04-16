@@ -37,7 +37,7 @@ class SingleMastWindFrequencyHoursAtom(ReportAtom[WindFrequencySchema, SingleMas
     - Table: Pivoted format with wind speed bins as rows, interested heights as columns
     - Image: No image (returns empty Path)
     - Summary: Chinese description mentioning mast name, interested heights,
-      and 3-25 m/s occurrence frequency + hours
+      and 3~25 m/s occurrence frequency + hours
     """
 
     @property
@@ -121,19 +121,20 @@ class SingleMastWindFrequencyHoursAtom(ReportAtom[WindFrequencySchema, SingleMas
             for row in heights
         ]
 
-        total_hours_list: list[str] = []
+        hours_freq_list: list[str] = []
         for row in heights:
             height = row["height"]
-            hours = self.df.filter(
+            range_df = self.df.filter(
                 (pl.col("height") == height)
                 & (pl.col("bin_start") >= 3)
                 & (pl.col("bin_start") < 25)
-            )["occurrence_hours"].sum()
-            total_hours_list.append(f"{int(round(hours))}")
+            )
+            hours = range_df["occurrence_hours"].sum()
+            freq = range_df["frequency"].sum()
+            hours_freq_list.append(f"{int(round(hours))} ({freq * 100:.1f}%)")
 
         summary_text = (
-            f"{self.meta.mast_name}测风塔风速频率分析。"
-            f"关注高度层为{', '.join(height_strs)}。"
-            f"3~25m/s有效风速区间对应出现小时数分别为{', '.join(total_hours_list)}小时。"
+            f"{self.meta.mast_name}测风塔在{'、'.join(height_strs)}测风年数据有效风速（3m/s~25m/s）出现小时数（频率）为"
+            f"{', '.join(hours_freq_list)}小时。"
         )
         return [TypstParagraph(text=summary_text)]

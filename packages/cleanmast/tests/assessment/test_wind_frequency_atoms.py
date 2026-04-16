@@ -208,17 +208,18 @@ class TestSingleMastWindFrequencyHoursAtom:
         assert len(bin_ranges) == 25
 
     def test_render_summary(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom) -> None:
-        """Test renderSummary returns Chinese text summarizing 3-25 m/s frequency and hours."""
+        """Test renderSummary returns Chinese text summarizing 3~25 m/s frequency and hours."""
         summary = wind_frequency_hours_atom.renderSummary()
 
         assert isinstance(summary, list)
         assert len(summary) > 0
         assert isinstance(summary[0], TypstParagraph)
         summary_text = summary[0].text
-        assert "测风塔" in summary_text
-        assert "M01" in summary_text
-        assert "3-25" in summary_text or "3~25" in summary_text
-        assert "小时数" in summary_text or "频率" in summary_text
+        # Expected format: "M01测风塔在130m、140m、150m(外推)测风年数据有效风速（3m/s~25m/s）出现小时数（频率）为{hours} ({freq%}), {hours} ({freq%}), {hours} ({freq%})小时。"
+        assert summary_text == (
+            "M01测风塔在130m、140m、150m(外推)测风年数据有效风速（3m/s~25m/s）出现小时数（频率）为"
+            "7853 (89.6%), 7923 (90.4%), 7995 (91.3%)小时。"
+        )
 
     def test_render_image(self, wind_frequency_hours_atom: SingleMastWindFrequencyHoursAtom, tmp_path: Path) -> None:
         """Test renderImage returns empty Path (no image for hours table)."""
@@ -275,6 +276,11 @@ class TestSingleMastWindPowerHoursAtom:
                 else:
                     assert "%" not in cell
                     assert int(cell) >= 0
+
+    def test_render_summary(self, wind_power_hours_atom: SingleMastWindPowerHoursAtom) -> None:
+        """Test renderSummary returns empty list for table-only atom."""
+        summary = wind_power_hours_atom.renderSummary()
+        assert summary == []
 
     def test_render_image(self, wind_power_hours_atom: SingleMastWindPowerHoursAtom, tmp_path: Path) -> None:
         """Test renderImage returns empty Path (no image for power hours table)."""
@@ -338,13 +344,9 @@ class TestSingleMastWindProductiveRangeAtom:
         assert image_path == Path()
 
     def test_render_summary(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom) -> None:
-        """Test renderSummary returns Chinese text."""
+        """Test renderSummary returns empty list for table-only atom."""
         summary = wind_productive_range_atom.renderSummary()
-
-        assert isinstance(summary, list)
-        assert len(summary) > 0
-        assert isinstance(summary[0], TypstParagraph)
-        assert "测风塔" in summary[0].text
+        assert summary == []
 
     def test_caption_properties(self, wind_productive_range_atom: SingleMastWindProductiveRangeAtom) -> None:
         assert wind_productive_range_atom.default_image_caption is None
@@ -382,16 +384,12 @@ class TestSingleMastWindDistributionSubgridAtom:
         assert table is None
 
     def test_render_summary(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom) -> None:
-        """Test renderSummary returns Chinese text."""
+        """Test renderSummary returns empty list for image-only atom."""
         summary = wind_distribution_subgrid_atom.renderSummary()
-
-        assert isinstance(summary, list)
-        assert len(summary) > 0
-        assert isinstance(summary[0], TypstParagraph)
-        assert "测风塔" in summary[0].text
+        assert summary == []
 
     def test_caption_properties(self, wind_distribution_subgrid_atom: SingleMastWindDistributionSubgridAtom) -> None:
-        assert wind_distribution_subgrid_atom.default_image_caption == "M01 风速频率分布图"
+        assert wind_distribution_subgrid_atom.default_image_caption == "M01 各高度风速频率和风能频率"
         assert wind_distribution_subgrid_atom.default_table_caption is None
 
     def test_content_hash_consistency(
@@ -455,9 +453,9 @@ class TestAllWindFrequencyAtoms:
             assert len(hash1) > 0
 
     def test_summary_output_is_list_of_paragraphs(self, all_wind_frequency_atoms: list[Any]) -> None:
-        """Verify all atoms return list of TypstParagraph from renderSummary."""
+        """Verify all atoms return a list from renderSummary."""
         for atom in all_wind_frequency_atoms:
             summary = atom.renderSummary()
             assert isinstance(summary, list)
-            assert len(summary) > 0
-            assert isinstance(summary[0], TypstParagraph)
+            if len(summary) > 0:
+                assert isinstance(summary[0], TypstParagraph)

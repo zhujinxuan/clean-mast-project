@@ -15,8 +15,9 @@ verify:
     @echo "✓ Verification complete"
 
 # Run verification and output JSON result
+# Note: verify.toml is optional/legacy. Justfile is the primary manifest.
 verify-json:
-    @echo '{"name": "{{"{{"}}dataset-name{{"}}"}}", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["rep-ts/report.pdf"], "error": null}'
+    @cd '{{justfile_directory()}}' && uv run python -c "import json, time, subprocess, sys; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else r.stderr[:500]; outputs = ['rep-ts/report.pdf'] if r.returncode == 0 else []; print(json.dumps({'name': '{{"{{"}}dataset-name{{"}}"}}', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
 
 # Clean generated outputs (keep DVC-tracked files)
 clean:
@@ -41,6 +42,7 @@ run-full:
     cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
 
 # Show experiment configuration
+# Note: verify.toml is optional when using Justfile-based verification
 config:
     @echo "Experiment configuration:"
-    @cat verify.toml
+    @cat verify.toml 2>/dev/null || echo "No verify.toml (optional for Justfile-only manifests)"

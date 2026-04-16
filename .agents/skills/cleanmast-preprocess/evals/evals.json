@@ -1,0 +1,82 @@
+{
+  "skill_name": "cleanmast-preprocess",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "merge-nrg-sdr-files",
+      "prompt": "I have raw NRG Symphonie logger files in evals/data/extracted/M4941. They are tab-delimited .txt files with the header on line 171 (1-based). The datetime column is called 'Date & Time Stamp' and uses format '%Y/%m/%d %H:%M:%S'. Please merge them into a single CSV named evals/outputs/M4941/M4941_merged.csv. The files may have slightly different column names, so handle that gracefully.",
+      "expected_output": "A merged CSV file at evals/outputs/M4941/M4941_merged.csv with a Timestamp column and all data rows sorted chronologically.",
+      "files": ["evals/data/m4941_pre_masts.tar.zst.dvc"],
+      "assertions": [
+        {
+          "name": "merged_csv_exists",
+          "type": "file_exists",
+          "target": "evals/outputs/M4941/M4941_merged.csv"
+        },
+        {
+          "name": "has_timestamp_column",
+          "type": "csv_column_exists",
+          "target": "evals/outputs/M4941/M4941_merged.csv",
+          "column": "Timestamp"
+        },
+        {
+          "name": "rows_merged",
+          "type": "csv_row_count_min",
+          "target": "evals/outputs/M4941/M4941_merged.csv",
+          "min": 1000
+        },
+        {
+          "name": "column_mismatch_union_applied",
+          "type": "csv_columns_exist",
+          "target": "evals/outputs/M4941/M4941_merged.csv",
+          "columns": ["CH13_Custom_Avg", "CH13_NRG_40C_Anem_ms_Avg"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "normalize-columns-and-types",
+      "prompt": "Take the merged CSV at evals/outputs/M4941/M4941_merged.csv. Rename the columns 'CH1_NRG_40C_Anem_80m_Avg' to 'Ch1_Anem_80.00m_Avg_m/s', 'CH7_NRG_200P_Vane_80m_Avg' to 'Ch7_Vane_80.00m_Avg_Deg', and 'CH9_NRG_110S_Temp_C_Avg' to 'Ch9_Analog_10.00m_Avg_C'. Keep all other columns. Then convert those three renamed columns to Float64. Save the final output as evals/outputs/M4941/M4941_final.csv.",
+      "expected_output": "A CSV file at evals/outputs/M4941/M4941_final.csv with the three renamed columns and correct Float64 types.",
+      "files": ["evals/outputs/M4941/M4941_merged.csv"],
+      "assertions": [
+        {
+          "name": "final_csv_exists",
+          "type": "file_exists",
+          "target": "evals/outputs/M4941/M4941_final.csv"
+        },
+        {
+          "name": "renamed_columns_present",
+          "type": "csv_columns_exist",
+          "target": "evals/outputs/M4941/M4941_final.csv",
+          "columns": ["Ch1_Anem_80.00m_Avg_m/s", "Ch7_Vane_80.00m_Avg_Deg", "Ch9_Analog_10.00m_Avg_C"]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "full-preprocessing-pipeline",
+      "prompt": "Please run the full CleanMast preprocessing pipeline on the NRG logger data in evals/data/extracted/M4941. Merge the files, normalize the three columns CH1_NRG_40C_Anem_80m_Avg -> Ch1_Anem_80.00m_Avg_m/s, CH7_NRG_200P_Vane_80m_Avg -> Ch7_Vane_80.00m_Avg_Deg, CH9_NRG_110S_Temp_C_Avg -> Ch9_Analog_10.00m_Avg_C, ensure they are Float64, and save the final result as evals/outputs/M4941/M4941_pipeline.csv. Document your column mapping decisions in an evidence.md file in the same directory as your col-normalizer config.",
+      "expected_output": "Final preprocessed CSV with merged data, renamed columns, correct types, and an evidence.md audit trail.",
+      "files": ["evals/data/m4941_pre_masts.tar.zst.dvc"],
+      "assertions": [
+        {
+          "name": "pipeline_output_exists",
+          "type": "file_exists",
+          "target": "evals/outputs/M4941/M4941_pipeline.csv"
+        },
+        {
+          "name": "pipeline_has_renamed_columns",
+          "type": "csv_columns_exist",
+          "target": "evals/outputs/M4941/M4941_pipeline.csv",
+          "columns": ["Ch1_Anem_80.00m_Avg_m/s", "Ch7_Vane_80.00m_Avg_Deg", "Ch9_Analog_10.00m_Avg_C"]
+        },
+        {
+          "name": "evidence_md_exists",
+          "type": "file_exists",
+          "target": "evals/outputs/M4941/evidence.md"
+        }
+      ]
+    }
+  ]
+}

@@ -75,6 +75,10 @@ class CsvMergerConfig(BaseModel):
         default='keep_last',
         description="How to handle duplicate timestamps: 'keep_first', 'keep_last', or None to keep all (default: 'keep_last')"
     )
+    column_mismatch: Optional[str] = Field(
+        default='error',
+        description="How to handle column mismatches between files: 'error' (default) or 'union' to combine all columns and fill missing values with null"
+    )
 
 
 def load_config(config_path: str) -> CsvMergerConfig:
@@ -290,18 +294,38 @@ def discover_csv_files(input_dir: str, config_dir: Path, patterns: List[str]) ->
     return [str(f) for f in sorted(files)]
 
 
-def validate_column_consistency(dataframes: List[pl.DataFrame], file_paths: List[str]) -> None:
+def validate_column_consistency(dataframes: List[pl.DataFrame], file_paths: List[str], column_mismatch: Optional[str] = 'error') -> None:
     """Validate that all dataframes have identical column structures."""
     if not dataframes:
         return
 
     reference_columns = dataframes[0].columns
+    mismatches = []
 
     for i, df in enumerate(dataframes[1:], 1):
         if df.columns != reference_columns:
-            click.echo(f"Error: Column mismatch in file {Path(file_paths[i]).name}", err=True)
-            click.echo(f"Expected columns: {reference_columns}", err=True)
-            click.echo(f"Found columns: {df.columns}", err=True)
+            mismatches.append((i, Path(file_paths[i]).name, df.columns))
+
+    if mismatches:
+        if column_mismatch == 'union':
+            click.echo(
+                f"{colorama.Fore.YELLOW}Warning: Column mismatches detected in {len(mismatches)} file(s). "
+                f"Using union mode to combine all columns.{colorama.Style.RESET_ALL}",
+                err=True
+            )
+            for i, fname, cols in mismatches:
+                click.echo(f"  File: {fname}", err=True)
+                added = [c for c in cols if c not in reference_columns]
+                missing = [c for c in reference_columns if c not in cols]
+                if added:
+                    click.echo(f"    Additional columns: {added}", err=True)
+                if missing:
+                    click.echo(f"    Missing columns: {missing}", err=True)
+        else:
+            for i, fname, cols in mismatches:
+                click.echo(f"Error: Column mismatch in file {fname}", err=True)
+                click.echo(f"Expected columns: {reference_columns}", err=True)
+                click.echo(f"Found columns: {cols}", err=True)
             sys.exit(1)
 
 
@@ -462,10 +486,11 @@ def merge_csv_files(config: CsvMergerConfig, config_dir: Path) -> pl.DataFrame:
         dataframes.append(df)
 
     # Validate column consistency (check column names match)
-    validate_column_consistency(dataframes, csv_files)
+    validate_column_consistency(dataframes, csv_files, config.column_mismatch)
 
     # Merge all dataframes
-    merged_df = pl.concat(dataframes)
+    concat_how = "diagonal" if config.column_mismatch == "union" else "vertical"
+    merged_df = pl.concat(dataframes, how=concat_how)
 
     # Sort by timestamp
     merged_df = merged_df.sort('_timestamp')

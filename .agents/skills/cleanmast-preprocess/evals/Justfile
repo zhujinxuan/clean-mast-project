@@ -1,0 +1,21 @@
+# CleanMast Preprocess Skill — Evaluation Justfile
+
+# Show available commands
+default:
+    @just --list
+
+# Pull DVC-tracked evaluation data and extract the archive for M4941
+bootstrap-M4941:
+    cd ../../../.. && dvc pull .agents/skills/cleanmast-preprocess/evals/data/m4941_pre_masts.tar.zst.dvc
+    mkdir -p data/extracted
+    tar --zstd -xf data/m4941_pre_masts.tar.zst -C data/extracted
+    mkdir -p outputs/M4941
+
+# Clean up generated evaluation outputs for M4941 (keep raw source data)
+clean-outputs-M4941:
+    rm -rf outputs/M4941
+
+# Clean up ALL extracted evaluation data (outputs + raw source data)
+clean-all:
+    rm -rf outputs
+    rm -rf data/extracted

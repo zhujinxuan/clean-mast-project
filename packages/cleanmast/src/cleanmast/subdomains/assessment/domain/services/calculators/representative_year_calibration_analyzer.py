@@ -175,8 +175,8 @@ def analyze_representative_year_calibration(project_dir: Path) -> pl.DataFrame:
         needs_correction = anomaly_percent > 2.0
 
         year_range = (
-            f"{climatology_start.year}{climatology_start.month:02d}"
-            f"~{climatology_end.year}{climatology_end.month:02d}"
+            f"{rep_min.year}{rep_min.month:02d}"
+            f"~{rep_max.year}{rep_max.month:02d}"
         )
 
         rows.append({

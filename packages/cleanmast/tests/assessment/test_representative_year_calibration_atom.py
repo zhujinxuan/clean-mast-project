@@ -80,9 +80,9 @@ class TestMultiMastRepYearCalibrationAtom:
 
         assert isinstance(result, TypstTable)
         expected_headers = [
-            "测风代表年range",
-            "mastname",
-            "era5name",
+            "测风代表年",
+            "测风塔",
+            "基准数据源",
             "30年气候平均基准ERA5风速",
             "测风代表年ERA5风速",
             "距平",

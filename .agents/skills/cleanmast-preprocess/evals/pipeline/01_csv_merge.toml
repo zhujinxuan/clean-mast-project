@@ -1,0 +1,16 @@
+output = "../outputs/M4941/M4941_merged.csv"
+
+duplicate_handling = "keep_last"
+column_mismatch = "union"
+
+[input]
+dir = "../data/extracted/M4941"
+delim = "\t"
+patterns = ["*.txt"]
+
+[input.datetime]
+col = "Date & Time Stamp"
+format = "%Y/%m/%d %H:%M:%S"
+
+[input.headline]
+number = 170

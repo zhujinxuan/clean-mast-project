@@ -66,25 +66,22 @@ def normalize_column_names(df: pl.DataFrame, column_mappings: Dict[str, str], ke
         for col in missing_columns:
             click.echo(f"  '{col}'")
 
-    # Handle unmapped columns
+    timestamp_names = ['Timestamp', 'TimeStamp', 'timestamp', 'TIMESTAMP']
+
     if not keep_unmapped:
         mapped_new_names = set(renamed_columns.values())
-        original_unmapped = set(df.columns) - set(renamed_columns.keys())
-        columns_to_keep = list(mapped_new_names | (original_unmapped & set(df_normalized.columns)))
+        preserved = {c for c in df_normalized.columns if c in timestamp_names}
+        columns_to_keep = list(mapped_new_names | preserved)
         df_normalized = df_normalized.select(columns_to_keep)
         click.echo(f"Kept {len(columns_to_keep)} columns (removed unmapped columns)")
 
-    # Ensure timestamp column is first (look for common timestamp column names)
-    timestamp_names = ['Timestamp', 'TimeStamp', 'timestamp', 'TIMESTAMP']
     timestamp_col = None
-
     for ts_name in timestamp_names:
         if ts_name in df_normalized.columns:
             timestamp_col = ts_name
             break
 
     if timestamp_col:
-        # Reorder columns to put timestamp first
         cols = df_normalized.columns
         other_cols = [c for c in cols if c != timestamp_col]
         df_normalized = df_normalized.select([timestamp_col] + other_cols)
@@ -115,7 +112,7 @@ def process_file(config: ColNameNormalizerConfig, config_dir: Path) -> None:
             df = pl.read_csv(
                 input_path,
                 skip_rows=config.skip_rows if config.skip_rows else 0,
-                separator=config.delimiter,
+                separator=config.delimiter or ",",
                 infer_schema_length=10000,
             )
         else:
