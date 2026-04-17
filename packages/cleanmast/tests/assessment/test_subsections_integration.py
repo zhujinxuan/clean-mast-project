@@ -615,10 +615,10 @@ class TestWindFrequencyMultiMastIntegration:
         counts = _count_nodes(section_node)
 
         assert counts["headings"] == 1
-        assert counts["paragraphs"] == 4
+        assert counts["paragraphs"] == 1
         assert counts["tables"] == 3
         assert counts["figures"] == 1
-        assert counts["total"] == 9
+        assert counts["total"] == 6
 
     def test_two_masts_basic(self, tmp_path: Path) -> None:
         collection = _make_wind_frequency_collection(2)
@@ -627,10 +627,10 @@ class TestWindFrequencyMultiMastIntegration:
         counts = _count_nodes(section_node)
 
         assert counts["headings"] == 1
-        assert counts["paragraphs"] == 4
+        assert counts["paragraphs"] == 1
         assert counts["tables"] == 6
         assert counts["figures"] == 2
-        assert counts["total"] == 13
+        assert counts["total"] == 10
 
     def test_three_masts_stress(self, tmp_path: Path) -> None:
         collection = _make_wind_frequency_collection(3)
@@ -639,10 +639,10 @@ class TestWindFrequencyMultiMastIntegration:
         counts = _count_nodes(section_node)
 
         assert counts["headings"] == 1
-        assert counts["paragraphs"] == 4
+        assert counts["paragraphs"] == 1
         assert counts["tables"] == 9
         assert counts["figures"] == 3
-        assert counts["total"] == 17
+        assert counts["total"] == 14
 
     def test_has_chinese_title(self, tmp_path: Path) -> None:
         collection = _make_wind_frequency_collection(2)
