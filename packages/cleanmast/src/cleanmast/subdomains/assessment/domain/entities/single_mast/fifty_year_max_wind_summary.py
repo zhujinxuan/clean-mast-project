@@ -53,7 +53,7 @@ class SingleMastFiftyYearMaxWindComparisonSustainedAtom(_ComparisonAtomMixin):
     @property
     @override
     def default_table_caption(self) -> str | None:
-        return f"{self.meta.mast_name} 50年一遇持续风速多方法对比"
+        return f"{self.meta.mast_name} 五十年一遇持续风速多方法对比"
 
     @override
     def renderTable(self) -> TypstTable | None:
@@ -89,7 +89,7 @@ class SingleMastFiftyYearMaxWindComparisonSustainedAtom(_ComparisonAtomMixin):
     @override
     def renderSummary(self) -> list[TypstParagraph]:
         if self.df.is_empty():
-            return [TypstParagraph(text=f"{self.meta.mast_name}测风塔暂无有效的50年一遇持续风速对比数据。")]
+            return [TypstParagraph(text=f"{self.meta.mast_name}测风塔暂无有效的五十年一遇持续风速对比数据。")]
 
         sorted_df = self.df.sort("height")
         height_parts = []
@@ -129,7 +129,7 @@ class SingleMastFiftyYearMaxWindComparisonExtremeAtom(_ComparisonAtomMixin):
     @property
     @override
     def default_table_caption(self) -> str | None:
-        return f"{self.meta.mast_name} 50年一遇极端风速多方法对比"
+        return f"{self.meta.mast_name} 五十年一遇极端风速多方法对比"
 
     @override
     def renderTable(self) -> TypstTable | None:
@@ -165,7 +165,7 @@ class SingleMastFiftyYearMaxWindComparisonExtremeAtom(_ComparisonAtomMixin):
     @override
     def renderSummary(self) -> list[TypstParagraph]:
         if self.df.is_empty():
-            return [TypstParagraph(text=f"{self.meta.mast_name}测风塔暂无有效的50年一遇极端风速对比数据。")]
+            return [TypstParagraph(text=f"{self.meta.mast_name}测风塔暂无有效的五十年一遇极端风速对比数据。")]
 
         sorted_df = self.df.sort("height")
         height_parts = []

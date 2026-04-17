@@ -381,5 +381,5 @@ class TestMethod2Subsection:
 
         ir = subsection.render_ir(images_dir=Path("/tmp/images"))
         assert isinstance(ir, TypstSection)
-        assert ir.heading.text == "2.6.2 五日最大法"
+        assert ir.heading.text == "五日最大法"
         assert len(ir.body) > 0

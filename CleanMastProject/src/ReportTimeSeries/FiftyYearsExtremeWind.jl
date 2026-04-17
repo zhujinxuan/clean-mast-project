@@ -1113,7 +1113,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
     end
     
     open(typst_path, "w") do io
-        println(io, "== 测风塔$(mast_name) 50年一遇最大风速")
+        println(io, "== 测风塔$(mast_name) 五十年一遇最大风速")
         println(io, "")
         println(io, "根据IEC 61400-1标准，50年重现期风速分为两类：")
         println(io, raw"- 50年最大持续风速 $ V_{\"ref\"} $ ：50年重现期10分钟平均风速")
@@ -1126,7 +1126,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
         if !isempty(method1_results_df)
             println(io, "== 方法一：5倍平均风速法")
             println(io, "")
-            println(io, "根据IEC61400-1标准，50年一遇最大持续风速约为年平均风速的5倍。")
+            println(io, "根据IEC61400-1标准，五十年一遇最大持续风速约为年平均风速的5倍。")
             println(io, "50年极大极端风速则在此基础上乘以1.4系数。")
             println(io, "")
             println(io, "计算公式：")
@@ -1475,7 +1475,7 @@ function generate_fifty_years_report(method1_results_df::DataFrame, method2_sust
         println(io, "")
         println(io, "== IEC 61400-1标准参考值")
         println(io, "")
-        println(io, "根据IEC 61400-1风力发电机组设计标准，不同风区等级对应的50年一遇极端风速参考值如下：")
+        println(io, "根据IEC 61400-1风力发电机组设计标准，不同风区等级对应的五十年一遇极端风速参考值如下：")
         println(io, "")
         
         # Create IEC reference table

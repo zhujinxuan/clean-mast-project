@@ -27,7 +27,7 @@ class Method1Subsection:
     """Subsection for fifty-year max wind Method 1 (五倍风速法) analysis."""
 
     atoms: AtomCollection
-    title: str = "2.6.1 五倍风速法"
+    title: str = "五倍风速法"
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""

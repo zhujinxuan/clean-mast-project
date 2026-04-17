@@ -26,10 +26,10 @@ from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_colle
 
 @dataclass(frozen=True)
 class SummarySubsection:
-    """Subsection for fifty-year max wind summary (50年一遇风速总结) analysis."""
+    """Subsection for fifty-year max wind summary (五十年一遇风速总结) analysis."""
 
     atoms: AtomCollection
-    title: str = "2.6.4 50年一遇风速总结"
+    title: str = "五十年一遇风速总结"
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""

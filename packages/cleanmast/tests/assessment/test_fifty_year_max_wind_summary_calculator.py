@@ -628,5 +628,5 @@ class TestSummarySubsection:
         ir = subsection.render_ir(images_dir=Path("/tmp/images"))
 
         assert isinstance(ir, TypstSection)
-        assert ir.heading.text == "2.6.4 50年一遇风速总结"
+        assert ir.heading.text == "五十年一遇风速总结"
         assert len(ir.body) > 0

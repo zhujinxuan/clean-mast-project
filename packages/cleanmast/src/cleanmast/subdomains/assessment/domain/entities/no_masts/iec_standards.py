@@ -68,7 +68,7 @@ class NoMastIECStandardsAtom(ReportAtom[IECStandardsSchema, NoMastMeta]):
             headers=[
                 "IEC 等级",
                 "参考风速 Vref (m/s)",
-                "50年一遇极端风速 Ve50 (m/s)",
+                "五十年一遇极端风速 Ve50 (m/s)",
             ],
             data=rows,
             caption=self._resolve_table_caption(),
@@ -87,6 +87,6 @@ class NoMastIECStandardsAtom(ReportAtom[IECStandardsSchema, NoMastMeta]):
         """Generate Chinese summary of IEC 61400-1 wind class standards."""
         return [
             TypstParagraph(
-                text="根据IEC 61400-1标准，不同风况等级对应的参考风速和50年一遇极端风速如表所示。"
+                text="根据IEC 61400-1标准，不同风况等级对应的参考风速和五十年一遇极端风速如表所示。"
             )
         ]

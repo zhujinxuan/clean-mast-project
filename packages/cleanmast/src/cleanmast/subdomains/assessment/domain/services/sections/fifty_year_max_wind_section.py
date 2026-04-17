@@ -30,14 +30,14 @@ from cleanmast.subdomains.assessment.domain.types import (
 
 @dataclass(frozen=True)
 class FiftyYearMaxWindSection:
-    """Section for fifty-year max wind analysis (2.6)."""
+    """Section for fifty-year max wind analysis."""
 
     iec_standards: IECStandardsSubsection
     method1: Method1Subsection
     method2: Method2Subsection
     method3: Method3Subsection
     summary: SummarySubsection
-    title: str = "2.6 五十年一遇最大风速"
+    title: str = "五十年一遇最大风速"
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section as IR nodes for type-safe document assembly.

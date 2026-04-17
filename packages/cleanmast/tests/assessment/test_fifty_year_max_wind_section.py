@@ -66,6 +66,6 @@ class TestFiftyYearMaxWindSection:
         ir = section.render_ir(images_dir=Path("/tmp/images"))
 
         assert isinstance(ir, TypstSection)
-        assert ir.heading.text == "2.6 五十年一遇最大风速"
+        assert ir.heading.text == "五十年一遇最大风速"
         assert ir.body == []
         assert len(ir.subsections) == 5

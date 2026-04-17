@@ -27,7 +27,7 @@ class IECStandardsSubsection:
     """Subsection for IEC 61400-1 wind class standards."""
 
     atoms: AtomCollection
-    title: str = "2.6.0 IEC 标准风况等级"
+    title: str = "IEC 标准风况等级"
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""

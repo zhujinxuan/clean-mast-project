@@ -378,5 +378,5 @@ class TestMethod3Subsection:
         ir = subsection.render_ir(images_dir=Path("/tmp/images"))
 
         assert isinstance(ir, TypstSection)
-        assert ir.heading.text == "2.6.3 极端风速模型（EWM）法"
+        assert ir.heading.text == "极端风速模型（EWM）法"
         assert len(ir.body) > 0
