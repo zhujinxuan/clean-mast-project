@@ -47,7 +47,7 @@ def _load_sensors_from_file(filepath: Path) -> list[SensorColumn]:
     suffix = filepath.suffix.lower()
 
     if suffix in (".yaml", ".yml"):
-        with open(filepath) as f:
+        with open(filepath, encoding="utf-8") as f:
             data = yaml.safe_load(f)
     elif suffix == ".toml":
         with open(filepath, "rb") as f:
@@ -236,7 +236,7 @@ def _save_sensors_to_file(filepath: Path, sensors: list[SensorColumn]) -> None:
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     if suffix in (".yaml", ".yml"):
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f, default_flow_style=False, sort_keys=False)
     elif suffix == ".toml":
         with open(filepath, "wb") as f:

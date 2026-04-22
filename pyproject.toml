@@ -29,9 +29,11 @@ dev-dependencies = [
 [tool.ruff]
 line-length = 92
 target-version = "py311"
+preview = true  # Required for PLW1514 (unspecified-encoding)
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
+extend-select = ["PLW1514"]  # unspecified-encoding - enforces encoding on open() and Path.read_text/write_text
 ignore = ["E501"]  # Line too long - accept long lines to save tokens
 
 [tool.mypy]

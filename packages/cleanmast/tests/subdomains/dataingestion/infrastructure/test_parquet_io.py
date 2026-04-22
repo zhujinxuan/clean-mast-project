@@ -258,7 +258,7 @@ class TestLoadTimeseriesParquet:
             ]
         }
         sensors_path = tmp_path / "sensors.yaml"
-        with open(sensors_path, "w") as f:
+        with open(sensors_path, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         # Load with sensors file specified - should raise ValueError
@@ -539,7 +539,7 @@ class TestFormatAutoDetection:
             ]
         }
         sensors_path = tmp_path / "sensors.yaml"
-        with open(sensors_path, "w") as f:
+        with open(sensors_path, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         # Load - should detect CSV format
@@ -692,7 +692,7 @@ class TestBackwardCompatibility:
             ]
         }
         sensors_path = tmp_path / "sensors.yaml"
-        with open(sensors_path, "w") as f:
+        with open(sensors_path, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         # Load

@@ -1,0 +1,20 @@
+id: path-needs-encoding
+language: python
+severity: warning
+rule:
+  any:
+    - pattern: $PATH.read_text($$$REST)
+    - pattern: $PATH.write_text($$$REST)
+  not:
+    has:
+      kind: argument_list
+      has:
+        kind: keyword_argument
+        has:
+          field: name
+          pattern: encoding
+message: Path.read_text/write_text should specify encoding='utf-8'
+note: |
+  Always specify encoding='utf-8' on Path.read_text() and Path.write_text()
+  to ensure cross-platform compatibility. On Windows, the default encoding
+  is cp1252, not UTF-8.

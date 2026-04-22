@@ -53,7 +53,7 @@ class TestLoadTimeseries:
             ]
         }
         sensors_path = tmp_path / "sensors.yaml"
-        with open(sensors_path, "w") as f:
+        with open(sensors_path, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         # Load timeseries
@@ -91,7 +91,7 @@ class TestLoadTimeseries:
                 }
             ]
         }
-        with open(data_dir / "M01.sensors.yaml", "w") as f:
+        with open(data_dir / "M01.sensors.yaml", "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         # Load with relative paths
@@ -156,7 +156,7 @@ unit = "C"
             ]
         }
         sensors_path = tmp_path / "sensors.yaml"
-        with open(sensors_path, "w") as f:
+        with open(sensors_path, "w", encoding="utf-8") as f:
             yaml.dump(sensors_data, f)
 
         source = TimeSeriesSource(data=str(csv_path), sensors=str(sensors_path))
@@ -224,7 +224,7 @@ class TestSaveTimeseries:
         assert loaded_df.shape == (2, 2)
 
         # Verify YAML content
-        with open(tmp_path / "output" / "sensors.yaml") as f:
+        with open(tmp_path / "output" / "sensors.yaml", encoding="utf-8") as f:
             loaded_sensors = yaml.safe_load(f)
         assert len(loaded_sensors["sensors"]) == 1
         assert loaded_sensors["sensors"][0]["columnName"] == "WindSpeed_100m_avg [m/s]"
