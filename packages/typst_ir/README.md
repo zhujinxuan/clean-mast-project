@@ -230,107 +230,6 @@ docx_path = render_to_docx(json_str, Path("./output"))
 
 **Requirements:** [pandoc](https://pandoc.org/) must be installed.
 
-## Mapping to Docx
-
-The `typst_ir.mapping` module provides traceability between Typst IR nodes and DOCX paragraphs. This enables downstream operations like style polishing while maintaining references to the original document structure.
-
-### Overview
-
-The mapping system establishes a bridge between the Typst IR and the generated DOCX:
-- **NodeID**: Unique identifier for each IR node (path + full_hash + node_hash)
-- **NodeRegistry**: Caches node IDs for fast lookup using Python's `id()` function
-- **MappingBuilder**: Orchestrates the mapping creation process
-- **ID Injection**: Embeds traceability IDs into DOCX paragraphs via custom XML attributes
-
-### Creating a Mapping
-
-```python
-from typst_ir import TypstDocument, TypstSection, TypstHeading, TypstParagraph
-from typst_ir.mapping import MappingBuilder, NodeRegistry
-
-# Create a document
-doc = TypstDocument(children=[
-    TypstSection(
-        heading=TypstHeading(text="Introduction", level=1),
-        body=[
-            TypstParagraph(text="This is the first paragraph."),
-            TypstParagraph(text="This is the second paragraph."),
-        ],
-        subsections=[],
-    ),
-])
-
-# Build mapping to DOCX
-registry = NodeRegistry()
-builder = MappingBuilder(registry)
-mapping = builder.build(doc, "output.docx")
-
-# Access mapping entries
-for node_id, entry in mapping.entries.items():
-    print(f"{entry.node_type}: paragraphs {entry.from_paragraph.index}-{entry.to_paragraph.index}")
-```
-
-### Using NodeRegistry
-
-The `NodeRegistry` provides fast lookup of node IDs using Python's object identity:
-
-```python
-from typst_ir import TypstDocument, TypstSection, TypstHeading, TypstParagraph
-from typst_ir.mapping import NodeRegistry
-
-doc = TypstDocument(children=[
-    TypstSection(
-        heading=TypstHeading(text="Hello Section", level=1),
-        body=[TypstParagraph(text="Hello")],
-        subsections=[],
-    )
-])
-para = doc.children[0].body[0]
-
-registry = NodeRegistry()
-registry.initialize(doc)
-
-# Get NodeID for any node
-node_id = registry.get_id(para)
-print(node_id.path)      # e.g., "doc.children.0.body.0[TypstParagraph]"
-print(node_id.full_hash) # Document-wide hash
-print(node_id.node_hash) # Node-specific hash
-```
-
-### CLI Export Command
-
-Export mappings directly from the command line:
-
-```bash
-# Export mapping from IR JSON and DOCX
-uv run typst-ir export-mapping --ir-json document.json --docx document.docx --output mapping.json
-```
-
-The exported mapping JSON contains:
-- `full_hash`: Document-wide hash for integrity verification
-- `entries`: Dictionary of node UUIDs to mapping entries
-- Each entry includes: node type, path, paragraph range, and parent reference
-
-### Public API
-
-```python
-from typst_ir.mapping import (
-    # Core types
-    NodeID,           # Unique node identifier (path + hashes)
-    MappingEntry,     # Single node-to-paragraph mapping
-    DocxTypstMapping, # Complete mapping for a document
-    DocxParagraph,    # Reference to a DOCX paragraph
-    
-    # Core classes
-    NodeRegistry,     # Cache for node ID lookups
-    MappingBuilder,   # Orchestrates mapping creation
-    
-    # Utilities
-    inject_ids,       # Inject IDs into DOCX paragraphs
-    export_mapping,   # CLI export function
-)
-```
-
 ## Tree-Sitter Validation
 
 Optional validation of generated Typst content using tree-sitter:
@@ -417,17 +316,6 @@ from typst_ir import (
     render_to_typst, render_to_pdf, render_to_docx,
     # Validation
     ValidationResult, validate_typst_content, escape_special_chars,
-    # Mapping (submodule)
-    mapping,
-)
-
-from typst_ir.mapping import (
-    # Core types
-    NodeID, MappingEntry, DocxTypstMapping, DocxParagraph,
-    # Core classes
-    NodeRegistry, MappingBuilder,
-    # Utilities
-    inject_ids, export_mapping,
 )
 ```
 

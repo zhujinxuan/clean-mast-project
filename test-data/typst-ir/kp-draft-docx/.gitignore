@@ -1,0 +1,5 @@
+# Decompressed working directory
+work/
+
+# DVC-tracked data
+rep-ts.tar.zst

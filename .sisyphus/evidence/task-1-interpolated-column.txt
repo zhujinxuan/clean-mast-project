@@ -1,1 +1,0 @@
-PASS: interpolated column returns 内插

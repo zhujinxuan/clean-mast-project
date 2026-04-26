@@ -45,6 +45,14 @@ clean-mast-project/
     └── cleanmast/
 ```
 
+## Critical Rules (Python)
+
+| Rule | Rationale |
+|------|-----------|
+| **Always specify `encoding="utf-8"`** when reading/writing text files | Windows defaults to `gbk` (Chinese locale) or `cp1252` (Western), causing `UnicodeDecodeError` on JSON, typst source, and log files. Never rely on system default. |
+| Use Pydantic `BaseModel` for all IR types | Type safety, JSON round-trip, validation |
+| Use `pathlib.Path` for all file operations | Cross-platform compatibility |
+
 ## Critical Rules (Julia)
 
 | Rule | ADR |

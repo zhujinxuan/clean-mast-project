@@ -10,8 +10,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from typst_ir.enriched.enrich import enrich_with_depth
+from typst_ir.enriched.serialize_typst import serialize as _serialize_enriched
 from typst_ir.nodes import TypstDocument
-from typst_ir.serializer import serialize
 
 
 def render_to_typst(json_str: str) -> str:
@@ -35,7 +36,9 @@ def render_to_typst(json_str: str) -> str:
         >>> assert '= Hello' in markup
     """
     doc = TypstDocument.model_validate_json(json_str)
-    return serialize(doc)
+    return "\n".join(
+        [_serialize_enriched(enrich_with_depth(child)) for child in doc.children]
+    )
 
 
 def render_to_pdf(json_str: str, output_dir: Path) -> Path:
@@ -61,7 +64,9 @@ def render_to_pdf(json_str: str, output_dir: Path) -> Path:
         >>> assert pdf_path.suffix == ".pdf"
     """
     doc = TypstDocument.model_validate_json(json_str)
-    typst_markup = serialize(doc)
+    typst_markup = "\n".join(
+        [_serialize_enriched(enrich_with_depth(child)) for child in doc.children]
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     typ_path = output_dir / "report.typ"
@@ -96,7 +101,9 @@ def render_to_docx(json_str: str, output_dir: Path) -> Path:
         >>> assert docx_path.suffix == ".docx"
     """
     doc = TypstDocument.model_validate_json(json_str)
-    typst_markup = serialize(doc)
+    typst_markup = "\n".join(
+        [_serialize_enriched(enrich_with_depth(child)) for child in doc.children]
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     typ_path = output_dir / "report.typ"

@@ -9,9 +9,6 @@ Test data is organized by package: `test-data/{packagename}/{dataset}-{command}/
 - `cleanmast/kp-202603-report/`: Test dataset for report timeseries command
   - Filled-height results from kp-202603 project
   - Two masts: L32261, M245228
-- `typst-ir/kp-202603-mapping/`: Test dataset for typst-ir mapping export
-  - Contains report.typ.json, report.docx, mapping.json, and images/
-  - Derived from cleanmast kp-202603-report real-world report data
 
 ## Usage
 

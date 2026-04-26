@@ -1,6 +1,0 @@
-    Type "MockSchema" is not assignable to upper bound "SchemaProtocol" for type variable "T@ReportAtom"
-      "MockSchema" is incompatible with protocol "SchemaProtocol"
-            Type "(df: DataFrame, *, cast: bool = False) -> DataFrame" is not assignable to type "(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]" (reportInvalidTypeArguments)
-    Type "MockSchema" is not assignable to upper bound "SchemaProtocol" for type variable "T@ReportAtom"
-      "MockSchema" is incompatible with protocol "SchemaProtocol"
-            Type "(df: DataFrame, *, cast: bool = False) -> DataFrame" is not assignable to type "(df: polars.dataframe.frame.DataFrame | LazyFrame, /, *, cast: bool = False, eager: Literal[True] = True) -> dataframely._typing.DataFrame[Unknown]" (reportInvalidTypeArguments)

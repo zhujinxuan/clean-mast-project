@@ -1,3 +1,0 @@
-QA Verification 1: No decomposition variables
-Command: grep -n "^ *df = \|^ *sensors = " packages/cleanmast/src/cleanmast/application/usecases/generate_report.py
-Result: No matches found (PASS)

@@ -1,0 +1,17 @@
+id: encoding-utf8-write-text
+language: python
+severity: error
+files:
+  - packages/typst_ir/**/*.py
+ignores:
+  - packages/typst_ir/experiments/**
+rule:
+  all:
+    - pattern: $PATH.write_text($$$)
+    - not:
+        pattern: $PATH.write_text($$$, encoding=$$$)
+message: write_text() must specify encoding="utf-8"
+note: |
+  Always specify encoding="utf-8" when calling write_text() to avoid
+  relying on system default (which may be gbk on Windows).
+  Example: path.write_text(content, encoding="utf-8")

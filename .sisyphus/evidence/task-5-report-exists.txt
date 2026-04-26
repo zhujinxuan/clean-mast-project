@@ -1,7 +1,0 @@
-total 500
-drwxr-xr-x 1 zhu_j 197609      0 Apr  1 18:27 .
-drwxr-xr-x 1 zhu_j 197609      0 Apr  2 14:10 ..
-drwxr-xr-x 1 zhu_j 197609      0 Apr  2 13:34 images
--rw-r--r-- 1 zhu_j 197609 458952 Apr  1 19:00 report.pdf
--rw-r--r-- 1 zhu_j 197609  27688 Apr  2 13:34 report.typ
-PASS: Report contains '内插' marker

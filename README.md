@@ -180,12 +180,6 @@ clean-mast-project/
 │       │   ├── nodes.py       # IR节点类型
 │       │   ├── serializer.py  # Typst标记转换
 │       │   ├── renderer.py    # PDF/DOCX渲染
-│       │   ├── mapping/       # DOCX映射模块
-│       │   │   ├── types.py   # 映射类型定义
-│       │   │   ├── registry.py # 节点注册表
-│       │   │   ├── visitor.py # 节点访问器
-│       │   │   ├── builder.py # 映射构建器
-│       │   │   └── injector.py # ID注入工具
 │       │   └── validation.py  # 内容验证
 │       └── tests/
 │

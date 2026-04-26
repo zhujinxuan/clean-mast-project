@@ -1,0 +1,17 @@
+id: encoding-utf8-read-text
+language: python
+severity: error
+files:
+  - packages/typst_ir/**/*.py
+ignores:
+  - packages/typst_ir/experiments/**
+rule:
+  all:
+    - pattern: $PATH.read_text($$$)
+    - not:
+        pattern: $PATH.read_text(encoding=$$$)
+message: read_text() must specify encoding="utf-8"
+note: |
+  Always specify encoding="utf-8" when calling read_text() to avoid
+  relying on system default (which may be gbk on Windows).
+  Example: path.read_text(encoding="utf-8")

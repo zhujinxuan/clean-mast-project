@@ -1,1 +1,0 @@
-PASS: extrapolated column returns 外推

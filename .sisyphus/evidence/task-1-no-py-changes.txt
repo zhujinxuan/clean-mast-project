@@ -1,4 +1,0 @@
-Acceptance Criteria: No .py files modified
-Command: git diff --name-only | grep -c "\.py$" || echo "0"
-Result: 0
-Status: PASS - No Python files modified

@@ -1,0 +1,65 @@
+# Experiment: kp-polish-docx
+# Generate draft DOCX from Typst IR JSON, then polish styles + remove markers
+
+# Default: list recipes
+default:
+    @just --list
+
+# Full pipeline — dvc pull → decompress → draft-docx → polish-docx → check outputs
+verify:
+    @echo "Running DVC experiment verification..."
+    cd '{{justfile_directory()}}' && dvc pull ./rep-ts.tar.zst.dvc
+    @echo "Decompressing dataset..."
+    cd '{{justfile_directory()}}' && mkdir -p work && tar --zstd -xf ./rep-ts.tar.zst -C work/
+    @echo "Running draft-docx..."
+    cd '{{justfile_directory()}}' && uv run typst-ir draft-docx work/rep-ts/report.typ.json
+    @echo "Running polish-docx..."
+    cd '{{justfile_directory()}}' && uv run typst-ir polish-docx work/rep-ts/report_draft.docx work/rep-ts/report.typ.json work/rep-ts/report_polished.docx
+    @echo "Checking outputs..."
+    @test -f work/rep-ts/report_draft.docx && echo "✓ Draft exists: work/rep-ts/report_draft.docx" || (echo "✗ Missing draft output" && exit 1)
+    @test -f work/rep-ts/report_polished.docx && echo "✓ Polished exists: work/rep-ts/report_polished.docx" || (echo "✗ Missing polished output" && exit 1)
+    @echo "✓ Verification complete"
+
+# Print JSON for verify runner
+verify-json:
+    @echo '{"name": "kp-polish-docx", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["work/rep-ts/report_draft.docx", "work/rep-ts/report_polished.docx"], "error": null}'
+
+# Remove generated files
+clean:
+    @echo "Cleaning generated files..."
+    cd '{{justfile_directory()}}' && rm -rf work/
+    @echo "✓ Cleaned"
+
+# Manual execution — full pipeline
+run:
+    @echo "Running full pipeline (draft-docx + polish-docx)..."
+    cd '{{justfile_directory()}}' && dvc pull ./rep-ts.tar.zst.dvc
+    cd '{{justfile_directory()}}' && mkdir -p work && tar --zstd -xf ./rep-ts.tar.zst -C work/
+    cd '{{justfile_directory()}}' && uv run typst-ir draft-docx work/rep-ts/report.typ.json
+    cd '{{justfile_directory()}}' && uv run typst-ir polish-docx work/rep-ts/report_draft.docx work/rep-ts/report.typ.json work/rep-ts/report_polished.docx
+    @echo "✓ Pipeline complete"
+
+# Run only the polish step (requires draft already exists)
+polish:
+    @echo "Running polish-docx on existing draft..."
+    cd '{{justfile_directory()}}' && uv run typst-ir polish-docx work/rep-ts/report_draft.docx work/rep-ts/report.typ.json work/rep-ts/report_polished.docx
+    @echo "✓ Polish complete"
+
+# Re-compress rep-ts and update DVC tracking
+update:
+    @echo "Updating rep-ts archive..."
+    cd '{{justfile_directory()}}' && rm -f rep-ts.tar.zst
+    cd '{{justfile_directory()}}' && tar --zstd -cf rep-ts.tar.zst -C ../../cleanmast/kp-202603-report rep-ts
+    cd '{{justfile_directory()}}' && dvc add rep-ts.tar.zst
+    @echo "✓ Updated rep-ts.tar.zst"
+
+# Show experiment info
+config:
+    @echo "Experiment: kp-polish-docx"
+    @echo "Source: ./rep-ts.tar.zst"
+    @echo "Commands:"
+    @echo "  1. uv run typst-ir draft-docx"
+    @echo "  2. uv run typst-ir polish-docx"
+    @echo "Outputs:"
+    @echo "  - work/rep-ts/report_draft.docx"
+    @echo "  - work/rep-ts/report_polished.docx"

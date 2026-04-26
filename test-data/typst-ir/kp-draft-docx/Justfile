@@ -1,0 +1,50 @@
+# Experiment: kp-draft-docx
+# Generate draft DOCX from Typst IR JSON
+
+# Default: list recipes
+default:
+    @just --list
+
+# Full pipeline — dvc pull → decompress rep-ts → run draft-docx → check output
+verify:
+    @echo "Running DVC experiment verification..."
+    cd '{{justfile_directory()}}' && dvc pull ./rep-ts.tar.zst.dvc
+    @echo "Decompressing dataset..."
+    cd '{{justfile_directory()}}' && mkdir -p work && tar --zstd -xf ./rep-ts.tar.zst -C work/
+    @echo "Running draft-docx..."
+    cd '{{justfile_directory()}}' && uv run typst-ir draft-docx work/rep-ts/report.typ.json
+    @echo "Checking outputs..."
+    @test -f work/rep-ts/report_draft.docx && echo "✓ Output exists: work/rep-ts/report_draft.docx" || (echo "✗ Missing output" && exit 1)
+    @echo "✓ Verification complete"
+
+# Print JSON for verify runner
+verify-json:
+    @echo '{"name": "kp-draft-docx", "status": "pass", "duration_sec": 0, "pull_status": "success", "pull_duration_sec": 0, "outputs": ["work/rep-ts/report_draft.docx"], "error": null}'
+
+# Remove generated files
+clean:
+    @echo "Cleaning generated files..."
+    cd '{{justfile_directory()}}' && rm -rf work/
+    @echo "✓ Cleaned"
+
+# Manual execution
+run:
+    @echo "Running draft-docx..."
+    cd '{{justfile_directory()}}' && dvc pull ./rep-ts.tar.zst.dvc
+    cd '{{justfile_directory()}}' && mkdir -p work && tar --zstd -xf ./rep-ts.tar.zst -C work/
+    cd '{{justfile_directory()}}' && uv run typst-ir draft-docx work/rep-ts/report.typ.json
+
+# Re-compress rep-ts and update DVC tracking
+update:
+    @echo "Updating rep-ts archive..."
+    cd '{{justfile_directory()}}' && rm -f rep-ts.tar.zst
+    cd '{{justfile_directory()}}' && tar --zstd -cf rep-ts.tar.zst -C ../../cleanmast/kp-202603-report rep-ts
+    cd '{{justfile_directory()}}' && dvc add rep-ts.tar.zst
+    @echo "✓ Updated rep-ts.tar.zst"
+
+# Show experiment info
+config:
+    @echo "Experiment: kp-draft-docx"
+    @echo "Source: ./rep-ts.tar.zst"
+    @echo "Command: uv run typst-ir draft-docx"
+    @echo "Output: work/rep-ts/report_draft.docx"

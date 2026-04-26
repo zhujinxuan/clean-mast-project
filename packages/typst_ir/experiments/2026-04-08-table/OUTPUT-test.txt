@@ -1,6 +1,0 @@
-=== Test 1: Table Position in Document Order ===
-Traceback (most recent call last):
-  File "C:\Users\zhu_j\workspace\developing\docx-typst-polish\packages\typst_ir\tests\experiments\table\test_property_retrieval.py", line 20, in <module>
-    expected_tables = [node for node in expected['children'] if node['type'] == 'TypstTable']
-                                                                ~~~~^^^^^^^^
-KeyError: 'type'

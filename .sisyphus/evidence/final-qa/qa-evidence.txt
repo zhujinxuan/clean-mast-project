@@ -1,214 +1,51 @@
-================================================================================
-FINAL QA EVIDENCE - typst-ir-foundation plan
-Generated: 2026-04-04
-================================================================================
+============================================================
+SCENARIO 1: End-to-end polish pipeline
+============================================================
+Input DOCX: test-data\typst-ir\kp-draft-docx\work\rep-ts\report_draft.docx
+Input IR:   test-data\typst-ir\kp-draft-docx\work\rep-ts\report.typ.json
+Output:     C:\Users\zhu_j\AppData\Local\Temp\tmp627mva7u.docx
+Markers remaining: 0
+Content paragraphs: 227
+PASS
 
-================================================================================
-TASK 1 QA SCENARIOS - Wind Rose
-================================================================================
+============================================================
+SCENARIO 2: CLI command works
+============================================================
+Return code: 0
+stdout:
+                                                                               
+ Usage: typst-ir polish-docx [OPTIONS] DOCX_PATH IR_JSON_PATH OUTPUT_PATH      
+                                                                               
+ Polish a DOCX using Typst IR instructions.                                    
+                                                                               
+┌─ Arguments ─────────────────────────────────────────────────────────────────┐
+│ *    docx_path         PATH  Input DOCX file with IR markers [required]     │
+│ *    ir_json_path      PATH  Typst IR JSON file [required]                  │
+│ *    output_path       PATH  Output polished DOCX file [required]           │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌─ Options ───────────────────────────────────────────────────────────────────┐
+│ --help          Show this message and exit.                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
---- Scenario 1.1: Type Checker on wind_rose files ---
-COMMAND: uv run ty check packages/cleanmast 2>&1 | grep -i "wind_rose"
-RESULT: ERRORS FOUND (in test files, not implementation)
 
-OUTPUT:
-333 |     sample_wind_rose_df: pl.DataFrame,
-  --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:66:6
-64 |       sample_wind_rose_data: pl.DataFrame,
-69 | |         df=sample_wind_rose_data,
-   --> packages\cleanmast\tests\assessment\test_wind_rose_atoms.py:78:6
-76 |       sample_wind_rose_data: pl.DataFrame,
-81 | |         df=sample_wind_rose_data,
-   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:182:6
-180 |       sample_wind_rose_df: pl.DataFrame,
-186 | |         df=sample_wind_rose_df,
-   --> packages\cleanmast\tests\assessment\test_wind_rose_grid_atom.py:195:6
-193 |       sample_wind_rose_df: pl.DataFrame,
-199 | |         df=sample_wind_rose_df,
+stderr:
 
-NOTE: All errors are in test fixture files, NOT in implementation files.
-Implementation files (wind_rose_calculator.py, wind_rose_atoms.py) have no errors.
+Has docx_path: True
+Has ir_json_path: True
+Has output_path: True
+PASS
 
---- Scenario 1.2: Wind Rose Calculator Month Test ---
-COMMAND: uv run pytest packages/cleanmast/tests/assessment/test_wind_rose_calculator.py -v -k "month"
-RESULT: PASSED
+============================================================
+SCENARIO 3: Edge case - empty document
+============================================================
+Output paragraphs: 0
+PASS
 
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 12 items / 11 deselected / 1 selected
-
-packages\cleanmast\tests\assessment\test_wind_rose_calculator.py::TestWindRoseCalculator::test_frequencies_sum_to_one_per_month PASSED [100%]
-
-====================== 1 passed, 11 deselected in 0.44s =======================
-
-================================================================================
-TASK 2 QA SCENARIOS - Vertical Profile
-================================================================================
-
---- Scenario 2.1: Type Checker on vertical_profile files ---
-COMMAND: uv run ty check packages/cleanmast 2>&1 | grep -i "vertical_profile"
-RESULT: ERRORS FOUND (in test files, not implementation)
-
-OUTPUT:
-468 |       sample_vertical_profile_df: pl.DataFrame,
-474 | |         df=sample_vertical_profile_df,
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:484:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:525:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:540:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:554:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:653:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:670:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:683:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:716:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:730:13
-   --> packages\cleanmast\tests\assessment\test_vertical_profile_atoms_migrated.py:819:13
-
-NOTE: All errors are in test fixture files, NOT in implementation files.
-Implementation files (vertical_profile_atoms.py) have no errors.
-
---- Scenario 2.2: Vertical Profile Atoms Test ---
-COMMAND: uv run pytest packages/cleanmast/tests/assessment/test_vertical_profile_atoms.py -v
-RESULT: PASSED (3/3 tests)
-
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 3 items
-
-packages\cleanmast\tests\assessment\test_vertical_profile_atoms.py::TestSingleMastVerticalProfileAtom::test_render_table_basic PASSED [ 33%]
-packages\cleanmast\tests\assessment\test_vertical_profile_atoms.py::TestSingleMastVerticalProfileAtom::test_render_image_basic PASSED [ 66%]
-packages\cleanmast\tests\assessment\test_vertical_profile_atoms.py::TestSingleMastVerticalProfileAtom::test_render_summary_basic PASSED [100%]
-
-============================== 3 passed in 0.81s =============================
-
-================================================================================
-TASK 3 QA SCENARIOS - IR Serializer
-================================================================================
-
---- Scenario 3.1: IR Serializer Document Test ---
-COMMAND: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "document"
-RESULT: PASSED (6/6 tests)
-
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 33 items / 27 deselected / 6 selected
-
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstDocumentNode::test_document_empty PASSED [ 16%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstDocumentNode::test_document_with_children PASSED [ 33%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstDocumentNode::test_document_nested_structure PASSED [ 50%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstDocumentNode::test_document_frozen PASSED [ 66%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestSerializer::test_serialize_full_document PASSED [ 83%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestSerializer::test_serialize_rejects_non_document_root PASSED [100%]
-
-====================== 6 passed, 27 deselected in 0.04s =======================
-
---- Scenario 3.2: Heading Normalization Test ---
-COMMAND: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "heading"
-RESULT: PASSED (6/6 tests)
-
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 33 items / 27 deselected / 6 selected
-
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstHeadingNode::test_heading_construction_level1 PASSED [ 16%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstHeadingNode::test_heading_construction_level2 PASSED [ 33%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstHeadingNode::test_heading_construction_level3 PASSED [ 50%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstHeadingNode::test_heading_level_bounds PASSED [ 66%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestTypstHeadingNode::test_heading_frozen PASSED [ 83%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestSerializer::test_serialize_heading_levels PASSED [100%]
-
-====================== 6 passed, 27 deselected in 0.04s =======================
-
-HEADING NORMALIZATION VERIFICATION:
-- level=1 → "= Title" (verified in test_heading_construction_level1)
-- level=2 → "== Title" (verified in test_heading_construction_level2)
-- level=3 → "=== Title" (verified in test_heading_construction_level3)
-
---- Scenario 3.3: Invalid Input Rejection Test ---
-COMMAND: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "invalid"
-RESULT: PASSED (1/1 test)
-
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 33 items / 32 deselected / 1 selected
-
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestSerializer::test_serialize_rejects_invalid_children PASSED [100%]
-
-====================== 1 passed, 32 deselected in 0.04s =======================
-
---- Scenario 3.4: GOLDEN GATE - Snapshot Tests ---
-COMMAND: uv run pytest packages/cleanmast/tests/infrastructure/test_typst_ir.py -v -k "golden_snapshot"
-RESULT: PASSED (5/5 tests) - ALL GOLDEN SNAPSHOTS PASS
-
-OUTPUT:
-============================= test session starts =============================
-platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\.venv\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: C:\Users\zhu_j\workspace\developing\cleanmast-report-gen\packages\cleanmast
-configfile: pyproject.toml
-plugins: cov-7.0.0
-collecting ... collected 33 items / 28 deselected / 5 selected
-
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestGoldenSnapshotCompilation::test_golden_snapshot_turbulence_sector PASSED [ 20%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestGoldenSnapshotCompilation::test_golden_snapshot_vertical_profile PASSED [ 40%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestGoldenSnapshotCompilation::test_golden_snapshot_weibull_distribution PASSED [ 60%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestGoldenSnapshotCompilation::test_golden_snapshot_wind_frequency_rose PASSED [ 80%]
-packages\cleanmast\tests\infrastructure\test_typst_ir.py::TestGoldenSnapshotCompilation::test_golden_snapshot_wind_power_rose PASSED [100%]
-
-====================== 5 passed, 28 deselected in 0.83s =======================
-
-GOLDEN SNAPSHOTS TESTED:
-1. test_golden_snapshot_turbulence_sector - PASSED
-2. test_golden_snapshot_vertical_profile - PASSED
-3. test_golden_snapshot_weibull_distribution - PASSED
-4. test_golden_snapshot_wind_frequency_rose - PASSED
-5. test_golden_snapshot_wind_power_rose - PASSED
-
-================================================================================
-SUMMARY
-================================================================================
-
-Task 1 Scenarios:
-- Scenario 1.1 (Type check): FAIL (errors in test fixtures, not implementation)
-- Scenario 1.2 (Calculator test): PASS
-
-Task 2 Scenarios:
-- Scenario 2.1 (Type check): FAIL (errors in test fixtures, not implementation)
-- Scenario 2.2 (Atoms test): PASS
-
-Task 3 Scenarios:
-- Scenario 3.1 (Document serialization): PASS
-- Scenario 3.2 (Heading normalization): PASS
-- Scenario 3.3 (Invalid input): PASS
-- Scenario 3.4 (Golden snapshots): PASS (5/5)
-
-Type Check Note:
-The type checker errors are all in test fixture files (test_*.py), NOT in the 
-actual implementation files. The implementation files have clean type checking.
-This is expected as test fixtures often use more relaxed typing for convenience.
-
-================================================================================
+============================================================
+SCENARIO 4: Integration - multiple sections
+============================================================
+Paragraph styles: ['typst-ir-Heading1', 'typst-ir-Paragraph', 'typst-ir-Heading1', 'typst-ir-Paragraph', 'typst-ir-Heading1', 'typst-ir-Paragraph']
+Heading1 count: 3
+Paragraph count: 3
+Total paragraphs: 6
+PASS
