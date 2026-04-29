@@ -793,7 +793,6 @@ def _create_three_mast_toml_config(tmp_path: Path) -> Path:
     return path
 
 
-
 class TestFullPipelineConfigToDocument:
     """Full pipeline test from TOML config to rendered Typst document."""
 
@@ -867,7 +866,9 @@ class TestFullPipelineConfigToDocument:
         assert type_counts[TypstTable] >= 1
         assert type_counts[TypstFigure] >= 1
 
-    def test_three_mast_builder_writes_typ_file(self, tmp_path: Path) -> None:
+    def test_three_mast_builder_produces_typst_content(self, tmp_path: Path) -> None:
+        from typst_ir import serialize
+
         output_dir = tmp_path / "typst_output"
         builder = AssessmentReportBuilder("风资源分析", output_dir)
 
@@ -890,11 +891,10 @@ class TestFullPipelineConfigToDocument:
             VerticalProfileSubsection(atoms=_make_vertical_profile_collection(3))
         )
 
-        result = builder.build(compile_pdf=False, compile_docx=False)
-        assert "typ" in result
-        assert result["typ"].exists()
+        document = builder.build_typst()
+        assert isinstance(document, TypstDocument)
 
-        typ_content = result["typ"].read_text(encoding="utf-8")
+        typ_content = serialize(document)
         assert "风向风能分布" in typ_content
         assert "风速时序分析" in typ_content
         assert "Weibull分布拟合" in typ_content

@@ -190,7 +190,6 @@ def vector_to_degrees(
     return degrees % 360
 
 
-
 def generate_target_column(
     sensor_type: Literal["WindSpeed", "WindDirection"],
     height: float,

@@ -246,9 +246,9 @@ class TestWindFrequencyCalculatorCore:
         # Test exact boundaries
         wind_speeds = [
             0.0,   # Should be in bin 0
-            0.999, # Should be in bin 0
+            0.999,  # Should be in bin 0
             1.0,   # Should be in bin 1
-            1.999, # Should be in bin 1
+            1.999,  # Should be in bin 1
             28.0,  # Should be in bin 28 (capped)
             35.0,  # Should be in bin 28 (capped)
         ]

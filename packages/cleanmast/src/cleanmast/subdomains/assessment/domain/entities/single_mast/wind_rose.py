@@ -42,6 +42,7 @@ WIND_ROSE_COLORS = [
     "#e377c2",
 ]
 
+
 @dataclass
 class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
     """Renders wind frequency rose for a single mast.

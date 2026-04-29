@@ -191,7 +191,7 @@ def sample_weibull_df() -> pl.DataFrame:
         marker = "外推" if height > 100 else None
         shape_k = 2.0 + (height - 80) * 0.005
         scale_c = 7.0 + (height - 80) * 0.02
-        mean_speed = scale_c * np.exp(1 / shape_k * np.log(1 + 1/shape_k))
+        mean_speed = scale_c * np.exp(1 / shape_k * np.log(1 + 1 / shape_k))
         
         # Generate some realistic density values - ensure no NaN
         observed_density = []

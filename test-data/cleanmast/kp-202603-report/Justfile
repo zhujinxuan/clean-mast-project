@@ -51,7 +51,7 @@ reset: clean
 # Run the report generation manually
 run:
     @echo "Running report generation..."
-    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml --no-docx
+    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
 
 # Run with PDF generation (slower)
 run-full:

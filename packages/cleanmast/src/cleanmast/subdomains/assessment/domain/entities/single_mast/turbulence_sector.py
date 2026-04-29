@@ -152,7 +152,7 @@ class SingleMastTurbulenceSectorAtom(ReportAtom[TurbulenceSectorSchema, SingleMa
             f"{self.meta.mast_name}测风塔湍流强度玫瑰图分析。"
             f"图表显示{', '.join(height_strs)}高度的湍流强度分布，"
             f"主导湍流方向为{'、'.join(dominant_directions)}，"
-            f"平均湍流强度为{avg_ti*100:.2f}%，"
+            f"平均湍流强度为{avg_ti * 100:.2f}%，"
             f"为风机选型与载荷计算提供参考依据。"
         )
         return [TypstParagraph(text=text)]

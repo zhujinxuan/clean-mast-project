@@ -114,7 +114,6 @@ def _validate_single_reference(
     return errors
 
 
-
 # Private aliases for backward compatibility with tests
 _validate_references = validate_references
 _build_sensor_column_map = build_sensor_column_map

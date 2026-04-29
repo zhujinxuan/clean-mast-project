@@ -39,8 +39,6 @@ class TestReportGenerationServiceMultiMastContract:
     def service(self) -> ReportGenerationService:
         return ReportGenerationService()
 
-
-
     def test_generate_wind_rose_section_accepts_multi_mast(
         self,
         service: ReportGenerationService,

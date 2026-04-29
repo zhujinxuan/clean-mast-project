@@ -158,7 +158,7 @@ class TestRepresentativeYearCalibrationIntegration:
         _create_representative_year_toml(tmp_path)
         rep_ts_report_path = _create_rep_ts_report_toml(tmp_path)
 
-        result = generate_report(str(rep_ts_report_path), no_pdf=True, no_docx=True)
+        result = generate_report(str(rep_ts_report_path))
 
         assert isinstance(result, dict)
         assert "typ" in result

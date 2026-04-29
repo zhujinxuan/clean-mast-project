@@ -4,7 +4,7 @@
 [run]
 command = "report timeseries"
 config = "rep-ts-report.toml"
-args = ["--no-docx"]
+args = []
 
 [expect]
 outputs = ["rep-ts/report.pdf"]

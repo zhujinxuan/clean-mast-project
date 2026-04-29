@@ -42,6 +42,7 @@ WIND_ROSE_COLORS = [
     "#e377c2",
 ]
 
+
 @dataclass
 class SingleMastMonthlyWindPowerRoseGridAtom(ReportAtom[WindRoseSchema, SingleMastMeta]):
     """Renders 3x4 grid of monthly wind power roses for all 12 months.

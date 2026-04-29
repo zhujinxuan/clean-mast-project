@@ -51,8 +51,6 @@ class PipelinePhase:
     is_implemented: bool = True
     config_file: str = ""
 
-
-
     def mark_running(self) -> None:
         """Mark phase as running."""
         self.status = PhaseStatus.RUNNING

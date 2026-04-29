@@ -83,7 +83,7 @@ class TestJuliaPythonInterop:
             df = pl.DataFrame({
                 "timestamp": pl.datetime_range(
                     start=pl.datetime(2024, 1, 1),
-                    end=pl.datetime(2024, 1, 1).dt.offset_by(f"{n_rows-1}h"),
+                    end=pl.datetime(2024, 1, 1).dt.offset_by(f"{n_rows - 1}h"),
                     interval="1h",
                     eager=True,
                 ),

@@ -66,9 +66,9 @@ def sample_wind_data_multi_height() -> pl.DataFrame:
     alpha = 0.14
     ref_speed = np.random.weibull(2, 1000) * 8.0
     
-    wind_speeds_100m = ref_speed * (100/100)**alpha
-    wind_speeds_120m = ref_speed * (120/100)**alpha
-    wind_speeds_140m = ref_speed * (140/100)**alpha
+    wind_speeds_100m = ref_speed * (100 / 100)**alpha
+    wind_speeds_120m = ref_speed * (120 / 100)**alpha
+    wind_speeds_140m = ref_speed * (140 / 100)**alpha
     
     return pl.DataFrame({
         "timestamp": timestamps,
@@ -844,10 +844,10 @@ class TestRealisticDataScenarios:
         
         df = pl.DataFrame({
             "timestamp": timestamps,
-            "WS_80m_avg": base_speed * (80/100)**alpha_true,
+            "WS_80m_avg": base_speed * (80 / 100)**alpha_true,
             "WS_100m_avg": base_speed,
-            "WS_120m_avg": base_speed * (120/100)**alpha_true,
-            "WS_140m_avg": base_speed * (140/100)**alpha_true,
+            "WS_120m_avg": base_speed * (120 / 100)**alpha_true,
+            "WS_140m_avg": base_speed * (140 / 100)**alpha_true,
         })
         
         sensors = [
@@ -891,9 +891,9 @@ class TestRealisticDataScenarios:
         
         df = pl.DataFrame({
             "timestamp": timestamps,
-            "WS_60m_avg": base_speed * (60/100)**alpha_true,
+            "WS_60m_avg": base_speed * (60 / 100)**alpha_true,
             "WS_100m_avg": base_speed,
-            "WS_120m_avg": base_speed * (120/100)**alpha_true,
+            "WS_120m_avg": base_speed * (120 / 100)**alpha_true,
         })
         
         sensors = [
@@ -933,9 +933,9 @@ class TestRealisticDataScenarios:
         
         df = pl.DataFrame({
             "timestamp": timestamps,
-            "WS_80m_avg": base_speed * (80/100)**alpha_true,
+            "WS_80m_avg": base_speed * (80 / 100)**alpha_true,
             "WS_100m_avg": base_speed,
-            "WS_130m_avg": base_speed * (130/100)**alpha_true,
+            "WS_130m_avg": base_speed * (130 / 100)**alpha_true,
         })
         
         sensors = [

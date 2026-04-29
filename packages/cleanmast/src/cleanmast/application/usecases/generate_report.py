@@ -56,11 +56,7 @@ class HeadingSection:
         )
 
 
-def generate_report(
-    config_path: str,
-    no_pdf: bool = False,
-    no_docx: bool = False,
-) -> BuildResult:
+def generate_report(config_path: str) -> BuildResult:
     """Generate representative timeseries report from config.
 
     This use case:
@@ -75,8 +71,6 @@ def generate_report(
 
     Args:
         config_path: Path to the TOML config file (e.g., rep-ts-report.toml)
-        no_pdf: Skip PDF generation
-        no_docx: Skip DOCX generation
 
     Returns:
         Dict with report generation results including paths
@@ -207,10 +201,7 @@ def generate_report(
     for section in all_sections:
         builder.add_section(section)
 
-    return builder.build(
-        compile_pdf=not no_pdf,
-        compile_docx=not no_docx,
-    )
+    return builder.build()
 
 
 def _has_wind_direction_sensors(timeseries: TimeSeriesData) -> bool:

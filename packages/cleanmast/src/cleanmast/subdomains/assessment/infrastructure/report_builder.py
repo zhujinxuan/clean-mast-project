@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Self, TypedDict
 
 from typst_ir import (
-    compile_typst_to_docx,
     compile_typst_to_pdf,
     serialize,
 )
+from typst_ir.enriched.serialize_docx import draft_docx
+from typst_ir.polish_docx import polish_docx
 
 from cleanmast.subdomains.assessment.domain.protocols.section import Section
 from cleanmast.subdomains.assessment.domain.types import (
@@ -24,17 +25,15 @@ from cleanmast.subdomains.assessment.domain.types import (
 
 class BuildResult(TypedDict, total=False):
     """Result dictionary from AssessmentReportBuilder.build().
-    
+
     Keys:
         typ: Path to the generated Typst source file (always present)
-        pdf: Path to the generated PDF file (if compile_pdf=True and succeeds)
-        docx: Path to the generated DOCX file (if compile_docx=True and succeeds)
-        docx_warning: Error message string (if compile_docx=True but fails)
+        pdf: Path to the generated PDF file (always present)
+        docx: Path to the generated DOCX file (always present)
     """
     typ: Path
     pdf: Path
     docx: Path
-    docx_warning: str
 
 
 class AssessmentReportBuilder:
@@ -73,19 +72,16 @@ class AssessmentReportBuilder:
         self._sections.append(section)
         return self
 
-    def build(self, compile_pdf: bool = True, compile_docx: bool = True) -> BuildResult:
+    def build(self) -> BuildResult:
         """Generate complete Typst document using IR-based rendering.
 
         Creates the output directory structure, generates images for all atoms,
         and assembles a complete Typst document from IR nodes.
 
-        Args:
-            compile_pdf: Whether to compile the report to PDF (default: True)
-            compile_docx: Whether to compile the report to DOCX (default: True)
+        Always compiles the Typst source to PDF and generates a polished DOCX file.
 
         Returns:
-            Dictionary containing paths to generated files. Always includes 'typ'.
-            May include 'pdf', 'docx', or 'docx_warning' depending on compilation.
+            Dictionary containing paths to generated files. Always includes 'typ', 'pdf', and 'docx'.
         """
         # Create output directories
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -115,21 +111,30 @@ class AssessmentReportBuilder:
         results: BuildResult = {"typ": report_path}
 
         # PDF compilation
-        if compile_pdf:
-            try:
-                results["pdf"] = compile_typst_to_pdf(report_path, self.output_dir, json_content=json_str)
-            except RuntimeError as e:
-                raise RuntimeError(
-                    f"PDF generation failed: {e}\n"
-                    f"Typst file created at: {report_path}"
-                ) from e
+        try:
+            results["pdf"] = compile_typst_to_pdf(report_path, self.output_dir, json_content=json_str)
+        except RuntimeError as e:
+            raise RuntimeError(
+                f"PDF generation failed: {e}\n"
+                f"Typst file created at: {report_path}"
+            ) from e
 
-        # DOCX compilation
-        if compile_docx:
-            try:
-                results["docx"] = compile_typst_to_docx(report_path, self.output_dir, json_content=json_str)
-            except (ImportError, RuntimeError) as e:
-                results["docx_warning"] = str(e)
+        json_path = self.output_dir / "report.typ.json"
+        json_path.write_text(json_str, encoding="utf-8")
+
+        draft_path = self.output_dir / "report_draft.docx"
+        try:
+            draft_docx(json_path, output=draft_path)
+        except RuntimeError as e:
+            raise RuntimeError(f"DOCX draft generation failed: {e}") from e
+
+        docx_path = self.output_dir / "report.docx"
+        try:
+            polish_docx(draft_path, json_path, docx_path)
+        except Exception as e:
+            raise RuntimeError(f"DOCX polish failed: {e}") from e
+
+        results["docx"] = docx_path
 
         return results
 

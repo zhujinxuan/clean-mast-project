@@ -48,7 +48,7 @@ class TestGenerateReport:
 
     def _create_five_subsection_config(self, tmp_path: Path, mast_count: int) -> Path:
         masts = [
-            {"name": f"M{i+1}", "air_density": 1.225, "input": {"data": f"./M{i+1}.parquet"}}
+            {"name": f"M{i + 1}", "air_density": 1.225, "input": {"data": f"./M{i + 1}.parquet"}}
             for i in range(mast_count)
         ]
         config = {
@@ -97,13 +97,17 @@ class TestGenerateReport:
         mock_service_cls.return_value = mock_service
 
         mock_builder = MagicMock()
-        mock_builder.build.return_value = {"pdf": "out.pdf"}
+        mock_builder.build.return_value = {
+            "typ": Path("report.typ"),
+            "pdf": Path("report.pdf"),
+            "docx": Path("report.docx"),
+        }
         mock_builder_cls.return_value = mock_builder
 
         config_path = self._create_nested_config(tmp_path)
-        result = generate_report(str(config_path), no_pdf=True, no_docx=True)
+        result = generate_report(str(config_path))
 
-        assert result == {"pdf": "out.pdf"}
+        assert result["pdf"] == Path("report.pdf")
         assert mock_load_ts.call_count == 2
         assert mock_service.generate_wind_rose_section.call_count == 2
         assert mock_service.generate_temporal_section.call_count == 2
@@ -134,13 +138,17 @@ class TestGenerateReport:
         mock_service_cls.return_value = mock_service
 
         mock_builder = MagicMock()
-        mock_builder.build.return_value = {"pdf": "out.pdf"}
+        mock_builder.build.return_value = {
+            "typ": Path("report.typ"),
+            "pdf": Path("report.pdf"),
+            "docx": Path("report.docx"),
+        }
         mock_builder_cls.return_value = mock_builder
 
         config_path = self._create_five_subsection_config(tmp_path, mast_count=3)
-        result = generate_report(str(config_path), no_pdf=True, no_docx=True)
+        result = generate_report(str(config_path))
 
-        assert result == {"pdf": "out.pdf"}
+        assert result["pdf"] == Path("report.pdf")
         assert mock_load_ts.call_count == 3
 
         # Each service method called exactly once (multi-mast)
@@ -177,13 +185,17 @@ class TestGenerateReport:
         mock_service_cls.return_value = mock_service
 
         mock_builder = MagicMock()
-        mock_builder.build.return_value = {"pdf": "out.pdf"}
+        mock_builder.build.return_value = {
+            "typ": Path("report.typ"),
+            "pdf": Path("report.pdf"),
+            "docx": Path("report.docx"),
+        }
         mock_builder_cls.return_value = mock_builder
 
         config_path = self._create_five_subsection_config(tmp_path, mast_count=1)
-        result = generate_report(str(config_path), no_pdf=True, no_docx=True)
+        result = generate_report(str(config_path))
 
-        assert result == {"pdf": "out.pdf"}
+        assert result["pdf"] == Path("report.pdf")
         assert mock_load_ts.call_count == 1
 
         # Each service method called exactly once (backward compatible structure)
@@ -223,7 +235,7 @@ class TestGenerateReport:
             tomli_w.dump(config, f)
 
         with pytest.raises(ValueError, match="Document sections may only contain container subsections"):
-            generate_report(str(path), no_pdf=True, no_docx=True)
+            generate_report(str(path))
 
     @patch("cleanmast.application.usecases.generate_report.RepTsReportConfig")
     @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
@@ -243,7 +255,11 @@ class TestGenerateReport:
         mock_service_cls.return_value = mock_service
 
         mock_builder = MagicMock()
-        mock_builder.build.return_value = {"pdf": "out.pdf"}
+        mock_builder.build.return_value = {
+            "typ": Path("report.typ"),
+            "pdf": Path("report.pdf"),
+            "docx": Path("report.docx"),
+        }
         mock_builder_cls.return_value = mock_builder
 
         mock_subsection_with_masts = MagicMock()
@@ -273,9 +289,9 @@ class TestGenerateReport:
         config_path = tmp_path / "rep-ts-report.toml"
         config_path.touch()
 
-        result = generate_report(str(config_path), no_pdf=True, no_docx=True)
+        result = generate_report(str(config_path))
 
-        assert result == {"pdf": "out.pdf"}
+        assert result["pdf"] == Path("report.pdf")
         assert mock_load_ts.call_count == 1
         assert mock_service.generate_wind_rose_section.call_count == 1
         assert mock_builder.add_section.call_count == 1
@@ -285,8 +301,7 @@ class TestGenerateReport:
     @patch("cleanmast.application.usecases.generate_report.load_timeseries")
     def test_nested_subsections_render_with_correct_heading_levels(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
         from cleanmast.application.usecases.generate_report import HeadingSection
-        from typst_ir import TypstDocument, TypstHeading, TypstSection
-        from typst_ir.serializer import serialize
+        from typst_ir import TypstDocument, TypstHeading, TypstSection, serialize
 
         mock_ts = MagicMock()
         mock_ts.sensors = []
@@ -306,7 +321,11 @@ class TestGenerateReport:
         mock_service_cls.return_value = mock_service
 
         mock_builder = MagicMock()
-        mock_builder.build.return_value = {"pdf": "out.pdf"}
+        mock_builder.build.return_value = {
+            "typ": Path("report.typ"),
+            "pdf": Path("report.pdf"),
+            "docx": Path("report.docx"),
+        }
         mock_builder_cls.return_value = mock_builder
 
         config = {
@@ -335,8 +354,8 @@ class TestGenerateReport:
         with open(path, "wb") as f:
             tomli_w.dump(config, f)
 
-        result = generate_report(str(path), no_pdf=True, no_docx=True)
-        assert result == {"pdf": "out.pdf"}
+        result = generate_report(str(path))
+        assert result["pdf"] == Path("report.pdf")
 
         added_sections = [call.args[0] for call in mock_builder.add_section.call_args_list]
         heading_sections = [s for s in added_sections if isinstance(s, HeadingSection)]
