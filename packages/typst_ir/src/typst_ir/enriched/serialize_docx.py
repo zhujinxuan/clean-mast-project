@@ -44,7 +44,7 @@ def serialize_table_with_index(table: TypstTable, table_index: str) -> str:
 
     -- Haskell:
     -- serializeTableWithIndex :: TypstTable -> String -> String
-    -- serializeTableWithIndex table idx = tableMarkup ++ "\n表(" ++ idx ++ ") " ++ caption ++ "\n"
+    -- serializeTableWithIndex table idx = tableMarkup ++ "\n表" ++ idx ++ " " ++ caption ++ "\n"
 
     Args:
         table: The table to serialize.
@@ -82,7 +82,7 @@ def serialize_table_with_index(table: TypstTable, table_index: str) -> str:
     if table.caption:
         nested_table = table_markup.lstrip("#").replace("\n", "\n  ")
         return f"""#figure(
-  caption: [表({table_index}) {table.caption}],
+  caption: [表 {table_index} {table.caption}],
   {nested_table},
 )
 """
@@ -95,7 +95,7 @@ def serialize_figure_with_index(figure: TypstFigure, figure_index: str) -> str:
 
     -- Haskell:
     -- serializeFigureWithIndex :: TypstFigure -> String -> String
-    -- serializeFigureWithIndex fig idx = figMarkup ++ "\n图(" ++ idx ++ ") " ++ caption ++ "\n"
+    -- serializeFigureWithIndex fig idx = figMarkup ++ "\n图" ++ idx ++ " " ++ caption ++ "\n"
 
     Args:
         figure: The figure to serialize.
@@ -109,7 +109,7 @@ def serialize_figure_with_index(figure: TypstFigure, figure_index: str) -> str:
 
     figure_markup = f"""#figure(
   image("{figure.content}", width: 80%),
-  caption: [图({figure_index}) {figure.caption}],
+  caption: [图 {figure_index} {figure.caption}],
 )
 """
 

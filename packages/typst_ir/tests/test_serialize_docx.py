@@ -48,7 +48,7 @@ class TestSerializeTableWithIndex:
         result = serialize_table_with_index(table, "1.2-1")
         assert "#figure(" in result
         assert "[A]" in result
-        assert "caption: [表(1.2-1) Test Table]" in result
+        assert "caption: [表 1.2-1 Test Table]" in result
         assert "table(" in result
 
     def test_table_without_caption(self) -> None:
@@ -79,7 +79,7 @@ class TestSerializeFigureWithIndex:
         result = serialize_figure_with_index(figure, "2.1-1")
         assert "#figure(" in result
         assert 'image("img.png", width: 80%)' in result
-        assert "caption: [图(2.1-1) A figure]" in result
+        assert "caption: [图 2.1-1 A figure]" in result
 
     def test_empty_content_raises(self) -> None:
         figure = TypstFigure(content="", caption="Empty")
@@ -148,7 +148,7 @@ class TestSerializeDocxAlgebra:
         result = serialize_docx_algebra(layer)
         assert '#raw("irstart:section0body0table0")' in result
         assert '#raw("irend:section0body0table0")' in result
-        assert "caption: [表(1-1) My Table]" in result
+        assert "caption: [表 1-1 My Table]" in result
         assert "#figure(" in result
 
     def test_figure_with_index(self) -> None:
@@ -172,8 +172,8 @@ class TestSerializeDocxAlgebra:
         result = serialize_docx_algebra(layer)
         assert '#raw("irstart:section0body0figure0")' in result
         assert '#raw("irend:section0body0figure0")' in result
-        assert "caption: [图(1-1) My Figure]" in result
-        assert result.count("图(1-1) My Figure") == 1
+        assert "caption: [图 1-1 My Figure]" in result
+        assert result.count("图 1-1 My Figure") == 1
 
     def test_nested_sections(self) -> None:
         """Subsections are inserted between section markers."""
@@ -345,8 +345,8 @@ class TestSerializeDocxIntegration:
         assert "= 1 Report" in result
         assert '#raw("irstart:section0body0")' in result
         assert "Introduction." in result
-        assert "caption: [表(1-1) T1]" in result
-        assert "caption: [图(1-1) F1]" in result
+        assert "caption: [表 1-1 T1]" in result
+        assert "caption: [图 1-1 F1]" in result
         assert "= 1.1 Sub" in result
         assert "Sub content." in result
 
