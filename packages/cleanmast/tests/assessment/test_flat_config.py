@@ -11,9 +11,6 @@ from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import 
     DatasetConfig,
     MastRef,
 )
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
 )
@@ -33,6 +30,9 @@ from cleanmast.subdomains.assessment.domain.value_objects.tree_builder import (
     _propagate_datasets,
     build_section_tree,
     flatten_tree,
+)
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
 )
 from pydantic import ValidationError
 

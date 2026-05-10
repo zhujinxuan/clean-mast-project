@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, model_validator
 
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 class MastRef(BaseModel):

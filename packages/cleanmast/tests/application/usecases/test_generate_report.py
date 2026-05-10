@@ -14,9 +14,6 @@ from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import 
     DatasetConfig,
     MastRef,
 )
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
 )
@@ -25,6 +22,9 @@ from cleanmast.subdomains.assessment.domain.value_objects.flat_subsection_config
 )
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
+)
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
 )
 
 
