@@ -1,7 +1,10 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from cleanmast.application.usecases.recommend_report import recommend_report
+from cleanmast.application.usecases.recommend_report import (
+    _build_dataset_for_timeseries,
+    recommend_report,
+)
 
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
@@ -26,6 +29,31 @@ class TestRecommendReport:
         parquet_path = tmp_path / data_dir / "M1.parquet"
         parquet_path.parent.mkdir(parents=True, exist_ok=True)
         parquet_path.write_bytes(b"")
+
+    def _create_multi_mast_fill_heights_toml(
+        self, tmp_path: Path, filename: str, data_dir: str
+    ) -> None:
+        config = {
+            "masts": [
+                {
+                    "name": "M1",
+                    "output": {"data": f"{data_dir}/M1.parquet"},
+                },
+                {
+                    "name": "M2",
+                    "output": {"data": f"{data_dir}/M2.parquet"},
+                },
+            ]
+        }
+        path = tmp_path / filename
+        import tomli_w
+        with open(path, "wb") as f:
+            tomli_w.dump(config, f)
+
+        for mast_name in ("M1", "M2"):
+            parquet_path = tmp_path / data_dir / f"{mast_name}.parquet"
+            parquet_path.parent.mkdir(parents=True, exist_ok=True)
+            parquet_path.write_bytes(b"")
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -285,3 +313,32 @@ class TestRecommendReport:
         config = FlatReportConfig.from_toml(output_path)
         assert len(config.datasets) > 0
         assert len(config.subsections) > 0
+
+    @patch(
+        "cleanmast.application.usecases.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_build_dataset_multi_mast_distinct_paths(
+        self, mock_load_parquet, mock_calc_density, tmp_path
+    ):
+        self._create_multi_mast_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+
+        ds = _build_dataset_for_timeseries(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+            "meso",
+        )
+
+        assert len(ds.masts) == 2
+        assert ds.masts[0].input.data.endswith("M1.parquet")
+        assert ds.masts[1].input.data.endswith("M2.parquet")
+        assert ds.masts[0].input.data != ds.masts[1].input.data
