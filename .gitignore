@@ -50,6 +50,17 @@ tmpclaude*
 .sisyphus/*
 !.sisyphus/rules/
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# DVC cache and local state (keep .dvc/config for worktree)
+.dvc/cache/
+.dvc/tmp/
+.dvc/plots/
+**/%SystemDrive%/
+
 # Baseline files
 baseline-*.md
 baseline-refs/
