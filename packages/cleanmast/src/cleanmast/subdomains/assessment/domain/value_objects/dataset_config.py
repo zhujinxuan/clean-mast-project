@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, model_validator
 
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import TimeSeriesSource
+
 
 class MastRef(BaseModel):
     """Reference to a mast within a dataset.
@@ -16,10 +18,12 @@ class MastRef(BaseModel):
     Attributes:
         name: Mast identifier (e.g., "M6002").
         air_density: Air density value in kg/m³; must be strictly positive.
+        input: Time series data source for this mast.
     """
 
     name: str
     air_density: float = Field(gt=0)
+    input: TimeSeriesSource
 
 
 class DatasetConfig(BaseModel):
@@ -27,13 +31,11 @@ class DatasetConfig(BaseModel):
 
     Attributes:
         name: Dataset identifier.
-        path: Path to the dataset file.
         masts: List of mast references within this dataset.
         note: Optional note or description.
     """
 
     name: str
-    path: str
     masts: list[MastRef]
     note: str | None = None
 

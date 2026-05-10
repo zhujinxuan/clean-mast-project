@@ -62,11 +62,11 @@ class FlatReportConfig(BaseModel):
         Expected TOML format:
         [[datasets]]
         name = "repyear"
-        path = "./data/repyear.parquet"
-
         [[datasets.masts]]
         name = "M6002"
         air_density = 1.225
+        [datasets.masts.input]
+        data = "./data/repyear.parquet"
 
         [[subsections]]
         index = "1"
