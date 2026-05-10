@@ -82,7 +82,7 @@ number = 170
 
 After merging, use `col-normalizer` to map raw column names to the standard NRG format.
 
-See `@references/nrg-format.md` for the exact naming convention (`Ch{channel}_{sensorType}_{height}m_{statType}_{unit}`).
+See `@references/nrg-format.md` for the exact naming convention (`Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}`).
 
 Create a TOML config with explicit `column_mappings`:
 
@@ -92,8 +92,8 @@ output_path = "normalized.csv"
 delimiter = ","
 
 [column_mappings]
-"CH1_NRG_40C_Anem_80m_Avg" = "Ch1_Anem_80.00m_Avg_m/s"
-"CH7_NRG_200P_Vane_80m_Avg" = "Ch7_Vane_80.00m_Avg_Deg"
+"CH1_NRG_40C_Anem_80m_Avg" = "Ch1_Anem_80.00m_A_Avg_m/s"
+"CH7_NRG_200P_Vane_80m_Avg" = "Ch7_Vane_80.00m_A_Avg_Deg"
 ```
 
 #### Document your decisions in `evidence.md`
