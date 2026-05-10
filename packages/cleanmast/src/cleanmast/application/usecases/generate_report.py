@@ -60,14 +60,18 @@ class HeadingSection:
 
 @dataclass(frozen=True)
 class LoadedDataset:
-    """Pre-loaded dataset: resolved path, timeseries, and mast inputs.
+    """Pre-loaded dataset with per-mast data.
 
     Created by :func:`load_datasets` at the application boundary before
     report generation begins. Separates I/O from pure orchestration.
+
+    Attributes:
+        name: Dataset identifier
+        mast_data: List of per-mast tuples containing analysis input,
+            metadata, and time series data
     """
-    path: Path
-    timeseries: TimeSeriesData
-    mast_inputs: list[tuple[SingleMastAnalysisInput, SingleMastMeta]]
+    name: str
+    mast_data: list[tuple[SingleMastAnalysisInput, SingleMastMeta, TimeSeriesData]]
 
 
 def generate_report(config_path: str) -> BuildResult:

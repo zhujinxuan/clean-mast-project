@@ -94,7 +94,6 @@ def _build_dataset_for_timeseries(
 
     masts = config.get("masts", [])
     mast_refs: list[MastRef] = []
-    dataset_path: str = ""
 
     for mast in masts:
         mast_name = mast.get("name")
@@ -123,12 +122,11 @@ def _build_dataset_for_timeseries(
             air_density = 1.225
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
-        if not dataset_path:
-            dataset_path = rel_data_path
 
         mast_refs.append(MastRef(
             name=mast_name,
             air_density=round(air_density, 3),
+            input=TimeSeriesSource(data=rel_data_path),
         ))
 
     if not mast_refs:
@@ -136,7 +134,6 @@ def _build_dataset_for_timeseries(
 
     return DatasetConfig(
         name=dataset_name,
-        path=dataset_path,
         masts=mast_refs,
     )
 
