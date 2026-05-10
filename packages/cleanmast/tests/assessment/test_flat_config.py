@@ -11,6 +11,9 @@ from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import 
     DatasetConfig,
     MastRef,
 )
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
 )
@@ -39,29 +42,45 @@ class TestMastRef:
 
     def test_valid_mast_ref(self):
         """Test creating a valid MastRef."""
-        mast = MastRef(name="M6002", air_density=1.225)
+        mast = MastRef(
+            name="M6002",
+            air_density=1.225,
+            input=TimeSeriesSource(data="./data.parquet"),
+        )
 
         assert mast.name == "M6002"
         assert mast.air_density == 1.225
+        assert mast.input.data == "./data.parquet"
 
     def test_missing_name_rejected(self):
         """Test that missing name field is rejected."""
         with pytest.raises(ValidationError) as exc_info:
-            MastRef(air_density=1.225)
+            MastRef(
+                air_density=1.225,
+                input=TimeSeriesSource(data="./data.parquet"),
+            )
 
         assert "name" in str(exc_info.value)
 
     def test_negative_air_density_rejected(self):
         """Test that negative air_density is rejected."""
         with pytest.raises(ValidationError) as exc_info:
-            MastRef(name="M6002", air_density=-0.5)
+            MastRef(
+                name="M6002",
+                air_density=-0.5,
+                input=TimeSeriesSource(data="./data.parquet"),
+            )
 
         assert "air_density" in str(exc_info.value)
 
     def test_zero_air_density_rejected(self):
         """Test that zero air_density is rejected."""
         with pytest.raises(ValidationError) as exc_info:
-            MastRef(name="M6002", air_density=0.0)
+            MastRef(
+                name="M6002",
+                air_density=0.0,
+                input=TimeSeriesSource(data="./data.parquet"),
+            )
 
         assert "air_density" in str(exc_info.value)
 
@@ -73,12 +92,17 @@ class TestDatasetConfig:
         """Test creating a valid DatasetConfig."""
         config = DatasetConfig(
             name="my-dataset",
-            path="./data.parquet",
-            masts=[MastRef(name="M6002", air_density=1.225)],
+            masts=[
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data.parquet"),
+                )
+            ],
         )
 
         assert config.name == "my-dataset"
-        assert config.path == "./data.parquet"
+        assert config.masts[0].input.data == "./data.parquet"
         assert len(config.masts) == 1
         assert config.masts[0].name == "M6002"
         assert config.note is None
@@ -87,8 +111,13 @@ class TestDatasetConfig:
         """Test creating a valid DatasetConfig with optional note."""
         config = DatasetConfig(
             name="my-dataset",
-            path="./data.parquet",
-            masts=[MastRef(name="M6002", air_density=1.225)],
+            masts=[
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data.parquet"),
+                )
+            ],
             note="A note about this dataset",
         )
 
@@ -98,10 +127,17 @@ class TestDatasetConfig:
         """Test creating a DatasetConfig with multiple masts."""
         config = DatasetConfig(
             name="multi-mast-dataset",
-            path="./data.parquet",
             masts=[
-                MastRef(name="M6002", air_density=1.225),
-                MastRef(name="M9773", air_density=1.003),
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data1.parquet"),
+                ),
+                MastRef(
+                    name="M9773",
+                    air_density=1.003,
+                    input=TimeSeriesSource(data="./data2.parquet"),
+                ),
             ],
         )
 
@@ -114,10 +150,17 @@ class TestDatasetConfig:
         with pytest.raises(ValidationError) as exc_info:
             DatasetConfig(
                 name="my-dataset",
-                path="./data.parquet",
                 masts=[
-                    MastRef(name="M6002", air_density=1.225),
-                    MastRef(name="M6002", air_density=1.003),
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data1.parquet"),
+                    ),
+                    MastRef(
+                        name="M6002",
+                        air_density=1.003,
+                        input=TimeSeriesSource(data="./data2.parquet"),
+                    ),
                 ],
             )
 
@@ -127,28 +170,22 @@ class TestDatasetConfig:
         """Test that missing name field is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             DatasetConfig(
-                path="./data.parquet",
-                masts=[MastRef(name="M6002", air_density=1.225)],
+                masts=[
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data.parquet"),
+                    )
+                ],
             )
 
         assert "name" in str(exc_info.value)
-
-    def test_missing_path_rejected(self):
-        """Test that missing path field is rejected."""
-        with pytest.raises(ValidationError) as exc_info:
-            DatasetConfig(
-                name="my-dataset",
-                masts=[MastRef(name="M6002", air_density=1.225)],
-            )
-
-        assert "path" in str(exc_info.value)
 
     def test_missing_masts_rejected(self):
         """Test that missing masts field is rejected."""
         with pytest.raises(ValidationError) as exc_info:
             DatasetConfig(
                 name="my-dataset",
-                path="./data.parquet",
             )
 
         assert "masts" in str(exc_info.value)
@@ -158,7 +195,6 @@ class TestDatasetConfig:
         with pytest.raises(ValidationError) as exc_info:
             DatasetConfig(
                 name="my-dataset",
-                path="./data.parquet",
                 masts=[],
             )
 
@@ -754,8 +790,13 @@ class TestFlatReportConfig:
         datasets = [
             DatasetConfig(
                 name="repyear",
-                path="./data/repyear.parquet",
-                masts=[MastRef(name="M6002", air_density=1.225)],
+                masts=[
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data/repyear.parquet"),
+                    )
+                ],
             ),
         ]
         subsections = [
@@ -773,13 +814,23 @@ class TestFlatReportConfig:
         datasets = [
             DatasetConfig(
                 name="repyear",
-                path="./data1.parquet",
-                masts=[MastRef(name="M6002", air_density=1.225)],
+                masts=[
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data1.parquet"),
+                    )
+                ],
             ),
             DatasetConfig(
                 name="repyear",
-                path="./data2.parquet",
-                masts=[MastRef(name="M9773", air_density=1.003)],
+                masts=[
+                    MastRef(
+                        name="M9773",
+                        air_density=1.003,
+                        input=TimeSeriesSource(data="./data2.parquet"),
+                    )
+                ],
             ),
         ]
         with pytest.raises(ValidationError) as exc_info:
@@ -792,8 +843,13 @@ class TestFlatReportConfig:
         datasets = [
             DatasetConfig(
                 name="repyear",
-                path="./data.parquet",
-                masts=[MastRef(name="M6002", air_density=1.225)],
+                masts=[
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data.parquet"),
+                    )
+                ],
             ),
         ]
         subsections = [
@@ -810,8 +866,13 @@ class TestFlatReportConfig:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -834,11 +895,13 @@ class TestFlatReportConfig:
         toml_content = b"""
 [[datasets]]
 name = "repyear"
-path = "./data/repyear.parquet"
 
 [[datasets.masts]]
 name = "M6002"
 air_density = 1.225
+
+[datasets.masts.input]
+data = "./data/repyear.parquet"
 
 [[subsections]]
 index = "1"
@@ -852,8 +915,10 @@ datasets = ["repyear"]
 
         assert len(config.datasets) == 1
         assert config.datasets[0].name == "repyear"
-        # Path is resolved relative to config directory
-        assert config.datasets[0].path.endswith("/data/repyear.parquet")
+        # Data path is resolved relative to config directory
+        assert config.datasets[0].masts[0].input.data.endswith(
+            "/data/repyear.parquet"
+        )
         assert len(config.subsections) == 1
         assert config.subsections[0].index == "1"
         assert config.subsections[0].datasets == ["repyear"]
@@ -863,11 +928,13 @@ datasets = ["repyear"]
         toml_content = b"""
 [[datasets]]
 name = "repyear"
-path = "data/repyear.parquet"
 
 [[datasets.masts]]
 name = "M6002"
 air_density = 1.225
+
+[datasets.masts.input]
+data = "data/repyear.parquet"
 
 [[subsections]]
 index = "1"
@@ -880,7 +947,7 @@ type = "wind_rose"
             config_path.write_bytes(toml_content)
             config = FlatReportConfig.from_toml(config_path)
 
-        assert config.datasets[0].path == "data/repyear.parquet"
+        assert config.datasets[0].masts[0].input.data == "data/repyear.parquet"
 
     def test_to_toml_serializes_config(self):
         """Test serializing config to TOML file."""
@@ -888,8 +955,13 @@ type = "wind_rose"
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -912,8 +984,13 @@ type = "wind_rose"
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -974,8 +1051,13 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -999,8 +1081,13 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1029,8 +1116,13 @@ class TestConfigRoundTrip:
         datasets = [
             DatasetConfig(
                 name="ds",
-                path="./data/ds.parquet",
-                masts=[MastRef(name="M6002", air_density=1.225)],
+                masts=[
+                    MastRef(
+                        name="M6002",
+                        air_density=1.225,
+                        input=TimeSeriesSource(data="./data/ds.parquet"),
+                    )
+                ],
             ),
         ]
         subsections = []
@@ -1055,8 +1147,13 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1079,13 +1176,23 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
                 DatasetConfig(
                     name="era5",
-                    path="./data/era5.parquet",
-                    masts=[MastRef(name="M9773", air_density=1.003)],
+                    masts=[
+                        MastRef(
+                            name="M9773",
+                            air_density=1.003,
+                            input=TimeSeriesSource(data="./data/era5.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1109,8 +1216,13 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1157,13 +1269,23 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
                 DatasetConfig(
                     name="era5",
-                    path="./data/era5.parquet",
-                    masts=[MastRef(name="M9773", air_density=1.003)],
+                    masts=[
+                        MastRef(
+                            name="M9773",
+                            air_density=1.003,
+                            input=TimeSeriesSource(data="./data/era5.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1186,13 +1308,23 @@ class TestConfigRoundTrip:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
                 DatasetConfig(
                     name="era5",
-                    path="./data/era5.parquet",
-                    masts=[MastRef(name="M9773", air_density=1.003)],
+                    masts=[
+                        MastRef(
+                            name="M9773",
+                            air_density=1.003,
+                            input=TimeSeriesSource(data="./data/era5.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1252,13 +1384,23 @@ class TestTreeIsomorphism:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
                 DatasetConfig(
                     name="era5",
-                    path="./data/era5.parquet",
-                    masts=[MastRef(name="M9773", air_density=1.003)],
+                    masts=[
+                        MastRef(
+                            name="M9773",
+                            air_density=1.003,
+                            input=TimeSeriesSource(data="./data/era5.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1325,8 +1467,13 @@ class TestTreeIsomorphism:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[
@@ -1349,8 +1496,13 @@ class TestTreeIsomorphism:
             datasets=[
                 DatasetConfig(
                     name="repyear",
-                    path="./data/repyear.parquet",
-                    masts=[MastRef(name="M6002", air_density=1.225)],
+                    masts=[
+                        MastRef(
+                            name="M6002",
+                            air_density=1.225,
+                            input=TimeSeriesSource(data="./data/repyear.parquet"),
+                        )
+                    ],
                 ),
             ],
             subsections=[

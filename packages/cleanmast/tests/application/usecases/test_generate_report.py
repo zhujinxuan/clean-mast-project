@@ -14,6 +14,9 @@ from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import 
     DatasetConfig,
     MastRef,
 )
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
 )
@@ -31,13 +34,11 @@ class TestGenerateReport:
             "datasets": [
                 {
                     "name": "meso",
-                    "path": "./meso/M1.parquet",
-                    "masts": [{"name": "M1", "air_density": 1.225}],
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./meso/M1.parquet"}}],
                 },
                 {
                     "name": "rep",
-                    "path": "./rep/M1.parquet",
-                    "masts": [{"name": "M1", "air_density": 1.225}],
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./rep/M1.parquet"}}],
                 },
             ],
             "subsections": [
@@ -64,8 +65,7 @@ class TestGenerateReport:
         for i in range(mast_count):
             datasets.append({
                 "name": f"ds{i + 1}",
-                "path": f"./M{i + 1}.parquet",
-                "masts": [{"name": f"M{i + 1}", "air_density": 1.225}],
+                "masts": [{"name": f"M{i + 1}", "air_density": 1.225, "input": {"data": f"./M{i + 1}.parquet"}}],
             })
         config = {
             "datasets": datasets,
@@ -233,7 +233,7 @@ class TestGenerateReport:
         # Every tree node produces a HeadingSection, including top-level leaf nodes
         config = {
             "datasets": [
-                {"name": "ds1", "path": "./M1.parquet", "masts": [{"name": "M1", "air_density": 1.225}]},
+                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
             ],
             "subsections": [
                 {"index": "1", "type": "wind_rose", "datasets": ["ds1"]},
@@ -296,7 +296,7 @@ class TestGenerateReport:
         # Flat config: every node produces output, including empty placeholders
         config = {
             "datasets": [
-                {"name": "ds1", "path": "./M1.parquet", "masts": [{"name": "M1", "air_density": 1.225}]},
+                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
             ],
             "subsections": [
                 {"index": "2.4", "type": "timeseries", "title": "有数据", "datasets": ["ds1"]},
@@ -357,7 +357,7 @@ class TestGenerateReport:
 
         config = {
             "datasets": [
-                {"name": "ds1", "path": "./M1.parquet", "masts": [{"name": "M1", "air_density": 1.225}]},
+                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
             ],
             "subsections": [
                 {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["ds1"]},
@@ -399,8 +399,7 @@ class TestFlatConfigOrchestration:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    path="/fake/data.parquet",
-                    masts=[MastRef(name="M1", air_density=1.225)],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
                 )
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -424,18 +423,17 @@ class TestFlatConfigOrchestration:
         """Build a loaded_datasets dict from a FlatReportConfig and mocked timeseries."""
         loaded = {}
         for ds in config.datasets:
-            mast_inputs = []
+            mast_data = []
             for mast_ref in ds.masts:
                 meta = SingleMastMeta(
                     mast_name=mast_ref.name,
                     air_density=mast_ref.air_density,
                     width="80%",
                 )
-                mast_inputs.append(("analysis_input", meta))
+                mast_data.append(("analysis_input", meta, mock_ts))
             loaded[ds.name] = LoadedDataset(
-                path=Path(ds.path),
-                timeseries=mock_ts,
-                mast_inputs=mast_inputs,
+                name=ds.name,
+                mast_data=mast_data,
             )
         return loaded
 
@@ -630,13 +628,11 @@ class TestFlatConfigOrchestration:
         datasets = [
             DatasetConfig(
                 name="meso",
-                path="/project/meso.parquet",
-                masts=[MastRef(name="M1", air_density=1.225)],
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/meso.parquet"))],
             ),
             DatasetConfig(
                 name="repyear",
-                path="/project/repyear.parquet",
-                masts=[MastRef(name="M1", air_density=1.225)],
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/repyear.parquet"))],
             ),
         ]
         config = self._make_config([
@@ -665,10 +661,9 @@ class TestFlatConfigOrchestration:
         datasets = [
             DatasetConfig(
                 name="ds1",
-                path="/fake/data.parquet",
                 masts=[
-                    MastRef(name="M1", air_density=1.225),
-                    MastRef(name="M2", air_density=1.200),
+                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
+                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
                 ],
             ),
         ]
@@ -868,8 +863,7 @@ class TestPlaceholderPreservation:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    path="/fake/data.parquet",
-                    masts=[MastRef(name="M1", air_density=1.225)],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
                 ),
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -882,18 +876,17 @@ class TestPlaceholderPreservation:
     def _make_loaded_datasets(self, config, mock_ts):
         loaded = {}
         for ds in config.datasets:
-            mast_inputs = []
+            mast_data = []
             for mast_ref in ds.masts:
                 meta = SingleMastMeta(
                     mast_name=mast_ref.name,
                     air_density=mast_ref.air_density,
                     width="80%",
                 )
-                mast_inputs.append(("analysis_input", meta))
+                mast_data.append(("analysis_input", meta, mock_ts))
             loaded[ds.name] = LoadedDataset(
-                path=Path(ds.path),
-                timeseries=mock_ts,
-                mast_inputs=mast_inputs,
+                name=ds.name,
+                mast_data=mast_data,
             )
         return loaded
 
@@ -1023,11 +1016,12 @@ class TestFiftyYearFlatDispatch:
         return result
 
     def _make_loaded(self, items=None):
+        raw_items = items if items is not None else [("input", "meta")]
+        mast_data = [(inp, meta, MagicMock()) for inp, meta in raw_items]
         return {
             "ds1": LoadedDataset(
-                path=Path("/fake/ds1.parquet"),
-                timeseries=MagicMock(),
-                mast_inputs=items if items is not None else [("input", "meta")],
+                name="ds1",
+                mast_data=mast_data,
             )
         }
 
@@ -1098,8 +1092,7 @@ class TestDatasetCaching:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    path="/fake/data.parquet",
-                    masts=[MastRef(name="M1", air_density=1.225)],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
                 ),
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -1113,18 +1106,17 @@ class TestDatasetCaching:
         """Build a loaded_datasets dict from a FlatReportConfig and mocked timeseries."""
         loaded = {}
         for ds in config.datasets:
-            mast_inputs = []
+            mast_data = []
             for mast_ref in ds.masts:
                 meta = SingleMastMeta(
                     mast_name=mast_ref.name,
                     air_density=mast_ref.air_density,
                     width="80%",
                 )
-                mast_inputs.append(("analysis_input", meta))
+                mast_data.append(("analysis_input", meta, mock_ts))
             loaded[ds.name] = LoadedDataset(
-                path=Path(ds.path),
-                timeseries=mock_ts,
-                mast_inputs=mast_inputs,
+                name=ds.name,
+                mast_data=mast_data,
             )
         return loaded
 
@@ -1205,8 +1197,8 @@ class TestDatasetCaching:
         mock_builder.build.return_value = {"typ": Path("report.typ")}
 
         datasets = [
-            DatasetConfig(name="ds1", path="/fake/ds1.parquet", masts=[MastRef(name="M1", air_density=1.225)]),
-            DatasetConfig(name="ds2", path="/fake/ds2.parquet", masts=[MastRef(name="M2", air_density=1.200)]),
+            DatasetConfig(name="ds1", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))]),
+            DatasetConfig(name="ds2", masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))]),
         ]
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container1", datasets=["ds1", "ds2"]),
@@ -1235,10 +1227,9 @@ class TestDatasetCaching:
         datasets = [
             DatasetConfig(
                 name="ds1",
-                path="/fake/data.parquet",
                 masts=[
-                    MastRef(name="M1", air_density=1.225),
-                    MastRef(name="M2", air_density=1.200),
+                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
+                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
                 ],
             ),
         ]

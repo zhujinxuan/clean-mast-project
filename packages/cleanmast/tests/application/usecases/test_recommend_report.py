@@ -85,15 +85,15 @@ class TestRecommendReport:
         assert "repyear" in dataset_names
 
         meso_ds = next(ds for ds in config.datasets if ds.name == "meso")
-        assert meso_ds.path == "./reconstruct-meso-fill-heights/M1.parquet"
         assert len(meso_ds.masts) == 1
         assert meso_ds.masts[0].name == "M1"
+        assert meso_ds.masts[0].input.data == "./reconstruct-meso-fill-heights/M1.parquet"
         assert meso_ds.masts[0].air_density == 1.225
 
         repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
-        assert repyear_ds.path == "./representative-year-fill-heights/M1.parquet"
         assert len(repyear_ds.masts) == 1
         assert repyear_ds.masts[0].name == "M1"
+        assert repyear_ds.masts[0].input.data == "./representative-year-fill-heights/M1.parquet"
         assert repyear_ds.masts[0].air_density == 1.225
 
     @patch(

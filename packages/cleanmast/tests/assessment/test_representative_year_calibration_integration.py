@@ -121,8 +121,7 @@ def _create_rep_ts_report_toml(tmp_path: Path) -> Path:
         "datasets": [
             {
                 "name": "mast",
-                "path": "./masts/M01.parquet",
-                "masts": [{"name": "M01", "air_density": 1.225}],
+                "masts": [{"name": "M01", "air_density": 1.225, "input": {"data": "./masts/M01.parquet"}}],
             },
         ],
         "subsections": [
