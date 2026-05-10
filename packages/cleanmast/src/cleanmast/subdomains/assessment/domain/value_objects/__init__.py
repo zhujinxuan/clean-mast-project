@@ -11,6 +11,7 @@ from .analysis_node import AnalysisNode
 from .analysis_parameters import AnalysisParameters
 from .analysis_result import AnalysisResult
 from .collections import AtomCollection
+from .dataset_config import DatasetConfig, MastRef
 from .hash_utils import compute_node_id, hash_dataframe, hash_parameters
 from .rep_ts_report_config import (
     CONTAINER_SUBSECTION_TYPES,
@@ -75,6 +76,9 @@ __all__ = [
     "hash_dataframe",
     "hash_parameters",
     "compute_node_id",
+    # Dataset config
+    "DatasetConfig",
+    "MastRef",
     # Report configs
     "DocumentConfig",
     "DocumentSectionConfig",

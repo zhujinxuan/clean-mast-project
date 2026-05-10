@@ -11,11 +11,18 @@ representative-year sources.
 
 from pathlib import Path
 
-import tomli
-import tomli_w
-
 from cleanmast.subdomains.assessment.domain.value_objects.air_density import (
     calculate_air_density,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import (
+    DatasetConfig,
+    MastRef,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
+    FlatReportConfig,
+)
+from cleanmast.subdomains.assessment.domain.value_objects.flat_subsection_config import (
+    FlatSubsectionConfig,
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries_parquet,
@@ -42,43 +49,53 @@ _REP_ANALYSIS_SUBSECTION_TYPES = [
     "weibull",
 ]
 
+_FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES = [
+    "iec_standards",
+    "fifty_year_method1",
+    "fifty_year_method2",
+    "fifty_year_method3",
+    "fifty_year_summary",
+]
 
-def _build_analysis_subsections(type_list: list[str]) -> list[dict]:
-    return [{"type": t} for t in type_list]
 
-
-def _build_masts_for_timeseries(
+def _build_dataset_for_timeseries(
     project_path: Path,
     fill_heights_filename: str,
     report_data_subdir: str,
-) -> list[dict]:
-    """Build report mast configurations from a fill-heights TOML file.
+    dataset_name: str,
+) -> DatasetConfig | None:
+    """Build a dataset configuration from a fill-heights TOML file.
 
     Reads the specified fill-heights config, iterates over each mast,
     loads the corresponding parquet timeseries, calculates air density,
-    and returns a list of mast dicts ready for report configuration.
+    and returns a DatasetConfig for the report catalog.
 
     Args:
         project_path: Path to the project directory.
         fill_heights_filename: Name of the fill-heights TOML file.
         report_data_subdir: Subdirectory name to use for the report data path.
+        dataset_name: Name for the dataset in the catalog.
 
     Returns:
-        List of mast dictionaries with keys ``name``, ``air_density``,
-        and ``input`` (containing the relative data path).
+        DatasetConfig or None if the fill-heights file does not exist.
 
     Raises:
         FileNotFoundError: If a referenced parquet file does not exist.
+        ValueError: If no valid masts are found.
     """
+    import tomli
+
     fill_heights_path = project_path / fill_heights_filename
     if not fill_heights_path.exists():
-        return []
+        return None
 
     with open(fill_heights_path, "rb") as f:
         config = tomli.load(f)
 
     masts = config.get("masts", [])
-    report_masts: list[dict] = []
+    mast_refs: list[MastRef] = []
+    dataset_path: str = ""
+
     for mast in masts:
         mast_name = mast.get("name")
         if not mast_name:
@@ -106,13 +123,78 @@ def _build_masts_for_timeseries(
             air_density = 1.225
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
-        report_masts.append({
-            "name": mast_name,
-            "air_density": round(air_density, 3),
-            "input": {"data": rel_data_path},
-        })
+        if not dataset_path:
+            dataset_path = rel_data_path
 
-    return report_masts
+        mast_refs.append(MastRef(
+            name=mast_name,
+            air_density=round(air_density, 3),
+        ))
+
+    if not mast_refs:
+        return None
+
+    return DatasetConfig(
+        name=dataset_name,
+        path=dataset_path,
+        masts=mast_refs,
+    )
+
+
+def _build_subsections(
+    meso_dataset: DatasetConfig | None,
+    repyear_dataset: DatasetConfig | None,
+) -> list[FlatSubsectionConfig]:
+    """Build flat subsections with hardcoded indices.
+
+    Index scheme:
+      2.4 = meso (timeseries)
+      2.5 = repyear (timeseries)
+      2.6 = fifty_year_max_wind
+    """
+    subsections: list[FlatSubsectionConfig] = []
+
+    if meso_dataset:
+        subsections.append(FlatSubsectionConfig(
+            index="2.4",
+            type="timeseries",
+            title="测风年风资源分析",
+            datasets=[meso_dataset.name],
+        ))
+        for i, subtype in enumerate(_MESO_ANALYSIS_SUBSECTION_TYPES, start=1):
+            subsections.append(FlatSubsectionConfig(
+                index=f"2.4.{i}",
+                type=subtype,
+            ))
+
+    if repyear_dataset:
+        subsections.append(FlatSubsectionConfig(
+            index="2.5",
+            type="timeseries",
+            title="代表年风资源分析",
+            datasets=[repyear_dataset.name],
+        ))
+        for i, subtype in enumerate(_REP_ANALYSIS_SUBSECTION_TYPES, start=1):
+            subsections.append(FlatSubsectionConfig(
+                index=f"2.5.{i}",
+                type=subtype,
+            ))
+
+    fifty_year_dataset = meso_dataset or repyear_dataset
+    if fifty_year_dataset:
+        subsections.append(FlatSubsectionConfig(
+            index="2.6",
+            type="fifty_year_max_wind",
+            title="五十年一遇最大风速",
+            datasets=[fifty_year_dataset.name],
+        ))
+        for i, subtype in enumerate(_FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES, start=1):
+            subsections.append(FlatSubsectionConfig(
+                index=f"2.6.{i}",
+                type=subtype,
+            ))
+
+    return subsections
 
 
 def recommend_report(project_dir: str) -> Path:
@@ -123,9 +205,8 @@ def recommend_report(project_dir: str) -> Path:
        fill-heights-representative-year.toml from the project directory
     2. For each mast in each config, loads the corresponding parquet file
     3. Calculates air density from mean temperature/pressure columns
-    4. Generates rep-ts-report.toml config file in the new nested format
-       with a single document.section containing two timeseries subsections
-       (测风年 and 代表年), each with masts and all 6 analysis subsections
+    4. Generates rep-ts-report.toml config file in the flat format
+       with [[datasets]] catalog and [[subsections]] with hierarchical indices
 
     Prerequisites:
     - fill-heights-representative-year.toml must exist in project directory
@@ -146,60 +227,39 @@ def recommend_report(project_dir: str) -> Path:
     """
     project_path = Path(project_dir)
 
-    meso_masts = _build_masts_for_timeseries(
+    meso_dataset = _build_dataset_for_timeseries(
         project_path,
         "fill-heights-reconstruct-meso.toml",
         "reconstruct-meso-fill-heights",
+        "meso",
     )
-    rep_masts = _build_masts_for_timeseries(
+    repyear_dataset = _build_dataset_for_timeseries(
         project_path,
         "fill-heights-representative-year.toml",
         "representative-year-fill-heights",
+        "repyear",
     )
 
-    if not meso_masts and not rep_masts:
+    if not meso_dataset and not repyear_dataset:
         raise ValueError(
             "No valid masts found for report configuration. "
             "Ensure fill-heights configuration files exist and contain valid masts."
         )
 
-    subsections: list[dict] = []
-    if meso_masts:
-        subsections.append({
-            "type": "timeseries",
-            "title": "测风年风资源分析",
-            "masts": meso_masts,
-            "subsections": _build_analysis_subsections(_MESO_ANALYSIS_SUBSECTION_TYPES),
-        })
-    if rep_masts:
-        subsections.append({
-            "type": "timeseries",
-            "title": "代表年风资源分析",
-            "masts": rep_masts,
-            "subsections": _build_analysis_subsections(_REP_ANALYSIS_SUBSECTION_TYPES),
-        })
+    datasets: list[DatasetConfig] = []
+    if meso_dataset:
+        datasets.append(meso_dataset)
+    if repyear_dataset:
+        datasets.append(repyear_dataset)
 
-    fifty_year_masts = meso_masts if meso_masts else rep_masts
-    if fifty_year_masts:
-        subsections.append({
-            "type": "fifty_year_max_wind",
-            "title": "五十年一遇最大风速",
-            "masts": fifty_year_masts,
-        })
+    subsections = _build_subsections(meso_dataset, repyear_dataset)
 
-    report_config = {
-        "document": {
-            "section": [
-                {
-                    "title": "风资源分析",
-                    "subsections": subsections,
-                }
-            ],
-        },
-    }
+    report_config = FlatReportConfig(
+        datasets=datasets,
+        subsections=subsections,
+    )
 
     output_path = project_path / "rep-ts-report.toml"
-    with open(output_path, "wb") as f:
-        tomli_w.dump(report_config, f)
+    report_config.to_toml(output_path)
 
     return output_path

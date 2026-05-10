@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.assessment.application.services.report_generation_service import (
     ReportGenerationService,
 )
@@ -23,13 +22,13 @@ from cleanmast.subdomains.assessment.domain.value_objects.analysis_input import 
 from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_collection import (
     AtomCollection,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.rep_ts_report_config import (
-    CONTAINER_SUBSECTION_TYPES,
-    RepTsReportConfig,
+from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
+    FlatReportConfig,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
     SingleMastMeta,
 )
+from cleanmast.subdomains.assessment.domain.value_objects.tree_builder import SectionNode
 from cleanmast.subdomains.assessment.infrastructure.report_builder import (
     AssessmentReportBuilder as ReportBuilder,
 )
@@ -38,6 +37,9 @@ from cleanmast.subdomains.assessment.infrastructure.report_builder import (
 )
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,18 @@ class HeadingSection:
             body=[],
             subsections=[s.render_ir(images_dir) for s in self.subsections],
         )
+
+
+@dataclass(frozen=True)
+class LoadedDataset:
+    """Pre-loaded dataset: resolved path, timeseries, and mast inputs.
+
+    Created by :func:`load_datasets` at the application boundary before
+    report generation begins. Separates I/O from pure orchestration.
+    """
+    path: Path
+    timeseries: TimeSeriesData
+    mast_inputs: list[tuple[SingleMastAnalysisInput, SingleMastMeta]]
 
 
 def generate_report(config_path: str) -> BuildResult:
@@ -80,7 +94,7 @@ def generate_report(config_path: str) -> BuildResult:
         ValueError: If a document section contains a non-timeseries subsection directly
     """
     config_file_path = Path(config_path)
-    base_dir = config_file_path.parent
+    base_dir = config_file_path.parent.resolve()
 
     if not config_file_path.exists():
         raise FileNotFoundError(
@@ -88,120 +102,66 @@ def generate_report(config_path: str) -> BuildResult:
             "Run 'recommend report timeseries' command first."
         )
 
-    config = RepTsReportConfig.from_toml(config_file_path)
-
+    config = FlatReportConfig.from_toml(config_file_path)
     output_dir = base_dir / "rep-ts"
     output_dir.mkdir(parents=True, exist_ok=True)
-
     service = ReportGenerationService(project_dir=base_dir)
-    report_title = (
-        config.document.sections[0].title
-        if config.document.sections
-        else "风资源评估报告"
-    )
+    report_title = (config.tree[0].title or "风资源评估报告") if config.tree else "风资源评估报告"
     builder = ReportBuilder(report_title, output_dir)
+    loaded = load_datasets(config, base_dir, service)
+    return _generate_from_flat_config(config, loaded, service, builder)
 
-    # Storage for all sections (added in canonical order per leaf subsection)
-    all_sections: list = []
 
-    # Build subsection type → method mapping
-    # Each entry is a tuple of (requires_input_data, method)
-    subsection_method_map: dict[str, tuple[bool, Callable]] = {
-        "air_density": (True, service.generate_air_density_section),
-        "representative_year_calibration": (True, service.generate_representative_year_calibration_section),
-        "wind_rose": (False, service.generate_wind_rose_section),
-        "vertical_profile": (True, service.generate_vertical_profile_section),
-        "wind_frequency": (True, service.generate_wind_frequency_section),
-        "weibull": (True, service.generate_weibull_section),
-        "turbulence": (True, service.generate_turbulence_section),
-        "temporal": (True, service.generate_temporal_section),
-        "fifty_year_max_wind": (True, service.generate_fifty_year_max_wind_section),
-    }
+def load_datasets(
+    config: FlatReportConfig,
+    base_dir: Path,
+    service: ReportGenerationService,
+) -> dict[str, LoadedDataset]:
+    """Resolve paths, load timeseries, build mast inputs — once, at the boundary.
 
-    # Process each document section
-    for section in config.document.sections:
-        for subsection in section.subsections:
-            if subsection.type not in CONTAINER_SUBSECTION_TYPES:
-                raise ValueError(
-                    f"Document sections may only contain container subsections ("
-                    f"{', '.join(sorted(CONTAINER_SUBSECTION_TYPES))}), "
-                    f"got '{subsection.type}'. Move analysis subsections inside a timeseries container."
-                )
-            if not subsection.masts:
-                continue
+    All dataset I/O happens here. Downstream functions receive
+    :class:`LoadedDataset` objects — no path resolution, no ``load_timeseries``.
 
-            if subsection.type == "fifty_year_max_wind":
-                fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
-                for mast in subsection.masts:
-                    timeseries = load_timeseries(mast.input, to_posix_path(base_dir))
-                    meta = SingleMastMeta(
-                        mast_name=mast.name,
-                        air_density=mast.air_density,
-                        width="80%",
-                    )
-                    input_data = service._create_analysis_input(timeseries, meta, mast.air_density)
-                    fifty_input_items.append((input_data, meta))
+    Args:
+        config: Flat report config with dataset definitions.
+        base_dir: Directory containing the config file.
+        service: Report generation service (for ``_create_analysis_input``).
 
-                section_result = service.generate_fifty_year_max_wind_section(fifty_input_items)
-                if section_result is not None:
-                    all_sections.append(section_result)
-                continue
+    Returns:
+        Mapping of dataset name → LoadedDataset.
 
-            if not subsection.subsections:
-                continue
+    Raises:
+        FileNotFoundError: If any dataset path does not exist.
 
-            leaf_sections: list[TypstSection] = []
-
-            # Collect data from all masts for multi-mast subsection generation
-            ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
-            input_items = []
-            any_has_wd_sensors = False
-
-            for mast in subsection.masts:
-                timeseries = load_timeseries(mast.input, to_posix_path(base_dir))
-                meta = SingleMastMeta(
-                    mast_name=mast.name,
-                    air_density=mast.air_density,
-                    width="80%",
-                )
-                input_data = service._create_analysis_input(timeseries, meta, mast.air_density)
-                if _has_wind_direction_sensors(timeseries):
-                    any_has_wd_sensors = True
-
-                ts_items.append((timeseries, meta))
-                input_items.append((input_data, meta))
-
-            for leaf_subsection in subsection.subsections:
-                subsection_type = leaf_subsection.type
-
-                # Special case: wind_rose requires wind direction sensors
-                if subsection_type == "wind_rose" and not any_has_wd_sensors:
-                    continue
-
-                if subsection_type not in subsection_method_map:
-                    continue
-
-                requires_input_data, method = subsection_method_map[subsection_type]
-
-                if requires_input_data:
-                    section_result = method(input_items)
-                else:
-                    section_result = method(ts_items)
-
-                if section_result is not None:
-                    leaf_sections.append(section_result)
-
-            if leaf_sections:
-                all_sections.append(HeadingSection(
-                    title=subsection.title or "",
-                    subsections=leaf_sections,
-                ))
-
-    # Add all sections to builder
-    for section in all_sections:
-        builder.add_section(section)
-
-    return builder.build()
+    ADR-GUARDRAILS: ddd-a-001-use-case-pattern
+    I/O at use case boundary — domain logic is I/O-free.
+    """
+    loaded: dict[str, LoadedDataset] = {}
+    for ds in config.datasets:
+        resolved = base_dir / ds.path
+        if not resolved.exists():
+            raise FileNotFoundError(
+                f"Dataset file not found: {resolved}"
+            )
+        source = TimeSeriesSource(data=str(resolved))
+        timeseries = load_timeseries(source, ".")
+        mast_inputs: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        for mast_ref in ds.masts:
+            meta = SingleMastMeta(
+                mast_name=mast_ref.name,
+                air_density=mast_ref.air_density,
+                width="80%",
+            )
+            input_data = service._create_analysis_input(
+                timeseries, meta, mast_ref.air_density
+            )
+            mast_inputs.append((input_data, meta))
+        loaded[ds.name] = LoadedDataset(
+            path=resolved,
+            timeseries=timeseries,
+            mast_inputs=mast_inputs,
+        )
+    return loaded
 
 
 def _has_wind_direction_sensors(timeseries: TimeSeriesData) -> bool:
@@ -218,3 +178,175 @@ def _has_wind_direction_sensors(timeseries: TimeSeriesData) -> bool:
         if s.sensor_type == "WindDirection" and s.stat_type == "avg"
     ]
     return len(wd_sensors) > 0
+
+
+def _generate_from_flat_config(
+    config: FlatReportConfig,
+    loaded_datasets: dict[str, LoadedDataset],
+    service: ReportGenerationService,
+    builder: ReportBuilder,
+) -> BuildResult:
+    """Generate report from flat config tree.
+
+    Iterates the hierarchical tree produced by config.tree, dispatches leaf
+    subsections to existing service methods, and wraps children under
+    HeadingSection containers.
+
+    Args:
+        config: FlatReportConfig with datasets and hierarchical subsections.
+        loaded_datasets: Pre-loaded datasets from :func:`load_datasets`.
+        service: ReportGenerationService instance.
+        builder: ReportBuilder instance.
+
+    Returns:
+        BuildResult from the report builder.
+    """
+    all_sections: list = []
+
+    subsection_method_map: dict[str, tuple[bool, Callable]] = {
+        "air_density": (True, service.generate_air_density_section),
+        "representative_year_calibration": (True, service.generate_representative_year_calibration_section),
+        "wind_rose": (False, service.generate_wind_rose_section),
+        "vertical_profile": (True, service.generate_vertical_profile_section),
+        "wind_frequency": (True, service.generate_wind_frequency_section),
+        "weibull": (True, service.generate_weibull_section),
+        "turbulence": (True, service.generate_turbulence_section),
+        "temporal": (True, service.generate_temporal_section),
+        "fifty_year_max_wind": (True, service.generate_fifty_year_max_wind_section),
+    }
+
+    def _walk_node(node: SectionNode, depth: int = 0) -> HeadingSection:
+        """Recursively walk a section node and return a HeadingSection."""
+        if depth > 10:
+            return HeadingSection(
+                title=node.title or "Placeholder",
+                subsections=[],
+            )
+
+        if node.is_placeholder:
+            subsections: list[Any] = []
+            for child in node.children:
+                result = _walk_node(child, depth + 1)
+                subsections.append(result)
+            return HeadingSection(
+                title=node.title or "Placeholder",
+                subsections=subsections,
+            )
+
+        if node.type == "timeseries":
+            leaf_sections = _process_flat_timeseries_node(
+                node, service, subsection_method_map, loaded_datasets,
+            )
+            return HeadingSection(
+                title=node.title or "Placeholder",
+                subsections=leaf_sections,
+            )
+
+        if node.type == "fifty_year_max_wind":
+            result = _handle_fifty_year_max_wind_flat(
+                node, service, loaded_datasets,
+            )
+            return HeadingSection(
+                title=node.title or "Placeholder",
+                subsections=result,
+            )
+
+        return HeadingSection(
+            title=node.title or "Placeholder",
+            subsections=[],
+        )
+
+    for node in config.tree:
+        result = _walk_node(node, depth=0)
+        if result is not None:
+            all_sections.append(result)
+
+    for section in all_sections:
+        builder.add_section(section)
+
+    return builder.build()
+
+
+def _process_flat_timeseries_node(
+    node: SectionNode,
+    service: ReportGenerationService,
+    subsection_method_map: dict[str, tuple[bool, Callable]],
+    loaded_datasets: dict[str, LoadedDataset],
+) -> list[Any]:
+    """Process a timeseries container node and return leaf sections."""
+    if not node.children:
+        return []
+
+    ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
+    input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+    any_has_wd_sensors = False
+
+    for ds_name in node.datasets or []:
+        loaded = loaded_datasets.get(ds_name)
+        if loaded is None:
+            continue
+        ts = loaded.timeseries
+        for input_data, meta in loaded.mast_inputs:
+            ts_items.append((ts, meta))
+            input_items.append((input_data, meta))
+            if _has_wind_direction_sensors(ts):
+                any_has_wd_sensors = True
+
+    leaf_sections: list[Any] = []
+    for child in node.children:
+        subsection_type = child.type
+
+        if subsection_type == "wind_rose" and not any_has_wd_sensors:
+            leaf_sections.append(HeadingSection(title="Placeholder"))
+            continue
+
+        if subsection_type not in subsection_method_map:
+            leaf_sections.append(HeadingSection(title="Placeholder"))
+            continue
+
+        requires_input_data, method = subsection_method_map[subsection_type]
+
+        if requires_input_data:
+            section_result = method(input_items)
+        else:
+            section_result = method(ts_items)
+
+        if section_result is not None:
+            leaf_sections.append(section_result)
+
+    return leaf_sections
+
+
+def _handle_fifty_year_max_wind_flat(
+    node: SectionNode,
+    service: ReportGenerationService,
+    loaded_datasets: dict[str, LoadedDataset],
+) -> list[Any]:
+    fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+    for ds_name in node.datasets or []:
+        loaded = loaded_datasets.get(ds_name)
+        if loaded is not None:
+            fifty_input_items.extend(loaded.mast_inputs)
+
+    if not fifty_input_items:
+        return []
+
+    result = service.generate_fifty_year_max_wind_section(fifty_input_items)
+
+    type_to_field = {
+        "iec_standards": "iec_standards",
+        "fifty_year_method1": "method1",
+        "fifty_year_method2": "method2",
+        "fifty_year_method3": "method3",
+        "fifty_year_summary": "summary",
+    }
+
+    subsections: list[Any] = []
+    for child in node.children:
+        field_name = type_to_field.get(child.type)
+        if field_name:
+            subsections.append(getattr(result, field_name))
+        else:
+            subsections.append(HeadingSection(title="Placeholder"))
+
+    return subsections

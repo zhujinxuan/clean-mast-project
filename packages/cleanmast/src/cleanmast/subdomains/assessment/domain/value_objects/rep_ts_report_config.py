@@ -51,6 +51,11 @@ LEAF_SUBSECTION_TYPES = frozenset([
     "temporal",
     "air_density",
     "representative_year_calibration",
+    "iec_standards",
+    "fifty_year_method1",
+    "fifty_year_method2",
+    "fifty_year_method3",
+    "fifty_year_summary",
 ])
 CONTAINER_SUBSECTION_TYPES = frozenset(["timeseries", "fifty_year_max_wind"])
 VALID_SUBSECTION_TYPES = LEAF_SUBSECTION_TYPES | CONTAINER_SUBSECTION_TYPES

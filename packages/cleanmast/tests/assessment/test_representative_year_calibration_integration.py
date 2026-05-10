@@ -118,29 +118,17 @@ def _create_representative_year_toml(tmp_path: Path) -> Path:
 def _create_rep_ts_report_toml(tmp_path: Path) -> Path:
     """Create rep-ts-report.toml with representative_year_calibration subsection."""
     config = {
-        "document": {
-            "section": [
-                {
-                    "title": "风资源分析",
-                    "subsections": [
-                        {
-                            "type": "timeseries",
-                            "title": "代表年风资源分析",
-                            "masts": [
-                                {
-                                    "name": "M01",
-                                    "air_density": 1.225,
-                                    "input": {"data": "masts/M01.parquet"},
-                                }
-                            ],
-                            "subsections": [
-                                {"type": "representative_year_calibration"},
-                            ],
-                        }
-                    ],
-                }
-            ]
-        }
+        "datasets": [
+            {
+                "name": "mast",
+                "path": "./masts/M01.parquet",
+                "masts": [{"name": "M01", "air_density": 1.225}],
+            },
+        ],
+        "subsections": [
+            {"index": "2.5", "type": "timeseries", "title": "代表年风资源分析", "datasets": ["mast"]},
+            {"index": "2.5.1", "type": "representative_year_calibration"},
+        ],
     }
     config_path = tmp_path / "rep-ts-report.toml"
     with open(config_path, "wb") as f:

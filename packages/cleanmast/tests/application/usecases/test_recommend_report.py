@@ -1,8 +1,11 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import tomli
 from cleanmast.application.usecases.recommend_report import recommend_report
+
+from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
+    FlatReportConfig,
+)
 
 
 class TestRecommendReport:
@@ -32,7 +35,7 @@ class TestRecommendReport:
         "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
         return_value=MagicMock(),
     )
-    def test_meso_subsection_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_generates_flat_format_with_datasets_catalog(self, mock_load_parquet, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -46,28 +49,24 @@ class TestRecommendReport:
 
         output_path = recommend_report(str(tmp_path))
 
-        with open(output_path, "rb") as f:
-            config = tomli.load(f)
+        config = FlatReportConfig.from_toml(output_path)
 
-        sections = config["document"]["section"]
-        assert len(sections) == 1
-        subsections = sections[0]["subsections"]
+        assert len(config.datasets) == 2
+        dataset_names = [ds.name for ds in config.datasets]
+        assert "meso" in dataset_names
+        assert "repyear" in dataset_names
 
-        meso_subsection = next(
-            (s for s in subsections if s.get("title") == "测风年风资源分析"), None
-        )
-        assert meso_subsection is not None
-        expected_meso_order = [
-            "air_density",
-            "temporal",
-            "wind_rose",
-            "vertical_profile",
-            "wind_frequency",
-            "weibull",
-            "turbulence",
-        ]
-        actual_meso_order = [s["type"] for s in meso_subsection["subsections"]]
-        assert actual_meso_order == expected_meso_order
+        meso_ds = next(ds for ds in config.datasets if ds.name == "meso")
+        assert meso_ds.path == "./reconstruct-meso-fill-heights/M1.parquet"
+        assert len(meso_ds.masts) == 1
+        assert meso_ds.masts[0].name == "M1"
+        assert meso_ds.masts[0].air_density == 1.225
+
+        repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
+        assert repyear_ds.path == "./representative-year-fill-heights/M1.parquet"
+        assert len(repyear_ds.masts) == 1
+        assert repyear_ds.masts[0].name == "M1"
+        assert repyear_ds.masts[0].air_density == 1.225
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -77,7 +76,7 @@ class TestRecommendReport:
         "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
         return_value=MagicMock(),
     )
-    def test_rep_subsection_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_meso_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -91,26 +90,27 @@ class TestRecommendReport:
 
         output_path = recommend_report(str(tmp_path))
 
-        with open(output_path, "rb") as f:
-            config = tomli.load(f)
+        config = FlatReportConfig.from_toml(output_path)
 
-        sections = config["document"]["section"]
-        assert len(sections) == 1
-        subsections = sections[0]["subsections"]
+        meso_parent = next((s for s in config.subsections if s.index == "2.4"), None)
+        assert meso_parent is not None
+        assert meso_parent.type == "timeseries"
+        assert meso_parent.title == "测风年风资源分析"
+        assert meso_parent.datasets == ["meso"]
 
-        rep_subsection = next(
-            (s for s in subsections if s.get("title") == "代表年风资源分析"), None
-        )
-        assert rep_subsection is not None
-        expected_rep_order = [
-            "representative_year_calibration",
-            "temporal",
-            "wind_rose",
-            "wind_frequency",
-            "weibull",
+        meso_children = [s for s in config.subsections if s.index.startswith("2.4.")]
+        assert len(meso_children) == 7
+        expected_order = [
+            ("2.4.1", "air_density"),
+            ("2.4.2", "temporal"),
+            ("2.4.3", "wind_rose"),
+            ("2.4.4", "vertical_profile"),
+            ("2.4.5", "wind_frequency"),
+            ("2.4.6", "weibull"),
+            ("2.4.7", "turbulence"),
         ]
-        actual_rep_order = [s["type"] for s in rep_subsection["subsections"]]
-        assert actual_rep_order == expected_rep_order
+        actual_order = [(s.index, s.type) for s in sorted(meso_children, key=lambda s: s.index)]
+        assert actual_order == expected_order
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -120,7 +120,12 @@ class TestRecommendReport:
         "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
         return_value=MagicMock(),
     )
-    def test_rep_only_generates_rep_subsection(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_rep_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-representative-year.toml",
@@ -129,25 +134,154 @@ class TestRecommendReport:
 
         output_path = recommend_report(str(tmp_path))
 
-        with open(output_path, "rb") as f:
-            config = tomli.load(f)
+        config = FlatReportConfig.from_toml(output_path)
 
-        sections = config["document"]["section"]
-        subsections = sections[0]["subsections"]
+        rep_parent = next((s for s in config.subsections if s.index == "2.5"), None)
+        assert rep_parent is not None
+        assert rep_parent.type == "timeseries"
+        assert rep_parent.title == "代表年风资源分析"
+        assert rep_parent.datasets == ["repyear"]
 
-        titles = [s.get("title") for s in subsections]
-        assert "测风年风资源分析" not in titles
-        assert "代表年风资源分析" in titles
-
-        rep_subsection = next(
-            (s for s in subsections if s.get("title") == "代表年风资源分析"), None
-        )
-        expected_rep_order = [
-            "representative_year_calibration",
-            "temporal",
-            "wind_rose",
-            "wind_frequency",
-            "weibull",
+        rep_children = [s for s in config.subsections if s.index.startswith("2.5.")]
+        assert len(rep_children) == 5
+        expected_order = [
+            ("2.5.1", "representative_year_calibration"),
+            ("2.5.2", "temporal"),
+            ("2.5.3", "wind_rose"),
+            ("2.5.4", "wind_frequency"),
+            ("2.5.5", "weibull"),
         ]
-        actual_rep_order = [s["type"] for s in rep_subsection["subsections"]]
-        assert actual_rep_order == expected_rep_order
+        actual_order = [(s.index, s.type) for s in sorted(rep_children, key=lambda s: s.index)]
+        assert actual_order == expected_order
+
+    @patch(
+        "cleanmast.application.usecases.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_fifty_year_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        output_path = recommend_report(str(tmp_path))
+
+        config = FlatReportConfig.from_toml(output_path)
+
+        fifty_parent = next((s for s in config.subsections if s.index == "2.6"), None)
+        assert fifty_parent is not None
+        assert fifty_parent.type == "fifty_year_max_wind"
+        assert fifty_parent.title == "五十年一遇最大风速"
+        assert fifty_parent.datasets == ["meso"]
+
+        fifty_children = [s for s in config.subsections if s.index.startswith("2.6.")]
+        assert len(fifty_children) == 5
+        expected_order = [
+            ("2.6.1", "iec_standards"),
+            ("2.6.2", "fifty_year_method1"),
+            ("2.6.3", "fifty_year_method2"),
+            ("2.6.4", "fifty_year_method3"),
+            ("2.6.5", "fifty_year_summary"),
+        ]
+        actual_order = [(s.index, s.type) for s in sorted(fifty_children, key=lambda s: s.index)]
+        assert actual_order == expected_order
+
+    @patch(
+        "cleanmast.application.usecases.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_rep_only_generates_rep_and_fifty_year_subsections(self, mock_load_parquet, mock_calc_density, tmp_path):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        output_path = recommend_report(str(tmp_path))
+
+        config = FlatReportConfig.from_toml(output_path)
+
+        dataset_names = [ds.name for ds in config.datasets]
+        assert "meso" not in dataset_names
+        assert "repyear" in dataset_names
+
+        indices = [s.index for s in config.subsections]
+        assert "2.4" not in indices
+        assert "2.5" in indices
+        assert "2.6" in indices
+
+        rep_parent = next((s for s in config.subsections if s.index == "2.5"), None)
+        assert rep_parent is not None
+        assert rep_parent.datasets == ["repyear"]
+
+        fifty_parent = next((s for s in config.subsections if s.index == "2.6"), None)
+        assert fifty_parent is not None
+        assert fifty_parent.datasets == ["repyear"]
+
+    @patch(
+        "cleanmast.application.usecases.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_air_density_per_mast_in_dataset(self, mock_load_parquet, mock_calc_density, tmp_path):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        output_path = recommend_report(str(tmp_path))
+
+        config = FlatReportConfig.from_toml(output_path)
+
+        for ds in config.datasets:
+            for mast in ds.masts:
+                assert mast.air_density == 1.225
+
+    @patch(
+        "cleanmast.application.usecases.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.application.usecases.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_output_file_is_valid_toml_roundtrip(self, mock_load_parquet, mock_calc_density, tmp_path):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        output_path = recommend_report(str(tmp_path))
+
+        config = FlatReportConfig.from_toml(output_path)
+        assert len(config.datasets) > 0
+        assert len(config.subsections) > 0
