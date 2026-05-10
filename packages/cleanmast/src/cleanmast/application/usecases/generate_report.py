@@ -142,15 +142,15 @@ def load_datasets(
     """
     loaded: dict[str, LoadedDataset] = {}
     for ds in config.datasets:
-        resolved = base_dir / ds.path
-        if not resolved.exists():
-            raise FileNotFoundError(
-                f"Dataset file not found: {resolved}"
-            )
-        source = TimeSeriesSource(data=str(resolved))
-        timeseries = load_timeseries(source, ".")
-        mast_inputs: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        mast_data: list[tuple[SingleMastAnalysisInput, SingleMastMeta, TimeSeriesData]] = []
         for mast_ref in ds.masts:
+            resolved = base_dir / mast_ref.input.data
+            if not resolved.exists():
+                raise FileNotFoundError(
+                    f"Dataset file not found for mast '{mast_ref.name}': {resolved}"
+                )
+            source = TimeSeriesSource(data=str(resolved))
+            timeseries = load_timeseries(source, ".")
             meta = SingleMastMeta(
                 mast_name=mast_ref.name,
                 air_density=mast_ref.air_density,
@@ -159,11 +159,10 @@ def load_datasets(
             input_data = service._create_analysis_input(
                 timeseries, meta, mast_ref.air_density
             )
-            mast_inputs.append((input_data, meta))
+            mast_data.append((input_data, meta, timeseries))
         loaded[ds.name] = LoadedDataset(
-            path=resolved,
-            timeseries=timeseries,
-            mast_inputs=mast_inputs,
+            name=ds.name,
+            mast_data=mast_data,
         )
     return loaded
 
@@ -289,8 +288,7 @@ def _process_flat_timeseries_node(
         loaded = loaded_datasets.get(ds_name)
         if loaded is None:
             continue
-        ts = loaded.timeseries
-        for input_data, meta in loaded.mast_inputs:
+        for input_data, meta, ts in loaded.mast_data:
             ts_items.append((ts, meta))
             input_items.append((input_data, meta))
             if _has_wind_direction_sensors(ts):
@@ -330,7 +328,8 @@ def _handle_fifty_year_max_wind_flat(
     for ds_name in node.datasets or []:
         loaded = loaded_datasets.get(ds_name)
         if loaded is not None:
-            fifty_input_items.extend(loaded.mast_inputs)
+            for input_data, meta, _ in loaded.mast_data:
+                fifty_input_items.append((input_data, meta))
 
     if not fifty_input_items:
         return []
