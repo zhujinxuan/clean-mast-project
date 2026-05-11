@@ -17,6 +17,7 @@ from cleanmast.subdomains.assessment.domain.value_objects.air_density import (
 from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import (
     DatasetConfig,
     MastRef,
+    MesoRef,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
@@ -139,7 +140,7 @@ def _build_dataset_for_timeseries(
 
 
 def _build_subsections(
-    meso_dataset: DatasetConfig | None,
+    reconstruct_meso_dataset: DatasetConfig | None,
     repyear_dataset: DatasetConfig | None,
 ) -> list[FlatSubsectionConfig]:
     """Build flat subsections with hardcoded indices.
@@ -151,17 +152,18 @@ def _build_subsections(
     """
     subsections: list[FlatSubsectionConfig] = []
 
-    if meso_dataset:
+    if reconstruct_meso_dataset:
         subsections.append(FlatSubsectionConfig(
             index="2.4",
             type="timeseries",
             title="测风年风资源分析",
-            datasets=[meso_dataset.name],
+            datasets=[reconstruct_meso_dataset.name],
         ))
         for i, subtype in enumerate(_MESO_ANALYSIS_SUBSECTION_TYPES, start=1):
             subsections.append(FlatSubsectionConfig(
                 index=f"2.4.{i}",
                 type=subtype,
+                datasets=[reconstruct_meso_dataset.name],
             ))
 
     if repyear_dataset:
@@ -175,9 +177,10 @@ def _build_subsections(
             subsections.append(FlatSubsectionConfig(
                 index=f"2.5.{i}",
                 type=subtype,
+                datasets=[repyear_dataset.name],
             ))
 
-    fifty_year_dataset = meso_dataset or repyear_dataset
+    fifty_year_dataset = reconstruct_meso_dataset or repyear_dataset
     if fifty_year_dataset:
         subsections.append(FlatSubsectionConfig(
             index="2.6",
@@ -189,6 +192,7 @@ def _build_subsections(
             subsections.append(FlatSubsectionConfig(
                 index=f"2.6.{i}",
                 type=subtype,
+                datasets=[fifty_year_dataset.name],
             ))
 
     return subsections
@@ -224,11 +228,11 @@ def recommend_report(project_dir: str) -> Path:
     """
     project_path = Path(project_dir)
 
-    meso_dataset = _build_dataset_for_timeseries(
+    reconstruct_meso_dataset = _build_dataset_for_timeseries(
         project_path,
         "fill-heights-reconstruct-meso.toml",
         "reconstruct-meso-fill-heights",
-        "meso",
+        "reconstruct_meso",
     )
     repyear_dataset = _build_dataset_for_timeseries(
         project_path,
@@ -237,19 +241,58 @@ def recommend_report(project_dir: str) -> Path:
         "repyear",
     )
 
-    if not meso_dataset and not repyear_dataset:
+    if repyear_dataset:
+        import tomli
+
+        repyear_toml_path = project_path / "representative-year.toml"
+        if repyear_toml_path.exists():
+            with open(repyear_toml_path, "rb") as f:
+                repyear_config = tomli.load(f)
+
+            mesos_config = repyear_config.get("mesos", [])
+            masts_config = repyear_config.get("masts", [])
+
+            if mesos_config:
+                meso_name_to_masts: dict[str, list[str]] = {}
+                for mast in masts_config:
+                    mast_name = mast.get("name")
+                    meso_name = mast.get("meso_model", {}).get("meso_name")
+                    if mast_name and meso_name:
+                        meso_name_to_masts.setdefault(meso_name, []).append(mast_name)
+
+                meso_refs: list[MesoRef] = []
+                for meso in mesos_config:
+                    meso_name = meso.get("name")
+                    input_data = meso.get("input", {})
+                    meso_data = input_data.get("data")
+                    if meso_name and meso_data:
+                        target_masts = meso_name_to_masts.get(meso_name, [])
+                        if target_masts:
+                            source = TimeSeriesSource(
+                                data=meso_data,
+                                sensors=input_data.get("sensors"),
+                            )
+                            meso_refs.append(MesoRef(
+                                input=source,
+                                target_masts=target_masts,
+                            ))
+
+                if meso_refs:
+                    repyear_dataset.mesos = meso_refs
+
+    if not reconstruct_meso_dataset and not repyear_dataset:
         raise ValueError(
             "No valid masts found for report configuration. "
             "Ensure fill-heights configuration files exist and contain valid masts."
         )
 
     datasets: list[DatasetConfig] = []
-    if meso_dataset:
-        datasets.append(meso_dataset)
+    if reconstruct_meso_dataset:
+        datasets.append(reconstruct_meso_dataset)
     if repyear_dataset:
         datasets.append(repyear_dataset)
 
-    subsections = _build_subsections(meso_dataset, repyear_dataset)
+    subsections = _build_subsections(reconstruct_meso_dataset, repyear_dataset)
 
     report_config = FlatReportConfig(
         datasets=datasets,

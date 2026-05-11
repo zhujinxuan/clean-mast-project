@@ -276,26 +276,50 @@ def _process_flat_timeseries_node(
     subsection_method_map: dict[str, tuple[bool, Callable]],
     loaded_datasets: dict[str, LoadedDataset],
 ) -> list[Any]:
-    """Process a timeseries container node and return leaf sections."""
+    """Process a timeseries container node and return leaf sections.
+
+    Each child receives only the masts from its own declared datasets.
+    Siblings sharing identical dataset sets reuse cached aggregations.
+    """
     if not node.children:
         return []
 
-    ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
-    input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
-    any_has_wd_sensors = False
+    ts_cache: dict[frozenset[str], list[tuple[TimeSeriesData, SingleMastMeta]]] = {}
+    input_cache: dict[frozenset[str], list[tuple[SingleMastAnalysisInput, SingleMastMeta]]] = {}
+    wd_cache: dict[frozenset[str], bool] = {}
 
-    for ds_name in node.datasets or []:
-        loaded = loaded_datasets.get(ds_name)
-        if loaded is None:
-            continue
-        for input_data, meta, ts in loaded.mast_data:
-            ts_items.append((ts, meta))
-            input_items.append((input_data, meta))
-            if _has_wind_direction_sensors(ts):
-                any_has_wd_sensors = True
+    def _aggregate(key: frozenset[str]) -> None:
+        ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
+        input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        any_has_wd = False
+        for ds_name in key:
+            loaded = loaded_datasets.get(ds_name)
+            if loaded is None:
+                continue
+            for input_data, meta, ts in loaded.mast_data:
+                ts_items.append((ts, meta))
+                input_items.append((input_data, meta))
+                if _has_wind_direction_sensors(ts):
+                    any_has_wd = True
+        ts_cache[key] = ts_items
+        input_cache[key] = input_items
+        wd_cache[key] = any_has_wd
 
     leaf_sections: list[Any] = []
     for child in node.children:
+        ds_names = child.datasets if child.datasets is not None else (node.datasets or [])
+        if not ds_names:
+            leaf_sections.append(HeadingSection(title="Placeholder"))
+            continue
+
+        key = frozenset(ds_names)
+        if key not in ts_cache:
+            _aggregate(key)
+
+        ts_items = ts_cache[key]
+        input_items = input_cache[key]
+        any_has_wd_sensors = wd_cache[key]
+
         subsection_type = child.type
 
         if subsection_type == "wind_rose" and not any_has_wd_sensors:
@@ -324,18 +348,12 @@ def _handle_fifty_year_max_wind_flat(
     service: ReportGenerationService,
     loaded_datasets: dict[str, LoadedDataset],
 ) -> list[Any]:
-    fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
-    for ds_name in node.datasets or []:
-        loaded = loaded_datasets.get(ds_name)
-        if loaded is not None:
-            for input_data, meta, _ in loaded.mast_data:
-                fifty_input_items.append((input_data, meta))
+    """Handle fifty-year max wind section from flat config tree.
 
-    if not fifty_input_items:
-        return []
-
-    result = service.generate_fifty_year_max_wind_section(fifty_input_items)
-
+    When the node has children, caches ``generate_fifty_year_max_wind_section``
+    results per unique dataset combination.  When there are no children the
+    service is called once with the parent's datasets (backward compatibility).
+    """
     type_to_field = {
         "iec_standards": "iec_standards",
         "fifty_year_method1": "method1",
@@ -344,8 +362,46 @@ def _handle_fifty_year_max_wind_flat(
         "fifty_year_summary": "summary",
     }
 
+    if not node.children:
+        # No leaf children — call service once with parent datasets
+        fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        for ds_name in node.datasets or []:
+            loaded = loaded_datasets.get(ds_name)
+            if loaded is not None:
+                for input_data, meta, _ in loaded.mast_data:
+                    fifty_input_items.append((input_data, meta))
+        if fifty_input_items:
+            service.generate_fifty_year_max_wind_section(fifty_input_items)
+        return []
+
+    fifty_cache: dict[frozenset[str], Any] = {}
+
+    def _call_fifty_year(key: frozenset[str]) -> Any:
+        items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        for ds_name in key:
+            loaded = loaded_datasets.get(ds_name)
+            if loaded is not None:
+                for input_data, meta, _ in loaded.mast_data:
+                    items.append((input_data, meta))
+        if not items:
+            return None
+        return service.generate_fifty_year_max_wind_section(items)
+
     subsections: list[Any] = []
     for child in node.children:
+        ds_names = child.datasets if child.datasets is not None else (node.datasets or [])
+        if not ds_names:
+            subsections.append(HeadingSection(title="Placeholder"))
+            continue
+
+        key = frozenset(ds_names)
+        if key not in fifty_cache:
+            fifty_cache[key] = _call_fifty_year(key)
+
+        result = fifty_cache[key]
+        if result is None:
+            continue
+
         field_name = type_to_field.get(child.type)
         if field_name:
             subsections.append(getattr(result, field_name))

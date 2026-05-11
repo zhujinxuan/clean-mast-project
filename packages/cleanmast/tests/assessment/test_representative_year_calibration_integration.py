@@ -126,7 +126,7 @@ def _create_rep_ts_report_toml(tmp_path: Path) -> Path:
         ],
         "subsections": [
             {"index": "2.5", "type": "timeseries", "title": "代表年风资源分析", "datasets": ["mast"]},
-            {"index": "2.5.1", "type": "representative_year_calibration"},
+            {"index": "2.5.1", "type": "representative_year_calibration", "datasets": ["mast"]},
         ],
     }
     config_path = tmp_path / "rep-ts-report.toml"

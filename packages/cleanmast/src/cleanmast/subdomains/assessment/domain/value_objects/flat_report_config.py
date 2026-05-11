@@ -41,12 +41,11 @@ class FlatReportConfig(BaseModel):
         # Validate subsection dataset references
         catalog = {ds.name for ds in self.datasets}
         for sub in self.subsections:
-            if sub.datasets is not None:
-                for ds_name in sub.datasets:
-                    if ds_name not in catalog:
-                        raise ValueError(
-                            f"Subsection {sub.index} references unknown dataset '{ds_name}'"
-                        )
+            for ds_name in sub.datasets:
+                if ds_name not in catalog:
+                    raise ValueError(
+                        f"Subsection {sub.index} references unknown dataset '{ds_name}'"
+                    )
 
         return self
 

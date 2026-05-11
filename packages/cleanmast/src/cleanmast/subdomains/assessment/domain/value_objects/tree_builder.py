@@ -109,24 +109,6 @@ def _link_children(nodes: dict[str, SectionNode]) -> list[SectionNode]:
     return roots
 
 
-def _propagate_datasets(roots: list[SectionNode]) -> None:
-    """Propagate parent datasets down to children with None datasets.
-
-    Mutates nodes in-place.
-
-    Args:
-        roots: Root nodes to start propagation from.
-    """
-    def _propagate(node: SectionNode, parent_datasets: list[str] | None) -> None:
-        if node.datasets is None:
-            node.datasets = parent_datasets
-        for child in node.children:
-            _propagate(child, node.datasets)
-
-    for root in roots:
-        _propagate(root, None)
-
-
 def _fill_placeholder_siblings(siblings: list[SectionNode]) -> list[SectionNode]:
     """Fill gaps in sibling sequences with placeholder nodes.
 
@@ -179,8 +161,8 @@ def build_section_tree(
 ) -> list[SectionNode]:
     """Convert a flat list of subsections into a hierarchical tree.
 
-    Groups subsections by parent prefix, auto-creates placeholder parents
-    for missing intermediate nodes, and propagates datasets downward.
+    Groups subsections by parent prefix and auto-creates placeholder parents
+    for missing intermediate nodes.
 
     Args:
         subsections: Flat list of subsection configurations
@@ -197,7 +179,6 @@ def build_section_tree(
     all_indices = _collect_all_indices(actual)
     nodes = _create_nodes(all_indices, actual)
     roots = _link_children(nodes)
-    _propagate_datasets(roots)
     roots = _fill_placeholder_siblings(roots)
 
     return roots
@@ -218,7 +199,7 @@ def flatten_tree(roots: list[SectionNode]) -> list[FlatSubsectionConfig]:
                     index=node.index,
                     type=node.type,
                     title=node.title,
-                    datasets=node.datasets,
+                    datasets=node.datasets or [],
                 )
             )
         for child in node.children:

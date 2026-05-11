@@ -33,8 +33,8 @@ class TestGenerateReport:
         config = {
             "datasets": [
                 {
-                    "name": "meso",
-                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./meso/M1.parquet"}}],
+                    "name": "reconstruct_meso",
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./reconstruct_meso/M1.parquet"}}],
                 },
                 {
                     "name": "rep",
@@ -42,21 +42,21 @@ class TestGenerateReport:
                 },
             ],
             "subsections": [
-                {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["meso"]},
-                {"index": "2.4.1", "type": "wind_rose"},
-                {"index": "2.4.2", "type": "temporal"},
+                {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["reconstruct_meso"]},
+                {"index": "2.4.1", "type": "wind_rose", "datasets": ["reconstruct_meso"]},
+                {"index": "2.4.2", "type": "temporal", "datasets": ["reconstruct_meso"]},
                 {"index": "2.5", "type": "timeseries", "title": "代表年风资源分析", "datasets": ["rep"]},
-                {"index": "2.5.1", "type": "wind_rose"},
-                {"index": "2.5.2", "type": "temporal"},
+                {"index": "2.5.1", "type": "wind_rose", "datasets": ["rep"]},
+                {"index": "2.5.2", "type": "temporal", "datasets": ["rep"]},
             ],
         }
         path = tmp_path / "rep-ts-report.toml"
         with open(path, "wb") as f:
             tomli_w.dump(config, f)
         # Create dummy parquet files so load_datasets can resolve them
-        (tmp_path / "meso").mkdir(exist_ok=True)
+        (tmp_path / "reconstruct_meso").mkdir(exist_ok=True)
         (tmp_path / "rep").mkdir(exist_ok=True)
-        (tmp_path / "meso" / "M1.parquet").touch()
+        (tmp_path / "reconstruct_meso" / "M1.parquet").touch()
         (tmp_path / "rep" / "M1.parquet").touch()
         return path
 
@@ -71,11 +71,11 @@ class TestGenerateReport:
             "datasets": datasets,
             "subsections": [
                 {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
-                {"index": "2.4.1", "type": "wind_frequency"},
-                {"index": "2.4.2", "type": "temporal"},
-                {"index": "2.4.3", "type": "weibull"},
-                {"index": "2.4.4", "type": "vertical_profile"},
-                {"index": "2.4.5", "type": "turbulence"},
+                {"index": "2.4.1", "type": "wind_frequency", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
+                {"index": "2.4.2", "type": "temporal", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
+                {"index": "2.4.3", "type": "weibull", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
+                {"index": "2.4.4", "type": "vertical_profile", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
+                {"index": "2.4.5", "type": "turbulence", "datasets": [f"ds{i + 1}" for i in range(mast_count)]},
             ],
         }
         path = tmp_path / "rep-ts-report.toml"
@@ -293,35 +293,37 @@ class TestGenerateReport:
         }
         mock_builder_cls.return_value = mock_builder
 
-        # Flat config: every node produces output, including empty placeholders
+        # Flat config: every node produces output
         config = {
             "datasets": [
                 {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
+                {"name": "ds2", "masts": [{"name": "M2", "air_density": 1.225, "input": {"data": "./M2.parquet"}}]},
             ],
             "subsections": [
                 {"index": "2.4", "type": "timeseries", "title": "有数据", "datasets": ["ds1"]},
-                {"index": "2.4.1", "type": "wind_rose"},
-                {"index": "2.5", "type": "timeseries", "title": "无数据"},
-                {"index": "2.5.1", "type": "temporal"},
+                {"index": "2.4.1", "type": "wind_rose", "datasets": ["ds1"]},
+                {"index": "2.5", "type": "timeseries", "title": "无数据", "datasets": ["ds2"]},
+                {"index": "2.5.1", "type": "temporal", "datasets": ["ds2"]},
             ],
         }
         config_path = tmp_path / "rep-ts-report.toml"
         with open(config_path, "wb") as f:
             tomli_w.dump(config, f)
         (tmp_path / "M1.parquet").touch()
+        (tmp_path / "M2.parquet").touch()
 
         result = generate_report(str(config_path))
 
         assert result["pdf"] == Path("report.pdf")
-        assert mock_load_ts.call_count == 1
+        assert mock_load_ts.call_count == 2
         assert mock_service.generate_wind_rose_section.call_count == 1
-        # Both the data container and the empty placeholder produce HeadingSections
+        # Both containers produce HeadingSections
         assert mock_builder.add_section.call_count == 2
         added = mock_builder.add_section.call_args[0][0]
         assert isinstance(added, HeadingSection)
         empty_container = [s for s in added.subsections if getattr(s, 'title', None) == "无数据"]
         assert len(empty_container) == 1
-        assert empty_container[0].subsections == []
+        assert len(empty_container[0].subsections) == 1
 
     @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
     @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
@@ -361,8 +363,8 @@ class TestGenerateReport:
             ],
             "subsections": [
                 {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["ds1"]},
-                {"index": "2.4.1", "type": "wind_rose"},
-                {"index": "2.4.2", "type": "vertical_profile"},
+                {"index": "2.4.1", "type": "wind_rose", "datasets": ["ds1"]},
+                {"index": "2.4.2", "type": "vertical_profile", "datasets": ["ds1"]},
             ],
         }
         path = tmp_path / "rep-ts-report.toml"
@@ -437,6 +439,37 @@ class TestFlatConfigOrchestration:
             )
         return loaded
 
+    def _make_loaded_datasets_per_ds(self, config, mock_ts_map):
+        """Build loaded_datasets with per-dataset mock timeseries.
+
+        Unlike ``_make_loaded_datasets`` which uses the same mock for all
+        datasets, this allows each dataset to have its own mocked
+        ``TimeSeriesData`` (e.g. one with WD sensors, one without).
+
+        Args:
+            config: FlatReportConfig with dataset definitions.
+            mock_ts_map: Mapping of dataset name → mock TimeSeriesData.
+
+        Returns:
+            Dict of dataset name → LoadedDataset.
+        """
+        loaded = {}
+        for ds in config.datasets:
+            mast_data = []
+            for mast_ref in ds.masts:
+                meta = SingleMastMeta(
+                    mast_name=mast_ref.name,
+                    air_density=mast_ref.air_density,
+                    width="80%",
+                )
+                mock_ts = mock_ts_map[ds.name]
+                mast_data.append(("analysis_input", meta, mock_ts))
+            loaded[ds.name] = LoadedDataset(
+                name=ds.name,
+                mast_data=mast_data,
+            )
+        return loaded
+
     def test_single_timeseries_container_dispatches_leaf_children(self):
         """A timeseries container with two leaf children is dispatched correctly."""
         mock_ts = self._mock_ts_with_wd()
@@ -451,8 +484,8 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -485,7 +518,7 @@ class TestFlatConfigOrchestration:
         # Parent has datasets, child has None — tree builder propagates it
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -512,8 +545,8 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="五十年一遇", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="iec_standards"),
-            FlatSubsectionConfig(index="2.6.2", type="fifty_year_method1"),
+            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.6.2", type="fifty_year_method1", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -543,9 +576,9 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.5", type="timeseries", title="代表年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5.1", type="weibull"),
+            FlatSubsectionConfig(index="2.5.1", type="weibull", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -574,8 +607,8 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -602,8 +635,8 @@ class TestFlatConfigOrchestration:
         # Use a known leaf plus an unknown one
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
-            FlatSubsectionConfig(index="2.4.2", type="iec_standards"),  # not in method map yet
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.2", type="iec_standards", datasets=["ds1"]),  # not in method map yet
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -627,8 +660,8 @@ class TestFlatConfigOrchestration:
 
         datasets = [
             DatasetConfig(
-                name="meso",
-                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/meso.parquet"))],
+                name="reconstruct_meso",
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/reconstruct_meso.parquet"))],
             ),
             DatasetConfig(
                 name="repyear",
@@ -636,15 +669,15 @@ class TestFlatConfigOrchestration:
             ),
         ]
         config = self._make_config([
-            FlatSubsectionConfig(index="2.4", type="timeseries", title="Multi", datasets=["meso", "repyear"]),
-            FlatSubsectionConfig(index="2.4.1", type="temporal"),
+            FlatSubsectionConfig(index="2.4", type="timeseries", title="Multi", datasets=["reconstruct_meso", "repyear"]),
+            FlatSubsectionConfig(index="2.4.1", type="temporal", datasets=["reconstruct_meso", "repyear"]),
         ], datasets=datasets)
         loaded = self._make_loaded_datasets(config, mock_ts)
 
         _generate_from_flat_config(config, loaded, mock_service, mock_builder)
 
         # Both datasets should be present in loaded_datasets
-        assert "meso" in loaded
+        assert "reconstruct_meso" in loaded
         assert "repyear" in loaded
 
     def test_multi_mast_dataset_aggregated(self):
@@ -669,7 +702,7 @@ class TestFlatConfigOrchestration:
         ]
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Multi-Mast", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1", type="weibull", datasets=["ds1"]),
         ], datasets=datasets)
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -697,11 +730,11 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年风资源分析", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.5", type="timeseries", title="代表年风资源分析", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5.1", type="temporal"),
+            FlatSubsectionConfig(index="2.5.1", type="temporal", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="五十年一遇最大风速", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="iec_standards"),
+            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -734,10 +767,10 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
-            FlatSubsectionConfig(index="2.4.3", type="air_density"),
-            FlatSubsectionConfig(index="2.4.4", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.3", type="air_density", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.4", type="weibull", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -769,9 +802,9 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.6", type="timeseries", title="代表年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.6.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -836,7 +869,7 @@ class TestFlatConfigOrchestration:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -853,6 +886,157 @@ class TestFlatConfigOrchestration:
         assert "= Placeholder" in markup, (
             f"Expected '= Placeholder' in serialized typst, got:\n{markup[:500]}"
         )
+
+    def test_child_uses_own_datasets_not_parents(self):
+        """Children with explicit datasets receive only masts from their declared datasets.
+
+        RED phase: current code aggregates ALL parent datasets for every child.
+        """
+        mock_ts_ds1 = self._mock_ts_with_wd()
+        mock_ts_ds2 = self._mock_ts_with_wd()
+
+        mock_service = MagicMock()
+        mock_service.generate_wind_rose_section.return_value = "wind_rose_result"
+        mock_service.generate_temporal_section.return_value = "temporal_result"
+        mock_service._create_analysis_input.return_value = "analysis_input"
+
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        datasets = [
+            DatasetConfig(
+                name="ds1",
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+            ),
+            DatasetConfig(
+                name="ds2",
+                masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+            ),
+        ]
+        config = self._make_config([
+            FlatSubsectionConfig(index="2.4", type="timeseries", title="Container", datasets=["ds1", "ds2"]),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["ds2"]),
+        ], datasets=datasets)
+        loaded = self._make_loaded_datasets_per_ds(config, {"ds1": mock_ts_ds1, "ds2": mock_ts_ds2})
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        assert mock_service.generate_wind_rose_section.call_count == 1
+        wr_items = mock_service.generate_wind_rose_section.call_args.args[0]
+        assert len(wr_items) == 1, (
+            f"Child wind_rose (datasets=[ds1]) should receive 1 mast, got {len(wr_items)}"
+        )
+
+        assert mock_service.generate_temporal_section.call_count == 1
+        t_items = mock_service.generate_temporal_section.call_args.args[0]
+        assert len(t_items) == 1, (
+            f"Child temporal (datasets=[ds2]) should receive 1 mast, got {len(t_items)}"
+        )
+
+    def test_per_child_wind_direction_sensor_detection(self):
+        """Wind rose generation is per-child based on that child's dataset sensors.
+
+        RED phase: current code computes any_has_wd_sensors once per parent.
+        """
+        mock_ts_with_wd = self._mock_ts_with_wd()
+        mock_ts_without_wd = self._mock_ts_without_wd()
+
+        mock_service = MagicMock()
+        mock_service.generate_wind_rose_section.return_value = "wind_rose_result"
+        mock_service._create_analysis_input.return_value = "analysis_input"
+
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        datasets = [
+            DatasetConfig(
+                name="ds_with_wd",
+                masts=[MastRef(name="M_WD", air_density=1.225, input=TimeSeriesSource(data="/fake/wd.parquet"))],
+            ),
+            DatasetConfig(
+                name="ds_without_wd",
+                masts=[MastRef(name="M_NOWD", air_density=1.200, input=TimeSeriesSource(data="/fake/nowd.parquet"))],
+            ),
+        ]
+        config = self._make_config([
+            FlatSubsectionConfig(
+                index="2.4", type="timeseries", title="Container",
+                datasets=["ds_with_wd", "ds_without_wd"],
+            ),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds_with_wd"]),
+            FlatSubsectionConfig(index="2.4.2", type="wind_rose", datasets=["ds_without_wd"]),
+        ], datasets=datasets)
+        loaded = self._make_loaded_datasets_per_ds(
+            config, {"ds_with_wd": mock_ts_with_wd, "ds_without_wd": mock_ts_without_wd},
+        )
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        assert mock_service.generate_wind_rose_section.call_count == 1, (
+            f"Expected 1 wind_rose generation (child A has WD), "
+            f"got {mock_service.generate_wind_rose_section.call_count}"
+        )
+
+        added = mock_builder.add_section.call_args[0][0]
+        real_container = [s for s in added.subsections if getattr(s, "title", None) == "Container"]
+        assert len(real_container) == 1
+        container_subs = real_container[0].subsections
+        assert any(isinstance(s, HeadingSection) for s in container_subs), (
+            "Child without WD sensors should produce a Placeholder HeadingSection"
+        )
+
+    def test_fifty_year_per_child_dataset_isolation(self):
+        """Fifty-year section called per unique child dataset combination.
+
+        RED phase: current code calls generate_fifty_year_max_wind_section
+        once with parent's combined datasets.
+        """
+        mock_ts_ds1 = self._mock_ts_without_wd()
+        mock_ts_ds2 = self._mock_ts_without_wd()
+
+        mock_service = MagicMock()
+        mock_result = MagicMock()
+        mock_result.iec_standards = "iec_subsection"
+        mock_result.method1 = "method1_subsection"
+        mock_service.generate_fifty_year_max_wind_section.return_value = mock_result
+        mock_service._create_analysis_input.return_value = "analysis_input"
+
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        datasets = [
+            DatasetConfig(
+                name="ds1",
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+            ),
+            DatasetConfig(
+                name="ds2",
+                masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+            ),
+        ]
+        config = self._make_config([
+            FlatSubsectionConfig(
+                index="2.6", type="fifty_year_max_wind", title="五十年一遇",
+                datasets=["ds1", "ds2"],
+            ),
+            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
+            FlatSubsectionConfig(index="2.6.2", type="fifty_year_method1", datasets=["ds2"]),
+        ], datasets=datasets)
+        loaded = self._make_loaded_datasets_per_ds(config, {"ds1": mock_ts_ds1, "ds2": mock_ts_ds2})
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        assert mock_service.generate_fifty_year_max_wind_section.call_count == 2, (
+            f"Expected 2 fifty-year calls (one per unique dataset combination), "
+            f"got {mock_service.generate_fifty_year_max_wind_section.call_count}"
+        )
+
+        for i, call in enumerate(mock_service.generate_fifty_year_max_wind_section.call_args_list):
+            items = call.args[0]
+            assert len(items) == 1, (
+                f"Call {i}: expected 1 mast item, got {len(items)}"
+            )
 
 
 class TestPlaceholderPreservation:
@@ -903,9 +1087,9 @@ class TestPlaceholderPreservation:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.6", type="timeseries", title="代表年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.6.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -939,7 +1123,7 @@ class TestPlaceholderPreservation:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="air_density"),
+            FlatSubsectionConfig(index="2.4.1", type="air_density", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -976,7 +1160,7 @@ class TestPlaceholderPreservation:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="air_density"),
+            FlatSubsectionConfig(index="2.4.1", type="air_density", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -1132,9 +1316,9 @@ class TestDatasetCaching:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.5", type="timeseries", title="代表年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.5.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -1155,7 +1339,7 @@ class TestDatasetCaching:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="五十年一遇", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
@@ -1176,7 +1360,7 @@ class TestDatasetCaching:
 
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
         ])
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -1202,9 +1386,9 @@ class TestDatasetCaching:
         ]
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container1", datasets=["ds1", "ds2"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1", "ds2"]),
             FlatSubsectionConfig(index="2.5", type="timeseries", title="Container2", datasets=["ds1", "ds2"]),
-            FlatSubsectionConfig(index="2.5.1", type="wind_frequency"),
+            FlatSubsectionConfig(index="2.5.1", type="wind_frequency", datasets=["ds1", "ds2"]),
         ], datasets=datasets)
         loaded = self._make_loaded_datasets(config, mock_ts)
 
@@ -1235,9 +1419,9 @@ class TestDatasetCaching:
         ]
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container1", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1", type="weibull", datasets=["ds1"]),
             FlatSubsectionConfig(index="2.5", type="timeseries", title="Container2", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5.1", type="weibull"),
+            FlatSubsectionConfig(index="2.5.1", type="weibull", datasets=["ds1"]),
         ], datasets=datasets)
         loaded = self._make_loaded_datasets(config, mock_ts)
 

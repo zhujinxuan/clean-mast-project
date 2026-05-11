@@ -28,17 +28,38 @@ class MastRef(BaseModel):
     input: TimeSeriesSource
 
 
+class MesoRef(BaseModel):
+    """Reference to a mesoscale data source for specific masts.
+
+    Attributes:
+        input: Time series data source for the mesoscale data (e.g., ERA5).
+        target_masts: List of mast names this meso source applies to.
+    """
+
+    input: TimeSeriesSource
+    target_masts: list[str]
+
+    @model_validator(mode="after")
+    def validate_target_masts(self) -> "MesoRef":
+        """Validate target_masts list is non-empty."""
+        if not self.target_masts:
+            raise ValueError("target_masts must contain at least one mast name")
+        return self
+
+
 class DatasetConfig(BaseModel):
     """Configuration for a single dataset in the report.
 
     Attributes:
         name: Dataset identifier.
         masts: List of mast references within this dataset.
+        mesos: Optional list of mesoscale data references.
         note: Optional note or description.
     """
 
     name: str
     masts: list[MastRef]
+    mesos: list[MesoRef] | None = None
     note: str | None = None
 
     @model_validator(mode="after")

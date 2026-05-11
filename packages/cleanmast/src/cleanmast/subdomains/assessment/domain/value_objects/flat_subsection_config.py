@@ -27,7 +27,14 @@ class FlatSubsectionConfig(BaseModel):
     index: str
     type: str
     title: str | None = None
-    datasets: list[str] | None = None
+    datasets: list[str]
+
+    @field_validator("datasets")
+    @classmethod
+    def validate_datasets(cls, v: list[str]) -> list[str]:
+        if len(v) == 0:
+            raise ValueError("datasets must not be empty")
+        return v
 
     @field_validator("index")
     @classmethod

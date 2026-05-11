@@ -10,6 +10,7 @@ from cleanmast.subdomains.assessment.domain.value_objects import VALID_SUBSECTIO
 from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import (
     DatasetConfig,
     MastRef,
+    MesoRef,
 )
 from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
     FlatReportConfig,
@@ -27,7 +28,6 @@ from cleanmast.subdomains.assessment.domain.value_objects.tree_builder import (
     _create_nodes,
     _fill_placeholder_siblings,
     _link_children,
-    _propagate_datasets,
     build_section_tree,
     flatten_tree,
 )
@@ -83,6 +83,68 @@ class TestMastRef:
             )
 
         assert "air_density" in str(exc_info.value)
+
+
+class TestMesoRef:
+    """Tests for MesoRef model."""
+
+    def test_valid_meso_ref(self):
+        """Test creating a valid MesoRef."""
+        meso = MesoRef(
+            input=TimeSeriesSource(data="./meso/era5.parquet"),
+            target_masts=["M6002", "M9773"],
+        )
+
+        assert meso.input.data == "./meso/era5.parquet"
+        assert meso.target_masts == ["M6002", "M9773"]
+
+    def test_single_target_mast(self):
+        """Test MesoRef with a single target mast."""
+        meso = MesoRef(
+            input=TimeSeriesSource(data="./meso/era5.parquet"),
+            target_masts=["M6002"],
+        )
+
+        assert meso.target_masts == ["M6002"]
+
+    def test_empty_target_masts_rejected(self):
+        """Test that empty target_masts list raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            MesoRef(
+                input=TimeSeriesSource(data="./meso/era5.parquet"),
+                target_masts=[],
+            )
+
+        assert "target_masts" in str(exc_info.value)
+
+    def test_missing_target_masts_rejected(self):
+        """Test that missing target_masts field is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            MesoRef(
+                input=TimeSeriesSource(data="./meso/era5.parquet"),
+            )
+
+        assert "target_masts" in str(exc_info.value)
+
+    def test_missing_input_rejected(self):
+        """Test that missing input field is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            MesoRef(
+                target_masts=["M6002"],
+            )
+
+        assert "input" in str(exc_info.value)
+
+    def test_serialization(self):
+        """Test that valid MesoRef serializes correctly to dict."""
+        meso = MesoRef(
+            input=TimeSeriesSource(data="./meso/era5.parquet"),
+            target_masts=["M6002"],
+        )
+        data = meso.model_dump()
+
+        assert data["input"]["data"] == "./meso/era5.parquet"
+        assert data["target_masts"] == ["M6002"]
 
 
 class TestDatasetConfig:
@@ -200,18 +262,84 @@ class TestDatasetConfig:
 
         assert "masts" in str(exc_info.value)
 
+    def test_valid_config_with_mesos(self):
+        """Test creating a DatasetConfig with mesos field."""
+        config = DatasetConfig(
+            name="my-dataset",
+            masts=[
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data.parquet"),
+                )
+            ],
+            mesos=[
+                MesoRef(
+                    input=TimeSeriesSource(data="./meso/era5.parquet"),
+                    target_masts=["M6002"],
+                )
+            ],
+        )
+
+        assert config.mesos is not None
+        assert len(config.mesos) == 1
+        assert config.mesos[0].input.data == "./meso/era5.parquet"
+        assert config.mesos[0].target_masts == ["M6002"]
+
+    def test_multiple_mesos(self):
+        """Test DatasetConfig with multiple meso references."""
+        config = DatasetConfig(
+            name="my-dataset",
+            masts=[
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data.parquet"),
+                )
+            ],
+            mesos=[
+                MesoRef(
+                    input=TimeSeriesSource(data="./meso/era5.parquet"),
+                    target_masts=["M6002"],
+                ),
+                MesoRef(
+                    input=TimeSeriesSource(data="./meso/merra2.parquet"),
+                    target_masts=["M6002"],
+                ),
+            ],
+        )
+
+        assert len(config.mesos) == 2
+        assert config.mesos[0].input.data == "./meso/era5.parquet"
+        assert config.mesos[1].input.data == "./meso/merra2.parquet"
+
+    def test_config_without_mesos(self):
+        """Test that mesos field defaults to None when omitted."""
+        config = DatasetConfig(
+            name="my-dataset",
+            masts=[
+                MastRef(
+                    name="M6002",
+                    air_density=1.225,
+                    input=TimeSeriesSource(data="./data.parquet"),
+                )
+            ],
+        )
+
+        assert config.mesos is None
+
 
 class TestFlatSubsectionConfig:
     """Tests for FlatSubsectionConfig model."""
 
     def test_valid_minimal(self):
         """Test creating FlatSubsectionConfig with minimal required fields."""
-        config = FlatSubsectionConfig(index="1", type="wind_rose")
+        config = FlatSubsectionConfig(index="1", type="wind_rose", datasets=["repyear"])
 
         assert config.index == "1"
         assert config.type == "wind_rose"
         assert config.title is None
-        assert config.datasets is None
+        assert config.datasets == ["repyear"]
 
     def test_valid_full(self):
         """Test creating FlatSubsectionConfig with all fields."""
@@ -229,12 +357,12 @@ class TestFlatSubsectionConfig:
 
     def test_valid_index_single_digit(self):
         """Test valid index with single digit."""
-        config = FlatSubsectionConfig(index="5", type="weibull")
+        config = FlatSubsectionConfig(index="5", type="weibull", datasets=["repyear"])
         assert config.index == "5"
 
     def test_valid_index_multi_level(self):
         """Test valid index with multiple levels."""
-        config = FlatSubsectionConfig(index="1.2.3.4", type="turbulence")
+        config = FlatSubsectionConfig(index="1.2.3.4", type="turbulence", datasets=["repyear"])
         assert config.index == "1.2.3.4"
 
     def test_invalid_index_empty(self):
@@ -275,15 +403,35 @@ class TestFlatSubsectionConfig:
     def test_all_valid_types(self):
         """Test that all VALID_SUBSECTION_TYPES are accepted."""
         for i, subsection_type in enumerate(sorted(VALID_SUBSECTION_TYPES)):
-            config = FlatSubsectionConfig(index=str(i), type=subsection_type)
+            config = FlatSubsectionConfig(index=str(i), type=subsection_type, datasets=["repyear"])
             assert config.type == subsection_type
 
     def test_optional_fields_default_none(self):
         """Test that optional fields default to None."""
-        config = FlatSubsectionConfig(index="3", type="air_density")
+        config = FlatSubsectionConfig(index="3", type="air_density", datasets=["repyear"])
 
         assert config.title is None
-        assert config.datasets is None
+        assert config.datasets == ["repyear"]
+
+    def test_datasets_required(self):
+        """Test that missing datasets field is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            FlatSubsectionConfig(index="1", type="wind_rose")
+
+        assert "datasets" in str(exc_info.value)
+
+    def test_empty_datasets_rejected(self):
+        """Test that empty datasets list is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            FlatSubsectionConfig(index="1", type="wind_rose", datasets=[])
+
+        assert "datasets" in str(exc_info.value)
+
+    def test_datasets_is_list_of_strings(self):
+        """Test that valid list of strings is accepted for datasets."""
+        config = FlatSubsectionConfig(index="1", type="wind_rose", datasets=["ds1"])
+
+        assert config.datasets == ["ds1"]
 
 
 class TestIndexSorting:
@@ -322,9 +470,9 @@ class TestIndexSorting:
     def test_sort_subsections_numeric_not_lexical(self):
         """Test that sorting is numeric, not lexical: 2.4.10 comes AFTER 2.4.2."""
         subsections = [
-            FlatSubsectionConfig(index="2.4.10", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
-            FlatSubsectionConfig(index="2.4.1", type="weibull"),
+            FlatSubsectionConfig(index="2.4.10", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1", type="weibull", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         indices = [s.index for s in result]
@@ -333,10 +481,10 @@ class TestIndexSorting:
     def test_sort_subsections_mixed_depth(self):
         """Test sorting with mixed depth indices."""
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4", type="timeseries"),
-            FlatSubsectionConfig(index="2.5", type="timeseries"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4", type="timeseries", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.5", type="timeseries", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         indices = [s.index for s in result]
@@ -345,8 +493,8 @@ class TestIndexSorting:
     def test_sort_subsections_first_segment_numeric(self):
         """Test that first segment is sorted numerically: 10.1 comes after 2.1."""
         subsections = [
-            FlatSubsectionConfig(index="10.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.1", type="temporal"),
+            FlatSubsectionConfig(index="10.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.1", type="temporal", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         indices = [s.index for s in result]
@@ -355,9 +503,9 @@ class TestIndexSorting:
     def test_sort_subsections_single_segment(self):
         """Test sorting single-segment indices."""
         subsections = [
-            FlatSubsectionConfig(index="3", type="wind_rose"),
-            FlatSubsectionConfig(index="1", type="temporal"),
-            FlatSubsectionConfig(index="2", type="weibull"),
+            FlatSubsectionConfig(index="3", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="1", type="temporal", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2", type="weibull", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         indices = [s.index for s in result]
@@ -371,9 +519,9 @@ class TestIndexSorting:
     def test_sort_subsections_deep_nesting(self):
         """Test sorting deeply nested indices."""
         subsections = [
-            FlatSubsectionConfig(index="2.4.1.2", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.1", type="temporal"),
-            FlatSubsectionConfig(index="2.4.1.1", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1.2", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1", type="temporal", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1.1", type="weibull", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         indices = [s.index for s in result]
@@ -382,8 +530,8 @@ class TestIndexSorting:
     def test_sort_subsections_returns_new_list(self):
         """Test that sort_subsections returns a new list and doesn't mutate input."""
         subsections = [
-            FlatSubsectionConfig(index="2", type="wind_rose"),
-            FlatSubsectionConfig(index="1", type="temporal"),
+            FlatSubsectionConfig(index="2", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="1", type="temporal", datasets=["repyear"]),
         ]
         result = sort_subsections(subsections)
         assert result is not subsections
@@ -400,7 +548,7 @@ class TestTreeBuilder:
 
     def test_single_subsection_no_nesting(self):
         subsections = [
-            FlatSubsectionConfig(index="1", type="wind_rose", title="Wind Rose"),
+            FlatSubsectionConfig(index="1", type="wind_rose", title="Wind Rose", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 1
@@ -411,8 +559,8 @@ class TestTreeBuilder:
 
     def test_simple_parent_child(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4", type="timeseries", title="TS"),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR"),
+            FlatSubsectionConfig(index="2.4", type="timeseries", title="TS", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -435,7 +583,7 @@ class TestTreeBuilder:
 
     def test_auto_creates_placeholder_parent(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -454,8 +602,8 @@ class TestTreeBuilder:
 
     def test_siblings_at_same_level(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.5.1", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.5.1", type="temporal", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -470,9 +618,9 @@ class TestTreeBuilder:
 
     def test_multi_level_nesting(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4", type="timeseries", title="TS"),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR"),
-            FlatSubsectionConfig(index="2.4.1.1", type="weibull", title="WB"),
+            FlatSubsectionConfig(index="2.4", type="timeseries", title="TS", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", title="WR", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.1.1", type="weibull", title="WB", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -490,12 +638,14 @@ class TestTreeBuilder:
         assert level3.index == "2.4.1.1"
         assert level3.title == "WB"
 
-    def test_dataset_inheritance(self):
+    def test_explicit_child_datasets_preserved(self):
         subsections = [
             FlatSubsectionConfig(
                 index="2.4", type="timeseries", datasets=["repyear"]
             ),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+            FlatSubsectionConfig(
+                index="2.4.1", type="wind_rose", datasets=["repyear"]
+            ),
         ]
         result = build_section_tree(subsections)
         root = result[1]
@@ -503,48 +653,11 @@ class TestTreeBuilder:
         child = root.children[3].children[0]
         assert child.datasets == ["repyear"]
 
-    def test_dataset_override(self):
-        subsections = [
-            FlatSubsectionConfig(
-                index="2.4", type="timeseries", datasets=["repyear"]
-            ),
-            FlatSubsectionConfig(
-                index="2.4.1", type="wind_rose", datasets=["era5"]
-            ),
-        ]
-        result = build_section_tree(subsections)
-        root = result[1]
-        assert root.index == "2"
-        child = root.children[3].children[0]
-        assert child.datasets == ["era5"]
-
-    def test_placeholder_inherits_datasets(self):
-        subsections = [
-            FlatSubsectionConfig(
-                index="2.4", type="timeseries", datasets=["repyear"]
-            ),
-            FlatSubsectionConfig(index="2.4.1.1", type="wind_rose"),
-        ]
-        result = build_section_tree(subsections)
-        root = result[1]
-        assert root.index == "2"
-        real_node = root.children[3]
-        assert real_node.index == "2.4"
-        assert real_node.type == "timeseries"
-        assert real_node.datasets == ["repyear"]
-        grandchild = real_node.children[0]
-        assert grandchild.index == "2.4.1"
-        assert grandchild.type == "timeseries"
-        assert grandchild.title == "Placeholder"
-        assert grandchild.datasets == ["repyear"]
-        great_grandchild = grandchild.children[0]
-        assert great_grandchild.datasets == ["repyear"]
-
     def test_returns_sorted_tree(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.10.1", type="temporal"),
-            FlatSubsectionConfig(index="2.4.2", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.10.1", type="temporal", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.2", type="weibull", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -562,7 +675,7 @@ class TestTreeBuilder:
 
     def test_deep_placeholder_chain(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1.1.1", type="wind_rose"),
+            FlatSubsectionConfig(index="2.4.1.1.1", type="wind_rose", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -590,9 +703,9 @@ class TestTreeBuilder:
 
     def test_fills_root_level_placeholder_siblings(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.2", type="temporal"),
-            FlatSubsectionConfig(index="2.5.1", type="weibull"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.2", type="temporal", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.5.1", type="weibull", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -618,8 +731,8 @@ class TestTreeBuilder:
 
     def test_fills_gap_within_children(self):
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.3", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.3", type="temporal", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 2
@@ -637,7 +750,7 @@ class TestTreeBuilder:
 
     def test_sibling_fill_under_root_starting_at_one(self):
         subsections = [
-            FlatSubsectionConfig(index="1.2.1", type="wind_rose"),
+            FlatSubsectionConfig(index="1.2.1", type="wind_rose", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 1
@@ -652,8 +765,8 @@ class TestTreeBuilder:
 
     def test_single_segment_root_gaps(self):
         subsections = [
-            FlatSubsectionConfig(index="3", type="wind_rose"),
-            FlatSubsectionConfig(index="5", type="temporal"),
+            FlatSubsectionConfig(index="3", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="5", type="temporal", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         assert len(result) == 5
@@ -671,7 +784,7 @@ class TestTreeBuilder:
     def test_real_node_not_placeholder(self):
         """Real nodes from FlatSubsectionConfig should have is_placeholder=False."""
         subsections = [
-            FlatSubsectionConfig(index="2.4", type="timeseries"),
+            FlatSubsectionConfig(index="2.4", type="timeseries", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         root = result[1]
@@ -683,7 +796,7 @@ class TestTreeBuilder:
     def test_placeholder_node_is_placeholder(self):
         """Auto-created placeholder nodes should have is_placeholder=True."""
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
         ]
         result = build_section_tree(subsections)
         root = result[1]
@@ -762,8 +875,8 @@ class TestTreeBuilder:
     def test_flatten_tree_excludes_placeholders(self):
         """Placeholder nodes should not appear in flattened output."""
         subsections = [
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-            FlatSubsectionConfig(index="2.4.3", type="temporal"),
+            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+            FlatSubsectionConfig(index="2.4.3", type="temporal", datasets=["repyear"]),
         ]
         tree = build_section_tree(subsections)
         flat = flatten_tree(tree)
@@ -876,8 +989,8 @@ class TestFlatReportConfig:
                 ),
             ],
             subsections=[
-                FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-                FlatSubsectionConfig(index="2.4", type="timeseries"),
+                FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.4", type="timeseries", datasets=["repyear"]),
             ],
         )
         tree = config.tree
@@ -939,6 +1052,7 @@ data = "data/repyear.parquet"
 [[subsections]]
 index = "1"
 type = "wind_rose"
+datasets = ["repyear"]
 """
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "configs"
@@ -1065,7 +1179,7 @@ class TestConfigRoundTrip:
                     index="1", type="wind_rose", datasets=["repyear"]
                 ),
                 FlatSubsectionConfig(
-                    index="2", type="temporal", title="Monthly Analysis"
+                    index="2", type="temporal", title="Monthly Analysis", datasets=["repyear"]
                 ),
             ],
         )
@@ -1160,11 +1274,11 @@ class TestConfigRoundTrip:
                 FlatSubsectionConfig(
                     index="2.4", type="timeseries", datasets=["repyear"]
                 ),
-                FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+                FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
             ],
         )
         restored = self._roundtrip(config)
-        assert restored.subsections[1].datasets is None
+        assert restored.subsections[1].datasets == ["repyear"]
         orig_tree = config.tree
         rest_tree = restored.tree
         self._assert_tree_equal(orig_tree, rest_tree)
@@ -1231,12 +1345,12 @@ class TestConfigRoundTrip:
                     type="fifty_year_max_wind",
                     datasets=["repyear"],
                 ),
-                FlatSubsectionConfig(index="2.6.1", type="air_density"),
-                FlatSubsectionConfig(index="2.6.2", type="wind_rose"),
-                FlatSubsectionConfig(index="2.6.3", type="turbulence"),
-                FlatSubsectionConfig(index="2.6.4", type="temporal"),
+                FlatSubsectionConfig(index="2.6.1", type="air_density", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.2", type="wind_rose", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.3", type="turbulence", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.4", type="temporal", datasets=["repyear"]),
                 FlatSubsectionConfig(
-                    index="2.6.5", type="representative_year_calibration"
+                    index="2.6.5", type="representative_year_calibration", datasets=["repyear"]
                 ),
             ],
         )
@@ -1331,11 +1445,11 @@ class TestConfigRoundTrip:
                 FlatSubsectionConfig(
                     index="2.4", type="timeseries", datasets=["repyear"]
                 ),
-                FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+                FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
                 FlatSubsectionConfig(
-                    index="2.4.2", type="temporal", title="Monthly Stats"
+                    index="2.4.2", type="temporal", title="Monthly Stats", datasets=["repyear"]
                 ),
-                FlatSubsectionConfig(index="2.4.3", type="weibull"),
+                FlatSubsectionConfig(index="2.4.3", type="weibull", datasets=["repyear"]),
                 FlatSubsectionConfig(
                     index="2.4.4",
                     type="turbulence",
@@ -1347,15 +1461,15 @@ class TestConfigRoundTrip:
                 FlatSubsectionConfig(
                     index="2.5.1", type="wind_rose", datasets=["repyear"]
                 ),
-                FlatSubsectionConfig(index="2.5.2", type="vertical_profile"),
-                FlatSubsectionConfig(index="2.5.3", type="wind_frequency"),
+                FlatSubsectionConfig(index="2.5.2", type="vertical_profile", datasets=["era5"]),
+                FlatSubsectionConfig(index="2.5.3", type="wind_frequency", datasets=["era5"]),
                 FlatSubsectionConfig(
                     index="2.6",
                     type="fifty_year_max_wind",
                     datasets=["repyear"],
                 ),
-                FlatSubsectionConfig(index="2.6.1", type="air_density"),
-                FlatSubsectionConfig(index="2.6.2", type="wind_rose"),
+                FlatSubsectionConfig(index="2.6.1", type="air_density", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.2", type="wind_rose", datasets=["repyear"]),
             ],
         )
         restored = self._roundtrip(config)
@@ -1477,8 +1591,8 @@ class TestTreeIsomorphism:
                 ),
             ],
             subsections=[
-                FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
-                FlatSubsectionConfig(index="2.4.3", type="temporal"),
+                FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.4.3", type="temporal", datasets=["repyear"]),
             ],
         )
         tree = build_section_tree(config.subsections)
@@ -1511,9 +1625,9 @@ class TestTreeIsomorphism:
                     type="fifty_year_max_wind",
                     datasets=["repyear"],
                 ),
-                FlatSubsectionConfig(index="2.6.1", type="air_density"),
-                FlatSubsectionConfig(index="2.6.1.1", type="iec_standards"),
-                FlatSubsectionConfig(index="2.6.1.2", type="fifty_year_method1"),
+                FlatSubsectionConfig(index="2.6.1", type="air_density", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.1.1", type="iec_standards", datasets=["repyear"]),
+                FlatSubsectionConfig(index="2.6.1.2", type="fifty_year_method1", datasets=["repyear"]),
             ],
         )
         tree = build_section_tree(config.subsections)
@@ -1537,8 +1651,8 @@ class TestCollectAllIndices:
     def test_collect_all_indices_with_parents(self):
         """actual={2.4, 2.4.1} → result contains {2, 2.4, 2.4.1}."""
         actual = {
-            "2.4": FlatSubsectionConfig(index="2.4", type="timeseries"),
-            "2.4.1": FlatSubsectionConfig(index="2.4.1", type="wind_rose"),
+            "2.4": FlatSubsectionConfig(index="2.4", type="timeseries", datasets=["repyear"]),
+            "2.4.1": FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["repyear"]),
         }
         result = _collect_all_indices(actual)
         assert result == {"2", "2.4", "2.4.1"}
@@ -1546,7 +1660,7 @@ class TestCollectAllIndices:
     def test_collect_all_indices_single_segment(self):
         """actual={1} → result contains {1} (no parents to derive)."""
         actual = {
-            "1": FlatSubsectionConfig(index="1", type="wind_rose"),
+            "1": FlatSubsectionConfig(index="1", type="wind_rose", datasets=["repyear"]),
         }
         result = _collect_all_indices(actual)
         assert result == {"1"}
@@ -1554,7 +1668,7 @@ class TestCollectAllIndices:
     def test_collect_all_indices_deep_nesting(self):
         """actual={3.1.2} → result contains {3, 3.1, 3.1.2}."""
         actual = {
-            "3.1.2": FlatSubsectionConfig(index="3.1.2", type="weibull"),
+            "3.1.2": FlatSubsectionConfig(index="3.1.2", type="weibull", datasets=["repyear"]),
         }
         result = _collect_all_indices(actual)
         assert result == {"3", "3.1", "3.1.2"}
@@ -1633,36 +1747,6 @@ class TestLinkChildren:
         assert len(roots) == 1
         assert roots[0].index == "2.4"
         assert roots[0].children == []
-
-
-class TestPropagateDatasets:
-    """Tests for _propagate_datasets function."""
-
-    def test_child_inherits_from_parent(self):
-        """parent has datasets=['ds1'], child has None → child gets ['ds1']."""
-        child = SectionNode(index="2.4.1", type="wind_rose", datasets=None)
-        parent = SectionNode(index="2.4", type="timeseries", datasets=["ds1"], children=[child])
-        root = SectionNode(index="2", type="timeseries", children=[parent])
-        _propagate_datasets([root])
-        assert child.datasets == ["ds1"]
-
-    def test_child_with_existing_not_overwritten(self):
-        """child already has datasets=['ds2'] → NOT overwritten."""
-        child = SectionNode(index="2.4.1", type="wind_rose", datasets=["ds2"])
-        parent = SectionNode(index="2.4", type="timeseries", datasets=["ds1"], children=[child])
-        root = SectionNode(index="2", type="timeseries", children=[parent])
-        _propagate_datasets([root])
-        assert child.datasets == ["ds2"]
-
-    def test_grandchild_inherits_through_intermediate(self):
-        """deep nesting — grandchild inherits from grandparent through intermediate."""
-        grandchild = SectionNode(index="2.4.1.1", type="weibull", datasets=None)
-        intermediate = SectionNode(index="2.4.1", type="wind_rose", datasets=None, children=[grandchild])
-        parent = SectionNode(index="2.4", type="timeseries", datasets=["ds1"], children=[intermediate])
-        root = SectionNode(index="2", type="timeseries", children=[parent])
-        _propagate_datasets([root])
-        assert intermediate.datasets == ["ds1"]
-        assert grandchild.datasets == ["ds1"]
 
 
 class TestFillPlaceholderSiblings:

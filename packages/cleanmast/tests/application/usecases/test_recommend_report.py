@@ -80,14 +80,14 @@ class TestRecommendReport:
 
         assert len(config.datasets) == 2
         dataset_names = [ds.name for ds in config.datasets]
-        assert "meso" in dataset_names
+        assert "reconstruct_meso" in dataset_names
         assert "repyear" in dataset_names
 
-        meso_ds = next(ds for ds in config.datasets if ds.name == "meso")
-        assert len(meso_ds.masts) == 1
-        assert meso_ds.masts[0].name == "M1"
-        assert meso_ds.masts[0].input.data == "./reconstruct-meso-fill-heights/M1.parquet"
-        assert meso_ds.masts[0].air_density == 1.225
+        reconstruct_meso_ds = next(ds for ds in config.datasets if ds.name == "reconstruct_meso")
+        assert len(reconstruct_meso_ds.masts) == 1
+        assert reconstruct_meso_ds.masts[0].name == "M1"
+        assert reconstruct_meso_ds.masts[0].input.data == "./reconstruct-meso-fill-heights/M1.parquet"
+        assert reconstruct_meso_ds.masts[0].air_density == 1.225
 
         repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
         assert len(repyear_ds.masts) == 1
@@ -123,7 +123,7 @@ class TestRecommendReport:
         assert meso_parent is not None
         assert meso_parent.type == "timeseries"
         assert meso_parent.title == "测风年风资源分析"
-        assert meso_parent.datasets == ["meso"]
+        assert meso_parent.datasets == ["reconstruct_meso"]
 
         meso_children = [s for s in config.subsections if s.index.startswith("2.4.")]
         assert len(meso_children) == 7
@@ -138,6 +138,8 @@ class TestRecommendReport:
         ]
         actual_order = [(s.index, s.type) for s in sorted(meso_children, key=lambda s: s.index)]
         assert actual_order == expected_order
+        for child in meso_children:
+            assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -180,6 +182,8 @@ class TestRecommendReport:
         ]
         actual_order = [(s.index, s.type) for s in sorted(rep_children, key=lambda s: s.index)]
         assert actual_order == expected_order
+        for child in rep_children:
+            assert child.datasets == ["repyear"], f"Expected datasets=['repyear'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -209,7 +213,7 @@ class TestRecommendReport:
         assert fifty_parent is not None
         assert fifty_parent.type == "fifty_year_max_wind"
         assert fifty_parent.title == "五十年一遇最大风速"
-        assert fifty_parent.datasets == ["meso"]
+        assert fifty_parent.datasets == ["reconstruct_meso"]
 
         fifty_children = [s for s in config.subsections if s.index.startswith("2.6.")]
         assert len(fifty_children) == 5
@@ -222,6 +226,8 @@ class TestRecommendReport:
         ]
         actual_order = [(s.index, s.type) for s in sorted(fifty_children, key=lambda s: s.index)]
         assert actual_order == expected_order
+        for child in fifty_children:
+            assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -243,7 +249,7 @@ class TestRecommendReport:
         config = FlatReportConfig.from_toml(output_path)
 
         dataset_names = [ds.name for ds in config.datasets]
-        assert "meso" not in dataset_names
+        assert "reconstruct_meso" not in dataset_names
         assert "repyear" in dataset_names
 
         indices = [s.index for s in config.subsections]
@@ -334,7 +340,7 @@ class TestRecommendReport:
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
             "reconstruct-meso-fill-heights",
-            "meso",
+            "reconstruct_meso",
         )
 
         assert len(ds.masts) == 2
