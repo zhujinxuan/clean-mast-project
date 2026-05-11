@@ -7,7 +7,10 @@ from typing import Dict, Optional
 import click
 import polars as pl
 import tomli
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
+
+
+TIMESTAMP_NAMES = {"Timestamp", "TimeStamp", "timestamp", "TIMESTAMP"}
 
 
 class ColNameNormalizerConfig(BaseModel):
@@ -20,6 +23,24 @@ class ColNameNormalizerConfig(BaseModel):
     header_row: Optional[int] = Field(default=0, description="Row number containing headers (0-based)")
     keep_unmapped: Optional[bool] = Field(default=True, description="Whether to keep columns not in mapping")
     delimiter: Optional[str] = Field(default=",", description="Field delimiter (e.g., ',' for CSV, '\\t' for TSV)")
+
+    @model_validator(mode="after")
+    def reject_timestamp_in_mappings(self):
+        """Timestamp handling is reserved for csv-merger; forbid it in column_mappings."""
+        for old_name, new_name in self.column_mappings.items():
+            if old_name in TIMESTAMP_NAMES:
+                raise ValueError(
+                    f"column_mappings must not contain timestamp column '{old_name}'. "
+                    f"Use csv-merger to create the Timestamp column, then col-normalizer "
+                    f"will auto-preserve it."
+                )
+            if new_name in TIMESTAMP_NAMES:
+                raise ValueError(
+                    f"column_mappings must not map to timestamp column name '{new_name}'. "
+                    f"Use csv-merger to create the Timestamp column, then col-normalizer "
+                    f"will auto-preserve it."
+                )
+        return self
 
 
 def load_config(config_path: str) -> ColNameNormalizerConfig:
@@ -66,17 +87,15 @@ def normalize_column_names(df: pl.DataFrame, column_mappings: Dict[str, str], ke
         for col in missing_columns:
             click.echo(f"  '{col}'")
 
-    timestamp_names = ['Timestamp', 'TimeStamp', 'timestamp', 'TIMESTAMP']
-
     if not keep_unmapped:
         mapped_new_names = set(renamed_columns.values())
-        preserved = {c for c in df_normalized.columns if c in timestamp_names}
+        preserved = {c for c in df_normalized.columns if c in TIMESTAMP_NAMES}
         columns_to_keep = list(mapped_new_names | preserved)
         df_normalized = df_normalized.select(columns_to_keep)
         click.echo(f"Kept {len(columns_to_keep)} columns (removed unmapped columns)")
 
     timestamp_col = None
-    for ts_name in timestamp_names:
+    for ts_name in TIMESTAMP_NAMES:
         if ts_name in df_normalized.columns:
             timestamp_col = ts_name
             break

@@ -6,7 +6,6 @@ keep_unmapped = true
 delimiter = ","
 
 [column_mappings]
-"time_stamp" = "Timestamp"
 "ws_80m" = "WindSpeed_80m"
 "wd_80m" = "WindDirection_80m"
 "temp_amb" = "Temperature"

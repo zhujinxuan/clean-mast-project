@@ -49,12 +49,32 @@ class TestConfigLoading:
         assert isinstance(config, ColNameNormalizerConfig)
         assert config.input_path == "../csv_files/different_columns.csv"
         assert config.keep_unmapped is True
-        assert len(config.column_mappings) == 4
+        assert len(config.column_mappings) == 3
 
     def test_load_nonexistent_config(self):
         """Test loading non-existent config file."""
         with pytest.raises(SystemExit):
             load_config("nonexistent.toml")
+
+    def test_reject_timestamp_in_mapping_source(self):
+        """Test that mapping from Timestamp is rejected."""
+        with pytest.raises(ValueError, match="column_mappings must not contain timestamp column"):
+            ColNameNormalizerConfig(
+                input_path="test.csv",
+                output_path="out.csv",
+                column_mappings={"Timestamp": "MyTs"},
+                keep_unmapped=True,
+            )
+
+    def test_reject_timestamp_in_mapping_target(self):
+        """Test that mapping to Timestamp is rejected."""
+        with pytest.raises(ValueError, match="column_mappings must not map to timestamp column name"):
+            ColNameNormalizerConfig(
+                input_path="test.csv",
+                output_path="out.csv",
+                column_mappings={"DateTime": "Timestamp"},
+                keep_unmapped=True,
+            )
 
 
 class TestColumnNormalization:
@@ -109,8 +129,8 @@ class TestColumnNormalization:
         result = normalize_column_names(df, mappings, keep_unmapped=False)
 
         assert "new_col1" in result.columns
-        assert "col2" in result.columns
-        assert "col3" in result.columns
+        assert "col2" not in result.columns
+        assert "col3" not in result.columns
 
     def test_normalize_missing_source_columns(self):
         """Test normalization when source columns don't exist."""
@@ -130,16 +150,14 @@ class TestColumnNormalization:
         assert "new_name" not in result.columns
 
     def test_normalize_timestamp_first(self):
-        """Test that Timestamp column is moved to first position."""
+        """Test that existing Timestamp column is moved to first position."""
         df = pl.DataFrame({
             "WindSpeed": [5.2, 5.5],
-            "time_stamp": ["2024-01-01 00:00:00", "2024-01-01 00:10:00"],
+            "Timestamp": ["2024-01-01 00:00:00", "2024-01-01 00:10:00"],
             "WindDirection": [180.5, 182.3]
         })
 
-        mappings = {"time_stamp": "Timestamp"}
-
-        result = normalize_column_names(df, mappings, keep_unmapped=True)
+        result = normalize_column_names(df, {}, keep_unmapped=True)
 
         assert result.columns[0] == "Timestamp"
 

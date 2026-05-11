@@ -141,7 +141,7 @@ keep_unmapped = false  # REQUIRED: drop all unmapped columns
 
 Verify the output columns match exactly your mapping keys (plus `Timestamp`).
 
-**Important:** The `col-normalizer` automatically preserves `Timestamp` (case-insensitive) even when `keep_unmapped = false`. It also moves `Timestamp` to the first column. Do **not** include `Timestamp` in your `column_mappings`.
+**Forbidden:** `Timestamp` must **never** appear in `column_mappings` (as key or value). The `csv-merger` is responsible for creating the `Timestamp` column. The `col-normalizer` auto-preserves it (case-insensitive) and moves it to first position. Including `Timestamp` in mappings will cause a validation error.
 
 #### Verify `Timestamp` is preserved
 
