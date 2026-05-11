@@ -32,11 +32,16 @@ number = 170
 input_path = "merged.csv"
 output_path = "renamed.csv"
 delimiter = ","
-keep_unmapped = true
+keep_unmapped = false  # REQUIRED: drop all unmapped columns
 
 [column_mappings]
 "OldName" = "NewName"
 ```
+
+**Notes:**
+- `keep_unmapped = false` is mandatory. Only mapped meteorological columns (plus `Timestamp`) will appear in the output. This drops empty/unnamed columns and non-meteo diagnostics automatically.
+- `Timestamp` is preserved automatically (case-insensitive match: `Timestamp`, `TimeStamp`, `timestamp`, `TIMESTAMP`). Do not include it in `column_mappings`.
+- The tool moves `Timestamp` to the first column position. Verify this after running.
 
 ## type-normalizer
 

@@ -78,23 +78,87 @@ number = 170
 
 **Column mismatches**: Real-world NRG exports often vary slightly (e.g. `CH13_Custom_Avg` vs `CH13_NRG_40C_Anem_ms_Avg`). Always set `column_mismatch = "union"` when merging multiple NRG files so the merger combines all columns and fills missing values with null.
 
+### Post-Merge Cleanup: Drop Empty/Unnamed Columns
+
+After `csv-merge`, inspect the merged CSV for artifacts:
+
+```bash
+uv run python -c "
+import polars as pl
+df = pl.read_csv('merged.csv', infer_schema_length=0)
+print(f'Total columns: {len(df.columns)}')
+bad = [c for c in df.columns if c == '' or c.strip() == '' or c.startswith('_duplicated_')]
+print(f'Empty/unnamed columns: {len(bad)}')
+for c in bad:
+    print(f'  {repr(c)}')
+"
+```
+
+If empty/unnamed columns exist, drop them before column normalization:
+
+```bash
+uv run python -c "
+import polars as pl
+df = pl.read_csv('merged.csv')
+# Drop empty/unnamed columns
+good_cols = [c for c in df.columns if c != '' and not c.startswith('_duplicated_')]
+df = df.select(good_cols)
+df.write_csv('merged_cleaned.csv')
+print(f'Dropped {len(df.columns) - len(good_cols)} empty columns')
+"
+```
+
+Common causes of empty columns:
+- Trailing delimiters in raw data (e.g. Lidar CSV exports ending with `,,`)
+- Merging files with mismatched column counts
+- Custom merge scripts that concatenate sections with trailing commas
+
+**Always run this check after merging.** Empty columns will break downstream tools.
+
 ### Column Name Normalization
 
-After merging, use `col-normalizer` to map raw column names to the standard NRG format.
+After merging and cleanup, use `col-normalizer` to map raw column names to the standard NRG format.
 
 See `@references/nrg-format.md` for the exact naming convention (`Ch{channel}_{sensorType}_{height}m_{sensorDirection}_{statType}_{unit}`).
 
 Create a TOML config with explicit `column_mappings`:
 
 ```toml
-input_path = "merged.csv"
+input_path = "merged_cleaned.csv"
 output_path = "normalized.csv"
 delimiter = ","
+keep_unmapped = false  # REQUIRED: drop all unmapped columns
 
 [column_mappings]
 "CH1_NRG_40C_Anem_80m_Avg" = "Ch1_Anem_80.00m_A_Avg_m/s"
 "CH7_NRG_200P_Vane_80m_Avg" = "Ch7_Vane_80.00m_A_Avg_Deg"
 ```
+
+**`keep_unmapped = false` is mandatory.** This ensures only meteorological sensors are kept in the final dataset. The col-normalizer will drop:
+- Empty/unnamed columns (`''`, `_duplicated_N`)
+- Non-meteorological diagnostics (battery voltage, logger status, custom placeholders)
+- Any column not explicitly mapped in `column_mappings`
+
+Verify the output columns match exactly your mapping keys (plus `Timestamp`).
+
+**Important:** The `col-normalizer` automatically preserves `Timestamp` (case-insensitive) even when `keep_unmapped = false`. It also moves `Timestamp` to the first column. Do **not** include `Timestamp` in your `column_mappings`.
+
+#### Verify `Timestamp` is preserved
+
+After running `col-normalizer`, confirm the output contains `Timestamp` as the first column:
+
+```bash
+uv run python -c "
+import polars as pl
+df = pl.read_csv('normalized.csv', infer_schema_length=0)
+print(f'First column: {repr(df.columns[0])}')
+print(f'Columns: {len(df.columns)}')
+assert df.columns[0] == 'Timestamp', 'Timestamp must be first column'
+print('OK: Timestamp preserved and in first position')
+"
+```
+
+If this fails, the input `merged.csv` may not have a recognizable timestamp column. Check that `csv-merge` produced a column named `Timestamp` (exact case).
 
 #### Document your decisions in `evidence.md`
 
@@ -246,8 +310,13 @@ head -n 170 file.txt | grep -A 6 "Channel #\t13"
 ### 4. Temperature height is independent of anemometer height
 Do not assume the temperature sensor is at the same height as the top anemometer. In the M4941 dataset, `CH9_NRG_110S_Temp_C_Avg` is at 10m, not 80m. Always verify the sensor mount height from the site configuration.
 
-### 5. Early `keep_unmapped = false` did not drop unmapped columns
-If you are using an older checkout of `preprocess-tools`, `keep_unmapped = false` may fail to drop columns due to a bug in `col_name_normalizer.py`. Ensure you are on a version where this is fixed, or explicitly verify that the output columns match exactly your mapping keys (plus `Timestamp`).
+### 5. `keep_unmapped = false` is mandatory
+Always set `keep_unmapped = false` in the col-normalizer config. This is the only way to ensure the final dataset contains **only** meteorological sensors. The col-normalizer will automatically drop:
+- Empty/unnamed columns (`''`, `_duplicated_N`)
+- Non-meteorological diagnostics
+- Any column not explicitly mapped
+
+Verify the output columns match exactly your mapping keys (plus `Timestamp`).
 
 ## Error Handling Guidelines
 
