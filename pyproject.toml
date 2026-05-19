@@ -26,7 +26,6 @@ dev-dependencies = [
     "ruff>=0.1.0",
     "mypy>=1.8",
     "pyright>=1.1",
-    "typ2docx>=0.3.0",
 ]
 
 # Shared tool configurations
