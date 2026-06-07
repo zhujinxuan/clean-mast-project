@@ -203,6 +203,7 @@ class WindTemporalAnalyzer:
                 df_with_hour.group_by("hour")
                 .agg([
                     pl.col(ws_col).mean().alias("mean_speed"),
+                    (0.5 * air_density * pl.col(ws_col).pow(3)).mean().alias("mean_power"),
                 ])
                 .sort("hour")
             )
@@ -219,10 +220,6 @@ class WindTemporalAnalyzer:
 
             # Convert to rows
             for row in hourly_stats.iter_rows(named=True):
-                mean_speed = row["mean_speed"]
-                # Calculate power density: 0.5 * ρ * v³
-                mean_power = 0.5 * air_density * (mean_speed ** 3) if mean_speed is not None else None
-
                 rows.append({
                     "timestamp": row["timestamp"],
                     "hour": row["hour"],
@@ -230,8 +227,8 @@ class WindTemporalAnalyzer:
                     "wind_speed": None,
                     "wind_power": None,
                     "height": height,
-                    "mean_speed": mean_speed,
-                    "mean_power": mean_power,
+                    "mean_speed": row["mean_speed"],
+                    "mean_power": row["mean_power"],
                     "interpolation_marker": sensor.detect_interpolation_marker(),
                 })
 
@@ -273,6 +270,7 @@ class WindTemporalAnalyzer:
                 df_with_month.group_by("month")
                 .agg([
                     pl.col(ws_col).mean().alias("mean_speed"),
+                    (0.5 * air_density * pl.col(ws_col).pow(3)).mean().alias("mean_power"),
                 ])
                 .sort("month")
             )
@@ -289,10 +287,6 @@ class WindTemporalAnalyzer:
 
             # Convert to rows
             for row in monthly_stats.iter_rows(named=True):
-                mean_speed = row["mean_speed"]
-                # Calculate power density: 0.5 * ρ * v³
-                mean_power = 0.5 * air_density * (mean_speed ** 3) if mean_speed is not None else None
-
                 rows.append({
                     "timestamp": row["timestamp"],
                     "hour": row["timestamp"].hour if hasattr(row["timestamp"], "hour") else 0,
@@ -300,8 +294,8 @@ class WindTemporalAnalyzer:
                     "wind_speed": None,
                     "wind_power": None,
                     "height": height,
-                    "mean_speed": mean_speed,
-                    "mean_power": mean_power,
+                    "mean_speed": row["mean_speed"],
+                    "mean_power": row["mean_power"],
                     "interpolation_marker": sensor.detect_interpolation_marker(),
                 })
 
@@ -347,6 +341,7 @@ class WindTemporalAnalyzer:
                 df_with_time.group_by(["hour", "month"])
                 .agg([
                     pl.col(ws_col).mean().alias("mean_speed"),
+                    (0.5 * air_density * pl.col(ws_col).pow(3)).mean().alias("mean_power"),
                     pl.col("timestamp").first().alias("timestamp"),
                 ])
                 .sort(["month", "hour"])
@@ -354,10 +349,6 @@ class WindTemporalAnalyzer:
 
             # Convert to rows
             for row in combined_stats.iter_rows(named=True):
-                mean_speed = row["mean_speed"]
-                # Calculate power density: 0.5 * ρ * v³
-                mean_power = 0.5 * air_density * (mean_speed ** 3) if mean_speed is not None else None
-
                 rows.append({
                     "timestamp": row["timestamp"],
                     "hour": row["hour"],
@@ -365,8 +356,8 @@ class WindTemporalAnalyzer:
                     "wind_speed": None,
                     "wind_power": None,
                     "height": height,
-                    "mean_speed": mean_speed,
-                    "mean_power": mean_power,
+                    "mean_speed": row["mean_speed"],
+                    "mean_power": row["mean_power"],
                     "interpolation_marker": sensor.detect_interpolation_marker(),
                 })
 
