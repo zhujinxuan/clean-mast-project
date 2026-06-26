@@ -1,4 +1,0 @@
-[tools]
-uv = "latest"
-opencode = "1.17.9"
-pandoc = "latest"
