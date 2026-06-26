@@ -11,49 +11,49 @@ from unittest.mock import patch
 import numpy as np
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
     SingleMastDailyPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
     SingleMastTurbulenceMultiHeightAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
+from cleanmast.subdomains.assessment.subdomains.weibull.entities.weibull_subgrid_atom import (
     SingleMastWeibullSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_frequency_hours_atom import (
     SingleMastWindFrequencyHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_atom import (
     SingleMastMonthlyWindFrequencyRoseAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_grid_atom import (
     SingleMastMonthlyWindRoseGridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.entities.wind_shear_matrix_atom import (
     SingleMastWindShearExponentAtom,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.services.turbulence_section import (
     TurbulenceSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.vertical_profile_subsection import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.services.vertical_profile_section import (
     VerticalProfileSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.weibull_subsection import (
+from cleanmast.subdomains.assessment.subdomains.weibull.services.weibull_section import (
     WeibullSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_frequency_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.services.wind_frequency_section import (
     WindFrequencySubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.services.wind_rose_section import (
     WindRoseSection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.services.wind_temporal_section import (
     WindTemporalSubsection,
 )
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstFigure,
     TypstParagraph,
     TypstTable,
@@ -62,15 +62,23 @@ from cleanmast.subdomains.assessment.domain.value_objects import (
     AtomCollection,
     SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.value_objects.schemas import (
     VerticalProfileSchema,
     WindShearSchema,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
     TemporalPatternSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.value_objects.schemas import (
     TurbulenceSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.weibull.value_objects.schemas import (
     WeibullSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.value_objects.schemas import (
     WindFrequencySchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.value_objects.schemas import (
     WindRoseSchema,
 )
 
@@ -389,7 +397,7 @@ class TestWindRoseSectionMergedSummary:
         tmp_path: Path,
     ) -> None:
         with patch(
-            "cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer.merge_paragraphs",
+            "cleanmast.subdomains.assessment.shared.utils.subsection_renderer.merge_paragraphs",
             create=True,
             return_value=TypstParagraph(text="M01 M02 merged summary"),
         ) as mock_merge:
@@ -413,7 +421,7 @@ class TestTurbulenceSubsectionMergedSummary:
         tmp_path: Path,
     ) -> None:
         with patch(
-            "cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer.merge_paragraphs",
+            "cleanmast.subdomains.assessment.shared.utils.subsection_renderer.merge_paragraphs",
             return_value=TypstParagraph(text="M01 M02 merged summary"),
         ) as mock_merge:
             subsection = TurbulenceSubsection(atoms=multi_mast_turbulence_collection)
@@ -436,7 +444,7 @@ class TestVerticalProfileSubsectionMergedSummary:
         tmp_path: Path,
     ) -> None:
         with patch(
-            "cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer.merge_paragraphs",
+            "cleanmast.subdomains.assessment.shared.utils.subsection_renderer.merge_paragraphs",
             return_value=TypstParagraph(text="M01 M02 merged summary"),
         ) as mock_merge:
             subsection = VerticalProfileSubsection(atoms=multi_mast_vertical_profile_collection)
@@ -478,7 +486,7 @@ class TestWindFrequencySubsectionMergedSummary:
         tmp_path: Path,
     ) -> None:
         with patch(
-            "cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer.merge_paragraphs",
+            "cleanmast.subdomains.assessment.shared.utils.subsection_renderer.merge_paragraphs",
             create=True,
             return_value=TypstParagraph(text="M01 M02 merged summary"),
         ) as mock_merge:
@@ -502,7 +510,7 @@ class TestWindTemporalSubsectionMergedSummary:
         tmp_path: Path,
     ) -> None:
         with patch(
-            "cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer.merge_paragraphs",
+            "cleanmast.subdomains.assessment.shared.utils.subsection_renderer.merge_paragraphs",
             return_value=TypstParagraph(text="M01 M02 merged summary"),
         ) as mock_merge:
             subsection = WindTemporalSubsection(atoms=multi_mast_wind_temporal_collection)

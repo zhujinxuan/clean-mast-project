@@ -1,0 +1,13 @@
+id: frozen-model
+language: python
+severity: error
+message: Model dataclasses must use frozen=True
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**/model/**
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**/model.py
+rule:
+  pattern: "@dataclass"
+  kind: decorator
+  not:
+    has:
+      pattern: frozen=True

@@ -7,13 +7,13 @@ import pytest
 from cleanmast.subdomains.assessment.application.services.report_generation_service import (
     ReportGenerationService,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.fifty_year_max_wind_method1 import (
+from cleanmast.subdomains.assessment.subdomains.extreme_wind.entities.fifty_year_max_wind_method1_atom import (
     SingleMastFiftyYearMaxWindMethod1Atom,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.fifty_year_max_wind_section import (
+from cleanmast.subdomains.assessment.subdomains.extreme_wind.services.fifty_year_max_wind_section import (
     FiftyYearMaxWindSection,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
+from cleanmast.subdomains.assessment.shared.value_objects.single_mast.report_meta import (
     SingleMastMeta,
 )
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
@@ -75,7 +75,7 @@ class TestReportGenerationServiceFiftyYear:
             heights=[100.0, 120.0, 140.0, 160.0, 180.0],
             interpolated_heights=[120.0],
         )
-        input_data = service._create_analysis_input(time_series, meta)
+        input_data = service._create_analysis_input(time_series, meta, meta.air_density)
 
         result = service.generate_fifty_year_max_wind_section([(input_data, meta)])
 
@@ -93,8 +93,8 @@ class TestReportGenerationServiceFiftyYear:
         ts2, meta2 = self._create_test_data(
             "M02", heights=[160.0], interpolated_heights=[]
         )
-        input1 = service._create_analysis_input(ts1, meta1)
-        input2 = service._create_analysis_input(ts2, meta2)
+        input1 = service._create_analysis_input(ts1, meta1, meta1.air_density)
+        input2 = service._create_analysis_input(ts2, meta2, meta2.air_density)
 
         result = service.generate_fifty_year_max_wind_section([
             (input1, meta1),
@@ -120,7 +120,7 @@ class TestReportGenerationServiceFiftyYear:
             heights=[100.0, 120.0],
             interpolated_heights=[120.0],
         )
-        input_data = service._create_analysis_input(ts, meta)
+        input_data = service._create_analysis_input(ts, meta, meta.air_density)
 
         result = service.generate_fifty_year_max_wind_section([(input_data, meta)])
 

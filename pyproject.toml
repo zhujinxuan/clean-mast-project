@@ -19,6 +19,9 @@ members = [
     "packages/typst_ir"
 ]
 
+[project.scripts]
+lint-imports = "importlinter.cli:lint_imports_command"
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=8.0",
@@ -26,6 +29,7 @@ dev-dependencies = [
     "ruff>=0.1.0",
     "mypy>=1.8",
     "pyright>=1.1",
+    "import-linter>=2.11",
 ]
 
 # Shared tool configurations

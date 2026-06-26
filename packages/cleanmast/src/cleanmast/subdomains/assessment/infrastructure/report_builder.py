@@ -17,7 +17,7 @@ from typst_ir.enriched.serialize_docx import draft_docx
 from typst_ir.polish_docx import polish_docx
 
 from cleanmast.subdomains.assessment.domain.protocols.section import Section
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstDocument,
     TypstSection,
 )

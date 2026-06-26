@@ -5,8 +5,8 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstParagraph,
     TypstTable,
 )

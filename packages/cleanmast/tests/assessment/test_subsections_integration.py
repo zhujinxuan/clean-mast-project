@@ -18,81 +18,77 @@ from typing import Any
 
 import numpy as np
 import polars as pl
-import tomli_w
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
     SingleMastDailyPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_power_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_power_pattern_atom import (
     SingleMastDailyPowerPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_power import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_power_atom import (
     SingleMastMonthlyDailyPowerAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_wind import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_wind_atom import (
     SingleMastMonthlyDailyWindAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_pattern_atom import (
     SingleMastMonthlyPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_power_pattern_atom import (
     SingleMastMonthlyPowerPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
-    SingleMastWindTimeseriesAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
     SingleMastTurbulenceMultiHeightAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
+from cleanmast.subdomains.assessment.subdomains.weibull.entities.weibull_subgrid_atom import (
     SingleMastWeibullSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_distribution_subgrid import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_distribution_subgrid import (
     SingleMastWindDistributionSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_frequency_hours_atom import (
     SingleMastWindFrequencyHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_hours import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_power_hours_atom import (
     SingleMastWindPowerHoursAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_productive_range import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_productive_range_atom import (
     SingleMastWindProductiveRangeAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_atom import (
     SingleMastMonthlyWindFrequencyRoseAtom,
     SingleMastWindPowerRoseAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_grid_atom import (
     SingleMastMonthlyWindRoseGridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_power_grid import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_power_grid_atom import (
     SingleMastMonthlyWindPowerRoseGridAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.entities.wind_shear_matrix_atom import (
     SingleMastWindShearExponentAtom,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.services.turbulence_section import (
     TurbulenceSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.vertical_profile_subsection import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.services.vertical_profile_section import (
     VerticalProfileSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.weibull_subsection import (
+from cleanmast.subdomains.assessment.subdomains.weibull.services.weibull_section import (
     WeibullSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_frequency_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.services.wind_frequency_section import (
     WindFrequencySubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.services.wind_rose_section import (
     WindRoseSection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.services.wind_temporal_section import (
     WindTemporalSubsection,
 )
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstDocument,
     TypstFigure,
     TypstHeading,
@@ -104,15 +100,23 @@ from cleanmast.subdomains.assessment.domain.value_objects import (
     AtomCollection,
     SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.value_objects.schemas import (
     VerticalProfileSchema,
     WindShearSchema,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
     TemporalPatternSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.value_objects.schemas import (
     TurbulenceSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.weibull.value_objects.schemas import (
     WeibullSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.value_objects.schemas import (
     WindFrequencySchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.value_objects.schemas import (
     WindRoseSchema,
 )
 from cleanmast.subdomains.assessment.infrastructure import AssessmentReportBuilder
@@ -322,9 +326,6 @@ def _make_temporal_collection(n: int) -> AtomCollection:
         meta = SingleMastMeta(mast_name=f"M{i + 1:02d}")
         df = _sample_temporal_df()
         d[f"M{i + 1:02d}"] = [
-            SingleMastWindTimeseriesAtom.create(
-                schema=TemporalPatternSchema, df=df, meta=meta
-            ),
             SingleMastDailyPatternAtom.create(
                 schema=TemporalPatternSchema, df=df, meta=meta
             ),
@@ -758,65 +759,8 @@ class TestVerticalProfileMultiMastIntegration:
 # =============================================================================
 
 
-def _create_three_mast_toml_config(tmp_path: Path) -> Path:
-    masts = [
-        {"name": f"M{i + 1}", "air_density": 1.225, "input": {"data": f"./M{i + 1}.parquet"}}
-        for i in range(3)
-    ]
-    config = {
-        "document": {
-            "section": [
-                {
-                    "title": "风资源分析",
-                    "subsections": [
-                        {
-                            "type": "timeseries",
-                            "title": "测风年风资源分析",
-                            "masts": masts,
-                            "subsections": [
-                                {"type": "wind_frequency"},
-                                {"type": "temporal"},
-                                {"type": "weibull"},
-                                {"type": "vertical_profile"},
-                                {"type": "turbulence"},
-                                {"type": "wind_rose"},
-                            ],
-                        }
-                    ],
-                }
-            ]
-        }
-    }
-    path = tmp_path / "rep-ts-report.toml"
-    with open(path, "wb") as f:
-        tomli_w.dump(config, f)
-    return path
-
-
 class TestFullPipelineConfigToDocument:
     """Full pipeline test from TOML config to rendered Typst document."""
-
-    def test_three_mast_toml_config_parses_correctly(self, tmp_path: Path) -> None:
-        from cleanmast.subdomains.assessment.domain.value_objects.rep_ts_report_config import (
-            RepTsReportConfig,
-        )
-
-        config_path = _create_three_mast_toml_config(tmp_path)
-        config = RepTsReportConfig.from_toml(config_path)
-
-        assert len(config.document.sections) == 1
-        section = config.document.sections[0]
-        assert section.title == "风资源分析"
-        assert section.subsections is not None
-        assert len(section.subsections) == 1
-        ts_subsection = section.subsections[0]
-        assert ts_subsection.type == "timeseries"
-        assert ts_subsection.masts is not None
-        assert len(ts_subsection.masts) == 3
-        mast_names = [m.name for m in ts_subsection.masts]
-        assert mast_names == ["M1", "M2", "M3"]
-        assert ts_subsection.subsections is not None
-        assert len(ts_subsection.subsections) == 6
 
     def test_three_mast_builder_produces_typst_document(self, tmp_path: Path) -> None:
         output_dir = tmp_path / "typst_output"

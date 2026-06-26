@@ -1,0 +1,11 @@
+id: no-str-path
+language: python
+severity: error
+message: Do not convert Path variables to str; use pathlib.Path directly
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**
+rule:
+  pattern: str($PATH)
+constraints:
+  PATH:
+    kind: identifier

@@ -5,10 +5,10 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.services.wind_rose_section import (
     WindRoseSection,
 )
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstDocument,
     TypstFigure,
     TypstParagraph,

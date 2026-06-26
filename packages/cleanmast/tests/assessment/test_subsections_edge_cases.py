@@ -15,47 +15,49 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_pattern import (
-    SingleMastDailyPatternAtom,
+from cleanmast.subdomains.assessment.domain.value_objects import (
+    AtomCollection,
+    SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_intensity import (
-    SingleMastTurbulenceIntensityAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
-    SingleMastTurbulenceSummaryAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
-    SingleMastWindShearExponentAtom,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
-    TurbulenceSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.vertical_profile_subsection import (
-    VerticalProfileSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.weibull_subsection import (
-    WeibullSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
-    WindTemporalSubsection,
-)
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstFigure,
     TypstHeading,
     TypstParagraph,
     TypstTable,
 )
-from cleanmast.subdomains.assessment.domain.value_objects import (
-    AtomCollection,
-    SingleMastMeta,
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
+    SingleMastTurbulenceMultiHeightAtom,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_summary_atom import (
+    SingleMastTurbulenceSummaryAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.services.turbulence_section import (
+    TurbulenceSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.value_objects.schemas import (
+    TurbulenceSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.entities.wind_shear_matrix_atom import (
+    SingleMastWindShearExponentAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.services.vertical_profile_section import (
+    VerticalProfileSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.value_objects.schemas import (
     VerticalProfileSchema,
     WindShearSchema,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
+from cleanmast.subdomains.assessment.subdomains.weibull.services.weibull_section import (
+    WeibullSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
+    SingleMastDailyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.services.wind_temporal_section import (
+    WindTemporalSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
     TemporalPatternSchema,
-    TurbulenceSchema,
 )
 
 # =============================================================================
@@ -85,7 +87,7 @@ class TestMissingAtomTypeGracefulSkip:
 
     def test_turbulence_subsection_skips_missing_multi_height_atom(self, tmp_path: Path) -> None:
         """M02 lacks SingleMastTurbulenceMultiHeightAtom; renderer should output M01+M03 only."""
-        from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
+        from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
             SingleMastTurbulenceMultiHeightAtom,
         )
 
@@ -335,10 +337,10 @@ class TestImageFilenameUniqueness:
         meta1 = SingleMastMeta(mast_name="M01")
         meta2 = SingleMastMeta(mast_name="M02")
 
-        atom1 = SingleMastTurbulenceIntensityAtom.create(
+        atom1 = SingleMastTurbulenceMultiHeightAtom.create(
             schema=TurbulenceSchema, df=df, meta=meta1
         )
-        atom2 = SingleMastTurbulenceIntensityAtom.create(
+        atom2 = SingleMastTurbulenceMultiHeightAtom.create(
             schema=TurbulenceSchema, df=df, meta=meta2
         )
 
@@ -355,7 +357,7 @@ class TestImageFilenameUniqueness:
 
     def test_subsection_render_no_collision(self, tmp_path: Path) -> None:
         """Via TurbulenceSubsection.render_ir(), 2 masts produce distinct figure nodes."""
-        from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
+        from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
             SingleMastTurbulenceMultiHeightAtom,
         )
 
@@ -414,14 +416,14 @@ class TestAtomCollectionDuplicateRejection:
             "count": [42, 42, 42],
         })
 
-        atom1 = SingleMastTurbulenceIntensityAtom.create(
+        atom1 = SingleMastTurbulenceMultiHeightAtom.create(
             schema=TurbulenceSchema, df=df, meta=meta
         )
-        atom2 = SingleMastTurbulenceIntensityAtom.create(
+        atom2 = SingleMastTurbulenceMultiHeightAtom.create(
             schema=TurbulenceSchema, df=df, meta=meta
         )
 
         collection = AtomCollection.from_dict({"M01": [atom1, atom2]})
 
         assert len(collection.get_by_mast("M01")) == 2
-        assert collection.get("M01", SingleMastTurbulenceIntensityAtom) is atom1
+        assert collection.get("M01", SingleMastTurbulenceMultiHeightAtom) is atom1

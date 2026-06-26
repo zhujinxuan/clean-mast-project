@@ -11,22 +11,22 @@ import pytest
 from cleanmast.subdomains.assessment.application.services.report_generation_service import (
     ReportGenerationService,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.services.turbulence_section import (
     TurbulenceSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.vertical_profile_subsection import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.services.vertical_profile_section import (
     VerticalProfileSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.weibull_subsection import (
+from cleanmast.subdomains.assessment.subdomains.weibull.services.weibull_section import (
     WeibullSubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_frequency_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.services.wind_frequency_section import (
     WindFrequencySubsection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
+from cleanmast.subdomains.assessment.subdomains.wind_rose.services.wind_rose_section import (
     WindRoseSection,
 )
-from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.services.wind_temporal_section import (
     WindTemporalSubsection,
 )
 from cleanmast.subdomains.assessment.domain.value_objects import SingleMastMeta

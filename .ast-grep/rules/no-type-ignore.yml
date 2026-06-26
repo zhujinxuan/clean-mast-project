@@ -1,0 +1,9 @@
+id: no-type-ignore
+language: python
+severity: error
+message: "Do not use type: ignore comments in reporting domain"
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**
+rule:
+  regex: "type:\\s*ignore"
+  kind: comment

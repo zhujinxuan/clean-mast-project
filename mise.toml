@@ -1,0 +1,4 @@
+[tools]
+opencode = "latest"
+pandoc = "latest"
+uv = "latest"

@@ -9,27 +9,25 @@ files based on fill-heights data from both reconstruct-meso and
 representative-year sources.
 """
 
+import logging
 from pathlib import Path
 
-from cleanmast.subdomains.assessment.domain.value_objects.air_density import (
-    calculate_air_density,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import (
-    DatasetConfig,
-    MastRef,
-    MesoRef,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
-    FlatReportConfig,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.flat_subsection_config import (
-    FlatSubsectionConfig,
-)
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries_parquet,
 )
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
+)
+from cleanmast.subdomains.reporting.compute.air_density import (
+    STANDARD_AIR_DENSITY,
+    calculate_air_density,
+)
+from cleanmast.subdomains.reporting.model.report_config import (
+    DatasetConfig,
+    FlatReportConfig,
+    FlatSubsectionConfig,
+    MastRef,
+    MesoRef,
 )
 
 _MESO_ANALYSIS_SUBSECTION_TYPES = [
@@ -64,6 +62,7 @@ def _build_dataset_for_timeseries(
     fill_heights_filename: str,
     report_data_subdir: str,
     dataset_name: str,
+    fallback_air_density: float | None = None,
 ) -> DatasetConfig | None:
     """Build a dataset configuration from a fill-heights TOML file.
 
@@ -116,11 +115,19 @@ def _build_dataset_for_timeseries(
             time_series_data = load_timeseries_parquet(source, str(project_path))
             air_density = calculate_air_density(time_series_data)
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning(
-                f"Failed to calculate air density from timeseries, using default 1.225: {e}"
-            )
-            air_density = 1.225
+            logger = logging.getLogger(__name__)
+            if fallback_air_density is not None:
+                logger.warning(
+                    f"Cannot calculate air density for mast {mast_name}: {e}. "
+                    f"Using fallback {fallback_air_density}"
+                )
+                air_density = fallback_air_density
+            else:
+                raise ValueError(
+                    f"Cannot calculate air density for mast '{mast_name}'. "
+                    f"Provide --air-density in config or pass a fallback value. "
+                    f"Error: {e}"
+                ) from e
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
 
@@ -233,12 +240,14 @@ def recommend_report(project_dir: str) -> Path:
         "fill-heights-reconstruct-meso.toml",
         "reconstruct-meso-fill-heights",
         "reconstruct_meso",
+        fallback_air_density=STANDARD_AIR_DENSITY,
     )
     repyear_dataset = _build_dataset_for_timeseries(
         project_path,
         "fill-heights-representative-year.toml",
         "representative-year-fill-heights",
         "repyear",
+        fallback_air_density=STANDARD_AIR_DENSITY,
     )
 
     if repyear_dataset:
@@ -278,7 +287,7 @@ def recommend_report(project_dir: str) -> Path:
                             ))
 
                 if meso_refs:
-                    repyear_dataset.mesos = meso_refs
+                    repyear_dataset = repyear_dataset.model_copy(update={"mesos": meso_refs})
 
     if not reconstruct_meso_dataset and not repyear_dataset:
         raise ValueError(

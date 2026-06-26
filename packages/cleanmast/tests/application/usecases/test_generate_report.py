@@ -10,17 +10,13 @@ from cleanmast.application.usecases.generate_report import (
     _handle_fifty_year_max_wind_flat,
     generate_report,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.dataset_config import (
+from cleanmast.subdomains.reporting.model.report_config import (
     DatasetConfig,
+    FlatReportConfig,
+    FlatSubsectionConfig,
     MastRef,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
-    FlatReportConfig,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.flat_subsection_config import (
-    FlatSubsectionConfig,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
+from cleanmast.subdomains.reporting.model.report_meta import (
     SingleMastMeta,
 )
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
@@ -1180,7 +1176,7 @@ class TestFiftyYearFlatDispatch:
     """Tests for _handle_fifty_year_max_wind_flat subsection extraction."""
 
     def _make_node(self, children_types=None, datasets=None):
-        from cleanmast.subdomains.assessment.domain.value_objects.tree_builder import (
+        from cleanmast.subdomains.reporting.assemble.tree_builder import (
             SectionNode,
         )
         children = []

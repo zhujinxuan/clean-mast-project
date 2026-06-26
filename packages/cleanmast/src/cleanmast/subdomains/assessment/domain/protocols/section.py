@@ -7,8 +7,8 @@ Compliance: Subdomain layout ✓ | Protocol Definition ✓
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from cleanmast.subdomains.assessment.domain.types import TypstSection
-from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_collection import (
+from cleanmast.subdomains.assessment.shared.ir_types import TypstSection
+from cleanmast.subdomains.assessment.shared.collections.atom_collection import (
     AtomCollection,
 )
 

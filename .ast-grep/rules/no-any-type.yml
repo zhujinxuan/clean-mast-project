@@ -1,0 +1,8 @@
+id: no-any-type
+language: python
+severity: error
+message: Do not use Any type annotations in reporting domain
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**
+rule:
+  pattern: "$NAME: Any"

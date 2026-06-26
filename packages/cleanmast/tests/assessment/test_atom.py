@@ -8,13 +8,13 @@ from typing import Literal, overload
 import dataframely as dy
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.report_atom import (
+from cleanmast.subdomains.assessment.shared.protocols.report_atom import (
     ReportAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_pattern_atom import (
     SingleMastMonthlyPatternAtom,
 )
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstFigure,
     TypstParagraph,
     TypstTable,
@@ -22,7 +22,7 @@ from cleanmast.subdomains.assessment.domain.types import (
 from cleanmast.subdomains.assessment.domain.value_objects import (
     SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
     TemporalPatternSchema,
 )
 from typing_extensions import override

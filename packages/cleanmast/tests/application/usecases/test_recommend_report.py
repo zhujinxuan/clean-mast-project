@@ -5,7 +5,7 @@ from cleanmast.application.usecases.recommend_report import (
     _build_dataset_for_timeseries,
     recommend_report,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
+from cleanmast.subdomains.reporting.model.report_config import (
     FlatReportConfig,
 )
 

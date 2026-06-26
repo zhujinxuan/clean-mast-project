@@ -12,33 +12,46 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from cleanmast.subdomains.assessment.application.services.report_generation_service import (
-    ReportGenerationService,
-)
-from cleanmast.subdomains.assessment.domain.types import TypstHeading, TypstSection
-from cleanmast.subdomains.assessment.domain.value_objects.analysis_input import (
-    SingleMastAnalysisInput,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.collections.atom_collection import (
-    AtomCollection,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.flat_report_config import (
-    FlatReportConfig,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
-    SingleMastMeta,
-)
-from cleanmast.subdomains.assessment.domain.value_objects.tree_builder import SectionNode
-from cleanmast.subdomains.assessment.infrastructure.report_builder import (
-    AssessmentReportBuilder as ReportBuilder,
-)
-from cleanmast.subdomains.assessment.infrastructure.report_builder import (
-    BuildResult,
-)
+from typst_ir import TypstHeading, TypstSection
+
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
+)
+from cleanmast.subdomains.reporting.api import ReportGenerationService
+from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
+from cleanmast.subdomains.reporting.model.analysis_input import (
+    SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.reporting.model.report_config import (
+    AtomCollection,
+    FlatReportConfig,
+)
+from cleanmast.subdomains.reporting.protocols.report_builder import BuildResult
+from cleanmast.subdomains.reporting.render.report_builder import (
+    ReportBuilderService as ReportBuilder,
+)
+
+_SubsectionDispatch = Callable[[list[SingleMastAnalysisInput]], Any]
+
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
+from cleanmast.subdomains.reporting.api import ReportGenerationService
+from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
+from cleanmast.subdomains.reporting.model.analysis_input import (
+    SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.reporting.model.report_config import (
+    AtomCollection,
+    FlatReportConfig,
+)
+from cleanmast.subdomains.reporting.protocols.report_builder import BuildResult
+from cleanmast.subdomains.reporting.render.report_builder import (
+    ReportBuilderService as ReportBuilder,
 )
 
 
@@ -67,11 +80,11 @@ class LoadedDataset:
 
     Attributes:
         name: Dataset identifier
-        mast_data: List of per-mast tuples containing analysis input,
-            metadata, and time series data
+        mast_data: List of per-mast analysis inputs (each carries its own
+            time series data via ``SingleMastAnalysisInput.time_series``)
     """
     name: str
-    mast_data: list[tuple[SingleMastAnalysisInput, SingleMastMeta, TimeSeriesData]]
+    mast_data: list[SingleMastAnalysisInput]
 
 
 def generate_report(config_path: str) -> BuildResult:
@@ -142,8 +155,8 @@ def load_datasets(
     """
     loaded: dict[str, LoadedDataset] = {}
     for ds in config.datasets:
-        mast_data: list[tuple[SingleMastAnalysisInput, SingleMastMeta, TimeSeriesData]] = []
-        for mast_ref in ds.masts:
+        mast_data: list[SingleMastAnalysisInput] = []
+        for mast_ref in ds.masts or []:
             resolved = base_dir / mast_ref.input.data
             if not resolved.exists():
                 raise FileNotFoundError(
@@ -151,15 +164,10 @@ def load_datasets(
                 )
             source = TimeSeriesSource(data=str(resolved))
             timeseries = load_timeseries(source, ".")
-            meta = SingleMastMeta(
-                mast_name=mast_ref.name,
-                air_density=mast_ref.air_density,
-                width="80%",
-            )
             input_data = service._create_analysis_input(
-                timeseries, meta, mast_ref.air_density
+                timeseries, mast_ref.name, mast_ref.air_density
             )
-            mast_data.append((input_data, meta, timeseries))
+            mast_data.append(input_data)
         loaded[ds.name] = LoadedDataset(
             name=ds.name,
             mast_data=mast_data,
@@ -206,16 +214,16 @@ def _generate_from_flat_config(
     """
     all_sections: list = []
 
-    subsection_method_map: dict[str, tuple[bool, Callable]] = {
-        "air_density": (True, service.generate_air_density_section),
-        "representative_year_calibration": (True, service.generate_representative_year_calibration_section),
-        "wind_rose": (False, service.generate_wind_rose_section),
-        "vertical_profile": (True, service.generate_vertical_profile_section),
-        "wind_frequency": (True, service.generate_wind_frequency_section),
-        "weibull": (True, service.generate_weibull_section),
-        "turbulence": (True, service.generate_turbulence_section),
-        "temporal": (True, service.generate_temporal_section),
-        "fifty_year_max_wind": (True, service.generate_fifty_year_max_wind_section),
+    subsection_method_map: dict[str, _SubsectionDispatch] = {
+        "air_density": service.generate_air_density_section,
+        "representative_year_calibration": service.generate_representative_year_calibration_section,
+        "wind_rose": service.generate_wind_rose_section,
+        "vertical_profile": service.generate_vertical_profile_section,
+        "wind_frequency": service.generate_wind_frequency_section,
+        "weibull": service.generate_weibull_section,
+        "turbulence": service.generate_turbulence_section,
+        "temporal": service.generate_temporal_section,
+        "fifty_year_max_wind": service.generate_fifty_year_max_wind_section,
     }
 
     def _walk_node(node: SectionNode, depth: int = 0) -> HeadingSection:
@@ -246,12 +254,14 @@ def _generate_from_flat_config(
             )
 
         if node.type == "fifty_year_max_wind":
-            result = _handle_fifty_year_max_wind_flat(
+            section = _handle_fifty_year_max_wind_flat(
                 node, service, loaded_datasets,
             )
+            if section is not None:
+                return section  # ExtremeWindSection already renders with heading
             return HeadingSection(
                 title=node.title or "Placeholder",
-                subsections=result,
+                subsections=[],
             )
 
         return HeadingSection(
@@ -273,7 +283,7 @@ def _generate_from_flat_config(
 def _process_flat_timeseries_node(
     node: SectionNode,
     service: ReportGenerationService,
-    subsection_method_map: dict[str, tuple[bool, Callable]],
+    subsection_method_map: dict[str, _SubsectionDispatch],
     loaded_datasets: dict[str, LoadedDataset],
 ) -> list[Any]:
     """Process a timeseries container node and return leaf sections.
@@ -284,24 +294,20 @@ def _process_flat_timeseries_node(
     if not node.children:
         return []
 
-    ts_cache: dict[frozenset[str], list[tuple[TimeSeriesData, SingleMastMeta]]] = {}
-    input_cache: dict[frozenset[str], list[tuple[SingleMastAnalysisInput, SingleMastMeta]]] = {}
+    input_cache: dict[frozenset[str], list[SingleMastAnalysisInput]] = {}
     wd_cache: dict[frozenset[str], bool] = {}
 
     def _aggregate(key: frozenset[str]) -> None:
-        ts_items: list[tuple[TimeSeriesData, SingleMastMeta]] = []
-        input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
+        input_items: list[SingleMastAnalysisInput] = []
         any_has_wd = False
         for ds_name in key:
             loaded = loaded_datasets.get(ds_name)
             if loaded is None:
                 continue
-            for input_data, meta, ts in loaded.mast_data:
-                ts_items.append((ts, meta))
-                input_items.append((input_data, meta))
-                if _has_wind_direction_sensors(ts):
+            for input_data in loaded.mast_data:
+                input_items.append(input_data)
+                if _has_wind_direction_sensors(input_data.time_series):
                     any_has_wd = True
-        ts_cache[key] = ts_items
         input_cache[key] = input_items
         wd_cache[key] = any_has_wd
 
@@ -313,10 +319,9 @@ def _process_flat_timeseries_node(
             continue
 
         key = frozenset(ds_names)
-        if key not in ts_cache:
+        if key not in input_cache:
             _aggregate(key)
 
-        ts_items = ts_cache[key]
         input_items = input_cache[key]
         any_has_wd_sensors = wd_cache[key]
 
@@ -330,12 +335,8 @@ def _process_flat_timeseries_node(
             leaf_sections.append(HeadingSection(title="Placeholder"))
             continue
 
-        requires_input_data, method = subsection_method_map[subsection_type]
-
-        if requires_input_data:
-            section_result = method(input_items)
-        else:
-            section_result = method(ts_items)
+        method = subsection_method_map[subsection_type]
+        section_result = method(input_items)
 
         if section_result is not None:
             leaf_sections.append(section_result)
@@ -347,65 +348,13 @@ def _handle_fifty_year_max_wind_flat(
     node: SectionNode,
     service: ReportGenerationService,
     loaded_datasets: dict[str, LoadedDataset],
-) -> list[Any]:
-    """Handle fifty-year max wind section from flat config tree.
-
-    When the node has children, caches ``generate_fifty_year_max_wind_section``
-    results per unique dataset combination.  When there are no children the
-    service is called once with the parent's datasets (backward compatibility).
-    """
-    type_to_field = {
-        "iec_standards": "iec_standards",
-        "fifty_year_method1": "method1",
-        "fifty_year_method2": "method2",
-        "fifty_year_method3": "method3",
-        "fifty_year_summary": "summary",
-    }
-
-    if not node.children:
-        # No leaf children — call service once with parent datasets
-        fifty_input_items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
-        for ds_name in node.datasets or []:
-            loaded = loaded_datasets.get(ds_name)
-            if loaded is not None:
-                for input_data, meta, _ in loaded.mast_data:
-                    fifty_input_items.append((input_data, meta))
-        if fifty_input_items:
-            service.generate_fifty_year_max_wind_section(fifty_input_items)
-        return []
-
-    fifty_cache: dict[frozenset[str], Any] = {}
-
-    def _call_fifty_year(key: frozenset[str]) -> Any:
-        items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]] = []
-        for ds_name in key:
-            loaded = loaded_datasets.get(ds_name)
-            if loaded is not None:
-                for input_data, meta, _ in loaded.mast_data:
-                    items.append((input_data, meta))
-        if not items:
-            return None
-        return service.generate_fifty_year_max_wind_section(items)
-
-    subsections: list[Any] = []
-    for child in node.children:
-        ds_names = child.datasets if child.datasets is not None else (node.datasets or [])
-        if not ds_names:
-            subsections.append(HeadingSection(title="Placeholder"))
-            continue
-
-        key = frozenset(ds_names)
-        if key not in fifty_cache:
-            fifty_cache[key] = _call_fifty_year(key)
-
-        result = fifty_cache[key]
-        if result is None:
-            continue
-
-        field_name = type_to_field.get(child.type)
-        if field_name:
-            subsections.append(getattr(result, field_name))
-        else:
-            subsections.append(HeadingSection(title="Placeholder"))
-
-    return subsections
+):
+    """Handle fifty-year max wind section — returns ExtremeWindSection directly."""
+    items: list[SingleMastAnalysisInput] = []
+    for ds_name in node.datasets or []:
+        loaded = loaded_datasets.get(ds_name)
+        if loaded is not None:
+            items.extend(loaded.mast_data)
+    if not items:
+        return None
+    return service.generate_fifty_year_max_wind_section(items)

@@ -6,72 +6,70 @@ from typing import Any
 
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_pattern import (
-    SingleMastDailyPatternAtom,
+from cleanmast.subdomains.assessment.shared.value_objects.single_mast.report_meta import (
+    SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_power_pattern import (
-    SingleMastDailyPowerPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_power import (
-    SingleMastMonthlyDailyPowerAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_wind import (
-    SingleMastMonthlyDailyWindAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern import (
-    SingleMastMonthlyPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
-    SingleMastMonthlyPowerPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
-    SingleMastWindTimeseriesAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_intensity import (
-    SingleMastTurbulenceIntensityAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_sector import (
-    SingleMastTurbulenceSectorAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
-    SingleMastWeibullSubgridAtom,
+from cleanmast.subdomains.assessment.subdomains.turbulence.value_objects.schemas import (
+    TurbulenceSchema,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
-    SingleMastWindFrequencyHoursAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_power_hours import (
-    SingleMastWindPowerHoursAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_productive_range import (
-    SingleMastWindProductiveRangeAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
-    SingleMastMonthlyWindFrequencyRoseAtom,
-    SingleMastWindPowerRoseAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose_grid import (
-    SingleMastMonthlyWindRoseGridAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.entities.wind_shear_matrix_atom import (
     SingleMastWindShearExponentAtom,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.schemas import (
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.value_objects.schemas import (
     VerticalProfileSchema,
     WindShearSchema,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.report_meta import (
-    SingleMastMeta,
+from cleanmast.subdomains.assessment.subdomains.weibull.entities.weibull_subgrid_atom import (
+    SingleMastWeibullSubgridAtom,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
-    TemporalPatternSchema,
-    TurbulenceSchema,
-    TurbulenceSectorSchema,
+from cleanmast.subdomains.assessment.subdomains.weibull.value_objects.schemas import (
     WeibullSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_frequency_hours_atom import (
+    SingleMastWindFrequencyHoursAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_power_hours_atom import (
+    SingleMastWindPowerHoursAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_productive_range_atom import (
+    SingleMastWindProductiveRangeAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.value_objects.schemas import (
     WindFrequencySchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_atom import (
+    SingleMastMonthlyWindFrequencyRoseAtom,
+    SingleMastWindPowerRoseAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_grid_atom import (
+    SingleMastMonthlyWindRoseGridAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.value_objects.schemas import (
     WindRoseSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
+    SingleMastDailyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_power_pattern_atom import (
+    SingleMastDailyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_power_atom import (
+    SingleMastMonthlyDailyPowerAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_wind_atom import (
+    SingleMastMonthlyDailyWindAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_pattern_atom import (
+    SingleMastMonthlyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_power_pattern_atom import (
+    SingleMastMonthlyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
+    TemporalPatternSchema,
 )
 
 
@@ -217,65 +215,6 @@ def monthly_wind_power_atom(
     return SingleMastMonthlyPowerPatternAtom.create(
         schema=TemporalPatternSchema,
         df=sample_monthly_wind_power_df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def turbulence_intensity_atom(
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastTurbulenceIntensityAtom for testing."""
-    df = pl.DataFrame({
-        "wind_speed_bin": [3, 5, 7, 9, 11, 13],
-        "height": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0],
-        "interpolation_marker": [None, None, None, None, None, None],
-        "mean_ti": [0.18, 0.15, 0.12, 0.10, 0.09, 0.08],
-        "std_ti": [0.03, 0.02, 0.02, 0.015, 0.01, 0.01],
-        "representative_ti": [0.218, 0.176, 0.146, 0.119, 0.103, 0.093],
-        "iec_category": ["B", "B", "A", "A", "A", "A"],
-        "count": [42, 42, 42, 42, 42, 42],
-    })
-    return SingleMastTurbulenceIntensityAtom.create(
-        schema=TurbulenceSchema,
-        df=df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
-def turbulence_sector_atom(
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastTurbulenceSectorAtom for testing."""
-    sectors = list(range(16))
-    sector_names = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-                   "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-    
-    data: dict[str, list[Any]] = {
-        "sector": [],
-        "sector_name": [],
-        "height": [],
-        "interpolation_marker": [],
-        "mean_ti": [],
-        "representative_ti": [],
-        "iec_category": [],
-    }
-    
-    for height in [80.0, 120.0]:
-        marker = "外推" if height > 100 else ""
-        for sector, name in zip(sectors, sector_names):
-            data["sector"].append(sector)
-            data["sector_name"].append(name)
-            data["height"].append(height)
-            data["interpolation_marker"].append(marker if marker else None)
-            data["mean_ti"].append(0.15 if sector == 0 else 0.12)
-            data["representative_ti"].append(0.18 if sector == 0 else 0.15)
-            data["iec_category"].append("B")
-    
-    return SingleMastTurbulenceSectorAtom.create(
-        schema=TurbulenceSectorSchema,
-        df=pl.DataFrame(data),
         meta=sample_mast_meta,
     )
 
@@ -551,19 +490,6 @@ def monthly_daily_power_atom(
 
 
 @pytest.fixture
-def wind_timeseries_atom(
-    sample_temporal_pattern_df: pl.DataFrame,
-    sample_mast_meta: SingleMastMeta,
-) -> Any:
-    """Create a SingleMastWindTimeseriesAtom for testing."""
-    return SingleMastWindTimeseriesAtom.create(
-        schema=TemporalPatternSchema,
-        df=sample_temporal_pattern_df,
-        meta=sample_mast_meta,
-    )
-
-
-@pytest.fixture
 def wind_power_rose_atom_null_power(
     sample_wind_rose_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
@@ -587,8 +513,6 @@ def all_atoms(
     wind_power_rose_atom: Any,
     monthly_wind_atom: Any,
     monthly_wind_power_atom: Any,
-    turbulence_intensity_atom: Any,
-    turbulence_sector_atom: Any,
     turbulence_summary_atom: Any,
     weibull_subgrid_atom: Any,
     wind_shear_matrix_atom: Any,
@@ -607,8 +531,6 @@ def all_atoms(
         wind_power_rose_atom,
         monthly_wind_atom,
         monthly_wind_power_atom,
-        turbulence_intensity_atom,
-        turbulence_sector_atom,
         turbulence_summary_atom,
         weibull_subgrid_atom,
         wind_shear_matrix_atom,

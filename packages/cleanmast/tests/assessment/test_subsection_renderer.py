@@ -11,11 +11,11 @@ TDD coverage:
 from pathlib import Path
 
 import polars as pl
-from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.services.utils.subsection_renderer import (
+from cleanmast.subdomains.assessment.shared.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.shared.utils.subsection_renderer import (
     render_subsection_content,
 )
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstFigure,
     TypstParagraph,
     TypstTable,

@@ -2,7 +2,7 @@
 
 # CleanMast Project Guide for Claude Code
 
-CleanMast is a comprehensive Julia toolkit for processing wind energy meteorological tower data. This guide provides Claude Code agents with essential context, coding standards, and domain expertise for working effectively with this codebase.
+CleanMast is a comprehensive toolkit for processing wind energy meteorological tower data. This guide provides Claude Code agents with essential context, coding standards, and domain expertise for working effectively with this codebase.
 
 ## Project Overview
 
@@ -40,6 +40,16 @@ CleanMastProject/
 ├── docs/                         # Documentation
 └── Project.toml                  # Package dependencies
 ```
+
+## Spec-Driven Architecture
+
+Each context and capability has a co-located `spec.md` with rules, anti-patterns, and guidance.
+
+| When | Load |
+|------|------|
+| New code in a context | Read `subdomains/spec.md` + the context's `spec.md` |
+| Cross-context integration | Read `shared/spec.md` |
+| Verification | Use `skill(name="spec-guardrails")` |
 
 ## Workspace Structure
 

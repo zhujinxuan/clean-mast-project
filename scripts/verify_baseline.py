@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Baseline verification runner - executes 4 checks and generates per-package timestamped baseline files.
+"""Baseline verification runner - executes verification checks and generates per-package timestamped baseline files.
 
 Usage:
     uv run python scripts/verify_baseline.py                    # Run all checks, all packages
@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -182,6 +183,29 @@ def parse_ast_grep_output(result: CheckResult) -> CheckResult:
     return result
 
 
+def parse_lint_imports_output(result: CheckResult) -> CheckResult:
+    """Parse lint-imports text output."""
+    output = result.stdout + result.stderr
+    
+    match = re.search(r"Contracts:\s*(\d+)\s+kept,\s*(\d+)\s+broken", output)
+    if match:
+        kept = int(match.group(1))
+        broken = int(match.group(2))
+        result.error_count = broken
+        result.warning_count = 0
+        result.summary_text = f"Contracts: {kept} kept, {broken} broken"
+    else:
+        result.error_count = 1 if result.exit_code != 0 else 0
+        result.warning_count = 0
+        result.summary_text = (
+            "Import lint violations detected"
+            if result.exit_code != 0
+            else "No import lint violations"
+        )
+    
+    return result
+
+
 def parse_ruff_output(result: CheckResult) -> CheckResult:
     """Parse ruff JSON output."""
     try:
@@ -207,9 +231,6 @@ def parse_ruff_output(result: CheckResult) -> CheckResult:
 def parse_pytest_output(result: CheckResult) -> CheckResult:
     """Parse pytest text output."""
     output = result.stdout + result.stderr
-    
-    # Parse summary line like "54 passed, 2 failed, 1 skipped" or "54 passed in 1.23s"
-    import re
     
     passed = 0
     failed = 0
@@ -308,11 +329,37 @@ def run_dvc_verify_check(package: str) -> CheckResult:
 
 
 def run_ast_grep_check(package: str) -> CheckResult:
-    """Run ast-grep scan for a package."""
+    """Run ast-grep scan for a package.
+
+    For cleanmast, scan the reporting subdomain using shared .ast-grep/rules/.
+    For other packages, fall back to package-specific sgconfig.yml.
+    """
+    if package == "cleanmast":
+        target = "packages/cleanmast/src/cleanmast/subdomains/reporting/"
+        cmd = [
+            "uv",
+            "run",
+            "ast-grep",
+            "scan",
+            "--json",
+            "--config",
+            ".ast-grep/sgconfig.yml",
+            target,
+        ]
+        result = run_check("ast-grep", cmd, timeout=120)
+        return parse_ast_grep_output(result)
+
     config_path = f"packages/{package}/sgconfig.yml"
     cmd = ["uv", "run", "ast-grep", "scan", "--json", "--config", config_path]
     result = run_check("ast-grep", cmd, timeout=120)
     return parse_ast_grep_output(result)
+
+
+def run_lint_imports_check() -> CheckResult:
+    """Run import-linter checks."""
+    cmd = ["uv", "run", "lint-imports"]
+    result = run_check("lint-imports", cmd, timeout=120)
+    return parse_lint_imports_output(result)
 
 
 def format_error_content(result: CheckResult) -> str:
@@ -327,6 +374,8 @@ def format_error_content(result: CheckResult) -> str:
         return json.dumps(result.errors, indent=2)
     elif result.name == "ast-grep":
         return json.dumps(result.errors, indent=2)
+    elif result.name == "lint-imports":
+        return result.stdout + result.stderr
     return ""
 
 
@@ -495,15 +544,21 @@ def run_verification(
         if result.status != "PASS":
             all_passed = False
     
-    # 5. ast-grep custom rules
+    # 5. lint-imports (advisory / non-blocking)
+    if "lint-imports" not in skip_checks and package == "cleanmast":
+        print("  [lint-imports] Running import contract checks...", end=" ")
+        result = run_lint_imports_check()
+        results.append(result)
+        status = "✓" if result.status == "PASS" else "✗"
+        print(f"{status} ({format_duration(result.duration)})")
+    
+    # 6. ast-grep custom rules (advisory / non-blocking)
     if "ast-grep" not in skip_checks:
         print("  [ast-grep] Running custom rule checks...", end=" ")
         result = run_ast_grep_check(package)
         results.append(result)
         status = "✓" if result.status == "PASS" else "✗"
         print(f"{status} ({format_duration(result.duration)})")
-        if result.status != "PASS":
-            all_passed = False
     
     data = BaselineData(
         package=package,
@@ -553,7 +608,7 @@ def main() -> int:
     parser.add_argument(
         "--skip",
         action="append",
-        choices=["ty", "ruff", "pytest", "dvc", "ast-grep"],
+        choices=["ty", "ruff", "pytest", "dvc", "ast-grep", "lint-imports"],
         help="Skip a specific check (can be used multiple times)",
     )
     

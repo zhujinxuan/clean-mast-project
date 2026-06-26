@@ -1,6 +1,6 @@
 """Tests for column_utils module."""
 
-from cleanmast.subdomains.assessment.domain.value_objects.report_meta import (
+from cleanmast.subdomains.assessment.shared.utils.air_density import (
     detect_interpolation_marker,
 )
 

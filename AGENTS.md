@@ -13,24 +13,15 @@ CleanMast is a comprehensive toolkit for processing wind energy meteorological t
 | Run verification baseline | `uv run python scripts/verify_baseline.py` |
 | Load Polars skill | `skill(name="polars")` |
 
-## Architecture Decision Records (ADRs)
+## Spec-Driven Architecture
 
-**Location:** `CleanMastProject/adr/` (Julia package)
+Each context and capability has a co-located `spec.md` with rules, anti-patterns, and guidance.
 
-This project uses ADRs as guardrails. Before working on code, identify and read relevant ADRs.
-
-| Task | ADRs to Load |
-|------|--------------|
-| New Julia code | stack-001, types-001, data-002 |
-| Data processing | data-001, data-002, domain-001 |
-| CLI commands | cli-001, structure-001, types-001 |
-| Configurations | config-001, types-001 |
-| Sensor data | domain-001, data-001 |
-| Tests | testing-001, data-002 |
-| Documentation | docs-001, domain-001 |
-
-**See:** `CleanMastProject/adr/README.md` for full ADR index.  
-**Note:** Future Python packages will have their own ADRs under `packages/{name}/adr/`.
+| When | Load |
+|------|------|
+| New code in a context | Read `subdomains/spec.md` + the context's `spec.md` |
+| Cross-context integration | Read `shared/spec.md` |
+| Verification | Use `skill(name="spec-guardrails")` |
 
 ## Workspace Structure
 
@@ -55,15 +46,15 @@ clean-mast-project/
 
 ## Critical Rules (Julia)
 
-| Rule | ADR |
-|------|-----|
-| Use Symbols for DataFrame columns | data-001 |
-| Never pattern-match column names | domain-001 |
-| Use sensor.columnName for column access | domain-001 |
-| Functional style over imperative loops | data-002 |
-| Type annotations on all functions | types-001 |
-| Use `@with_kw` for config structs | config-001 |
-| Use Comonicon `@cast` for CLI | cli-001 |
+| Rule | Rationale |
+|------|-----------|
+| Use Symbols for DataFrame columns | Required by the DataFrames.jl column API |
+| Never pattern-match column names | Use sensor metadata instead of fragile string matching |
+| Use sensor.columnName for column access | Column names may change during preprocessing |
+| Functional style over imperative loops | Prefer filter/map over imperative `push!` loops |
+| Type annotations on all functions | Catch errors early and document interfaces |
+| Use `@with_kw` for config structs | Standardize keyword-based construction |
+| Use Comonicon `@cast` for CLI | Consistent modular CLI structure |
 
 ## Verification Baseline
 

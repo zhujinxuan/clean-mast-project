@@ -1,0 +1,128 @@
+"""Fifty-year max wind schemas.
+
+ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-vo-001-value-objects
+Compliance: Subdomain layout ✓ | Value Object ✓ | Schema Validation ✓
+"""
+
+import dataframely as dy
+
+
+class FiftyYearMaxWindResultSchema(dy.Schema):
+    """五十年一遇最大风速结果表。
+
+    高度 | 外推/内插 | 风速类型 | 计算方法 | 最大风速 | 标准空气密度风速 | 观测最大值
+
+    Example:
+        height | interpolation_marker | wind_speed_type | method | max_wind_speed | standard_density_wind_speed | observed_max
+          70.0 | None                 | "sustained"     | "method1" | 25.5        | 26.2                        | 20.4
+    """
+
+    height = dy.Float64(nullable=False)
+    interpolation_marker = dy.String(nullable=True)
+    wind_speed_type = dy.String(nullable=False)
+    method = dy.String(nullable=False)
+    max_wind_speed = dy.Float64(nullable=False)
+    standard_density_wind_speed = dy.Float64(nullable=False)
+    observed_max = dy.Float64(nullable=True)
+
+
+class FiftyYearMaxWindMethod1DetailSchema(dy.Schema):
+    """五十年一遇最大风速方法一详细结果表。
+
+    高度 | 外推/内插 | 风速类型 | 计算方法 | 最大风速 | 标准空气密度风速 | 平均风速 | 空气密度
+
+    Example:
+        height | interpolation_marker | wind_speed_type | method | max_wind_speed | standard_density_wind_speed | average_wind_speed | air_density
+          70.0 | None                 | "sustained"     | "method1" | 25.5        | 26.2                        | 7.2                | 1.189
+    """
+
+    height = dy.Float64(nullable=False)
+    interpolation_marker = dy.String(nullable=True)
+    wind_speed_type = dy.String(nullable=False)
+    method = dy.String(nullable=False)
+    max_wind_speed = dy.Float64(nullable=False)
+    standard_density_wind_speed = dy.Float64(nullable=False)
+    average_wind_speed = dy.Float64(nullable=False)
+    air_density = dy.Float64(nullable=False)
+
+
+class GumbelParameterSchema(dy.Schema):
+    """耿贝尔分布参数表。
+
+    高度 | 风速类型 | 位置参数 mu | 尺度参数 beta | 样本数量 | 样本均值 | 样本标准差 | 样本数据
+
+    Example:
+        height | wind_speed_type | mu   | beta | sample_count | sample_mean | sample_std | sample_data
+          70.0 | "sustained"     | 20.5 | 3.2  | 25           | 22.3        | 4.1        | [20.1, 21.5]
+    """
+
+    height = dy.Float64(nullable=False)
+    wind_speed_type = dy.String(nullable=False)
+    mu = dy.Float64(nullable=False)
+    beta = dy.Float64(nullable=False)
+    sample_count = dy.Int64(nullable=False)
+    sample_mean = dy.Float64(nullable=False)
+    sample_std = dy.Float64(nullable=False)
+    sample_data = dy.List(dy.Float64(), nullable=True)
+
+
+class FiftyYearMaxWindComparisonSchema(dy.Schema):
+    """五十年一遇最大风速多方法对比表。
+
+    高度 | 方法1 | 方法2 | 方法3 | 保守估计 | 风速类型
+
+    Example:
+        height | method1 | method2 | method3 | conservative_max | wind_speed_type
+          70.0 | 25.5    | 26.1    | 25.8    | 26.1             | "sustained"
+    """
+
+    height = dy.Float64(nullable=False)
+    method1 = dy.Float64(nullable=False)
+    method2 = dy.Float64(nullable=False)
+    method3 = dy.Float64(nullable=False)
+    conservative_max = dy.Float64(nullable=False)
+    wind_speed_type = dy.String(nullable=False)
+
+
+class IECWindClassSchema(dy.Schema):
+    """IEC 风等级分类表。
+
+    风等级 | 高度 | 持续风速阈值 | 极端风速阈值 | 保守持续风速 | 保守极端风速
+
+    Example:
+        wind_class | height | sustained_threshold | extreme_threshold | conservative_sustained | conservative_extreme
+        "I"        | None   | 10.0                | 50.0              | None                   | None
+        "III"      | 100.0  | None                | None              | 35.0                   | 48.0
+    """
+
+    wind_class = dy.String(nullable=False)
+    height = dy.Float64(nullable=True)
+    sustained_threshold = dy.Float64(nullable=False)
+    extreme_threshold = dy.Float64(nullable=False)
+    conservative_sustained = dy.Float64(nullable=True)
+    conservative_extreme = dy.Float64(nullable=True)
+
+
+class IECStandardsSchema(dy.Schema):
+    """Schema for IEC wind class standards.
+
+    iec_class | vref | ve50
+
+    Example:
+        iec_class | vref | ve50
+        "I"       | 10.0 | 70.0
+    """
+
+    iec_class = dy.String(nullable=False)
+    vref = dy.Float64(nullable=False)
+    ve50 = dy.Float64(nullable=False)
+
+
+__all__ = [
+    "FiftyYearMaxWindResultSchema",
+    "FiftyYearMaxWindMethod1DetailSchema",
+    "GumbelParameterSchema",
+    "FiftyYearMaxWindComparisonSchema",
+    "IECWindClassSchema",
+    "IECStandardsSchema",
+]

@@ -63,3 +63,16 @@ class TimeSeriesReportSection:
 - Atoms render independently
 - Main section combines Typst content
 - Config controls subsection inclusion
+
+### Service.generate() Pattern (Phase 3 - Service Merge)
+Each subsection renamed from `XxxSubsection` to `XxxService` with:
+- `@classmethod generate(cls, items: list[tuple[SingleMastAnalysisInput, SingleMastMeta]])` 
+- Creates analyzer + builder inside the classmethod
+- Returns `cls(atoms=AtomCollection.from_dict(collection_dict))`
+- Backward compat alias: `XxxSubsection = XxxService` at module level
+
+Pilot: `WeibullService` in `subdomains/weibull/services/weibull_section.py`
+Implemented: `WindTemporalService` in `subdomains/wind_temporal/services/wind_temporal_section.py`
+
+Key: `builder.build()` takes `time_series_result=daily_result, daily_result=daily_result` — same object
+passed as both first and second parameter (orchestrator pattern preserved).

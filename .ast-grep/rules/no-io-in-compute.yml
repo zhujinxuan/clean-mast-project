@@ -1,0 +1,13 @@
+id: no-io-in-compute
+language: python
+severity: error
+message: IO operations are not allowed in compute modules
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**/compute/**
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**/compute.py
+rule:
+  any:
+    - pattern: open($$$ARGS)
+    - pattern: $PATH.read_text($$$ARGS)
+    - pattern: $PATH.write_text($$$ARGS)
+    - pattern: requests.get($$$ARGS)

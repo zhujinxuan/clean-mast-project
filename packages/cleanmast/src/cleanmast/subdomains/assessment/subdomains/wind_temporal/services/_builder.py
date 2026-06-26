@@ -1,0 +1,105 @@
+"""Wind temporal section builder.
+
+ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-s-001-services
+Compliance: Subdomain layout ✓ | Service ✓ | Builder Pattern ✓
+"""
+
+from cleanmast.subdomains.assessment.shared.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
+    SingleMastDailyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_power_pattern_atom import (
+    SingleMastDailyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_power_atom import (
+    SingleMastMonthlyDailyPowerAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_wind_atom import (
+    SingleMastMonthlyDailyWindAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_pattern_atom import (
+    SingleMastMonthlyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_power_pattern_atom import (
+    SingleMastMonthlyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.shared.value_objects.analysis_result import (
+    AnalysisResult,
+)
+from cleanmast.subdomains.assessment.shared.value_objects.single_mast.report_meta import (
+    SingleMastMeta,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
+    TemporalPatternSchema,
+)
+
+
+class WindTemporalSectionBuilder:
+    """Builds wind temporal section from analysis results into report atoms.
+
+    Bridges the analysis layer (WindTemporalAnalyzer) with the reporting layer,
+    converting analysis results into the 6 temporal pattern atoms.
+    """
+
+    def build(
+        self,
+        mast_name: str,
+        time_series_result: AnalysisResult[TemporalPatternSchema],
+        daily_result: AnalysisResult[TemporalPatternSchema],
+        monthly_result: AnalysisResult[TemporalPatternSchema],
+        monthly_daily_result: AnalysisResult[TemporalPatternSchema],
+    ) -> list[ReportAtom]:
+        """Build temporal section from analysis results to report atoms.
+
+        Args:
+            mast_name: Name of the mast being analyzed
+            time_series_result: Raw time series data
+            daily_result: 24-hour pattern data
+            monthly_result: 12-month pattern data
+            monthly_daily_result: Monthly-daily combined pattern data
+
+        Returns:
+            List of 6 report atoms in order:
+            1. SingleMastMonthlyPatternAtom
+            2. SingleMastMonthlyPowerPatternAtom
+            3. SingleMastDailyPatternAtom
+            4. SingleMastDailyPowerPatternAtom
+            5. SingleMastMonthlyDailyWindAtom
+            6. SingleMastMonthlyDailyPowerAtom
+        """
+        meta = SingleMastMeta(mast_name=mast_name)
+
+        atoms: list[ReportAtom] = [
+            SingleMastMonthlyPatternAtom.create(
+                schema=TemporalPatternSchema,
+                df=monthly_result.data,
+                meta=meta,
+            ),
+            SingleMastMonthlyPowerPatternAtom.create(
+                schema=TemporalPatternSchema,
+                df=monthly_result.data,
+                meta=meta,
+            ),
+            SingleMastDailyPatternAtom.create(
+                schema=TemporalPatternSchema,
+                df=daily_result.data,
+                meta=meta,
+            ),
+            SingleMastDailyPowerPatternAtom.create(
+                schema=TemporalPatternSchema,
+                df=daily_result.data,
+                meta=meta,
+            ),
+            SingleMastMonthlyDailyWindAtom.create(
+                schema=TemporalPatternSchema,
+                df=monthly_daily_result.data,
+                meta=meta,
+            ),
+            SingleMastMonthlyDailyPowerAtom.create(
+                schema=TemporalPatternSchema,
+                df=monthly_daily_result.data,
+                meta=meta,
+            ),
+        ]
+
+        return atoms

@@ -8,7 +8,7 @@ All nodes use frozen Pydantic BaseModels for safety, hashability, and validation
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal, Sequence, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -150,7 +150,7 @@ class TypstSection(BaseModel):
     typst_type: Literal["TypstSection"] = Field(default="TypstSection")
 
     heading: TypstHeading
-    body: list["TypstBodyBlock"]
+    body: Sequence["TypstBodyBlock"]
     subsections: list["TypstSection"]
 
     @model_validator(mode="after")

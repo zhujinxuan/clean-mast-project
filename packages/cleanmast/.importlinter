@@ -12,7 +12,6 @@ modules =
     cleanmast.subdomains.dataprocessing
     cleanmast.subdomains.assessment
     cleanmast.subdomains.configuration
-    cleanmast.subdomains.pipeline
 
 [importlinter:contract:domain-purity]
 name = Domain Layer Purity
@@ -40,7 +39,7 @@ layers =
 
 [importlinter:contract:repository-access]
 name = Repository Protocol Access
-type = allowed
+type = forbidden
 source_modules =
     cleanmast.subdomains.dataprocessing
     cleanmast.subdomains.assessment
@@ -62,12 +61,12 @@ allowed_modules =
 
 [importlinter:contract:no-circular-imports]
 name = No Circular Imports
-type = no_circular_imports
+type = independence
 modules = cleanmast
 
 [importlinter:contract:timeseriesdata-creation-gate]
 name = TimeSeriesData instantiation restricted to I/O and pipeline modules
-type = allowed
+type = forbidden
 source_modules = 
     cleanmast.subdomains.dataingestion.infrastructure.timeseries_io
     cleanmast.subdomains.dataingestion.repositories.parquet_repository
@@ -81,3 +80,18 @@ source_modules = cleanmast
 forbidden_modules =
     cleanmast.subdomains.*.entities
     cleanmast.subdomains.*.*.entities
+
+[importlinter:contract:nested-subdomain-isolation]
+name = Nested Bounded Context Isolation (assessment)
+type = independence
+modules =
+    cleanmast.subdomains.assessment.subdomains.air_density
+    cleanmast.subdomains.assessment.subdomains.extreme_wind
+    cleanmast.subdomains.assessment.subdomains.representative_year
+    cleanmast.subdomains.assessment.subdomains.turbulence
+    cleanmast.subdomains.assessment.subdomains.vertical_profile
+    cleanmast.subdomains.assessment.subdomains.weibull
+    cleanmast.subdomains.assessment.subdomains.wind_frequency
+    cleanmast.subdomains.assessment.subdomains.wind_rose
+    cleanmast.subdomains.assessment.subdomains.wind_temporal
+

@@ -1,0 +1,1 @@
+"""Services for $name subdomain."""

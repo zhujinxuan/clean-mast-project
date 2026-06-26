@@ -21,93 +21,90 @@ from typing import Any
 import numpy as np
 import polars as pl
 import pytest
-from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_pattern import (
-    SingleMastDailyPatternAtom,
+from cleanmast.subdomains.assessment.domain.value_objects import (
+    AtomCollection,
+    SingleMastMeta,
 )
-from cleanmast.subdomains.assessment.domain.entities.single_mast.daily_power_pattern import (
-    SingleMastDailyPowerPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_power import (
-    SingleMastMonthlyDailyPowerAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_daily_wind import (
-    SingleMastMonthlyDailyWindAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_pattern import (
-    SingleMastMonthlyPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.monthly_power_pattern import (
-    SingleMastMonthlyPowerPatternAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.timeseries import (
-    SingleMastWindTimeseriesAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_intensity import (
-    SingleMastTurbulenceIntensityAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_multi import (
-    SingleMastTurbulenceMultiHeightAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_per_height import (
-    SingleMastTurbulencePerHeightAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_sector import (
-    SingleMastTurbulenceSectorAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.turbulence_summary import (
-    SingleMastTurbulenceSummaryAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.weibull_subgrid import (
-    SingleMastWeibullSubgridAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_frequency_hours import (
-    SingleMastWindFrequencyHoursAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_rose import (
-    SingleMastMonthlyWindFrequencyRoseAtom,
-    SingleMastWindPowerRoseAtom,
-)
-from cleanmast.subdomains.assessment.domain.entities.single_mast.wind_shear_matrix import (
-    SingleMastWindShearExponentAtom,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.turbulence_subsection import (
-    TurbulenceSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.vertical_profile_subsection import (
-    VerticalProfileSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.weibull_subsection import (
-    WeibullSubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.wind_frequency_subsection import (
-    WindFrequencySubsection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.wind_rose import (
-    WindRoseSection,
-)
-from cleanmast.subdomains.assessment.domain.services.sections.wind_temporal_subsection import (
-    WindTemporalSubsection,
-)
-from cleanmast.subdomains.assessment.domain.types import (
+from cleanmast.subdomains.assessment.shared.ir_types import (
     TypstFigure,
     TypstHeading,
     TypstParagraph,
     TypstSection,
     TypstTable,
 )
-from cleanmast.subdomains.assessment.domain.value_objects import (
-    AtomCollection,
-    ReportSubsectionConfig,
-    SingleMastMeta,
+from cleanmast.subdomains.assessment.shared.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_multi_atom import (
+    SingleMastTurbulenceMultiHeightAtom,
 )
-from cleanmast.subdomains.assessment.domain.value_objects.single_mast.schemas import (
-    TemporalPatternSchema,
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_per_height_atom import (
+    SingleMastTurbulencePerHeightAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.entities.turbulence_summary_atom import (
+    SingleMastTurbulenceSummaryAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.services.turbulence_section import (
+    TurbulenceSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.turbulence.value_objects.schemas import (
     TurbulenceSchema,
-    TurbulenceSectorSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.entities.wind_shear_matrix_atom import (
+    SingleMastWindShearExponentAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.vertical_profile.services.vertical_profile_section import (
+    VerticalProfileSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.weibull.entities.weibull_subgrid_atom import (
+    SingleMastWeibullSubgridAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.weibull.services.weibull_section import (
+    WeibullSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.weibull.value_objects.schemas import (
     WeibullSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.entities.wind_frequency_hours_atom import (
+    SingleMastWindFrequencyHoursAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.services.wind_frequency_section import (
+    WindFrequencySubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_frequency.value_objects.schemas import (
     WindFrequencySchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.entities.wind_rose_atom import (
+    SingleMastMonthlyWindFrequencyRoseAtom,
+    SingleMastWindPowerRoseAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.services.wind_rose_section import (
+    WindRoseSection,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_rose.value_objects.schemas import (
     WindRoseSchema,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_pattern_atom import (
+    SingleMastDailyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.daily_power_pattern_atom import (
+    SingleMastDailyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_power_atom import (
+    SingleMastMonthlyDailyPowerAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_daily_wind_atom import (
+    SingleMastMonthlyDailyWindAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_pattern_atom import (
+    SingleMastMonthlyPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.entities.monthly_power_pattern_atom import (
+    SingleMastMonthlyPowerPatternAtom,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.services.wind_temporal_section import (
+    WindTemporalSubsection,
+)
+from cleanmast.subdomains.assessment.subdomains.wind_temporal.value_objects.schemas import (
+    TemporalPatternSchema,
 )
 
 # =============================================================================
@@ -280,32 +277,6 @@ def sample_turbulence_df() -> pl.DataFrame:
 
 
 @pytest.fixture
-def sample_turbulence_sector_df() -> pl.DataFrame:
-    """Create sample turbulence sector DataFrame."""
-    sector_names = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-                    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-    
-    rows = []
-    for height in [80.0, 120.0]:
-        marker = "外推" if height > 100 else None
-        for sector, name in enumerate(sector_names):
-            mean_ti = 0.15 + (sector % 4) * 0.01
-            rep_ti = mean_ti * 1.2
-            iec_cat = "A" if rep_ti > 0.16 else "B"
-            
-            rows.append({
-                "sector": sector,
-                "sector_name": name,
-                "height": height,
-                "interpolation_marker": marker,
-                "mean_ti": mean_ti,
-                "representative_ti": rep_ti,
-                "iec_category": iec_cat,
-            })
-    return pl.DataFrame(rows)
-
-
-@pytest.fixture
 def sample_vertical_profile_df() -> pl.DataFrame:
     """Create sample vertical profile DataFrame."""
     rows = []
@@ -361,11 +332,6 @@ def wind_temporal_atoms(
 ) -> list[ReportAtom[Any, Any]]:
     """Create wind temporal atoms."""
     atoms = [
-        SingleMastWindTimeseriesAtom.create(
-            schema=TemporalPatternSchema,
-            df=sample_temporal_df,
-            meta=sample_mast_meta,
-        ),
         SingleMastDailyPatternAtom.create(
             schema=TemporalPatternSchema,
             df=sample_temporal_df,
@@ -430,23 +396,12 @@ def wind_frequency_atom(
 @pytest.fixture
 def turbulence_atoms(
     sample_turbulence_df: pl.DataFrame,
-    sample_turbulence_sector_df: pl.DataFrame,
     sample_mast_meta: SingleMastMeta,
 ) -> list[ReportAtom[Any, Any]]:
     """Create turbulence atoms."""
-    intensity_atom = SingleMastTurbulenceIntensityAtom.create(
-        schema=TurbulenceSchema,
-        df=sample_turbulence_df,
-        meta=sample_mast_meta,
-    )
     summary_atom = SingleMastTurbulenceSummaryAtom.create(
         schema=TurbulenceSchema,
         df=sample_turbulence_df,
-        meta=sample_mast_meta,
-    )
-    sector_atom = SingleMastTurbulenceSectorAtom.create(
-        schema=TurbulenceSectorSchema,
-        df=sample_turbulence_sector_df,
         meta=sample_mast_meta,
     )
     # Multi-height uses turbulence schema
@@ -467,7 +422,7 @@ def turbulence_atoms(
         meta=sample_mast_meta,
         height=120.0,
     )
-    return [intensity_atom, summary_atom, sector_atom, multi_atom, per_height_80, per_height_120]
+    return [summary_atom, multi_atom, per_height_80, per_height_120]
 
 
 # =============================================================================
@@ -743,54 +698,6 @@ class TestVerticalProfileSubsection:
 # =============================================================================
 # Tests - Config Toggles
 # =============================================================================
-
-
-class TestConfigToggles:
-    """Tests for report config subsection toggles."""
-
-    def test_subsection_config_defaults(self) -> None:
-        """Test ReportSubsectionConfig defaults all enabled."""
-        config = ReportSubsectionConfig()
-        
-        assert config.windrose is True
-        assert config.windtemporal is True
-        assert config.weibull is True
-        assert config.windfrequency is True
-        assert config.turbulence is True
-        assert config.verticalprofile is True
-
-    def test_subsection_config_can_disable(self) -> None:
-        """Test ReportSubsectionConfig can disable subsections."""
-        config = ReportSubsectionConfig(
-            windrose=False,
-            weibull=False,
-            turbulence=False,
-        )
-        
-        assert config.windrose is False
-        assert config.windtemporal is True  # Still enabled
-        assert config.weibull is False
-        assert config.windfrequency is True  # Still enabled
-        assert config.turbulence is False
-        assert config.verticalprofile is True  # Still enabled
-
-    def test_subsection_config_all_disabled(self) -> None:
-        """Test ReportSubsectionConfig with all disabled."""
-        config = ReportSubsectionConfig(
-            windrose=False,
-            windtemporal=False,
-            weibull=False,
-            windfrequency=False,
-            turbulence=False,
-            verticalprofile=False,
-        )
-        
-        assert config.windrose is False
-        assert config.windtemporal is False
-        assert config.weibull is False
-        assert config.windfrequency is False
-        assert config.turbulence is False
-        assert config.verticalprofile is False
 
 
 # =============================================================================

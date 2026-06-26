@@ -118,51 +118,6 @@ class TestSingleMastMonthlyPatternAtom:
         assert hashkey in image_path.name
 
 
-class TestSingleMastMonthlyWindPowerAtom:
-    """Tests for SingleMastMonthlyWindPowerAtom."""
-
-    def test_render_table_produces_valid_typst(self, monthly_wind_power_atom: Any):
-        """Test that renderTable produces valid Typst table markup."""
-        result = monthly_wind_power_atom.renderTable()
-
-        assert isinstance(result, TypstTable)
-        # Check table content by inspecting headers
-        assert "月份" in result.headers or any("月份" in str(row) for row in result.data)
-
-    def test_render_summary_includes_mast_name(self, monthly_wind_power_atom: Any):
-        """Test that summary includes mast name."""
-        result = monthly_wind_power_atom.renderSummary()
-
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert isinstance(result[0], TypstParagraph)
-        assert "M01" in result[0].text
-
-    def test_render_summary_includes_mean_power_density(
-        self,
-        monthly_wind_power_atom: Any,
-    ):
-        """Test that summary includes mean power density."""
-        result = monthly_wind_power_atom.renderSummary()
-
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert isinstance(result[0], TypstParagraph)
-        # Should include W/m²
-        assert "W/m²" in result[0].text
-
-    def test_render_image_creates_png_file(
-        self,
-        monthly_wind_power_atom: Any,
-        temp_output_dir: Path,
-    ):
-        """Test that renderImage creates a PNG file."""
-        image_path = monthly_wind_power_atom.renderImage(temp_output_dir)
-
-        assert image_path.exists()
-        assert image_path.suffix == ".png"
-
-
 class TestSingleMastMonthlyWindFrequencyRoseAtom:
     """Tests for SingleMastMonthlyWindFrequencyRoseAtom."""
 
@@ -338,7 +293,7 @@ class TestAllAtomsCommonBehavior:
 
     def test_all_atoms_inherit_from_report_atom(self, all_atoms: list[Any]):
         """Test that all atoms inherit from ReportAtom."""
-        from cleanmast.subdomains.assessment.domain.entities.report_atom import ReportAtom
+        from cleanmast.subdomains.assessment.shared.protocols.report_atom import ReportAtom
 
         for atom in all_atoms:
             assert isinstance(atom, ReportAtom)
