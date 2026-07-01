@@ -1,26 +1,37 @@
 # CleanMast Documentation Hub
 
-## 选择语言 / Choose Implementation
+## 快速开始
 
-### Julia (当前生产版本 / Current Production)
+- **[Quick Start Guide](../CleanMastProject/docs/user-guide/quickstart.md)** - 15 分钟快速入门
+- **[Complete Pipeline](../CleanMastProject/docs/user-guide/workflow/complete-pipeline.md)** - 完整数据处理流水线
+- **[Preprocessing](../CleanMastProject/docs/user-guide/workflow/preprocessing.md)** - 数据预处理工作流
 
-**完整 Julia 文档位于**: [../CleanMastProject/docs/](../CleanMastProject/docs/)
+## 安装与设置
 
-**快速链接:**
-- [用户指南](../CleanMastProject/docs/user-guide/)
-- [开发指南](../CleanMastProject/docs/development/tests.md)
-- [算法说明](../CleanMastProject/docs/algorithms/)
+- **[Workspace Setup](migration/workspace-setup.md)** - 工作空间配置
+- **[Migration Status](migration/status.md)** - 迁移状态
+- **[Migration Guide](migration/julia-to-python.md)** - Julia → Python 迁移指南
 
-### Python (开发中 / In Development)
+## 参考文档
 
-**迁移信息 (Migration Info):**
-- [迁移状态](migration/status.md)
-- [Julia → Python 迁移指南](migration/julia-to-python.md)
+### 用户文档
 
-**Python 文档 (Available Docs):**
+- [命令参考](../CleanMastProject/docs/user/commands/) - 所有 CLI 命令
+- [配置文件](../CleanMastProject/docs/user/configuration/) - TOML 配置格式
+- [工作流](../CleanMastProject/docs/user/workflow/) - 处理流程说明
+
+### 技术与开发
+
+- [算法文档](../CleanMastProject/docs/technical/algorithms/) - 算法实现细节
+- [开发指南](../CleanMastProject/docs/development/contributing.md) - 贡献指南
+- [代码风格](../CleanMastProject/docs/development/code-style/) - Julia 代码规范
+
+### Python 包文档
+
 - [Preprocess Tools](python/preprocess-tools/) - 数据预处理工具
-- [CleanMast Python](python/cleanmast/) - 主分析工具包 (即将推出)
+- [CleanMast Python](python/cleanmast/) - 主分析工具包
 
-## 架构文档 (Architecture)
+### 架构文档
 
-语言无关的架构文档将在迁移过程中添加。
+- [C4 架构](../CleanMastProject/docs/c4/) - 组件和容器图
+- [ADR](../CleanMastProject/docs/adr/) - 架构决策记录

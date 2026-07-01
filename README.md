@@ -2,14 +2,45 @@
 
 Wind energy meteorological tower data processing toolkit.
 
-## 🚧 Migration Status
+## 工作流程
 
-This project is currently being migrated from Julia to Python.
+CleanMast 的数据处理分为两个阶段：
 
-- **Julia (Current - Stable)**: Full-featured, production-ready
-- **Python (In Development)**: Preprocessing tools available, main features in progress
+### 第一阶段：数据预处理（AI Agent）
 
+原始测风塔数据格式各异（NRG logger、Lidar、CSV 导出等），需要先转换为 CleanMast 能消费的标准格式。这一步由 AI Agent 通过 `cleanmast-preprocess` skill 完成：
+
+1. AI 检查原始数据格式（分隔符、编码、列名、时间戳格式）
+2. 运行 `uv run preprocess csv-merge` 合并多个数据文件
+3. 运行 `uv run preprocess col-normalizer` 标准化列名
+4. 运行 `uv run preprocess type-normalizer` 转换数据类型
+5. 输出标准化的 CSV 文件到 `masts/` 目录
+
+预处理完成后，数据已准备好供 CleanMast 消费（无论 Julia 还是 Python）。
+
+### 第二阶段：实验运行（Justfile）
+
+预处理完成后，在实验目录中通过 Justfile 执行完整的处理流水线：
+
+```bash
+# 初始化实验目录
+mise run init:experiment projects/my-windfarm
+
+# 进入实验目录
+cd projects/my-windfarm
+
+# 运行完整流水线
+just run-all
+```
+
+## 项目状态
+
+CleanMast 项目同时使用 Julia 和 Python 两种运行时。Julia 负责数据处理流水线（步骤 1-16），Python 负责高度填充、风机时间序列和报告生成。`mise run bootstrap` 安装所有依赖。
+
+**安装依赖**：`mise run bootstrap`（需要先安装 [mise](https://mise.jdx.dev/)）
+**创建实验**：`mise run init:experiment projects/<name>` → `cd projects/<name>` → `just run-all`
 See [Migration Status](docs/migration/status.md) for details.
+
 
 ---
 
@@ -32,169 +63,130 @@ CleanMast 是一个用于处理风能测风塔数据的项目，专门设计用�
 
 ## 安装
 
-### Julia Version (生产环境推荐)
-
-1. 克隆代码仓库
-2. 安装 Julia 1.11.7 或更高版本
-3. 在项目根目录中从 Julia REPL 运行：
-
-```julia
-using Pkg
-Pkg.activate("CleanMastProject")
-Pkg.instantiate()
-```
-
-注意：本项目使用 Julia 工作空间 (workspace) 结构，源代码位于 `CleanMastProject/` 子目录中。
-
-### Python Version (开发中)
-
-1. 安装 [uv](https://github.com/astral-sh/uv)
-2. 从项目根目录运行：
+1. 安装 [mise](https://mise.jdx.dev/)（版本管理工具）
+2. 克隆代码仓库
+3. 从项目根目录运行：
 
 ```bash
-uv sync --all-groups --all-packages --all-extras
+mise run bootstrap
 ```
 
-Python 版本包含：
-- ✅ **preprocess-tools**: 数据预处理工具（可用）
-- 🚧 **cleanmast**: 主分析工具包（开发中）
-  - ✅ `cleanmast init` - 项目初始化（可用）
+此命令会自动安装 Julia 和 Python 的所有依赖。
+
+包含的工具：
+- ✅ **preprocess-tools**: 数据预处理工具（csv-merge、col-normalizer、type-normalizer、timestamp）
+- ✅ **cleanmast**: 主分析工具包
+  - ✅ `fill-heights` - 高度填充
+  - ✅ `report` - 报告生成
 
 ## 使用方法
 
-### Julia Version
-
-通过命令行进行基本使用：
+### 创建项目并运行
 
 ```bash
-julia bin/CleanMast.jl <命令> <选项>
+# 1. 初始化实验目录（创建 Justfile 和目录结构）
+mise run init:experiment projects/my-windfarm
+
+# 2. 进入实验目录
+cd projects/my-windfarm
+
+# 3. 运行完整流水线
+just run-all
+
+# 4. 或运行单个步骤
+just process-clean
+just report-timeseries
 ```
 
-对于一般使用者，见 [CleanMastProject/docs/](CleanMastProject/docs/)
-
-### Python Version
+### 查看可用命令
 
 ```bash
-# Project initialization
-uv run cleanmast init projects/my-windfarm
+cd projects/my-windfarm
+just --list
+```
 
-# Preprocessing tools (unified CLI)
+### Justfile 主要 Recipe
+
+**项目设置**
+- `just recommend-parse-sensors` - 生成传感器解析配置
+- `just parse-sensors` - 解析传感器数据
+
+**数据处理**
+- `just process-all` - 执行完整处理流水线（步骤 1-16）
+- `just process-clean` - 应用数据清理规则
+- `just process-tower-shading` - 检测和校正塔影效应
+- `just process-reconstruct-single` - 单测风塔相关性重构
+- `just process-train-meso` - 训练中尺度相关模型
+- `just process-reconstruct-meso` - 中尺度数据重构
+- `just process-representative-year` - 代表年校准
+
+**高度填充与报告（Python）**
+- `just recommend-fill-heights` - 生成高度填充配置
+- `just fill-heights-meso` - 执行高度填充
+- `just recommend-report-config` - 生成报告配置
+- `just report-timeseries` - 生成时间序列报告
+
+**便捷流水线**
+- `just run-all` - 完整流水线（推荐配置 → 解析 → 处理 → 填充 → 报告）
+
+### 独立 Python 命令
+
+```bash
+# 预处理工具（第一阶段）
 uv run preprocess csv-merge config.toml
 uv run preprocess col-normalizer config.toml
 uv run preprocess type-normalizer config.toml
-uv run preprocess timestamp config.toml
 
-# CleanMast (coming soon)
-uv run cleanmast parse-sensors --config config.toml
-uv run cleanmast process --config config.toml
+# 项目管理
+mise run init:experiment projects/my-windfarm
+uv run cleanmast recommend fill-heights projects/my-windfarm/
 ```
 
 See [packages/preprocess-tools/README.md](packages/preprocess-tools/README.md) for preprocessing documentation.
 
-### 主要命令分类
+## 配置
 
-**项目设置**
-- `cleanmast init` (Python) - 创建带有示例配置的新项目
-- `project parse-sensors` (Julia) - 将传感器数据解析为 csv 和对应的传感器描述 toml 文件
-
-**数据处理**
-- `process steps --all` - 执行完整的处理流水线(包含生成各步骤配置文件)
-- `process steps --from X --to Y` - 执行指定范围的处理步骤（灵活控制）
-- `process clean` - 应用数据清理规则
-- `process tower-shading` - 检测和校正塔影效应
-- `process reconstruct-single` - 使用单测风塔相关性重构
-- `process train-meso` - 训练中尺度相关模型
-- `process reconstruct-meso` - 使用中尺度数据重构
-- `process representative-year` - 校准到代表性条件
-- `process wt-timeseries` - 生成为 Meteodyn WT 使用的时间序列 csv
-
-**配置管理**
-- `recommend <过程>` - 为每个处理步骤生成配置文件
-
-**分析和报告**
-- `report all` - 综合风能分析和报告(需先运行 `process steps --all` 和 `recommend report-all`)
-- `analyze en` - 土木工程EN标准分析(未完成)
+CleanMast 使用 TOML 配置文件来控制不同的处理步骤。配置文件由 `recommend` 或 `just recommend-*` 命令自动生成，用户也可手动编辑。
 
 ## 文档
 
-### 📖 Documentation Navigation
-
 - **[Documentation Hub](docs/README.md)** - 文档导航中心
-
-### Julia Documentation (Current Production)
-
-CleanMast Julia 版本提供三层文档结构：
-
-- **📚 用户文档**: [CleanMastProject/docs/user/](CleanMastProject/docs/user/)
-- **💻 技术文档**: [CleanMastProject/docs/technical/](CleanMastProject/docs/technical/)
-- **💻 开发文档**: [CleanMastProject/docs/development/](CleanMastProject/docs/development/)
-
-### Python Documentation (In Development)
-
+- **[Quick Start](CleanMastProject/docs/user-guide/quickstart.md)** - 快速入门
+- **[Complete Pipeline](CleanMastProject/docs/user-guide/workflow/complete-pipeline.md)** - 完整流水线
 - **[Migration Status](docs/migration/status.md)** - 迁移状态
-- **[Migration Guide](docs/migration/julia-to-python.md)** - Julia → Python 迁移指南
 - **[Preprocess Tools](docs/python/preprocess-tools/)** - 预处理工具文档
-- **[CleanMast Python](docs/python/cleanmast/)** - Python 版本文档（开发中）
+- **[CleanMast Python](docs/python/cleanmast/)** - Python 版本文档
+- **[Julia Docs](CleanMastProject/docs/)** - Julia 实现文档
 
-## 配置
-
-CleanMast 使用 TOML 配置文件来控制不同的处理步骤：
-
-- `parse-sensors.toml` - 传感器数据解析配置
-- `process-clean.toml` - 数据清理规则和参数
-- `reconstruct-single.toml` - 单测风塔重构设置
-- `train-meso.toml` - 中尺度模型训练配置
-- 各个处理步骤都有对应的配置文件
-
-配置文件可以使用 `recommend` 命令自动生成。
 
 ## 项目结构
 
 ```
 clean-mast-project/
+├── mise.toml                 # mise 配置（bootstrap 任务）
 ├── Project.toml               # Julia workspace
 ├── pyproject.toml             # Python workspace
 │
-├── CleanMastProject/          # Julia implementation (production)
+├── CleanMastProject/          # Julia 实现
 │   ├── src/                   # 主要源代码
 │   ├── test/                  # 测试套件
-│   └── docs/                  # Julia 文档
+│   └── docs/                  # 文档
 │
-├── packages/                  # Python implementation (in development)
+├── packages/                  # Python 包
 │   ├── preprocess-tools/      # 数据预处理工具
-│   │   ├── src/preprocess_tools/
-│   │   ├── tests/
-│   │   └── docs/
 │   ├── cleanmast/             # 主分析工具包
-│   │   ├── src/cleanmast/
-│   │   │   ├── types/         # 核心类型定义
-│   │   │   ├── parse_sensors/ # 数据解析和列映射
-│   │   │   ├── process/       # 数据清理规则
-│   │   │   ├── reconstruct/   # 数据重构
-│   │   │   ├── analyze/       # 分析模块
-│   │   │   └── reports/       # 报告生成
-│   │   ├── tests/
-│   │   └── docs/
-│   └── typst_ir/              # Typst IR文档处理库
-│       ├── src/typst_ir/
-│       │   ├── nodes.py       # IR节点类型
-│       │   ├── serializer.py  # Typst标记转换
-│       │   ├── renderer.py    # PDF/DOCX渲染
-│       │   └── validation.py  # 内容验证
-│       └── tests/
+│   │   └── scaffold/          # 项目模板（Justfile 等）
+│   └── typst_ir/              # Typst IR 文档处理库
 │
 ├── docs/                      # 共享文档
-│   ├── migration/             # 迁移指南
-│   └── python/                # Python 文档
-│
-├── projects/                  # 项目数据
+├── projects/                  # 项目目录（每个项目含 Justfile）
 └── bin/                       # 可执行文件
 ```
 
 ## 开发状态
 
 **已完成：**
-- ✓ 模块化CLI，支持命令分类
+- ✓ 模块化 CLI，支持命令分类
 - ✓ 配置解析和验证
 - ✓ 灵活的传感器数据解析
 - ✓ 基本数据清理规则（范围、层差、结冰）
@@ -202,22 +194,15 @@ clean-mast-project/
 - ✓ 中尺度数据训练和重构
 - ✓ 代表年校准
 - ✓ 塔影检测和校正
-- ✓ 分析和报告能力
-- ✓ 广泛的测试覆盖
+- ✓ 高度填充（fill-heights）- Python
+- ✓ 时间序列报告生成 - Python
+- ✓ Justfile 项目模板和流水线编排
 
 **进行中：**
-- 跨所有处理阶段的数据覆盖分析
+- Python 迁移剩余模块（parse-sensors、data-clean、reconstruction）
 - 跨测风塔重构算法（`reconstruct-cross`）
-- 测风塔与中尺度数据源间的相关性分析
-- 增强的单测风塔重构策略
 - 大数据集的性能优化
 
-**计划功能：**
-- LiDAR特定的数据清理规则
-- 使用LLM提示的AI辅助传感器解析
-- 基于相关性分析的自动中尺度源选择
-- 增强的可视化能力
-- 其他分析模块
 
 ## 贡献
 

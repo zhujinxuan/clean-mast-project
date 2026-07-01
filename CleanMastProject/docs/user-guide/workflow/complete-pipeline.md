@@ -36,7 +36,7 @@
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐ │
 │  │ 代表年校准  │───▶│  高度填补   │───▶│风机时间序列 │───▶│  报告生成   │ │
 │  │representative│    │ fill-heights│    │ wt-timeseries│   │   report    │ │
-│  │    -year    │    │   (Python)  │    │   (Python)   │    │   (Julia)   │ │
+│  │    -year    │    │   (Python)  │    │   (Python)   │    │   (Python)   │ │
 │  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘ │
 │        ↓                  ↓                  ↓                  ↓          │
 │ representative-      fill-heights/      wt-timeseries/     report-masts/   │
@@ -46,7 +46,7 @@
 
 ### 处理阶段概览
 
-流水线按功能可划分为八个主要阶段，每个阶段承担特定的数据处理任务。第一阶段负责数据准备，将各种格式的原始数据解析为统一的结构化格式；第二阶段进行数据质量控制，应用规则检测和标记异常数据；第三阶段处理塔影效应，校正测风塔结构对测量的影响；第四阶段利用传感器相关性填补数据缺口；第五阶段结合中尺度数据扩展时间序列覆盖范围；第六阶段进行长期校准；第七阶段使用 Python 工具进行高度填补；第八阶段导出风机时间序列；最后使用 Julia 生成分析报告。
+流水线按功能可划分为八个主要阶段，每个阶段承担特定的数据处理任务。第一阶段负责数据准备，将各种格式的原始数据解析为统一的结构化格式；第二阶段进行数据质量控制，应用规则检测和标记异常数据；第三阶段处理塔影效应，校正测风塔结构对测量的影响；第四阶段利用传感器相关性填补数据缺口；第五阶段结合中尺度数据扩展时间序列覆盖范围；第六阶段进行长期校准；第七阶段使用 Python 工具进行高度填补；第八阶段导出风机时间序列；最后使用 Python 生成分析报告。
 
 每个阶段都遵循"推荐配置 → 执行处理 → 验证输出"的三步模式。使用 `recommend` 命令可以快速生成适合项目特点的配置文件，执行完处理步骤后应检查输出目录和统计文件确认处理效果。这种标准化的流程设计使得项目管理更加规范，也便于问题追溯和结果复现。
 
@@ -72,8 +72,11 @@
 # 初始化项目（使用 Python CLI）
 uv run cleanmast init projects/my-windfarm
 
+# 进入项目目录
+cd projects/my-windfarm
+
 # 生成传感器解析配置
-julia bin/CleanMast.jl recommend parse-sensors projects/my-windfarm
+just recommend-parse-sensors
 ```
 
 ### 输出目录结构
@@ -111,8 +114,11 @@ projects/my-windfarm/
 ### 执行命令
 
 ```bash
+# 进入项目目录
+cd projects/my-windfarm
+
 # 执行传感器数据解析
-julia bin/CleanMast.jl project parse-sensors projects/my-windfarm/parse-sensors.toml
+just parse-sensors
 ```
 
 ### 配置说明
@@ -141,18 +147,12 @@ julia bin/CleanMast.jl project parse-sensors projects/my-windfarm/parse-sensors.
 
 ### 输入与输出
 
-**输入文件**：`raw/` 目录下的传感器配置 TOML 文件和时间序列 CSV 数据、`formats/clean/` 下的清理规则文件。
-
-**输出文件**：`clean/<测风塔名称>.csv` 清理后的时间序列数据、`clean/<测风塔名称>.sensors.yaml` 更新后的传感器配置、`process-stats/clean-<测风塔名称>.yaml` 清理统计信息。
-
-### 执行命令
-
 ```bash
 # 生成数据清理配置
-julia bin/CleanMast.jl recommend process-clean projects/my-windfarm
+just recommend-clean
 
 # 执行数据清理
-julia bin/CleanMast.jl process clean projects/my-windfarm/process-clean.toml
+just process-clean
 ```
 
 ### 清理规则类型
@@ -180,18 +180,12 @@ julia bin/CleanMast.jl process clean projects/my-windfarm/process-clean.toml
 
 ### 输入与输出
 
-**输入文件**：`clean/` 目录下的传感器配置 YAML 文件和时间序列 CSV 数据。
-
-**输出文件**：`tower-shading/<测风塔名称>.csv` 塔影校正后的数据、`tower-shading/<测风塔名称>.sensors.yaml` 更新后的传感器配置、`process-stats/tower-shading-<测风塔名称>.yaml` 校正统计信息。
-
-### 执行命令
-
 ```bash
 # 生成塔影校正配置
-julia bin/CleanMast.jl recommend tower-shading projects/my-windfarm
+just recommend-tower-shading
 
 # 执行塔影校正
-julia bin/CleanMast.jl process tower-shading projects/my-windfarm/tower-shading.toml
+just process-tower-shading
 ```
 
 ### 塔影校正原理
@@ -227,10 +221,10 @@ julia bin/CleanMast.jl process tower-shading projects/my-windfarm/tower-shading.
 
 ```bash
 # 生成单塔重构配置
-julia bin/CleanMast.jl recommend reconstruct-single projects/my-windfarm
+just recommend-reconstruct-single
 
 # 执行单塔重构
-julia bin/CleanMast.jl process reconstruct-single projects/my-windfarm/reconstruct-single.toml
+just process-reconstruct-single
 ```
 
 ### 重构方法说明
@@ -263,20 +257,18 @@ julia bin/CleanMast.jl process reconstruct-single projects/my-windfarm/reconstru
 
 **输出文件**：`train-reconstruct-cross/` 训练结果目录、`reconstruct-cross/<测风塔名称>.csv` 交叉重构后的数据。
 
-### 执行命令
-
 ```bash
 # 生成交叉训练配置
-julia bin/CleanMast.jl recommend train-cross projects/my-windfarm
+just recommend-train-cross
 
 # 执行交叉训练
-julia bin/CleanMast.jl process train-cross projects/my-windfarm/train-cross.toml
+just process-train-cross
 
 # 生成交叉重构配置
-julia bin/CleanMast.jl recommend reconstruct-cross projects/my-windfarm
+just recommend-reconstruct-cross
 
 # 执行交叉重构
-julia bin/CleanMast.jl process reconstruct-cross projects/my-windfarm/reconstruct-cross.toml
+just process-reconstruct-cross
 ```
 
 ### 适用场景
@@ -303,13 +295,12 @@ julia bin/CleanMast.jl process reconstruct-cross projects/my-windfarm/reconstruc
 **输出文件**：`meso-models/<测风塔>/<中尺度源>/windspeed|winddirection/<方法>.jld2` 训练好的模型文件、`meso-models/train-meso-results.toml` 训练结果汇总、`meso-models/<测风塔>/stats/<中尺度源>-training-stats.yaml` 训练统计信息。
 
 ### 执行命令
-
 ```bash
 # 生成中尺度训练配置
-julia bin/CleanMast.jl recommend train-meso projects/my-windfarm
+just recommend-train-meso
 
 # 执行中尺度模型训练
-julia bin/CleanMast.jl process train-meso projects/my-windfarm/train-meso.toml
+just process-train-meso
 ```
 
 ### 模型类型说明
@@ -345,10 +336,10 @@ julia bin/CleanMast.jl process train-meso projects/my-windfarm/train-meso.toml
 
 ```bash
 # 生成中尺度重构配置
-julia bin/CleanMast.jl recommend reconstruct-meso projects/my-windfarm
+just recommend-reconstruct-meso
 
 # 执行中尺度重构
-julia bin/CleanMast.jl process reconstruct-meso projects/my-windfarm/reconstruct-meso.toml
+just process-reconstruct-meso
 ```
 
 ### 时间范围配置
@@ -384,10 +375,10 @@ julia bin/CleanMast.jl process reconstruct-meso projects/my-windfarm/reconstruct
 
 ```bash
 # 生成代表年校准配置
-julia bin/CleanMast.jl recommend representative-year projects/my-windfarm
+just recommend-representative-year
 
 # 执行代表年校准
-julia bin/CleanMast.jl process representative-year projects/my-windfarm/representative-year.toml
+just process-representative-year
 ```
 
 ### 校准方法说明
@@ -464,7 +455,7 @@ uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
 
 此步骤用于将处理后的风数据导出为第三方风资源评估软件（如 MeteoDyn WT）所需的格式。WT TimeSeries 模块使用 Python 实现，支持生成符合 MeteoDyn 格式要求的时间序列数据和湍流强度矩阵。
 
-## 阶段十一：报告生成（Julia）
+## 阶段十一：报告生成（Python）
 
 ### 任务清单
 
@@ -478,10 +469,10 @@ uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
 
 ```bash
 # 生成所有分析配置文件
-julia bin/CleanMast.jl recommend report-all projects/my-windfarm
+just recommend-report-config
 
 # 执行综合分析报告
-julia bin/CleanMast.jl report all projects/my-windfarm
+just report-timeseries
 ```
 
 ### 报告内容
@@ -527,24 +518,26 @@ typst compile data-quality-report.typ data-quality-report.pdf
 当前 CleanMast 采用 Julia 和 Python 混合执行模式：
 - **Julia** (步骤 1-16)：数据解析、清理、重构、中尺度处理、代表年校准
 - **Python** (步骤 17-18)：高度填补、风机时间序列导出
-- **Julia** (步骤 19)：报告生成
+- **Python** (步骤 19)：报告生成
 
-### Julia 处理步骤 (1-16)
+### 使用 Justfile 执行 Julia 处理步骤 (1-16)
 
-使用 `process steps` 命令执行前 16 个 Julia 处理步骤：
+使用 Justfile 配方执行前 16 个 Julia 处理步骤：
 
 ```bash
-# 执行所有 Julia 步骤（1-16）
-julia bin/CleanMast.jl process steps --all projects/my-windfarm
+# 执行所有步骤
+just process-all
 
-# 仅执行数据准备步骤 (1-6)
-julia bin/CleanMast.jl process steps --from 1 --to 6 projects/my-windfarm
+# 按顺序执行部分步骤（例如步骤 1-6）
+just parse-sensors
+just recommend-clean
+just process-clean
+just recommend-tower-shading
+just process-tower-shading
+just recommend-reconstruct-single
+just process-reconstruct-single
 
-# 仅执行重构相关步骤 (7-16)
-julia bin/CleanMast.jl process steps --from 7 --to 16 projects/my-windfarm
-
-# 从特定步骤继续执行
-julia bin/CleanMast.jl process steps --from 12 projects/my-windfarm
+# 从特定步骤继续执行（按顺序运行后续配方）
 ```
 
 ### Python 处理步骤 (17-18)
@@ -561,21 +554,35 @@ uv run cleanmast recommend wt-timeseries projects/my-windfarm
 uv run cleanmast wt-timeseries projects/my-windfarm/wt-timeseries.toml
 ```
 
-### 报告生成（Julia）
+### 报告生成（Python）
 
 ```bash
-# 步骤 19：生成分析报告（Julia）
-julia bin/CleanMast.jl recommend report-all projects/my-windfarm
-julia bin/CleanMast.jl report all projects/my-windfarm
+# 步骤 19：生成分析报告（Python）
+just recommend-report-config
+just report-timeseries
 ```
 
-### 查看 Julia 可用步骤列表
+### 查看可用步骤列表
 
 ```bash
-julia bin/CleanMast.jl process steps --list
+just process-list
 ```
 
-此命令显示所有 16 个 Julia 步骤的名称和描述。
+此命令显示所有可用步骤的名称和描述。
+
+### 自定义处理流程
+
+项目 Justfile 支持通过 Python 覆盖脚本自定义处理步骤。将自定义 Python 脚本放入 `just-overrides/` 目录，然后编辑 Justfile 配方调用它们：
+
+```
+projects/my-windfarm/
+├── just-overrides/
+│   └── custom-clean.py      # 自定义清理逻辑
+├── Justfile                  # 修改配方调用覆盖脚本
+└── ...
+```
+
+在 Justfile 中，将对应配方的命令替换为 Python 脚本调用即可实现自定义处理。
 
 ## 典型时间估计
 
@@ -608,7 +615,7 @@ julia bin/CleanMast.jl process steps --list
 
 ### 错误处理与恢复
 
-如果处理过程中出现错误，系统会显示详细的错误信息和恢复建议。常见的错误原因包括：配置文件路径错误、输入文件缺失、权限不足或数据格式问题。根据错误提示修正问题后，可以使用 `process steps --from <步骤号>` 命令从失败步骤继续执行，而无需重新运行整个流水线。
+如果处理过程中出现错误，系统会显示详细的错误信息和恢复建议。常见的错误原因包括：配置文件路径错误、输入文件缺失、权限不足或数据格式问题。根据错误提示修正问题后，可以从失败步骤对应的 Justfile 配方继续执行，而无需重新运行整个流水线。
 
 ## 相关文档
 

@@ -6,18 +6,26 @@
 
 ### Julia 环境问题
 
+**问题表现**：`mise run bootstrap` 失败。
+
+**解决方法**：
+1. 确认 mise 已安装：运行 `mise --version` 检查
+2. 如果 Julia 或 Python 未安装，运行 `mise install` 获取所需运行时
+3. 确认在项目根目录下运行 `mise run bootstrap`
+4. 检查网络连接，确保能访问 Julia 和 Python 包仓库
+
 **问题表现**：运行 `julia --version` 提示找不到命令。
 
 **解决方法**：
-1. 确认 Julia 已正确安装，建议版本 1.9 或更高
+1. 运行 `mise install` 安装 Julia（推荐）或手动安装 Julia 1.9+
 2. 检查系统 PATH 环境变量是否包含 Julia 的 bin 目录
 3. 重启终端或命令提示符使环境变量生效
 
 **问题表现**：`using CleanMast` 提示找不到包。
 
 **解决方法**：
-1. 进入项目目录：`cd CleanMastProject`
-2. 运行 `julia --project=. -e 'import Pkg; Pkg.instantiate()'`
+1. 运行 `mise run bootstrap` 安装所有依赖
+2. 或手动操作：进入项目目录后运行 `julia --project=. -e 'import Pkg; Pkg.instantiate()'`
 3. 等待依赖包下载安装完成
 
 **问题表现**：包预编译失败或超时。
@@ -287,21 +295,24 @@ maxGapLength = 6   # 最大允许填补的连续缺失数
 
 ### 调试模式
 
-运行命令时添加 `--verbose` 或 `--debug` 参数获取详细日志：
+使用 Justfile 中的 recipe 运行处理步骤。如需添加 `--verbose` 或 `--debug` 参数获取详细日志，
+可以编辑项目中的 Justfile，在对应 recipe 的命令中添加相应参数：
 
 ```bash
-julia bin/CleanMast.jl process config.toml --verbose
+cd projects/<project-name>
+just process-clean
 ```
-
 ### 检查配置
 
-使用 `recommend` 命令验证配置和传感器：
+使用 Justfile 中的 `recommend` recipe 验证配置和传感器：
 
 ```bash
-julia bin/CleanMast.jl recommend sensors --config config.toml
-julia bin/CleanMast.jl recommend config --config config.toml
+cd projects/<project-name>
+just recommend-parse-sensors
+just recommend-clean
 ```
 
+所有 `just recommend-*` recipe 会生成推荐的配置文件，可复制到项目目录后继续使用。
 ### 查看日志
 
 处理过程中生成的日志文件位于：

@@ -2,6 +2,10 @@
 
 `bootstrap` 命令用于从现有数据快速生成配置文件模板。
 
+> **注意：** 这些命令目前直接使用 Julia CLI。它们将在未来的更新中迁移到 Python CLI。
+
+---
+
 ## 命令列表
 
 | 命令 | 功能描述 |
@@ -16,8 +20,8 @@
 
 **用法：**
 ```bash
-julia bin/CleanMast.jl bootstrap guess-mast-from-meso --meso ./raw/era5.csv
-julia bin/CleanMast.jl bootstrap guess-mast-from-meso --meso ./raw/era5.csv --output ./config/era5-guess.toml
+uv run cleanmast bootstrap guess-mast-from-meso --meso ./raw/era5.csv
+uv run cleanmast bootstrap guess-mast-from-meso --meso ./raw/era5.csv --output ./config/era5-guess.toml
 ```
 
 **参数：**
@@ -130,13 +134,13 @@ ls ./mesos/
 # era5.sensors.toml
 
 # 2. 生成配置模板
-julia bin/CleanMast.jl bootstrap guess-mast-from-meso --meso ./mesos/era5.csv
+uv run cleanmast bootstrap guess-mast-from-meso --meso ./mesos/era5.csv
 
 # 3. 编辑生成的配置文件
 # 使用文本编辑器填充 TODO 字段
 
 # 4. 运行 guess 命令生成合成数据
-julia bin/CleanMast.jl guess mast-from-meso ./mesos/era5.guess-mast-from-meso.toml
+uv run cleanmast guess mast-from-meso ./mesos/era5.guess-mast-from-meso.toml
 
 # 5. 查看生成的合成塔数据
 ls ./guessed-masts/

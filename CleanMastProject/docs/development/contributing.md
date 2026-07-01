@@ -2,55 +2,75 @@
 
 ## 概述
 
-欢迎参与 CleanMast 项目贡献！本文档面向开发者，提供开发环境配置、工作流程、代码规范和 Pull Request 流程等指南。CleanMast 是一个用于处理风能测风塔数据的 Julia 工具包，采用函数式编程风格和类型安全设计。
+欢迎参与 CleanMast 项目贡献！本文档面向开发者，提供开发环境配置、工作流程、代码规范和 Pull Request 流程等指南。CleanMast 是一个用于处理风能测风塔数据的工具包，Julia 负责核心处理（步骤 1-16），Python 负责高度填充、时序报告等功能。采用函数式编程风格和类型安全设计。
 
 ## 开发环境配置
 
 ### 环境要求
 
-确保你的开发环境满足以下要求：
-
-- **Julia 版本**: 1.6 或更高版本（推荐 1.11.7）
+- **mise**: 项目使用 mise 管理开发工具和任务（[安装指南](https://mise.jdx.dev/getting-started.html)）
+- **Julia 版本**: 1.6 或更高版本（推荐 1.11.7），由 mise 自动安装
+- **Python 版本**: 3.10 或更高版本，由 mise 自动安装
+- **uv**: Python 包管理器和运行器，由 mise 自动安装
 - **Git**: 用于版本控制
 - **编辑器**: VS Code + Julia 插件，或其他支持 Julia 的 IDE
 
 ### 项目结构
-
-CleanMast 采用 Julia workspace 结构，根目录 `Project.toml` 定义工作空间成员：
+CleanMast 是一个多语言工具包，使用 mise 和 uv 管理依赖：
 
 ```
 clean-mast-project/
-├── Project.toml              # Workspace 配置: members = ["CleanMastProject"]
+├── mise.toml                  # mise 配置：工具版本 + 任务定义（bootstrap 等）
+├── Project.toml               # Julia workspace 配置: members = ["CleanMastProject"]
+├── packages/                  # Python 包（cleanmast、preprocess-tools 等）
 ├── bin/
-│   └── CleanMast.jl         # 入口脚本，激活 CleanMastProject 环境
-└── CleanMastProject/         # 实际的 Julia 包
-    ├── Project.toml         # 包依赖和元数据
-    ├── src/                 # 源代码
-    ├── test/                # 测试套件
-    └── docs/               # 文档
+│   └── CleanMast.jl           # Julia 入口脚本
+└── CleanMastProject/          # 实际的 Julia 包
+    ├── Project.toml           # 包依赖和元数据
+    ├── src/                   # 源代码
+    ├── test/                  # 测试套件
+    └── docs/                 # 文档
 ```
 
 ### 安装步骤
 
-1. 克隆代码仓库到本地目录
-2. 安装 Julia 1.6+
-3. 在项目根目录启动 Julia REPL，运行以下命令：
+1. 安装 [mise](https://mise.jdx.dev/getting-started.html)
+2. 克隆代码仓库到本地目录
+3. 在项目根目录运行以下命令，安装 Julia + Python 全部依赖：
 
-```julia
-using Pkg
-Pkg.activate("CleanMastProject")
-Pkg.instantiate()
+```bash
+mise run bootstrap
 ```
+
+该命令会执行 `uv sync --all-groups --all-packages --all-extras`（Python）和 `Pkg.instantiate()`（Julia）。
 
 ### 运行项目
 
-通过命令行运行 CleanMast：
+CleanMast 使用 Justfile 配方作为主要 CLI 接口。典型工作流：
 
 ```bash
-julia bin/CleanMast.jl <命令> <选项>
+# 初始化新项目（会复制 Justfile 到项目目录）
+uv run cleanmast init projects/<项目名>
+
+# 进入项目目录，通过 Justfile 运行
+cd projects/<项目名>
+
+# 运行完整流水线
+just run-all
+
+# 单独步骤
+just recommend-parse-sensors      # 生成传感器解析配置
+just parse-sensors                # 执行传感器解析
+just process-clean                # 执行数据清洗
+just report-timeseries            # 生成时序报告
+
+# 查看所有可用配方
+just --list
 ```
 
 ### 运行测试
+
+#### Julia 测试
 
 ```bash
 # 运行所有测试
@@ -63,6 +83,19 @@ julia CleanMastProject/test/runtests.jl data-clean process
 # 查看可用测试集列表
 julia CleanMastProject/test/runtests.jl --help
 ```
+
+#### Python 测试
+
+```bash
+# 运行所有 Python 测试
+uv run pytest
+
+# 运行特定包的测试
+uv run pytest packages/cleanmast/
+```
+
+> **注意**: 提交前请确保 Julia 和 Python 测试均通过。
+
 
 ## Git 工作流程
 

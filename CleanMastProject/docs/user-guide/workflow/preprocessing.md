@@ -14,7 +14,7 @@
 
 ```bash
 # 从项目根目录执行
-uv sync
+mise run bootstrap
 ```
 
 此命令会自动创建 Python 虚拟环境并安装所有依赖包。安装完成后，后续使用均通过 `uv run preprocess` 命令调用预处理工具。
@@ -189,15 +189,18 @@ timezone = "UTC"
 
 ## 后续步骤
 
-完成数据预处理后，可以继续执行 CleanMast 的完整数据处理流水线。预处理后的数据文件应放置在项目目录的 `masts/` 子目录下，然后使用 Julia 版本的 CleanMast 进行后续处理：
+完成数据预处理后，可以继续执行 CleanMast 的完整数据处理流水线。预处理后的数据文件应放置在项目目录的 `masts/` 子目录下，然后通过项目 Justfile 中的命令进行后续处理：
 
 ```bash
 # 初始化项目结构
 uv run cleanmast init projects/my-windfarm
 
+# 进入项目目录
+cd projects/my-windfarm
+
 # 放置预处理后的数据到 masts/ 目录
 # 然后执行数据解析
-julia bin/CleanMast.jl project parse-sensors projects/my-windfarm/parse-sensors.toml
+just parse-sensors
 ```
 
 ## 相关文档

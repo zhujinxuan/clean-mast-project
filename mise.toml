@@ -13,3 +13,7 @@ run = "uv sync --all-groups --all-packages --all-extras && julia --project=Clean
 description = "Decrypt DVC secrets from .dvc/config.local.age"
 shell = "nu -c"
 run = "age -d -i ($nu.home-dir | path join .config chezmoi key.txt) -o .dvc/config.local .dvc/config.local.age"
+[tasks."init:experiment"]
+description = "Initialize a new experiment project (creates Justfile + directory structure)"
+usage = 'arg "project-dir" help="Project directory path (e.g. projects/my-windfarm)"'
+run = "uv run cleanmast init ${usage_project_dir}"
