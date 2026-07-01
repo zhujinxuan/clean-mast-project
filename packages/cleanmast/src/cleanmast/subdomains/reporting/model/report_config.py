@@ -14,6 +14,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -51,6 +52,7 @@ class DatasetConfig(BaseModel):
         masts: List of mast references within this dataset.
         mesos: Optional list of mesoscale data references.
         note: Optional note or description.
+        analysis_windows: Optional analysis time windows (measurement year / representative year).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -58,6 +60,7 @@ class DatasetConfig(BaseModel):
     name: str
     masts: list[MastRef] | None = None
     mesos: list[MesoRef] | None = None
+    analysis_windows: list[AnalysisWindow] | None = None
     note: str | None = None
 
     @model_validator(mode="after")
@@ -96,23 +99,37 @@ class MastRef(BaseModel):
     input: TimeSeriesSource
 
 
-# LOGIC-PRESERVATION: Ported from assessment domain/value_objects/dataset_config.py — same fields, same validators, added frozen=True
 class MesoRef(BaseModel):
     """Reference to a mesoscale data source for specific masts.
 
     Attributes:
         input: Time series data source for the mesoscale data (e.g., ERA5).
         target_masts: List of mast names this meso source applies to.
+        meso_name: Name of the mesoscale source (e.g. "ERA5Lidar").
     """
 
     model_config = ConfigDict(frozen=True)
 
     input: TimeSeriesSource
     target_masts: list[str]
+    meso_name: str
 
     @model_validator(mode="after")
     def validate_target_masts(self) -> "MesoRef":
         """Validate target_masts list is non-empty."""
+        if not self.target_masts:
+            raise ValueError("target_masts must contain at least one mast name")
+        return self
+
+
+class AnalysisWindow(BaseModel):
+    """Time window for analysis — measurement year or representative year."""
+    model_config = ConfigDict(frozen=True)
+    target_masts: list[str]
+    time_range: TimeRange
+
+    @model_validator(mode="after")
+    def validate_target_masts(self) -> "AnalysisWindow":
         if not self.target_masts:
             raise ValueError("target_masts must contain at least one mast name")
         return self

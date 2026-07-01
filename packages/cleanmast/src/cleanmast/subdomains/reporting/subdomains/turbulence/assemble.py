@@ -6,11 +6,15 @@ Takes computed DataFrame and wraps them in report atom instances.
 
 import polars as pl
 
+from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.subdomains.turbulence.compute import (
     _select_interested_heights,
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
+)
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
+    TurbulenceSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_multi_atom import (
     SingleMastTurbulenceMultiHeightAtom,
@@ -21,10 +25,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_per_h
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
-from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
-    TurbulenceSchema,
-)
-from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 
 
 def build_turbulence_atoms(

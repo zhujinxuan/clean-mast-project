@@ -5,6 +5,10 @@ Pure functions only — NO IO, no side effects.
 
 import polars as pl
 
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
+    build_iec_class_table,
+    build_summary_comparison,
+)
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.iec_atom import (
     IEC_STANDARDS_DATA,
     IECStandardsAtom,
@@ -22,8 +26,8 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method3_atom i
     Method3Atom,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
-    IECStandardsAtomMeta,
     ExtremeWindAtomMeta,
+    IECStandardsAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import (
     FiftyYearMaxWindComparisonSchema,
@@ -37,10 +41,6 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.summary_atom i
     ComparisonExtremeAtom,
     ComparisonSustainedAtom,
     IECWindClassAtom,
-)
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
-    build_iec_class_table,
-    build_summary_comparison,
 )
 
 

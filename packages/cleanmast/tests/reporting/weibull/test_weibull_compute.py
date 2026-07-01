@@ -4,15 +4,12 @@ Ported from tests/assessment/weibull/test_weibull_fitter.py.
 Test logic, inputs, expected values, assertions preserved exactly.
 """
 
-from datetime import datetime, timedelta
 from math import gamma as gamma_func
 
 import numpy as np
-import polars as pl
 import pytest
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.reporting.subdomains.weibull.compute import (
-    MIN_SAMPLES,
     WeibullFitResult,
     _method_of_moments,
     fit_weibull,

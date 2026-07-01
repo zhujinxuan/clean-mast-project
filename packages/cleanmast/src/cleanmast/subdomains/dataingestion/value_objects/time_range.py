@@ -7,7 +7,7 @@ Description: Time range specification with validation
 
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class TimeRange(BaseModel):
@@ -17,6 +17,8 @@ class TimeRange(BaseModel):
         min: Start of time range (inclusive)
         max: End of time range (inclusive)
     """
+
+    model_config = ConfigDict(frozen=True)
 
     min: datetime
     max: datetime

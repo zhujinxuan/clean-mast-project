@@ -9,6 +9,7 @@ from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalys
 from cleanmast.subdomains.reporting.model.analysis_metadata import AnalysisMetadata
 from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.model.analysis_result import AnalysisResult
+
 __all__ = [
     "ReportGenerationService",
     "AnalysisMetadata",

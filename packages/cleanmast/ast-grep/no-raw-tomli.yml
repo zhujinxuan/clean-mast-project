@@ -1,0 +1,12 @@
+id: no-raw-tomli
+language: python
+severity: error
+rule:
+  pattern: import tomli
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**
+  - packages/cleanmast/src/cleanmast/application/**
+  - packages/cleanmast/src/cleanmast/subdomains/dataingestion/**
+  - packages/cleanmast/src/cleanmast/subdomains/dataprocessing/**
+  - packages/cleanmast/src/cleanmast/subdomains/assessment/**
+message: "import tomli/tomli_w is forbidden outside configuration gateway"

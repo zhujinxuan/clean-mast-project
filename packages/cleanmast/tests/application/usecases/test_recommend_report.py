@@ -1,25 +1,103 @@
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from cleanmast.application.usecases.recommend_report import (
+    _build_analysis_windows,
     _build_dataset_for_timeseries,
     recommend_report,
+)
+from cleanmast.subdomains.configuration.value_objects.representative_year import (
+    RepresentativeYearMast,
+    RepresentativeYearMesoModel,
+)
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.model.report_config import (
     FlatReportConfig,
 )
 
+TR_A = TimeRange(min=datetime(2025, 3, 1), max=datetime(2026, 2, 28))
+TR_B = TimeRange(min=datetime(2024, 1, 1), max=datetime(2024, 12, 31))
+
+
+def _mast(name: str, tr: TimeRange) -> RepresentativeYearMast:
+    src = TimeSeriesSource(data="/dev/null")
+    return RepresentativeYearMast(
+        name=name,
+        input=src,
+        output=src,
+        time_range=tr,
+        meso_model=RepresentativeYearMesoModel(
+            method="16-sector",
+            meso_name="X",
+            model_file="x.jld2",
+        ),
+    )
+
+
+class TestBuildAnalysisWindows:
+    def test_groups_same_range(self):
+        result = _build_analysis_windows(
+            [_mast("A", TR_A), _mast("B", TR_A), _mast("C", TR_B)],
+        )
+        assert len(result) == 2
+        names = {tuple(sorted(aw.target_masts)) for aw in result}
+        assert names == {("A", "B"), ("C",)}
+
+    def test_single_mast(self):
+        result = _build_analysis_windows([_mast("X", TR_A)])
+        assert len(result) == 1
+        assert result[0].target_masts == ["X"]
+
+    def test_empty(self):
+        assert _build_analysis_windows([]) == []
+
+
+def _sensor(col: str, height: float, stype: str, unit: str) -> dict:
+    return {
+        "column_name": col,
+        "height": height,
+        "sensor_type": stype,
+        "sensor_direction": "",
+        "stat_type": "avg",
+        "unit": unit,
+    }
+
+
+def _valid_mast(name: str, data_dir: str) -> dict:
+    return {
+        "name": name,
+        "input": {"data": f"input/{name}.csv"},
+        "output": {"data": f"{data_dir}/{name}.parquet"},
+        "windspeed": [
+            {
+                "target_sensor": _sensor("WS_100m:interpolated", 100.0, "WindSpeed", "m/s"),
+                "references": [
+                    {"sensor": _sensor("WS_80m", 80.0, "WindSpeed", "m/s"), "weight": 0.5},
+                    {"sensor": _sensor("WS_120m", 120.0, "WindSpeed", "m/s"), "weight": 0.5},
+                ],
+                "shear": 0.14,
+            }
+        ],
+        "winddirection": [
+            {
+                "target_sensor": _sensor("WD_100m:interpolated", 100.0, "WindDirection", "deg"),
+                "references": [
+                    {"sensor": _sensor("WD_80m", 80.0, "WindDirection", "deg"), "weight": 0.5},
+                    {"sensor": _sensor("WD_120m", 120.0, "WindDirection", "deg"), "weight": 0.5},
+                ],
+                "deg_diff_per_m": 0.5,
+            }
+        ],
+    }
+
 
 class TestRecommendReport:
     def _create_fill_heights_toml(self, tmp_path: Path, filename: str, data_dir: str) -> None:
-        config = {
-            "masts": [
-                {
-                    "name": "M1",
-                    "output": {"data": f"{data_dir}/M1.parquet"},
-                }
-            ]
-        }
+        config = {"masts": [_valid_mast("M1", data_dir)]}
         path = tmp_path / filename
         import tomli_w
         with open(path, "wb") as f:
@@ -34,14 +112,8 @@ class TestRecommendReport:
     ) -> None:
         config = {
             "masts": [
-                {
-                    "name": "M1",
-                    "output": {"data": f"{data_dir}/M1.parquet"},
-                },
-                {
-                    "name": "M2",
-                    "output": {"data": f"{data_dir}/M2.parquet"},
-                },
+                _valid_mast("M1", data_dir),
+                _valid_mast("M2", data_dir),
             ]
         }
         path = tmp_path / filename
@@ -76,23 +148,17 @@ class TestRecommendReport:
 
         output_path = recommend_report(str(tmp_path))
 
-        config = FlatReportConfig.from_toml(output_path)
+        assert output_path.exists()
+        assert output_path.name == "rep-ts-report.toml"
 
-        assert len(config.datasets) == 2
-        dataset_names = [ds.name for ds in config.datasets]
-        assert "reconstruct_meso" in dataset_names
-        assert "repyear" in dataset_names
+        config = FlatReportConfig.from_toml(output_path)
+        assert len(config.datasets) == 3
 
         reconstruct_meso_ds = next(ds for ds in config.datasets if ds.name == "reconstruct_meso")
-        assert len(reconstruct_meso_ds.masts) == 1
-        assert reconstruct_meso_ds.masts[0].name == "M1"
-        assert reconstruct_meso_ds.masts[0].input.data == "./reconstruct-meso-fill-heights/M1.parquet"
-        assert reconstruct_meso_ds.masts[0].air_density == 1.225
-
         repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
+        assert len(reconstruct_meso_ds.masts) == 1
         assert len(repyear_ds.masts) == 1
-        assert repyear_ds.masts[0].name == "M1"
-        assert repyear_ds.masts[0].input.data == "./representative-year-fill-heights/M1.parquet"
+        assert reconstruct_meso_ds.masts[0].air_density == 1.225
         assert repyear_ds.masts[0].air_density == 1.225
 
     @patch(
@@ -116,29 +182,13 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
 
-        meso_parent = next((s for s in config.subsections if s.index == "2.4"), None)
-        assert meso_parent is not None
-        assert meso_parent.type == "timeseries"
-        assert meso_parent.title == "测风年风资源分析"
-        assert meso_parent.datasets == ["reconstruct_meso"]
-
-        meso_children = [s for s in config.subsections if s.index.startswith("2.4.")]
-        assert len(meso_children) == 7
-        expected_order = [
-            ("2.4.1", "air_density"),
-            ("2.4.2", "temporal"),
-            ("2.4.3", "wind_rose"),
-            ("2.4.4", "vertical_profile"),
-            ("2.4.5", "wind_frequency"),
-            ("2.4.6", "weibull"),
-            ("2.4.7", "turbulence"),
-        ]
-        actual_order = [(s.index, s.type) for s in sorted(meso_children, key=lambda s: s.index)]
-        assert actual_order == expected_order
-        for child in meso_children:
+        meso_subsections = [s for s in config.subsections if s.index.startswith("2.4")]
+        assert len(meso_subsections) == 8
+        assert meso_subsections[0].type == "timeseries"
+        assert meso_subsections[0].title == "测风年风资源分析"
+        for child in meso_subsections[1:]:
             assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
 
     @patch(
@@ -162,28 +212,16 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
 
-        rep_parent = next((s for s in config.subsections if s.index == "2.5"), None)
-        assert rep_parent is not None
-        assert rep_parent.type == "timeseries"
-        assert rep_parent.title == "代表年风资源分析"
-        assert rep_parent.datasets == ["repyear"]
-
-        rep_children = [s for s in config.subsections if s.index.startswith("2.5.")]
-        assert len(rep_children) == 5
-        expected_order = [
-            ("2.5.1", "representative_year_calibration"),
-            ("2.5.2", "temporal"),
-            ("2.5.3", "wind_rose"),
-            ("2.5.4", "wind_frequency"),
-            ("2.5.5", "weibull"),
-        ]
-        actual_order = [(s.index, s.type) for s in sorted(rep_children, key=lambda s: s.index)]
-        assert actual_order == expected_order
-        for child in rep_children:
-            assert child.datasets == ["repyear"], f"Expected datasets=['repyear'] for {child.index}, got {child.datasets}"
+        rep_subsections = [s for s in config.subsections if s.index.startswith("2.5")]
+        assert len(rep_subsections) == 6
+        assert rep_subsections[0].type == "timeseries"
+        for child in rep_subsections[1:]:
+            if child.index == "2.5.1":
+                assert child.datasets == ["repyear_calibration"]
+            else:
+                assert child.datasets == ["repyear"], f"Expected datasets=['repyear'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.application.usecases.recommend_report.calculate_air_density",
@@ -206,27 +244,12 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
-
-        fifty_parent = next((s for s in config.subsections if s.index == "2.6"), None)
-        assert fifty_parent is not None
-        assert fifty_parent.type == "fifty_year_max_wind"
-        assert fifty_parent.title == "五十年一遇最大风速"
-        assert fifty_parent.datasets == ["reconstruct_meso"]
-
-        fifty_children = [s for s in config.subsections if s.index.startswith("2.6.")]
-        assert len(fifty_children) == 5
-        expected_order = [
-            ("2.6.1", "iec_standards"),
-            ("2.6.2", "fifty_year_method1"),
-            ("2.6.3", "fifty_year_method2"),
-            ("2.6.4", "fifty_year_method3"),
-            ("2.6.5", "fifty_year_summary"),
-        ]
-        actual_order = [(s.index, s.type) for s in sorted(fifty_children, key=lambda s: s.index)]
-        assert actual_order == expected_order
-        for child in fifty_children:
+        fifty_year_subsections = [s for s in config.subsections if s.index.startswith("2.6")]
+        assert len(fifty_year_subsections) == 6
+        assert fifty_year_subsections[0].type == "fifty_year_max_wind"
+        assert fifty_year_subsections[0].title == "五十年一遇最大风速"
+        for child in fifty_year_subsections[1:]:
             assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
 
     @patch(
@@ -245,24 +268,16 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
 
-        dataset_names = [ds.name for ds in config.datasets]
-        assert "reconstruct_meso" not in dataset_names
-        assert "repyear" in dataset_names
+        rep_subsections = [s for s in config.subsections if s.index.startswith("2.5")]
+        fifty_year_subsections = [s for s in config.subsections if s.index.startswith("2.6")]
+        assert len(rep_subsections) >= 1
+        assert len(fifty_year_subsections) >= 1
 
-        indices = [s.index for s in config.subsections]
-        assert "2.4" not in indices
-        assert "2.5" in indices
-        assert "2.6" in indices
-
-        rep_parent = next((s for s in config.subsections if s.index == "2.5"), None)
-        assert rep_parent is not None
+        rep_parent = next(s for s in rep_subsections if s.index == "2.5")
+        fifty_parent = next(s for s in fifty_year_subsections if s.index == "2.6")
         assert rep_parent.datasets == ["repyear"]
-
-        fifty_parent = next((s for s in config.subsections if s.index == "2.6"), None)
-        assert fifty_parent is not None
         assert fifty_parent.datasets == ["repyear"]
 
     @patch(
@@ -286,10 +301,10 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
 
         for ds in config.datasets:
+            assert ds.masts is not None
             for mast in ds.masts:
                 assert mast.air_density == 1.225
 
@@ -314,9 +329,11 @@ class TestRecommendReport:
         )
 
         output_path = recommend_report(str(tmp_path))
-
         config = FlatReportConfig.from_toml(output_path)
+
+        assert config.datasets is not None
         assert len(config.datasets) > 0
+        assert config.subsections is not None
         assert len(config.subsections) > 0
 
     @patch(

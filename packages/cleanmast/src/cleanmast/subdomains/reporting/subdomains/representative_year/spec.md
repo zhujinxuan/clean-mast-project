@@ -1,6 +1,6 @@
 ## Purpose
 
-Multi-mast representative year calibration summary for wind resource reports.
+Multi-mast representative year calibration analysis for wind resource reports. Produces a summary table (all masts), per-mast 16-sector statistics table, and per-mast 4×4 Altair scatter grid.
 
 ## Rules
 
@@ -8,6 +8,8 @@ Multi-mast representative year calibration summary for wind resource reports.
 - `compute.py` is pure functions only — no IO, no side effects; receives data as parameters.
 - `assemble.py` is pure — wraps computed data in atoms, no IO.
 - Model classes use `frozen=True`.
+- `section.from_inputs` accepts `list[SingleMastAnalysisInput]` with calibration payloads.
+- Per-mast figures use Altair for 4×4 sector scatter grids.
 
 ## Anti-patterns
 

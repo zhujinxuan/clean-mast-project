@@ -50,3 +50,17 @@ ignore_imports =
 name = Reporting capabilities cannot import each other
 type = independence
 modules = cleanmast.subdomains.reporting.subdomains.*
+[importlinter:contract:tomli-configuration-gateway-only]
+name = No raw TOML I/O — use configuration gateway Pydantic models
+type = forbidden
+source_modules =
+    cleanmast.subdomains.reporting
+    cleanmast.application.usecases
+    cleanmast.subdomains.dataingestion
+    cleanmast.subdomains.dataprocessing
+    cleanmast.subdomains.assessment
+forbidden_modules =
+    tomli
+    tomli_w
+allowed_modules =
+    cleanmast.subdomains.configuration.value_objects

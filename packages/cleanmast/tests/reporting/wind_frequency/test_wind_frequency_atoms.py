@@ -14,11 +14,11 @@ from typing import Any
 import polars as pl
 import pytest
 from cleanmast.subdomains.reporting.subdomains.wind_frequency.model import (
-    WindFrequencyAtomMeta,
     SingleMastWindDistributionSubgridAtom,
     SingleMastWindFrequencyHoursAtom,
     SingleMastWindPowerHoursAtom,
     SingleMastWindProductiveRangeAtom,
+    WindFrequencyAtomMeta,
     WindFrequencySchema,
 )
 from typst_ir import TypstParagraph, TypstTable

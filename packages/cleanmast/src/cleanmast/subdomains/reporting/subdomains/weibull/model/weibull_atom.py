@@ -11,9 +11,9 @@ import altair as alt
 import polars as pl
 import vl_convert as vlc
 from typing_extensions import override
-
 from typst_ir import TypstFigure, TypstParagraph, TypstTable
 
+from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.subdomains.weibull.model.report_meta import (
     WeibullAtomMeta,
@@ -21,7 +21,6 @@ from cleanmast.subdomains.reporting.subdomains.weibull.model.report_meta import 
 from cleanmast.subdomains.reporting.subdomains.weibull.model.schemas import (
     WeibullSchema,
 )
-from cleanmast.subdomains.reporting.model import get_height_display_name
 
 
 def _is_long_format(df: pl.DataFrame) -> bool:

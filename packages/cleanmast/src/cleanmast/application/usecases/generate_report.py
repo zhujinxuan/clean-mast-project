@@ -8,7 +8,7 @@ This module provides the use case for generating representative timeseries repor
 from processed mast data.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
@@ -16,12 +16,14 @@ from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.api import ReportGenerationService
 from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
 from cleanmast.subdomains.reporting.model.analysis_input import (
+    RepresentativeYearCalibrationPayload,
     SingleMastAnalysisInput,
 )
 from cleanmast.subdomains.reporting.model.report_config import (
@@ -34,25 +36,6 @@ from cleanmast.subdomains.reporting.render.report_builder import (
 )
 
 _SubsectionDispatch = Callable[[list[SingleMastAnalysisInput]], Any]
-
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
-from cleanmast.subdomains.reporting.api import ReportGenerationService
-from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
-from cleanmast.subdomains.reporting.model.analysis_input import (
-    SingleMastAnalysisInput,
-)
-from cleanmast.subdomains.reporting.model.report_config import (
-    AtomCollection,
-    FlatReportConfig,
-)
-from cleanmast.subdomains.reporting.protocols.report_builder import BuildResult
-from cleanmast.subdomains.reporting.render.report_builder import (
-    ReportBuilderService as ReportBuilder,
-)
 
 
 @dataclass(frozen=True)
@@ -168,6 +151,37 @@ def load_datasets(
                 timeseries, mast_ref.name, mast_ref.air_density
             )
             mast_data.append(input_data)
+        mast_analysis_windows: dict[str, TimeRange] = {}
+        for aw in ds.analysis_windows or []:
+            for mast_name in aw.target_masts:
+                mast_analysis_windows[mast_name] = aw.time_range
+        # Attach calibration payloads from meso references
+        if ds.mesos:
+            meso_data: dict[str, TimeSeriesData] = {}
+            for meso_ref in ds.mesos:
+                resolved = base_dir / meso_ref.input.data
+                if not resolved.exists():
+                    raise FileNotFoundError(
+                        f"Meso dataset file not found for '{meso_ref.meso_name}': {resolved}"
+                    )
+                source = TimeSeriesSource(data=str(resolved))
+                meso_data[meso_ref.meso_name] = load_timeseries(source, ".")
+            for i, input_data in enumerate(mast_data):
+                for meso_ref in ds.mesos:
+                    if input_data.mast_name in meso_ref.target_masts:
+                        tr = mast_analysis_windows[input_data.mast_name]
+                        payload = RepresentativeYearCalibrationPayload(
+                            meso_time_series=meso_data[meso_ref.meso_name],
+                            meso_name=meso_ref.meso_name,
+                            sampling_period="10min",
+                            analysis_start=tr.min,
+                            analysis_end=tr.max,
+                        )
+                        mast_data[i] = replace(
+                            input_data,
+                            representative_year_calibration_payload=payload,
+                        )
+                        break
         loaded[ds.name] = LoadedDataset(
             name=ds.name,
             mast_data=mast_data,

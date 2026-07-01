@@ -11,8 +11,6 @@ from unittest.mock import patch
 
 import polars as pl
 import pytest
-from typst_ir import TypstTable
-
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
 )
@@ -28,6 +26,7 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_per_h
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
+from typst_ir import TypstTable
 
 
 @pytest.fixture

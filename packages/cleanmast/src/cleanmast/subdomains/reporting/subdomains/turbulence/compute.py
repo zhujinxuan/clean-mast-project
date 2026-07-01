@@ -9,7 +9,7 @@ No IO, no side effects, no mutable global state.
 import numpy as np
 import polars as pl
 
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.shared.timeseries import SensorColumn
 
 # ── Constants ────────────────────────────────────────────────────────────────
 

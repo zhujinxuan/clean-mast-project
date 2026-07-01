@@ -2,6 +2,9 @@ from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalys
 from cleanmast.subdomains.reporting.model.analysis_metadata import AnalysisMetadata
 from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.model.analysis_result import AnalysisResult
+from cleanmast.subdomains.reporting.model.height_label import (
+    get_height_display_name,
+)
 from cleanmast.subdomains.reporting.model.report_config import (
     VALID_SUBSECTION_TYPES,
     DatasetConfig,
@@ -9,12 +12,6 @@ from cleanmast.subdomains.reporting.model.report_config import (
     FlatSubsectionConfig,
     MastRef,
     MesoRef,
-)
-from cleanmast.subdomains.reporting.model.height_label import (
-    get_height_display_name,
-)
-from cleanmast.subdomains.reporting.model.section_input import (
-    MesoSectionInput,
 )
 
 __all__ = [
@@ -26,8 +23,6 @@ __all__ = [
     "FlatSubsectionConfig",
     "MastRef",
     "MesoRef",
-    "MesoSectionInput",
     "SingleMastAnalysisInput",
-    "VALID_SUBSECTION_TYPES",
-    "get_height_display_name",
+    "VALID_SUBSECTION_TYPES", "get_height_display_name",
 ]

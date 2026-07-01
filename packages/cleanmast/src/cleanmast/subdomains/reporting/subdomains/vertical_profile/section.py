@@ -6,7 +6,6 @@ from typst_ir import TypstHeading, TypstParagraph, TypstSection
 from typst_ir.nodes import TypstBodyBlock
 
 from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
-from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import VerticalProfileAtomMeta
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.protocols.section import Section
 from cleanmast.subdomains.reporting.render.subsection_renderer import (
@@ -18,6 +17,9 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.assemble import 
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.compute import (
     analyze_vertical_profile,
     calculate_wind_shear_analysis,
+)
+from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import (
+    VerticalProfileAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear_exponent_atom import (
     SingleMastWindShearExponentAtom,

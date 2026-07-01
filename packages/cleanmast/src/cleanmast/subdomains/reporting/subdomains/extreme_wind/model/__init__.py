@@ -16,7 +16,6 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import
 __all__ = [
     "ExtremeWindAtomMeta",
     "IECStandardsAtomMeta",
-    "get_height_display_name",
     "FiftyYearMaxWindResultSchema",
     "FiftyYearMaxWindMethod1DetailSchema",
     "GumbelParameterSchema",

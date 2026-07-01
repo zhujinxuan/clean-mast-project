@@ -14,11 +14,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Literal, Protocol, Self, TypeVar, overload
 
 import polars as pl
+from typst_ir import TypstFigure
 
 if TYPE_CHECKING:
     import dataframely as dy
-
-    from typst_ir import TypstFigure, TypstParagraph, TypstTable
+    from typst_ir import TypstParagraph, TypstTable
 
 
 class SchemaProtocol(Protocol):
@@ -184,8 +184,6 @@ class ReportAtom(ABC, Generic[T, M]):
         Returns:
             A TypstFigure IR node, or None if no image was generated
         """
-        from typst_ir import TypstFigure
-
         image_path = self.renderImage(output_dir, force)
         if not image_path or not image_path.name or image_path == output_dir:
             return None

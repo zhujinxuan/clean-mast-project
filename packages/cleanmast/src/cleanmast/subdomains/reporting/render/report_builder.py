@@ -22,7 +22,6 @@ from typst_ir.polish_docx import polish_docx
 
 from cleanmast.subdomains.reporting.protocols.report_builder import (
     BuildResult,
-    ReportBuilder,
 )
 from cleanmast.subdomains.reporting.protocols.section import Section
 

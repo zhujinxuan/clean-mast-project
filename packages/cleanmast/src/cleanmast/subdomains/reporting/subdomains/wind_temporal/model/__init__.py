@@ -1,5 +1,6 @@
 """Wind temporal model types."""
 
+from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.daily_pattern_atom import (
     SingleMastDailyPatternAtom,
 )
@@ -18,7 +19,6 @@ from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.monthly_patte
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.monthly_power_pattern_atom import (
     SingleMastMonthlyPowerPatternAtom,
 )
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.report_meta import (
     WindTemporalAtomMeta,
 )

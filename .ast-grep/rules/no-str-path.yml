@@ -9,3 +9,4 @@ rule:
 constraints:
   PATH:
     kind: identifier
+    regex: "(?i).*(path|dir|file|folder|output|save|dest|src|root).*"

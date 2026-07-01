@@ -1,8 +1,10 @@
 import polars as pl
 
 from cleanmast.subdomains.reporting.model.analysis_result import AnalysisResult
-from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import VerticalProfileAtomMeta
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import (
+    VerticalProfileAtomMeta,
+)
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
     WindShearSchema,

@@ -10,11 +10,20 @@ representative-year sources.
 """
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 
+from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+    load_fill_heights_config,
+)
+from cleanmast.subdomains.configuration.value_objects.representative_year import (
+    RepresentativeYearMast,
+    load_representative_year_config,
+)
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries_parquet,
 )
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -23,6 +32,7 @@ from cleanmast.subdomains.reporting.compute.air_density import (
     calculate_air_density,
 )
 from cleanmast.subdomains.reporting.model.report_config import (
+    AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
@@ -75,7 +85,6 @@ def _build_dataset_for_timeseries(
         fill_heights_filename: Name of the fill-heights TOML file.
         report_data_subdir: Subdirectory name to use for the report data path.
         dataset_name: Name for the dataset in the catalog.
-
     Returns:
         DatasetConfig or None if the fill-heights file does not exist.
 
@@ -83,28 +92,20 @@ def _build_dataset_for_timeseries(
         FileNotFoundError: If a referenced parquet file does not exist.
         ValueError: If no valid masts are found.
     """
-    import tomli
-
     fill_heights_path = project_path / fill_heights_filename
     if not fill_heights_path.exists():
         return None
 
-    with open(fill_heights_path, "rb") as f:
-        config = tomli.load(f)
-
-    masts = config.get("masts", [])
+    config = load_fill_heights_config(str(fill_heights_path))
+    masts = config.masts
     mast_refs: list[MastRef] = []
 
     for mast in masts:
-        mast_name = mast.get("name")
-        if not mast_name:
-            continue
-
-        data_path = mast.get("output", {}).get("data", "")
-        if not data_path:
-            continue
+        mast_name = mast.name
+        data_path = mast.output.data
 
         parquet_path = project_path / data_path
+
         if not parquet_path.exists():
             raise FileNotFoundError(
                 f"Parquet file not found for mast {mast_name}: {parquet_path}"
@@ -149,12 +150,15 @@ def _build_dataset_for_timeseries(
 def _build_subsections(
     reconstruct_meso_dataset: DatasetConfig | None,
     repyear_dataset: DatasetConfig | None,
+    calibration_dataset: DatasetConfig | None,
 ) -> list[FlatSubsectionConfig]:
     """Build flat subsections with hardcoded indices.
 
     Index scheme:
       2.4 = meso (timeseries)
       2.5 = repyear (timeseries)
+        2.5.1 = calibration (uses repyear_calibration dataset)
+        2.5.2+ = other repyear analysis types
       2.6 = fifty_year_max_wind
     """
     subsections: list[FlatSubsectionConfig] = []
@@ -180,7 +184,18 @@ def _build_subsections(
             title="代表年风资源分析",
             datasets=[repyear_dataset.name],
         ))
-        for i, subtype in enumerate(_REP_ANALYSIS_SUBSECTION_TYPES, start=1):
+        # 2.5.1 = calibration (uncalibrated masts + calibrated mesos)
+        if calibration_dataset:
+            subsections.append(FlatSubsectionConfig(
+                index="2.5.1",
+                type="representative_year_calibration",
+                datasets=[calibration_dataset.name],
+            ))
+        # 2.5.2+ = other repyear analysis types (skip first which is calibration)
+        start_idx = 2 if calibration_dataset else 1
+        for i, subtype in enumerate(
+            _REP_ANALYSIS_SUBSECTION_TYPES[1:], start=start_idx,
+        ):
             subsections.append(FlatSubsectionConfig(
                 index=f"2.5.{i}",
                 type=subtype,
@@ -203,6 +218,87 @@ def _build_subsections(
             ))
 
     return subsections
+
+
+def _build_analysis_windows(
+    masts: Sequence[RepresentativeYearMast],
+) -> list[AnalysisWindow]:
+    """Group masts with identical TimeRange into AnalysisWindow entries."""
+    groups: dict[TimeRange, list[str]] = {}
+    for m in masts:
+        groups.setdefault(m.time_range, []).append(m.name)
+    return [
+        AnalysisWindow(target_masts=mast_names, time_range=tr)
+        for tr, mast_names in groups.items()
+    ]
+
+
+def _build_reconstruct_meso_dataset(project_path: Path) -> DatasetConfig | None:
+    """Build reconstruct_meso dataset from fill-heights config."""
+    return _build_dataset_for_timeseries(
+        project_path,
+        "fill-heights-reconstruct-meso.toml",
+        "reconstruct-meso-fill-heights",
+        "reconstruct_meso",
+        fallback_air_density=STANDARD_AIR_DENSITY,
+    )
+
+
+def _build_repyear_dataset(project_path: Path) -> DatasetConfig | None:
+    """Build repyear dataset from fill-heights config enriched with representative-year.toml."""
+    repyear_dataset = _build_dataset_for_timeseries(
+        project_path,
+        "fill-heights-representative-year.toml",
+        "representative-year-fill-heights",
+        "repyear",
+        fallback_air_density=STANDARD_AIR_DENSITY,
+    )
+
+    if repyear_dataset:
+        repyear_toml_path = project_path / "representative-year.toml"
+        if repyear_toml_path.exists():
+            repyear_config = load_representative_year_config(str(repyear_toml_path))
+            masts = repyear_config.masts
+
+            meso_name_to_masts: dict[str, list[str]] = {}
+            for mast in masts:
+                meso_name_to_masts.setdefault(
+                    mast.meso_model.meso_name, []
+                ).append(mast.name)
+
+            meso_refs: list[MesoRef] = []
+            for meso in repyear_config.mesos:
+                target_masts = meso_name_to_masts.get(meso.name, [])
+                if target_masts:
+                    meso_refs.append(MesoRef(
+                        input=meso.input,
+                        target_masts=target_masts,
+                        meso_name=meso.name,
+                    ))
+
+            if meso_refs:
+                repyear_dataset = repyear_dataset.model_copy(update={"mesos": meso_refs})
+
+            analysis_windows = _build_analysis_windows(masts)
+            if analysis_windows:
+                repyear_dataset = repyear_dataset.model_copy(update={"analysis_windows": analysis_windows})
+
+    return repyear_dataset
+
+
+def _build_calibration_dataset(
+    reconstruct_meso_dataset: DatasetConfig | None,
+    repyear_dataset: DatasetConfig | None,
+) -> DatasetConfig | None:
+    """Build calibration dataset combining uncalibrated masts with calibrated mesos."""
+    if reconstruct_meso_dataset is None or repyear_dataset is None:
+        return None
+    return DatasetConfig(
+        name="repyear_calibration",
+        masts=reconstruct_meso_dataset.masts,
+        mesos=repyear_dataset.mesos,
+        analysis_windows=repyear_dataset.analysis_windows,
+    )
 
 
 def recommend_report(project_dir: str) -> Path:
@@ -235,59 +331,9 @@ def recommend_report(project_dir: str) -> Path:
     """
     project_path = Path(project_dir)
 
-    reconstruct_meso_dataset = _build_dataset_for_timeseries(
-        project_path,
-        "fill-heights-reconstruct-meso.toml",
-        "reconstruct-meso-fill-heights",
-        "reconstruct_meso",
-        fallback_air_density=STANDARD_AIR_DENSITY,
-    )
-    repyear_dataset = _build_dataset_for_timeseries(
-        project_path,
-        "fill-heights-representative-year.toml",
-        "representative-year-fill-heights",
-        "repyear",
-        fallback_air_density=STANDARD_AIR_DENSITY,
-    )
-
-    if repyear_dataset:
-        import tomli
-
-        repyear_toml_path = project_path / "representative-year.toml"
-        if repyear_toml_path.exists():
-            with open(repyear_toml_path, "rb") as f:
-                repyear_config = tomli.load(f)
-
-            mesos_config = repyear_config.get("mesos", [])
-            masts_config = repyear_config.get("masts", [])
-
-            if mesos_config:
-                meso_name_to_masts: dict[str, list[str]] = {}
-                for mast in masts_config:
-                    mast_name = mast.get("name")
-                    meso_name = mast.get("meso_model", {}).get("meso_name")
-                    if mast_name and meso_name:
-                        meso_name_to_masts.setdefault(meso_name, []).append(mast_name)
-
-                meso_refs: list[MesoRef] = []
-                for meso in mesos_config:
-                    meso_name = meso.get("name")
-                    input_data = meso.get("input", {})
-                    meso_data = input_data.get("data")
-                    if meso_name and meso_data:
-                        target_masts = meso_name_to_masts.get(meso_name, [])
-                        if target_masts:
-                            source = TimeSeriesSource(
-                                data=meso_data,
-                                sensors=input_data.get("sensors"),
-                            )
-                            meso_refs.append(MesoRef(
-                                input=source,
-                                target_masts=target_masts,
-                            ))
-
-                if meso_refs:
-                    repyear_dataset = repyear_dataset.model_copy(update={"mesos": meso_refs})
+    reconstruct_meso_dataset = _build_reconstruct_meso_dataset(project_path)
+    repyear_dataset = _build_repyear_dataset(project_path)
+    calibration_dataset = _build_calibration_dataset(reconstruct_meso_dataset, repyear_dataset)
 
     if not reconstruct_meso_dataset and not repyear_dataset:
         raise ValueError(
@@ -300,9 +346,12 @@ def recommend_report(project_dir: str) -> Path:
         datasets.append(reconstruct_meso_dataset)
     if repyear_dataset:
         datasets.append(repyear_dataset)
+    if calibration_dataset:
+        datasets.append(calibration_dataset)
 
-    subsections = _build_subsections(reconstruct_meso_dataset, repyear_dataset)
-
+    subsections = _build_subsections(
+        reconstruct_meso_dataset, repyear_dataset, calibration_dataset,
+    )
     report_config = FlatReportConfig(
         datasets=datasets,
         subsections=subsections,

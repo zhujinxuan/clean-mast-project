@@ -1,10 +1,18 @@
 """Tests for extreme wind atoms and assembly — reporting domain."""
 
-from datetime import datetime
 from pathlib import Path
 
 import polars as pl
-
+from cleanmast.subdomains.reporting.model import get_height_display_name
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
+    build_iec_standards_atom,
+    build_method1_atom,
+    build_method3_atom,
+)
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.iec_atom import (
+    IEC_STANDARDS_DATA,
+    IECStandardsAtom,
+)
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method1_atom import (
     Method1Atom,
 )
@@ -17,14 +25,9 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method2_atom i
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method3_atom import (
     Method3Atom,
 )
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.iec_atom import (
-    IECStandardsAtom,
-    IEC_STANDARDS_DATA,
-)
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
-    IECStandardsAtomMeta,
     ExtremeWindAtomMeta,
+    IECStandardsAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import (
     FiftyYearMaxWindComparisonSchema,
@@ -35,21 +38,12 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import
     IECWindClassSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.summary_atom import (
-    ComparisonExtremeAtom,
     ComparisonSustainedAtom,
     IECWindClassAtom,
-)
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
-    build_iec_standards_atom,
-    build_method1_atom,
-    build_method2_atoms,
-    build_method3_atom,
-    build_summary_atoms,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.section import (
     ExtremeWindSection,
 )
-
 
 # =============================================================================
 # Report Meta

@@ -6,10 +6,18 @@ import altair as alt
 import polars as pl
 import vl_convert as vlc
 from typing_extensions import override
-
 from typst_ir import TypstParagraph, TypstTable
 
+from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
+    TurbulenceAtomMeta,
+)
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
+    TurbulenceSchema,
+)
+
+
 def _select_interested_heights(
     heights: list[float],
     min_height: float = 120.0,
@@ -32,15 +40,6 @@ def _select_interested_heights(
     fallback = sorted_heights[:min_count]
     fallback.sort()
     return fallback
-
-
-from cleanmast.subdomains.reporting.model import get_height_display_name
-from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
-    TurbulenceAtomMeta,
-)
-from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
-    TurbulenceSchema,
-)
 
 
 # ── IEC reference constants/helpers (duplicated to avoid model→compute import) ─

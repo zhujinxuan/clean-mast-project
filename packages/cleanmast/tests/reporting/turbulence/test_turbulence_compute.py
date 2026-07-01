@@ -12,24 +12,22 @@ from datetime import datetime, timedelta
 import numpy as np
 import polars as pl
 import pytest
-
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.subdomains.reporting.subdomains.turbulence.compute import (
     MIN_SAMPLES,
+    MIN_WIND_SPEED,
     NUM_SECTORS,
     SECTOR_NAMES,
     SECTOR_WIDTH,
     TI_REP_Z,
-    MIN_WIND_SPEED,
+    _select_interested_heights,
     analyze_by_sector,
     analyze_by_wind_speed,
     calculate_representative_ti,
     calculate_ti_series,
     classify_iec_category,
     compute_iec_ti,
-    _select_interested_heights,
 )
-
 
 # =============================================================================
 # Fixtures

@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import cast
 
 from typing_extensions import override
-
 from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom

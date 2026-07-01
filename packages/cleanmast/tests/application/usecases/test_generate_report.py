@@ -10,6 +10,9 @@ from cleanmast.application.usecases.generate_report import (
     _handle_fifty_year_max_wind_flat,
     generate_report,
 )
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.subdomains.reporting.model.report_config import (
     DatasetConfig,
     FlatReportConfig,
@@ -18,9 +21,6 @@ from cleanmast.subdomains.reporting.model.report_config import (
 )
 from cleanmast.subdomains.reporting.model.report_meta import (
     SingleMastMeta,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 

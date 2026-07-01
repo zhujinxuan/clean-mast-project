@@ -8,7 +8,9 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import VerticalProfileAtomMeta
+from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import (
+    VerticalProfileAtomMeta,
+)
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
     WindShearSchema,

@@ -4,16 +4,12 @@ Tests cover all pure compute functions ported from assessment.
 """
 
 import math
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 import polars as pl
 import pytest
-from scipy.stats import gumbel_r
-
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
-    EULER_MASCHERONI,
     STANDARD_AIR_DENSITY,
     _classify_wind_class,
     _compute_density_at_height,
@@ -27,11 +23,7 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
     extract_five_day_maxima,
     fit_gumbel_distribution,
 )
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
-    generate_gumbel_qq_subgrid,
-    generate_qq_monte_carlo_bands,
-)
-
+from scipy.stats import gumbel_r
 
 # =============================================================================
 # Method 1 - Five Times Average Wind Speed

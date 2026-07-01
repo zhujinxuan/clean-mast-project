@@ -95,3 +95,17 @@ modules =
     cleanmast.subdomains.assessment.subdomains.wind_rose
     cleanmast.subdomains.assessment.subdomains.wind_temporal
 
+[importlinter:contract:tomli-configuration-gateway-only]
+name = No raw TOML I/O — use configuration gateway Pydantic models
+type = forbidden
+source_modules =
+    cleanmast.subdomains.reporting
+    cleanmast.application.usecases
+    cleanmast.subdomains.dataingestion
+    cleanmast.subdomains.dataprocessing
+    cleanmast.subdomains.assessment
+forbidden_modules =
+    tomli
+    tomli_w
+allowed_modules =
+    cleanmast.subdomains.configuration.value_objects

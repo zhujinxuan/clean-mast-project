@@ -5,6 +5,7 @@ Re-exports foundational time series types from dataingestion until they can be
 properly migrated to shared/timeseries.
 """
 
+from cleanmast.shared.timeseries.alignment import align_to_interval
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries,
@@ -21,4 +22,5 @@ __all__ = [
     "TimeSeriesSource",
     "load_timeseries",
     "load_timeseries_parquet",
+    "align_to_interval",
 ]

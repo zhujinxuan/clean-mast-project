@@ -10,20 +10,19 @@ from typing import cast
 
 import polars as pl
 from typing_extensions import override
-
 from typst_ir import TypstParagraph, TypstTable
 
-from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.model import get_height_display_name
+from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
+    generate_gumbel_qq_subgrid,
+)
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
     ExtremeWindAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import (
     FiftyYearMaxWindResultSchema,
     GumbelParameterSchema,
-)
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
-    generate_gumbel_qq_subgrid,
 )
 
 

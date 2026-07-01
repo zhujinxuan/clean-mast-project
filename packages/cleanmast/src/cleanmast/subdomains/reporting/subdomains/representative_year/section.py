@@ -3,29 +3,36 @@
 Orchestrates: receive input → call compute → call assemble → return result.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import ClassVar, Sequence
 
+import polars as pl
 from typst_ir import TypstHeading, TypstSection
-from typst_ir.nodes import TypstBodyBlock
 
-from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.reporting.model.section_input import MesoSectionInput
+from cleanmast.shared.timeseries import align_to_interval
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.render.subsection_renderer import (
     render_subsection_content,
 )
 from cleanmast.subdomains.reporting.subdomains.representative_year.assemble import (
-    build_representative_year_atoms,
+    build_rep_year_sector_atoms,
+    build_rep_year_summary_atom,
 )
 from cleanmast.subdomains.reporting.subdomains.representative_year.compute import (
-    RepresentativeYearMastInput,
+    _parse_sampling_period,
     analyze_representative_year_calibration,
 )
-from cleanmast.subdomains.reporting.subdomains.representative_year.model.representative_year_atom import (
-    MultiMastRepYearCalibrationAtom,
+from cleanmast.subdomains.reporting.subdomains.representative_year.model.representative_year_sector_figure_atom import (
+    RepYearSectorFigureAtom,
+)
+from cleanmast.subdomains.reporting.subdomains.representative_year.model.representative_year_sector_table_atom import (
+    RepYearSectorTableAtom,
+)
+from cleanmast.subdomains.reporting.subdomains.representative_year.model.representative_year_summary_atom import (
+    RepYearSummaryAtom,
 )
 
 
@@ -41,7 +48,9 @@ class RepresentativeYearSection:
     _mast_names: list[str] | None = None
 
     atom_configs: ClassVar[list[tuple[type[ReportAtom], bool]]] = [
-        (MultiMastRepYearCalibrationAtom, True),
+        (RepYearSummaryAtom, True),
+        (RepYearSectorTableAtom, False),
+        (RepYearSectorFigureAtom, False),
     ]
 
     @property
@@ -49,56 +58,57 @@ class RepresentativeYearSection:
         return self._atoms
 
     @classmethod
-    def from_inputs(cls, items: list[MesoSectionInput]) -> "RepresentativeYearSection":
-        """Build section from mesoscale input."""
-        mast_data = [
-            (
-                item.meso_time_series,
-                item.mast_name,
-                item.meso_name,
-                item.rep_year_min,
-                item.rep_year_max,
-            )
-            for item in items
-        ]
-        return cls.from_mast_data(mast_data)
+    def from_inputs(cls, items: list) -> RepresentativeYearSection:
+        """Build section from SingleMastAnalysisInput items.
 
-    @classmethod
-    def from_mast_data(
-        cls,
-        mast_data: list[tuple[TimeSeriesData, str, str, datetime, datetime]],
-    ) -> "RepresentativeYearSection":
-        """Build section from per-mast mesoscale time series and rep-year ranges.
-
-        Args:
-            mast_data: List of (
-                meso_time_series,
-                mast_name,
-                meso_name,
-                rep_year_min,
-                rep_year_max,
-            ) tuples.
-
-        Returns:
-            RepresentativeYearSection with computed atoms.
+        Items must have representative_year_calibration_payload set.
         """
-        inputs: list[RepresentativeYearMastInput] = []
-        mast_names: list[str] = []
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
 
-        for meso_data, mast_name, meso_name, rep_min, rep_max in mast_data:
-            inputs.append(
-                RepresentativeYearMastInput(
-                    mast_name=mast_name,
-                    meso_name=meso_name,
-                    meso_data=meso_data,
-                    rep_year_min=rep_min,
-                    rep_year_max=rep_max,
-                )
-            )
-            mast_names.append(mast_name)
+        # Filter to items with payloads
+        calibrated_items = [
+            item for item in items
+            if isinstance(item, SingleMastAnalysisInput)
+            and item.representative_year_calibration_payload is not None
+        ]
 
-        df = analyze_representative_year_calibration(inputs)
-        atoms = build_representative_year_atoms(df)
+        if not calibrated_items:
+            return cls(_atoms=[], _mast_names=[])
+
+        # Compute — alignment happens inside compute.py for regression only
+        summaries, results = analyze_representative_year_calibration(calibrated_items)
+
+        # Assemble summary atom
+        summary_atom = build_rep_year_summary_atom(summaries)
+
+        # Align mast and meso for figure/table atoms (post-compute)
+        aligned_mast_data: dict[str, pl.DataFrame] = {}
+        aligned_meso_data: dict[str, pl.DataFrame] = {}
+        aligned_mast_sensors: dict[str, list] = {}
+        aligned_meso_sensors: dict[str, list] = {}
+        for item in calibrated_items:
+            payload = item.representative_year_calibration_payload
+            sampling_minutes = _parse_sampling_period(payload.sampling_period)
+            aligned_mast = align_to_interval(item.time_series, sampling_minutes)
+            aligned_meso = align_to_interval(payload.meso_time_series, sampling_minutes)
+            aligned_mast_data[item.mast_name] = aligned_mast.df
+            aligned_meso_data[item.mast_name] = aligned_meso.df
+            aligned_mast_sensors[item.mast_name] = aligned_mast.sensors
+            aligned_meso_sensors[item.mast_name] = aligned_meso.sensors
+
+        # Assemble sector atoms using ALIGNED data
+        table_atoms, figure_atoms = build_rep_year_sector_atoms(
+            results,
+            mast_data=aligned_mast_data,
+            meso_data=aligned_meso_data,
+            mast_sensors=aligned_mast_sensors,
+            meso_sensors=aligned_meso_sensors,
+        )
+
+        mast_names = [item.mast_name for item in calibrated_items]
+        atoms: list[ReportAtom] = [summary_atom, *table_atoms, *figure_atoms]
         return cls(_atoms=atoms, _mast_names=mast_names)
 
     def render_ir(self, images_dir: Path) -> TypstSection:

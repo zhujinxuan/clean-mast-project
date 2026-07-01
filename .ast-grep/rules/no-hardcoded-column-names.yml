@@ -1,0 +1,19 @@
+id: no-hardcoded-column-names
+language: python
+severity: error
+message: >
+  Do not resolve column names by string pattern-matching.
+  Use SensorColumn metadata (sensor_type, stat_type, height) to resolve
+  column names via _find_sensor() or RepYearSectorAtomMeta fields.
+files:
+  - packages/cleanmast/src/cleanmast/subdomains/reporting/**
+rule:
+  any:
+    # Hardcoded "ws" / "wd" assignments
+    - pattern: $VAR = "ws"
+    - pattern: $VAR = "wd"
+    # Pattern-matching on column name prefixes
+    - pattern: $COL.startswith("ws")
+    - pattern: $COL.startswith("ws_")
+    - pattern: $COL.startswith("WindSpeed")
+    - pattern: $COL.startswith("WindDirection")

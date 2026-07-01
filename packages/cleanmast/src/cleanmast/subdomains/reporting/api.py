@@ -7,25 +7,11 @@ happens in subdomains.
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
-import tomli
-
 from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
-from cleanmast.subdomains.reporting.model.analysis_input import (
-    SingleMastAnalysisInput,
-)
-from cleanmast.subdomains.reporting.model.analysis_parameters import (
-    AnalysisParameters,
-)
-from cleanmast.subdomains.reporting.model.section_input import (
-    MesoSectionInput,
-)
+from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
+from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.protocols.section import Section
 from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.section import (
@@ -69,47 +55,8 @@ class ReportGenerationService:
         self,
         items: list[SingleMastAnalysisInput],
     ) -> RepresentativeYearSection:
-        meso_map: dict[str, TimeSeriesData] = {}
-        meso_inputs: list[MesoSectionInput] = []
-
-        if self.project_dir is not None:
-            config_path = self.project_dir / "representative-year.toml"
-            if config_path.exists():
-                with open(config_path, "rb") as f:
-                    config = tomli.load(f)
-
-                for meso_cfg in config.get("mesos", []):
-                    meso_name = meso_cfg["name"]
-                    meso_input = meso_cfg.get("input", {})
-                    if "data" in meso_input:
-                        source = TimeSeriesSource(data=meso_input["data"])
-                        meso_ts = load_timeseries(source, str(self.project_dir))
-                        meso_map[meso_name] = meso_ts
-
-                for mast_cfg in config.get("masts", []):
-                    mast_name = mast_cfg["name"]
-                    meso_model = mast_cfg.get("meso_model", {})
-                    meso_name = meso_model.get("meso_name", "")
-                    time_range = mast_cfg.get("time_range", {})
-
-                    if meso_name in meso_map and time_range:
-                        rep_min = time_range["min"]
-                        rep_max = time_range["max"]
-                        if isinstance(rep_min, str):
-                            rep_min = datetime.fromisoformat(rep_min)
-                        if isinstance(rep_max, str):
-                            rep_max = datetime.fromisoformat(rep_max)
-                        meso_inputs.append(
-                            MesoSectionInput(
-                                meso_time_series=meso_map[meso_name],
-                                mast_name=mast_name,
-                                meso_name=meso_name,
-                                rep_year_min=rep_min,
-                                rep_year_max=rep_max,
-                            )
-                        )
-
-        return RepresentativeYearSection.from_inputs(meso_inputs)
+        """Dispatch — items carry calibration payloads from load_datasets()."""
+        return RepresentativeYearSection.from_inputs(items)
 
     def generate_wind_rose_section(
         self, items: list[SingleMastAnalysisInput],
