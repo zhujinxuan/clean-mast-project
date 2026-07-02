@@ -8,3 +8,8 @@ pandoc = "latest"
 [tasks.bootstrap]
 description = "Install all dependencies (Python + Julia)"
 run = "uv sync --all-groups --all-packages --all-extras && julia --project=CleanMastProject -e \"using Pkg; Pkg.instantiate(); Pkg.status()\""
+
+[tasks."setup:secrets"]
+description = "Decrypt DVC secrets from .dvc/config.local.age"
+shell = "nu -c"
+run = "age -d -i ($nu.home-dir | path join .config chezmoi key.txt) -o .dvc/config.local .dvc/config.local.age"

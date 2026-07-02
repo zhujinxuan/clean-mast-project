@@ -1,2 +1,5 @@
 [core]
-    remote = qiniu
+    remote = cleanmast-qiniu
+['remote "cleanmast-qiniu"']
+    url = s3://dvc-jz/cleanmast-dvc-cache
+    endpointurl = https://dvc-jz.s3.cn-east-1.qiniucs.com
