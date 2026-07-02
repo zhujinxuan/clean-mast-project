@@ -525,9 +525,6 @@ typst compile data-quality-report.typ data-quality-report.pdf
 使用 Justfile 配方执行前 16 个 Julia 处理步骤：
 
 ```bash
-# 执行所有步骤
-just process-all
-
 # 按顺序执行部分步骤（例如步骤 1-6）
 just parse-sensors
 just recommend-clean
@@ -572,11 +569,11 @@ just process-list
 
 ### 自定义处理流程
 
-项目 Justfile 支持通过 Python 覆盖脚本自定义处理步骤。将自定义 Python 脚本放入 `just-overrides/` 目录，然后编辑 Justfile 配方调用它们：
+项目 Justfile 支持通过 Python 覆盖脚本自定义处理步骤。将自定义 Python 脚本放入 `just-override/` 目录，然后编辑 Justfile 配方调用它们：
 
 ```
 projects/my-windfarm/
-├── just-overrides/
+├── just-override/
 │   └── custom-clean.py      # 自定义清理逻辑
 ├── Justfile                  # 修改配方调用覆盖脚本
 └── ...

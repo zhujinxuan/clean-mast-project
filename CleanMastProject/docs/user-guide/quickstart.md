@@ -275,7 +275,6 @@ just run-all
 # 单个步骤
 just recommend-parse-sensors
 just parse-sensors
-just process-all
 just process-clean
 just report-timeseries
 

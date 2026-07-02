@@ -56,7 +56,6 @@ just run-all
 # Individual steps
 just recommend-parse-sensors
 just parse-sensors
-just process-all
 just process-clean
 just report-timeseries
 ```

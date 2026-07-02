@@ -112,7 +112,6 @@ just --list
 - `just parse-sensors` - 解析传感器数据
 
 **数据处理**
-- `just process-all` - 执行完整处理流水线（步骤 1-16）
 - `just process-clean` - 应用数据清理规则
 - `just process-tower-shading` - 检测和校正塔影效应
 - `just process-reconstruct-single` - 单测风塔相关性重构

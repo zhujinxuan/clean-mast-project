@@ -34,74 +34,61 @@ _default:
 # Julia parse-sensors pipeline
 # ============================================================================
 
-# Generate parse-sensors.toml for the project
 recommend-parse-sensors:
     cd {{ROOT}} && julia bin/CleanMast.jl recommend parse-sensors {{PROJECT}}
 
-# Parse mast/meso sensor files using the generated config
 parse-sensors:
     cd {{ROOT}} && julia bin/CleanMast.jl project parse-sensors {{PROJECT}}/parse-sensors.toml
 
 # ============================================================================
-# Julia processing pipeline
+# Julia processing pipeline (16 steps)
 # ============================================================================
+#
+# Step  1: recommend-clean
+# Step  2: clean
+# Step  3: recommend-tower-shading
+# Step  4: tower-shading
+# Step  5: recommend-reconstruct-single
+# Step  6: reconstruct-single
+# Step  7: recommend-train-cross
+# Step  8: train-cross
+# Step  9: recommend-reconstruct-cross
+# Step 10: reconstruct-cross
+# Step 11: recommend-train-meso
+# Step 12: train-meso
+# Step 13: recommend-reconstruct-meso
+# Step 14: reconstruct-meso
+# Step 15: recommend-representative-year
+# Step 16: representative-year
+#
+# Override any step by placing scripts in just-override/ and
+# updating the corresponding recommend-* recipe. See just-override/README.md.
 
-# List the available processing steps
 process-list:
     cd {{ROOT}} && julia bin/CleanMast.jl process steps {{PROJECT}}/ --list
 
-# Run the full Julia processing pipeline (recommend + run, steps 1-16)
-process-all:
-    cd {{ROOT}} && julia bin/CleanMast.jl process steps {{PROJECT}}/ --all
-
-# Run all recommend steps individually
-recommend-all: recommend-clean recommend-tower-shading recommend-reconstruct-single recommend-train-meso recommend-reconstruct-meso recommend-representative-year
-
-# Run all processing steps individually (requires configs from recommend-all)
-process-run-all: process-clean process-tower-shading process-reconstruct-single process-train-meso process-reconstruct-meso process-representative-year
-
-# --- Clean ---
+# --- Steps 1-2: Clean ---
 recommend-clean:
     cd {{ROOT}} && julia bin/CleanMast.jl recommend clean {{PROJECT}}
 
 process-clean:
     cd {{ROOT}} && julia bin/CleanMast.jl process clean {{PROJECT}}/process-clean.toml
 
-# --- Tower shading ---
+# --- Steps 3-4: Tower shading ---
 recommend-tower-shading:
     cd {{ROOT}} && julia bin/CleanMast.jl recommend tower-shading {{PROJECT}}
 
 process-tower-shading:
     cd {{ROOT}} && julia bin/CleanMast.jl process tower-shading {{PROJECT}}/tower-shading.toml
 
-# --- Single-mast reconstruction ---
+# --- Steps 5-6: Single-mast reconstruction ---
 recommend-reconstruct-single:
     cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-single {{PROJECT}}
 
 process-reconstruct-single:
     cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-single {{PROJECT}}/reconstruct-single.toml
 
-# --- Mesoscale model training / reconstruction ---
-recommend-train-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend train-meso {{PROJECT}}
-
-process-train-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl process train-meso {{PROJECT}}/train-meso.toml
-
-recommend-reconstruct-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-meso {{PROJECT}}
-
-process-reconstruct-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-meso {{PROJECT}}/reconstruct-meso.toml
-
-# --- Representative year calibration ---
-recommend-representative-year:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend representative-year {{PROJECT}}
-
-process-representative-year:
-    cd {{ROOT}} && julia bin/CleanMast.jl process representative-year {{PROJECT}}/representative-year.toml
-
-# --- Cross-mast steps (conditional/no-op for single-mast projects) ---
+# --- Steps 7-10: Cross-mast training & reconstruction ---
 recommend-train-cross:
     cd {{ROOT}} && julia bin/CleanMast.jl recommend train-cross {{PROJECT}}
 
@@ -114,71 +101,82 @@ recommend-reconstruct-cross:
 process-reconstruct-cross:
     cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-cross {{PROJECT}}/reconstruct-cross.toml
 
+# --- Steps 11-14: Mesoscale training & reconstruction ---
+recommend-train-meso:
+    cd {{ROOT}} && julia bin/CleanMast.jl recommend train-meso {{PROJECT}}
+
+process-train-meso:
+    cd {{ROOT}} && julia bin/CleanMast.jl process train-meso {{PROJECT}}/train-meso.toml
+
+recommend-reconstruct-meso:
+    cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-meso {{PROJECT}}
+
+process-reconstruct-meso:
+    cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-meso {{PROJECT}}/reconstruct-meso.toml
+
+# --- Steps 15-16: Representative year ---
+recommend-representative-year:
+    cd {{ROOT}} && julia bin/CleanMast.jl recommend representative-year {{PROJECT}}
+
+process-representative-year:
+    cd {{ROOT}} && julia bin/CleanMast.jl process representative-year {{PROJECT}}/representative-year.toml
+
 # ============================================================================
 # Python fill-heights pipeline
 # ============================================================================
 
-# Generate fill-heights configs for reconstruct-meso and representative-year
 recommend-fill-heights:
     cd {{ROOT}} && uv run cleanmast recommend fill-heights {{PROJECT}}/
 
-# Fill heights used by reconstruct-meso
 fill-heights-meso:
     cd {{ROOT}} && uv run cleanmast fill-heights {{PROJECT}}/fill-heights-reconstruct-meso.toml
 
-# Fill heights used by representative-year
 fill-heights-representative-year:
     cd {{ROOT}} && uv run cleanmast fill-heights {{PROJECT}}/fill-heights-representative-year.toml
+
+# --- Wind turbine time series ---
+recommend-wt-timeseries:
+    cd {{ROOT}} && uv run cleanmast recommend wt-timeseries {{PROJECT}}/
+
+process-wt-timeseries:
+    cd {{ROOT}} && uv run cleanmast wt-timeseries {{PROJECT}}/wt-timeseries.toml
 
 # ============================================================================
 # Report generation
 # ============================================================================
 
-# Generate rep-ts-report.toml
 recommend-report-config:
     cd {{ROOT}} && uv run cleanmast recommend report-configs timeseries {{PROJECT}}/
 
-# Generate the time-series report (PDF/DOCX/Typst)
 report-timeseries:
     cd {{ROOT}} && uv run cleanmast report timeseries {{PROJECT}}/rep-ts-report.toml
 
-# Open the generated PDF
 open-report:
     cd {{ROOT}} && start report {{REPORT_PDF}}
 
 # ============================================================================
 # Custom config hook
 # ============================================================================
-#
-# Create the Python script named above if you want to override configs
-# generated by the various `recommend-*` recipes. The script receives the
-# project path (e.g. "projects/my-project") as its first argument.
 
 customize-configs:
     @echo Custom config hook: checking for {{CUSTOMIZE_SCRIPT}} ...
-    @if exist {{ROOT}}\\{{CUSTOMIZE_SCRIPT}} (cd {{ROOT}} && uv run python {{CUSTOMIZE_SCRIPT}} {{PROJECT}}) else (echo   No customization script found; skipping.)
+    @if exist {{ROOT}}\{{CUSTOMIZE_SCRIPT}} (cd {{ROOT}} && python {{CUSTOMIZE_SCRIPT}} {{PROJECT}}) else (echo No customize script found, skipping.)
 
 # ============================================================================
 # Convenience pipelines
 # ============================================================================
 
-# Full pipeline: recommend configs, parse sensors, run all processing,
-# fill heights, and generate the report.
-run-all: recommend-parse-sensors parse-sensors process-all recommend-fill-heights fill-heights-meso fill-heights-representative-year recommend-report-config report-timeseries
-
-# Full pipeline with the custom-config hook after each recommend phase
-run-all-custom: recommend-parse-sensors customize-configs parse-sensors recommend-all customize-configs process-run-all recommend-fill-heights fill-heights-meso fill-heights-representative-year recommend-report-config customize-configs report-timeseries
+# Full pipeline: all steps (individual), then fill-heights, wt-timeseries, then report
+run-all: recommend-parse-sensors parse-sensors recommend-clean process-clean recommend-tower-shading process-tower-shading recommend-reconstruct-single process-reconstruct-single recommend-train-cross process-train-cross recommend-reconstruct-cross process-reconstruct-cross recommend-train-meso process-train-meso recommend-reconstruct-meso process-reconstruct-meso recommend-representative-year process-representative-year recommend-fill-heights fill-heights-meso fill-heights-representative-year recommend-wt-timeseries process-wt-timeseries recommend-report-config report-timeseries
 
 # ============================================================================
 # Cleanup
 # ============================================================================
 
-# Remove generated outputs (raw/ and rep-ts/)
 clean:
     cd {{ROOT}} && rmdir /s /q projects\{{PROJECT_NAME}}\raw 2>nul || exit 0
     cd {{ROOT}} && rmdir /s /q projects\{{PROJECT_NAME}}\rep-ts 2>nul || exit 0
 
-# Show resolved project paths
 config:
     @echo Project: {{PROJECT}}
     @echo Root:    {{ROOT}}
