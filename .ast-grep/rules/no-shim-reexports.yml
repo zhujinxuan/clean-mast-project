@@ -1,9 +1,0 @@
-id: no-shim-reexports
-language: python
-severity: error
-message: Shim re-export from assessment is not allowed; move code into reporting
-files:
-  - packages/cleanmast/src/cleanmast/subdomains/reporting/**/*.py
-rule:
-  kind: import_from_statement
-  pattern: from cleanmast.subdomains.assessment.$$$ import $$$

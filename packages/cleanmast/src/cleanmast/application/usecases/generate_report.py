@@ -14,6 +14,7 @@ from typing import Any, Callable
 
 from typst_ir import TypstHeading, TypstSection
 
+from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
@@ -21,15 +22,12 @@ from cleanmast.subdomains.dataingestion.value_objects.time_series_source import 
     TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.api import ReportGenerationService
-from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
+from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
 from cleanmast.subdomains.reporting.model.analysis_input import (
     RepresentativeYearCalibrationPayload,
     SingleMastAnalysisInput,
 )
-from cleanmast.subdomains.reporting.model.report_config import (
-    AtomCollection,
-    FlatReportConfig,
-)
+from cleanmast.subdomains.reporting.model.section_node import SectionNode
 from cleanmast.subdomains.reporting.protocols.report_builder import BuildResult
 from cleanmast.subdomains.reporting.render.report_builder import (
     ReportBuilderService as ReportBuilder,
@@ -43,7 +41,6 @@ class HeadingSection:
     """Minimal section that renders only a heading (no content)."""
 
     title: str
-    atoms: AtomCollection = field(default_factory=lambda: AtomCollection.from_dict({}))
     subsections: list[Any] = field(default_factory=list)
 
     def render_ir(self, images_dir: Path) -> TypstSection:
@@ -96,17 +93,21 @@ def generate_report(config_path: str) -> BuildResult:
     config_file_path = Path(config_path)
     base_dir = config_file_path.parent.resolve()
 
-    if not config_file_path.exists():
+    from cleanmast.subdomains.configuration import ProjectConfig
+
+    pc = ProjectConfig(base_dir)
+    report_dc = pc.discover_report_config()
+    if report_dc is None:
         raise FileNotFoundError(
             f"Config file not found: {config_path}. "
             "Run 'recommend report timeseries' command first."
         )
-
-    config = FlatReportConfig.from_toml(config_file_path)
+    config = report_dc.config
     output_dir = base_dir / "rep-ts"
     output_dir.mkdir(parents=True, exist_ok=True)
     service = ReportGenerationService(project_dir=base_dir)
-    report_title = (config.tree[0].title or "风资源评估报告") if config.tree else "风资源评估报告"
+    tree = build_section_tree(config.subsections)
+    report_title = (tree[0].title or "风资源评估报告") if tree else "风资源评估报告"
     builder = ReportBuilder(report_title, output_dir)
     loaded = load_datasets(config, base_dir, service)
     return _generate_from_flat_config(config, loaded, service, builder)
@@ -283,7 +284,8 @@ def _generate_from_flat_config(
             subsections=[],
         )
 
-    for node in config.tree:
+    tree = build_section_tree(config.subsections)
+    for node in tree:
         result = _walk_node(node, depth=0)
         if result is not None:
             all_sections.append(result)

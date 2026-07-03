@@ -3,14 +3,16 @@
 ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
 """
 
+from pathlib import Path
 
 import click
 
-from cleanmast.application.usecases.recommend_fill_heights import (
+from cleanmast.subdomains.configuration import ProjectConfig
+from cleanmast.subdomains.configuration.services.recommend_fill_heights import (
     DEFAULT_DEG_DIFF_PER_M_LIMIT,
     DEFAULT_FILL_HEIGHTS,
 )
-from cleanmast.application.usecases.recommend_fill_heights import (
+from cleanmast.subdomains.configuration.services.recommend_fill_heights import (
     recommend_fill_heights as recommend_fill_heights_usecase,
 )
 
@@ -42,9 +44,11 @@ def recommend_fill_heights(project_dir: str, heights: str, deg_diff_limit: float
     """
     click.echo(f"Target fill heights: {heights.split(',')} m")
 
+    project_config = ProjectConfig(Path(project_dir))
+
     try:
-        meso_output_path, rep_output_path = recommend_fill_heights_usecase(
-            project_dir=project_dir,
+        meso_dc, rep_dc = recommend_fill_heights_usecase(
+            project_config=project_config,
             heights=heights,
             deg_diff_limit=deg_diff_limit,
         )
@@ -53,12 +57,14 @@ def recommend_fill_heights(project_dir: str, heights: str, deg_diff_limit: float
     except ValueError as e:
         raise click.ClickException(str(e))
 
-    click.echo(f"\nGenerated: {meso_output_path}")
+    meso_dc.write_to(project_config.project_dir)
+    click.echo(f"\nGenerated: {meso_dc.filename}")
 
-    if rep_output_path:
-        click.echo(f"Generated: {rep_output_path}")
+    if rep_dc:
+        rep_dc.write_to(project_config.project_dir)
+        click.echo(f"Generated: {rep_dc.filename}")
 
     click.echo("\nNext steps:")
-    click.echo(f"  uv run cleanmast fill-heights {meso_output_path}")
-    if rep_output_path:
-        click.echo(f"  uv run cleanmast fill-heights {rep_output_path}")
+    click.echo(f"  uv run cleanmast fill-heights {meso_dc.filename}")
+    if rep_dc:
+        click.echo(f"  uv run cleanmast fill-heights {rep_dc.filename}")

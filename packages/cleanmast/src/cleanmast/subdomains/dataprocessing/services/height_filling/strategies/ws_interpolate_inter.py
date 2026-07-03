@@ -4,7 +4,7 @@ ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
 Compliance: Subdomain layout ✓ | Strategy Pattern ✓
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindSpeedHeightConfig,
 )

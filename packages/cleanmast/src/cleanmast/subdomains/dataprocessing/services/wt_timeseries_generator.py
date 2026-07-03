@@ -13,7 +13,7 @@ from pathlib import Path
 
 import polars as pl
 
-from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
+from cleanmast.subdomains.configuration import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )

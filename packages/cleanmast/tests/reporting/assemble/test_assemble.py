@@ -4,7 +4,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence
 
-import pytest
+from cleanmast.subdomains.configuration import (
+    DatasetConfig,
+    FlatReportConfig,
+    FlatSubsectionConfig,
+)
 from cleanmast.subdomains.reporting.assemble import (
     SECTION_REGISTRY,
     AssembledSectionNode,
@@ -13,14 +17,8 @@ from cleanmast.subdomains.reporting.assemble import (
     build_section_tree,
     flatten_tree,
 )
-from cleanmast.subdomains.reporting.model.report_config import (
-    DatasetConfig,
-    FlatReportConfig,
-    FlatSubsectionConfig,
-)
 from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
 from cleanmast.subdomains.reporting.subdomains.wind_rose import WindRoseSection
-from pydantic import ValidationError
 from typst_ir import TypstHeading, TypstSection
 
 
@@ -98,37 +96,6 @@ class TestTreeBuilder:
         assert len(flat) == 3
         indices = [s.index for s in flat]
         assert indices == ["2.4", "2.4.1", "2.4.2"]
-
-
-class TestFlatReportConfig:
-    """Tests for frozen FlatReportConfig and FlatSubsectionConfig."""
-
-    def test_valid_minimal_config(self):
-        config = FlatReportConfig(datasets=[], subsections=[])
-        assert config.datasets == []
-        assert config.subsections == []
-
-    def test_subsection_validation(self):
-        with pytest.raises(ValueError, match="index"):
-            FlatSubsectionConfig(index="a.b", type="wind_rose", datasets=["ds"])
-
-    def test_duplicate_dataset_names_rejected(self):
-        datasets = [DatasetConfig(name="ds"), DatasetConfig(name="ds")]
-        with pytest.raises(ValueError, match="Duplicate"):
-            FlatReportConfig(datasets=datasets, subsections=[])
-
-    def test_missing_dataset_reference_rejected(self):
-        datasets = [DatasetConfig(name="ds")]
-        subsections = [
-            FlatSubsectionConfig(index="1", type="wind_rose", datasets=["missing"])
-        ]
-        with pytest.raises(ValueError, match="dataset"):
-            FlatReportConfig(datasets=datasets, subsections=subsections)
-
-    def test_config_is_frozen(self):
-        config = FlatReportConfig(datasets=[], subsections=[])
-        with pytest.raises(ValidationError):
-            config.datasets = []
 
 
 class TestSectionAssembler:

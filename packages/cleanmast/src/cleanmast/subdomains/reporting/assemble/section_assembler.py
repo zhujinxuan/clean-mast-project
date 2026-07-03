@@ -9,11 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cleanmast.subdomains.reporting.assemble.tree_builder import (
-    SectionNode,
-    build_section_tree,
-)
-from cleanmast.subdomains.reporting.model.report_config import FlatReportConfig
+from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
+from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
+from cleanmast.subdomains.reporting.model.section_node import SectionNode
 from cleanmast.subdomains.reporting.protocols.section import Section
 from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
 from cleanmast.subdomains.reporting.subdomains.extreme_wind import ExtremeWindSection

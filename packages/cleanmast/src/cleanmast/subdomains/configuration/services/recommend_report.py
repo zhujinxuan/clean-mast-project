@@ -12,13 +12,19 @@ representative-year sources.
 import logging
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any, cast
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    load_fill_heights_config,
-)
-from cleanmast.subdomains.configuration.value_objects.representative_year import (
+from cleanmast.subdomains.configuration import (
+    AnalysisWindow,
+    DatasetConfig,
+    DiscoveredConfig,
+    FlatReportConfig,
+    FlatSubsectionConfig,
+    MastRef,
+    MesoRef,
+    ProjectConfig,
     RepresentativeYearMast,
-    load_representative_year_config,
+    SubsectionType,
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries_parquet,
@@ -31,16 +37,8 @@ from cleanmast.subdomains.reporting.compute.air_density import (
     STANDARD_AIR_DENSITY,
     calculate_air_density,
 )
-from cleanmast.subdomains.reporting.model.report_config import (
-    AnalysisWindow,
-    DatasetConfig,
-    FlatReportConfig,
-    FlatSubsectionConfig,
-    MastRef,
-    MesoRef,
-)
 
-_MESO_ANALYSIS_SUBSECTION_TYPES = [
+_MESO_ANALYSIS_SUBSECTION_TYPES: list[SubsectionType] = [
     "air_density",
     "temporal",
     "wind_rose",
@@ -50,7 +48,7 @@ _MESO_ANALYSIS_SUBSECTION_TYPES = [
     "turbulence",
 ]
 
-_REP_ANALYSIS_SUBSECTION_TYPES = [
+_REP_ANALYSIS_SUBSECTION_TYPES: list[SubsectionType] = [
     "representative_year_calibration",
     "temporal",
     "wind_rose",
@@ -58,7 +56,7 @@ _REP_ANALYSIS_SUBSECTION_TYPES = [
     "weibull",
 ]
 
-_FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES = [
+_FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES: list[SubsectionType] = [
     "iec_standards",
     "fifty_year_method1",
     "fifty_year_method2",
@@ -69,34 +67,30 @@ _FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES = [
 
 def _build_dataset_for_timeseries(
     project_path: Path,
-    fill_heights_filename: str,
+    discovered_config: DiscoveredConfig[Any],
     report_data_subdir: str,
     dataset_name: str,
     fallback_air_density: float | None = None,
 ) -> DatasetConfig | None:
-    """Build a dataset configuration from a fill-heights TOML file.
+    """Build a dataset configuration from a discovered fill-heights config.
 
-    Reads the specified fill-heights config, iterates over each mast,
-    loads the corresponding parquet timeseries, calculates air density,
-    and returns a DatasetConfig for the report catalog.
+    Iterates over each mast in the config, loads the corresponding parquet
+    timeseries, calculates air density, and returns a DatasetConfig for the
+    report catalog.
 
     Args:
         project_path: Path to the project directory.
-        fill_heights_filename: Name of the fill-heights TOML file.
+        discovered_config: Discovered fill-heights configuration.
         report_data_subdir: Subdirectory name to use for the report data path.
         dataset_name: Name for the dataset in the catalog.
     Returns:
-        DatasetConfig or None if the fill-heights file does not exist.
+        DatasetConfig or None if the config has no valid masts.
 
     Raises:
         FileNotFoundError: If a referenced parquet file does not exist.
         ValueError: If no valid masts are found.
     """
-    fill_heights_path = project_path / fill_heights_filename
-    if not fill_heights_path.exists():
-        return None
-
-    config = load_fill_heights_config(str(fill_heights_path))
+    config = discovered_config.config
     masts = config.masts
     mast_refs: list[MastRef] = []
 
@@ -173,7 +167,7 @@ def _build_subsections(
         for i, subtype in enumerate(_MESO_ANALYSIS_SUBSECTION_TYPES, start=1):
             subsections.append(FlatSubsectionConfig(
                 index=f"2.4.{i}",
-                type=subtype,
+                type=cast(SubsectionType, subtype),
                 datasets=[reconstruct_meso_dataset.name],
             ))
 
@@ -198,7 +192,7 @@ def _build_subsections(
         ):
             subsections.append(FlatSubsectionConfig(
                 index=f"2.5.{i}",
-                type=subtype,
+                type=cast(SubsectionType, subtype),
                 datasets=[repyear_dataset.name],
             ))
 
@@ -213,7 +207,7 @@ def _build_subsections(
         for i, subtype in enumerate(_FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES, start=1):
             subsections.append(FlatSubsectionConfig(
                 index=f"2.6.{i}",
-                type=subtype,
+                type=cast(SubsectionType, subtype),
                 datasets=[fifty_year_dataset.name],
             ))
 
@@ -233,32 +227,42 @@ def _build_analysis_windows(
     ]
 
 
-def _build_reconstruct_meso_dataset(project_path: Path) -> DatasetConfig | None:
+def _build_reconstruct_meso_dataset(
+    meso_dc: DiscoveredConfig | None,
+    project_path: Path,
+) -> DatasetConfig | None:
     """Build reconstruct_meso dataset from fill-heights config."""
+    if meso_dc is None:
+        return None
     return _build_dataset_for_timeseries(
         project_path,
-        "fill-heights-reconstruct-meso.toml",
+        meso_dc,
         "reconstruct-meso-fill-heights",
         "reconstruct_meso",
         fallback_air_density=STANDARD_AIR_DENSITY,
     )
 
 
-def _build_repyear_dataset(project_path: Path) -> DatasetConfig | None:
+def _build_repyear_dataset(
+    project_config: ProjectConfig,
+    rep_yr_dc: DiscoveredConfig | None,
+    project_path: Path,
+) -> DatasetConfig | None:
     """Build repyear dataset from fill-heights config enriched with representative-year.toml."""
+    if rep_yr_dc is None:
+        return None
     repyear_dataset = _build_dataset_for_timeseries(
         project_path,
-        "fill-heights-representative-year.toml",
+        rep_yr_dc,
         "representative-year-fill-heights",
         "repyear",
         fallback_air_density=STANDARD_AIR_DENSITY,
     )
 
-    if repyear_dataset:
-        repyear_toml_path = project_path / "representative-year.toml"
-        if repyear_toml_path.exists():
-            repyear_config = load_representative_year_config(str(repyear_toml_path))
-            masts = repyear_config.masts
+    if repyear_dataset is not None:
+        rep_year_dc = project_config.discover_representative_year_config()
+        if rep_year_dc is not None:
+            masts = rep_year_dc.config.masts
 
             meso_name_to_masts: dict[str, list[str]] = {}
             for mast in masts:
@@ -267,7 +271,7 @@ def _build_repyear_dataset(project_path: Path) -> DatasetConfig | None:
                 ).append(mast.name)
 
             meso_refs: list[MesoRef] = []
-            for meso in repyear_config.mesos:
+            for meso in rep_year_dc.config.mesos:
                 target_masts = meso_name_to_masts.get(meso.name, [])
                 if target_masts:
                     meso_refs.append(MesoRef(
@@ -301,16 +305,14 @@ def _build_calibration_dataset(
     )
 
 
-def recommend_report(project_dir: str) -> Path:
+def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatReportConfig]:
     """Generate configuration for representative timeseries report.
 
     This use case:
-    1. Reads fill-heights-reconstruct-meso.toml and
-       fill-heights-representative-year.toml from the project directory
+    1. Discovers fill-heights and representative-year configs via ProjectConfig
     2. For each mast in each config, loads the corresponding parquet file
     3. Calculates air density from mean temperature/pressure columns
-    4. Generates rep-ts-report.toml config file in the flat format
-       with [[datasets]] catalog and [[subsections]] with hierarchical indices
+    4. Returns a DiscoveredConfig containing the FlatReportConfig
 
     Prerequisites:
     - fill-heights-representative-year.toml must exist in project directory
@@ -319,20 +321,23 @@ def recommend_report(project_dir: str) -> Path:
       代表年 subsection is generated
 
     Args:
-        project_dir: Path to project directory containing config files
+        project_config: ProjectConfig for the project directory.
 
     Returns:
-        Path to generated config file
+        DiscoveredConfig wrapping the FlatReportConfig.
 
     Raises:
         FileNotFoundError: If required fill-heights config or parquet files
             are not found
         ValueError: If no valid masts found for report configuration
     """
-    project_path = Path(project_dir)
+    project_path = project_config.project_dir
 
-    reconstruct_meso_dataset = _build_reconstruct_meso_dataset(project_path)
-    repyear_dataset = _build_repyear_dataset(project_path)
+    meso_dc = project_config.discover_fill_heights_meso_config()
+    rep_yr_dc = project_config.discover_fill_heights_rep_year_config()
+
+    reconstruct_meso_dataset = _build_reconstruct_meso_dataset(meso_dc, project_path)
+    repyear_dataset = _build_repyear_dataset(project_config, rep_yr_dc, project_path)
     calibration_dataset = _build_calibration_dataset(reconstruct_meso_dataset, repyear_dataset)
 
     if not reconstruct_meso_dataset and not repyear_dataset:
@@ -357,7 +362,4 @@ def recommend_report(project_dir: str) -> Path:
         subsections=subsections,
     )
 
-    output_path = project_path / "rep-ts-report.toml"
-    report_config.to_toml(output_path)
-
-    return output_path
+    return DiscoveredConfig(config=report_config, filename="rep-ts-report.toml")

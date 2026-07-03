@@ -7,11 +7,8 @@ flat_subsection_config.py. Models are frozen Pydantic BaseModel subclasses.
 from __future__ import annotations
 
 import re
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Literal
 
-import tomli
-import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
@@ -19,10 +16,7 @@ from cleanmast.subdomains.dataingestion.value_objects.time_series_source import 
     TimeSeriesSource,
 )
 
-if TYPE_CHECKING:
-    from cleanmast.subdomains.reporting.assemble.tree_builder import SectionNode
-
-_LEAF_SUBSECTION_TYPES = frozenset([
+SubsectionType = Literal[
     "wind_rose",
     "vertical_profile",
     "wind_frequency",
@@ -36,9 +30,9 @@ _LEAF_SUBSECTION_TYPES = frozenset([
     "fifty_year_method2",
     "fifty_year_method3",
     "fifty_year_summary",
-])
-_CONTAINER_SUBSECTION_TYPES = frozenset(["timeseries", "fifty_year_max_wind"])
-VALID_SUBSECTION_TYPES = _LEAF_SUBSECTION_TYPES | _CONTAINER_SUBSECTION_TYPES
+    "timeseries",
+    "fifty_year_max_wind",
+]
 
 _INDEX_PATTERN = re.compile(r"^\d+(\.\d+)*$")
 
@@ -145,16 +139,9 @@ class FlatSubsectionConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     index: str
-    type: str
+    type: SubsectionType
     title: str | None = None
-    datasets: list[str]
-
-    @field_validator("datasets")
-    @classmethod
-    def validate_datasets(cls, v: list[str]) -> list[str]:
-        if len(v) == 0:
-            raise ValueError("datasets must not be empty")
-        return v
+    datasets: list[str] = Field(..., min_length=1)
 
     @field_validator("index")
     @classmethod
@@ -162,16 +149,6 @@ class FlatSubsectionConfig(BaseModel):
         if not _INDEX_PATTERN.match(v):
             raise ValueError(
                 f"index must match pattern r'^\\d+(\\.\\d+)*$', got '{v}'"
-            )
-        return v
-
-    @field_validator("type")
-    @classmethod
-    def validate_type(cls, v: str) -> str:
-        if v not in VALID_SUBSECTION_TYPES:
-            valid_types = ", ".join(sorted(VALID_SUBSECTION_TYPES))
-            raise ValueError(
-                f"Invalid subsection type '{v}'. Must be one of: {valid_types}"
             )
         return v
 
@@ -207,37 +184,3 @@ class FlatReportConfig(BaseModel):
                     )
 
         return self
-
-    @property
-    def tree(self) -> list[SectionNode]:
-        from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
-
-        return build_section_tree(self.subsections)
-
-    @classmethod
-    def from_toml(cls, path: Path) -> "FlatReportConfig":
-        """Load config from TOML file."""
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        return cls.model_validate(data)
-
-    def to_toml(self, path: Path) -> None:
-        """Serialize config to TOML file."""
-        data = {
-            "datasets": [ds.model_dump(exclude_none=True) for ds in self.datasets],
-            "subsections": [
-                sub.model_dump(exclude_none=True) for sub in self.subsections
-            ],
-        }
-        toml_str = tomli_w.dumps(data)
-        path.write_text(toml_str, encoding="utf-8")
-
-
-class AtomCollection(BaseModel):
-    """Minimal immutable collection of report atoms."""
-
-    model_config = ConfigDict(frozen=True)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, list[Any]]) -> "AtomCollection":
-        return cls()

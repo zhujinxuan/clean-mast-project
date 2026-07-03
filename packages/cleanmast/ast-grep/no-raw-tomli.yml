@@ -8,5 +8,4 @@ files:
   - packages/cleanmast/src/cleanmast/application/**
   - packages/cleanmast/src/cleanmast/subdomains/dataingestion/**
   - packages/cleanmast/src/cleanmast/subdomains/dataprocessing/**
-  - packages/cleanmast/src/cleanmast/subdomains/assessment/**
 message: "import tomli/tomli_w is forbidden outside configuration gateway"

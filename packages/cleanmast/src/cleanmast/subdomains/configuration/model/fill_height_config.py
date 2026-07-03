@@ -7,7 +7,6 @@ Description: Pydantic models for the fill-heights TOML configuration
 
 from typing import Literal
 
-import tomli
 from pydantic import BaseModel, field_validator, model_validator
 
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
@@ -77,14 +76,14 @@ class WindSpeedHeightConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_weights_sum(self) -> "WindSpeedHeightConfig":
-        """Ensure interpolation weights sum to 1.0 (±0.001 tolerance)."""
+        """Ensure interpolation weights sum to 1.0 (�0.001 tolerance)."""
         method = self._extract_method()
 
         if method == "interpolated":
             total_weight = sum(r.weight for r in self.references)
             if abs(total_weight - 1.0) > 0.001:
                 raise ValueError(
-                    f"Interpolation weights must sum to 1.0 (±0.001), got {total_weight}"
+                    f"Interpolation weights must sum to 1.0 (�0.001), got {total_weight}"
                 )
 
         return self
@@ -168,14 +167,14 @@ class WindDirectionHeightConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_weights_sum(self) -> "WindDirectionHeightConfig":
-        """Ensure interpolation weights sum to 1.0 (±0.001 tolerance)."""
+        """Ensure interpolation weights sum to 1.0 (�0.001 tolerance)."""
         method = self._extract_method()
 
         if method == "interpolated":
             total_weight = sum(r.weight for r in self.references)
             if abs(total_weight - 1.0) > 0.001:
                 raise ValueError(
-                    f"Interpolation weights must sum to 1.0 (±0.001), got {total_weight}"
+                    f"Interpolation weights must sum to 1.0 (�0.001), got {total_weight}"
                 )
 
         return self
@@ -284,11 +283,3 @@ class FillHeightsConfiguration(BaseModel):
         if len(names) != len(set(names)):
             raise ValueError("Duplicate mast names found in configuration")
         return self
-
-
-def load_fill_heights_config(config_path: str) -> FillHeightsConfiguration:
-    """Load fill heights configuration from TOML file."""
-    with open(config_path, "rb") as f:
-        data = tomli.load(f)
-
-    return FillHeightsConfiguration(**data)

@@ -20,7 +20,7 @@ from pathlib import Path
 import dataframely as dy
 import polars as pl
 
-from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
+from cleanmast.subdomains.configuration import (
     WtTimeSeriesMast,
 )
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (

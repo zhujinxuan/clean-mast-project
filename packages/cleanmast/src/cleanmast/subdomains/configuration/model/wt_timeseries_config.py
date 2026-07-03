@@ -51,7 +51,11 @@ class WtTimeSeriesConfiguration(BaseModel):
 
 
 def load_wt_timeseries_config(config_path: Union[str, Path]) -> WtTimeSeriesConfiguration:
-    """Load wt-timeseries configuration from TOML file."""
+    """Load wt-timeseries configuration from TOML file.
+
+    Note: Kept for backward compatibility during transition. The canonical
+    discovery path is ``ProjectConfig.discover_wt_timeseries_config()``.
+    """
     config_path = Path(config_path)
     config_dir = config_path.parent.resolve()
 

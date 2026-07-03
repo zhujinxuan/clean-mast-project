@@ -68,7 +68,7 @@ Wraparound example:
     (Correctly wraps to 0°, not 360°)
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindDirectionHeightConfig,
 )

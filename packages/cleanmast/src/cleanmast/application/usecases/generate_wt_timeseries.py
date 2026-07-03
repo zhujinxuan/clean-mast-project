@@ -9,7 +9,7 @@ from configuration file.
 
 from pathlib import Path
 
-from cleanmast.subdomains.configuration import load_wt_timeseries_config
+from cleanmast.subdomains.configuration import ProjectConfig
 from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     process_turbulence_for_mast,
 )
@@ -34,7 +34,11 @@ def generate_wt_timeseries(config_path: Path) -> None:
         FileNotFoundError: If config file doesn't exist
         ValueError: If configuration is invalid
     """
-    config = load_wt_timeseries_config(config_path)
+    pc = ProjectConfig(config_path.parent)
+    wt_dc = pc.discover_wt_timeseries_config()
+    if wt_dc is None:
+        raise FileNotFoundError(f"wt-timeseries.toml not found in {config_path.parent}")
+    config = wt_dc.config
     project_dir = config_path.parent
 
     for mast in config.masts:

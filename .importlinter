@@ -32,9 +32,7 @@ name = Reporting cannot import from sibling contexts
 type = forbidden
 source_modules = cleanmast.subdomains.reporting
 forbidden_modules =
-    cleanmast.subdomains.assessment
     cleanmast.subdomains.dataingestion
-    cleanmast.subdomains.configuration
 allowed_modules =
     cleanmast.shared
     cleanmast.shared.*
@@ -58,9 +56,8 @@ source_modules =
     cleanmast.application.usecases
     cleanmast.subdomains.dataingestion
     cleanmast.subdomains.dataprocessing
-    cleanmast.subdomains.assessment
 forbidden_modules =
     tomli
     tomli_w
 allowed_modules =
-    cleanmast.subdomains.configuration.value_objects
+    cleanmast.subdomains.configuration

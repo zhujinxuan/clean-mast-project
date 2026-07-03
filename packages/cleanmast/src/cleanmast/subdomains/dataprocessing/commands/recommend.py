@@ -14,9 +14,8 @@ import click
 import tomli
 import tomli_w
 
-from cleanmast.infrastructure.path_utils import to_posix_path
-from cleanmast.subdomains.configuration import load_fill_heights_config
-from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
+from cleanmast.subdomains.configuration import (
+    ProjectConfig,
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
@@ -126,16 +125,15 @@ def recommend_wt_timeseries(project_dir: Path) -> Path:
     Raises:
         FileNotFoundError: If fill-heights config file not found
     """
-    # Load fill-heights config
-    fill_heights_config_path = project_dir / "fill-heights-representative-year.toml"
-
-    if not fill_heights_config_path.exists():
+    # Load fill-heights config via ProjectConfig discovery
+    pc = ProjectConfig(project_dir)
+    fill_dc = pc.discover_fill_heights_rep_year_config()
+    if fill_dc is None:
         raise FileNotFoundError(
-            f"Fill-heights config not found: {fill_heights_config_path}. "
+            "fill-heights-representative-year.toml not found in project directory. "
             "Please run fill-heights processing first."
         )
-
-    fill_heights_config = load_fill_heights_config(to_posix_path(fill_heights_config_path))
+    fill_heights_config = fill_dc.config
 
     masts: list[WtTimeSeriesMast] = []
 

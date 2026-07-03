@@ -8,9 +8,9 @@ from cleanmast.subdomains.reporting.assemble.section_assembler import (
     AssembledSectionNode,
     assemble_section_tree,
 )
-from cleanmast.subdomains.reporting.assemble.tree_builder import (
+from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
+from cleanmast.subdomains.reporting.model.section_node import (
     SectionNode,
-    build_section_tree,
     flatten_tree,
 )
 

@@ -49,7 +49,7 @@ If target is outside this range, the strategy returns None and the
 planner should use extrapolation instead.
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindSpeedHeightConfig,
 )

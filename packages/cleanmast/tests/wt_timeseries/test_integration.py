@@ -9,8 +9,13 @@ import polars as pl
 import pyarrow.parquet as pq
 import pytest
 from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
-from cleanmast.application.usecases.recommend_wt_timeseries import recommend_wt_timeseries
-from cleanmast.subdomains.configuration import load_wt_timeseries_config
+from cleanmast.subdomains.configuration import ProjectConfig
+from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
+    load_wt_timeseries_config,
+)
+from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import (
+    recommend_wt_timeseries,
+)
 from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
@@ -203,7 +208,10 @@ class TestFullWorkflow:
         )
 
         # Run recommend command
-        config_path = recommend_wt_timeseries(project_dir)
+        pc = ProjectConfig(project_dir)
+        dc = recommend_wt_timeseries(pc)
+        dc.write_to(project_dir)
+        config_path = project_dir / dc.filename
 
         # Verify config was created
         assert config_path.exists()
@@ -297,7 +305,10 @@ class TestFullWorkflow:
             )
 
         # Create config
-        config_path = recommend_wt_timeseries(project_dir)
+        pc = ProjectConfig(project_dir)
+        dc = recommend_wt_timeseries(pc)
+        dc.write_to(project_dir)
+        config_path = project_dir / dc.filename
 
         # Execute
         generate_wt_timeseries(config_path)
@@ -611,10 +622,11 @@ class TestErrorHandling:
         project_dir = tmp_path / "test-project"
         project_dir.mkdir()
 
+        pc = ProjectConfig(project_dir)
         with pytest.raises(FileNotFoundError) as exc_info:
-            recommend_wt_timeseries(project_dir)
+            recommend_wt_timeseries(pc)
 
-        assert "representative-year" in str(exc_info.value).lower()
+        assert "fill-heights" in str(exc_info.value).lower()
 
     def test_no_parquet_files(self, tmp_path):
         """Test handling when no parquet files exist."""
@@ -624,7 +636,8 @@ class TestErrorHandling:
         filled_dir = project_dir / "representative-year" / "filled"
         filled_dir.mkdir(parents=True)
 
+        pc = ProjectConfig(project_dir)
         with pytest.raises(FileNotFoundError) as exc_info:
-            recommend_wt_timeseries(project_dir)
+            recommend_wt_timeseries(pc)
 
         assert "no parquet files" in str(exc_info.value).lower() or "parquet" in str(exc_info.value).lower()

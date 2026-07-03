@@ -54,7 +54,7 @@ Existing WD sensors at 80m and 120m, target at 100m:
 Without vector math: (352° + 350°)/2 = 171° (WRONG!)
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindDirectionHeightConfig,
 )

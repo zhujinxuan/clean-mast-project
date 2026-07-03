@@ -11,9 +11,7 @@ from configuration files.
 from pathlib import Path
 
 from cleanmast.infrastructure.path_utils import to_posix_path
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    load_fill_heights_config,
-)
+from cleanmast.subdomains.configuration import ProjectConfig
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
     ParquetRepository,
@@ -59,9 +57,16 @@ def execute_fill_heights(config_path: str) -> None:
         ValueError: If configuration is invalid
     """
     config_path_obj = Path(config_path)
-    base_dir = to_posix_path(config_path_obj.parent)
+    project_dir = config_path_obj.parent
+    base_dir = to_posix_path(project_dir)
 
-    config = load_fill_heights_config(to_posix_path(config_path_obj))
+    pc = ProjectConfig(project_dir)
+    dc = pc.discover_fill_heights_meso_config()
+    if dc is None:
+        dc = pc.discover_fill_heights_rep_year_config()
+    if dc is None:
+        raise FileNotFoundError(f"No fill-heights config found in {project_dir}")
+    config = dc.config
 
     # Process each mast
     for mast_config in config.masts:

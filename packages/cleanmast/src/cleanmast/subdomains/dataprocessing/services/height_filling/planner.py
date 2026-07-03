@@ -74,17 +74,14 @@ Available Strategies:
 """
 
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
-    FillHeightsConfiguration,
+from cleanmast.subdomains.configuration import (
+    FillHeightsMesoConfiguration,
+    FillHeightsRepYearConfiguration,
     MastFillConfig,
+    ReconstructMesoConfiguration,
+    RepresentativeYearConfiguration,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
-)
-from cleanmast.subdomains.configuration.value_objects.reconstruct_meso import (
-    ReconstructMesoConfiguration,
-)
-from cleanmast.subdomains.configuration.value_objects.representative_year import (
-    RepresentativeYearConfiguration,
 )
 from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
@@ -116,7 +113,7 @@ def generate_dual_configs(
     target_heights: list[float],
     base_dir: str,
     deg_diff_limit: float = 1.125,
-) -> tuple[FillHeightsConfiguration, FillHeightsConfiguration | None]:
+) -> tuple[FillHeightsMesoConfiguration, FillHeightsRepYearConfiguration | None]:
     """Generate fill-heights configs for both reconstruct-meso and rep-year outputs.
 
     This is the main entry point for the planning layer. It orchestrates the
@@ -169,7 +166,7 @@ def generate_dual_configs(
         output_subdir="reconstruct-meso-fill-heights",
         base_dir=base_dir,
     )
-    meso_output = FillHeightsConfiguration(
+    meso_output = FillHeightsMesoConfiguration(
         strategy="default",
         masts=meso_masts,
     )
@@ -183,7 +180,7 @@ def generate_dual_configs(
             output_subdir="representative-year-fill-heights",
             base_dir=base_dir,
         )
-        rep_output = FillHeightsConfiguration(
+        rep_output = FillHeightsRepYearConfiguration(
             strategy="default",
             masts=rep_masts,
         )

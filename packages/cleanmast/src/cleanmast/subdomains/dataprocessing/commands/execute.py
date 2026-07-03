@@ -11,9 +11,7 @@ from pathlib import Path
 
 import click
 
-from cleanmast.subdomains.configuration.value_objects.wt_timeseries_config import (
-    load_wt_timeseries_config,
-)
+from cleanmast.subdomains.configuration import ProjectConfig
 from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     process_turbulence_for_mast,
 )
@@ -38,9 +36,13 @@ def execute_wt_timeseries(config_path: Path) -> None:
         FileNotFoundError: If config file doesn't exist
         ValueError: If configuration is invalid
     """
-    # Load configuration
-    config = load_wt_timeseries_config(config_path)
+    # Load configuration via ProjectConfig discovery
     project_dir = config_path.parent
+    pc = ProjectConfig(project_dir)
+    wt_dc = pc.discover_wt_timeseries_config()
+    if wt_dc is None:
+        raise FileNotFoundError(f"wt-timeseries.toml not found in {project_dir}")
+    config = wt_dc.config
 
     click.echo(f"Loaded configuration from: {config_path}")
     click.echo(f"Processing {len(config.masts)} mast(s)...")

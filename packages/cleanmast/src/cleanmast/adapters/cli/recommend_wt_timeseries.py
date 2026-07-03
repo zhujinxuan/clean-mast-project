@@ -7,7 +7,8 @@ from pathlib import Path
 
 import click
 
-from cleanmast.application.usecases.recommend_wt_timeseries import (
+from cleanmast.subdomains.configuration import ProjectConfig
+from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import (
     recommend_wt_timeseries as recommend_wt_timeseries_usecase,
 )
 
@@ -16,17 +17,19 @@ from cleanmast.application.usecases.recommend_wt_timeseries import (
 @click.argument("project_dir", type=click.Path(exists=True))
 def recommend_wt_timeseries_cli(project_dir: str):
     """Generate wt-timeseries.toml configuration file."""
-    project_path = Path(project_dir)
+    project_config = ProjectConfig(Path(project_dir))
 
     click.echo("Discovering masts from fill-heights config...")
 
     try:
-        output_path = recommend_wt_timeseries_usecase(project_path)
+        dc = recommend_wt_timeseries_usecase(project_config)
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:
         raise click.ClickException(str(e))
 
-    click.echo(f"\nGenerated: {output_path}")
+    dc.write_to(project_config.project_dir)
+
+    click.echo(f"\nGenerated: {dc.filename}")
     click.echo("\nNext steps:")
-    click.echo(f"  uv run cleanmast wt-timeseries {output_path}")
+    click.echo(f"  uv run cleanmast wt-timeseries {dc.filename}")

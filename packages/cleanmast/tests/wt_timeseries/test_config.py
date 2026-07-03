@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import pytest
-from cleanmast.subdomains.configuration import (
-    WtTimeSeriesConfiguration,
-    WtTimeSeriesMast,
+from cleanmast.subdomains.configuration import WtTimeSeriesConfiguration, WtTimeSeriesMast
+from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
     load_wt_timeseries_config,
 )
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (

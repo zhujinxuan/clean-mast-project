@@ -1,3 +1,1 @@
-"""Configuration services."""
-
-__all__ = []
+"""Configuration services — ProjectConfig lazy discovery orchestration."""

@@ -8,7 +8,7 @@ This module provides runtime validation for HeightReference configurations
 against actual sensor metadata in timeseries data.
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     MastFillConfig,
 )

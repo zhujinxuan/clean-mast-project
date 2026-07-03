@@ -7,15 +7,11 @@ This module provides the use case for generating wt-timeseries.toml
 configuration files based on auto-discovering heights from representative-year data.
 """
 
-from pathlib import Path
-
-import tomli_w
-
-from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.configuration import (
+    DiscoveredConfig,
+    ProjectConfig,
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
-    load_fill_heights_config,
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
@@ -78,37 +74,38 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
     return turbulence_heights
 
 
-def recommend_wt_timeseries(project_dir: Path) -> Path:
+def recommend_wt_timeseries(
+    project_config: ProjectConfig,
+) -> DiscoveredConfig[WtTimeSeriesConfiguration]:
     """Generate wt-timeseries.toml configuration by auto-discovering heights.
 
-    1. Load fill-heights-representative-year.toml config
+    1. Discover fill-heights-representative-year.toml via ProjectConfig
     2. For each mast in config:
        - Use mast.output.data as input (the fill-height result)
        - Load parquet and read sensor metadata
        - Find CSV heights: heights >=100m with WS avg + WD avg
        - Find turbulence heights: heights with WS avg + WS sd
        - Create WtTimeSeriesMast config
-    3. Save to wt-timeseries.toml in project directory
 
     Args:
-        project_dir: Project directory path
+        project_config: ProjectConfig for the project directory
 
     Returns:
-        Path to generated config file
+        DiscoveredConfig wrapping the generated WtTimeSeriesConfiguration
 
     Raises:
-        FileNotFoundError: If fill-heights config file not found
+        FileNotFoundError: If fill-heights config not found
         ValueError: If no valid masts found
     """
-    fill_heights_config_path = project_dir / "fill-heights-representative-year.toml"
-
-    if not fill_heights_config_path.exists():
+    fill_heights_dc = project_config.discover_fill_heights_rep_year_config()
+    if fill_heights_dc is None:
         raise FileNotFoundError(
-            f"Fill-heights config not found: {fill_heights_config_path}. "
+            f"Fill-heights config not found in {project_config.project_dir}. "
             "Please run fill-heights processing first."
         )
 
-    fill_heights_config = load_fill_heights_config(to_posix_path(fill_heights_config_path))
+    project_dir = project_config.project_dir
+    fill_heights_config = fill_heights_dc.config
 
     masts: list[WtTimeSeriesMast] = []
 
@@ -139,9 +136,4 @@ def recommend_wt_timeseries(project_dir: Path) -> Path:
         )
 
     config = WtTimeSeriesConfiguration(masts=masts)
-    output_path = project_dir / "wt-timeseries.toml"
-
-    with open(output_path, "wb") as f:
-        tomli_w.dump(config.model_dump(exclude_none=True), f)
-
-    return output_path
+    return DiscoveredConfig(config=config, filename="wt-timeseries.toml")

@@ -52,7 +52,7 @@ Execution will compute:
     WS_120m = WS_100m * (120/100)^0.15
 """
 
-from cleanmast.subdomains.configuration.value_objects.fill_height_config import (
+from cleanmast.subdomains.configuration import (
     HeightReference,
     WindSpeedHeightConfig,
 )
