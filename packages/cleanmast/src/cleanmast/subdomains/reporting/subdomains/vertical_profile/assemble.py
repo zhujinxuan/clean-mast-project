@@ -7,7 +7,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_met
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear_exponent_atom import (
     create_single_mast_wind_shear_exponent_atom,
@@ -19,7 +19,7 @@ class VerticalProfileSectionBuilder:
         self,
         mast_name: str,
         profile_results: list[AnalysisResult[VerticalProfileSchema]],
-        shear_results: list[AnalysisResult[WindShearSchema]],
+        shear_results: list[AnalysisResult[WindShearAggregateProfileSchema]],
     ) -> list[ReportAtom]:
         profile_df = pl.concat([r.data for r in profile_results])
         shear_df = pl.concat([r.data for r in shear_results])
@@ -30,7 +30,7 @@ class VerticalProfileSectionBuilder:
             create_single_mast_wind_shear_exponent_atom(
                 profile_schema=VerticalProfileSchema,
                 profile_df=profile_df,
-                shear_schema=WindShearSchema,
+                shear_schema=WindShearAggregateProfileSchema,
                 shear_df=shear_df,
                 meta=meta,
             )
@@ -40,7 +40,7 @@ class VerticalProfileSectionBuilder:
 def build_vertical_profile_atoms(
     mast_name: str,
     profile_results: list[AnalysisResult[VerticalProfileSchema]],
-    shear_results: list[AnalysisResult[WindShearSchema]],
+    shear_results: list[AnalysisResult[WindShearAggregateProfileSchema]],
 ) -> list[ReportAtom]:
     return VerticalProfileSectionBuilder().build(
         mast_name, profile_results, shear_results

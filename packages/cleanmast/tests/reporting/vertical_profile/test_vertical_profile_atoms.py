@@ -13,7 +13,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_met
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear_exponent_atom import (
     SingleMastWindShearExponentAtom,
@@ -47,10 +47,9 @@ def shear_df() -> pl.DataFrame:
     return pl.DataFrame({
         "from_height": [80.0, 80.0, 100.0],
         "to_height": [100.0, 120.0, 120.0],
-        "alpha_mean": [0.15, 0.15, 0.15],
-        "alpha_std": [0.03, 0.03, 0.03],
-        "alpha_min": [0.08, 0.08, 0.08],
-        "alpha_max": [0.25, 0.25, 0.25],
+        "from_v": [7.5, 7.5, 8.2],
+        "to_v": [8.2, 8.8, 8.8],
+        "alpha": [0.15, 0.15, 0.15],
     })
 
 
@@ -63,7 +62,7 @@ def wind_shear_atom(
     return create_single_mast_wind_shear_exponent_atom(
         profile_schema=VerticalProfileSchema,
         profile_df=profile_df,
-        shear_schema=WindShearSchema,
+        shear_schema=WindShearAggregateProfileSchema,
         shear_df=shear_df,
         meta=sample_meta,
     )

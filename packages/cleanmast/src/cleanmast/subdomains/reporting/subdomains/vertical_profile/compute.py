@@ -16,7 +16,7 @@ from cleanmast.subdomains.reporting.model.analysis_metadata import AnalysisMetad
 from cleanmast.subdomains.reporting.model.analysis_result import AnalysisResult
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 
 if TYPE_CHECKING:
@@ -113,31 +113,6 @@ def calculate_wind_shear(
         return None
 
 
-def calculate_shear_matrix(
-    heights: list[float],
-    wind_speeds: list[float],
-) -> list[list[float | None]]:
-    n = len(heights)
-
-    if n == 0 or len(wind_speeds) != n:
-        return []
-
-    matrix: list[list[float | None]] = [[None] * n for _ in range(n)]
-
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                matrix[i][j] = None
-            else:
-                alpha = calculate_wind_shear(
-                    heights[i], wind_speeds[i],
-                    heights[j], wind_speeds[j]
-                )
-                matrix[i][j] = alpha
-
-    return matrix
-
-
 def _create_empty_profile_dataframe() -> pl.DataFrame:
     return pl.DataFrame({
         "height": pl.Series([], dtype=pl.Float64),
@@ -153,10 +128,9 @@ def _create_empty_shear_dataframe() -> pl.DataFrame:
     return pl.DataFrame({
         "from_height": pl.Series([], dtype=pl.Float64),
         "to_height": pl.Series([], dtype=pl.Float64),
-        "alpha_mean": pl.Series([], dtype=pl.Float64),
-        "alpha_std": pl.Series([], dtype=pl.Float64),
-        "alpha_min": pl.Series([], dtype=pl.Float64),
-        "alpha_max": pl.Series([], dtype=pl.Float64),
+        "from_v": pl.Series([], dtype=pl.Float64),
+        "to_v": pl.Series([], dtype=pl.Float64),
+        "alpha": pl.Series([], dtype=pl.Float64),
     })
 
 
@@ -249,77 +223,51 @@ def analyze_vertical_profile(
     )
 
 
-def _calculate_shear_series(
-    df: pl.DataFrame,
-    col1: str,
-    col2: str,
-    h1: float,
-    h2: float,
-) -> list[float]:
-    shear_values: list[float] = []
-
-    filtered = df.filter(
-        (pl.col(col1).is_not_null()) & (pl.col(col1) > 0) &
-        (pl.col(col2).is_not_null()) & (pl.col(col2) > 0)
-    )
-
-    if filtered.is_empty():
-        return shear_values
-
-    s1 = filtered[col1].to_numpy()
-    s2 = filtered[col2].to_numpy()
-
-    for v1, v2 in zip(s1, s2):
-        alpha = calculate_wind_shear(h1, float(v1), h2, float(v2))
-        if alpha is not None:
-            shear_values.append(alpha)
-
-    return shear_values
-
-
-def _process_shear_analysis(
+def _process_shear_profile(
     df: pl.DataFrame,
     sensors: list["SensorColumn"],
 ) -> pl.DataFrame:
-    valid_sensors: list[tuple[float, str]] = []
+    # 1. Compute mean wind speed at each valid height
+    valid_sensors: list[tuple[float, str, float]] = []  # (height, col, mean_speed)
     for sensor in sensors:
         ws_col = sensor.column_name
         if ws_col not in df.columns:
             continue
-
         valid_count = df.filter(
             (pl.col(ws_col).is_not_null()) & (pl.col(ws_col) > 0)
         ).height
-
         if valid_count is not None and valid_count >= MIN_SAMPLES:
-            valid_sensors.append((sensor.height, ws_col))
+            ws_series = df.filter(
+                (pl.col(ws_col).is_not_null()) & (pl.col(ws_col) > 0)
+            )[ws_col]
+            mean_speed = float(np.mean(ws_series.to_numpy()))
+            valid_sensors.append((sensor.height, ws_col, mean_speed))
 
     valid_sensors.sort(key=lambda x: x[0])
 
+    # 2. For each height pair, compute alpha from mean speeds
     rows: list[dict[str, object]] = []
     for i in range(len(valid_sensors)):
         for j in range(i + 1, len(valid_sensors)):
-            h1, col1 = valid_sensors[i]
-            h2, col2 = valid_sensors[j]
+            h1, col1, v1 = valid_sensors[i]
+            h2, col2, v2 = valid_sensors[j]
 
-            shear_values = _calculate_shear_series(df, col1, col2, h1, h2)
-
-            if shear_values:
+            if v1 > 0 and v2 > 0 and h1 > 0 and h2 > 0:
+                alpha = float(np.log(v2 / v1) / np.log(h2 / h1))
                 rows.append({
                     "from_height": h1,
                     "to_height": h2,
-                    "alpha_mean": float(np.mean(shear_values)),
-                    "alpha_std": float(np.std(shear_values)),
-                    "alpha_min": float(np.min(shear_values)),
-                    "alpha_max": float(np.max(shear_values)),
+                    "from_v": v1,
+                    "to_v": v2,
+                    "alpha": alpha,
                 })
 
     return pl.DataFrame(rows) if rows else _create_empty_shear_dataframe()
 
 
-def calculate_wind_shear_analysis(
+def calculate_wind_shear_profile(
     input: SingleMastAnalysisInput,
-) -> AnalysisResult[WindShearSchema]:
+) -> AnalysisResult[WindShearAggregateProfileSchema]:
     df = input.time_series.df
     sensors = input.time_series.sensors
 
@@ -332,12 +280,12 @@ def calculate_wind_shear_analysis(
             created_at=datetime.now(),
         )
         return AnalysisResult.create(
-            schema=WindShearSchema,
+            schema=WindShearAggregateProfileSchema,
             data=_create_empty_shear_dataframe(),
             metadata=metadata,
         )
 
-    result_df = _process_shear_analysis(df, ws_sensors)
+    result_df = _process_shear_profile(df, ws_sensors)
 
     metadata = AnalysisMetadata(
         mast_name=input.mast_name,
@@ -346,7 +294,7 @@ def calculate_wind_shear_analysis(
     )
 
     return AnalysisResult.create(
-        schema=WindShearSchema,
+        schema=WindShearAggregateProfileSchema,
         data=result_df,
         metadata=metadata,
     )
@@ -373,24 +321,17 @@ class VerticalProfileAnalyzer:
     ) -> float | None:
         return calculate_wind_shear(height1, speed1, height2, speed2)
 
-    def calculate_shear_matrix(
-        self,
-        heights: list[float],
-        wind_speeds: list[float],
-    ) -> list[list[float | None]]:
-        return calculate_shear_matrix(heights, wind_speeds)
-
     def analyze_vertical_profile(
         self,
         input: SingleMastAnalysisInput,
     ) -> AnalysisResult[VerticalProfileSchema]:
         return analyze_vertical_profile(input)
 
-    def calculate_wind_shear_analysis(
+    def calculate_wind_shear_profile(
         self,
         input: SingleMastAnalysisInput,
-    ) -> AnalysisResult[WindShearSchema]:
-        return calculate_wind_shear_analysis(input)
+    ) -> AnalysisResult[WindShearAggregateProfileSchema]:
+        return calculate_wind_shear_profile(input)
 
     def _get_time_range(self, df: pl.DataFrame) -> str:
         return get_time_range(df)
@@ -400,9 +341,8 @@ __all__ = [
     "VerticalProfileAnalyzer",
     "VerticalProfileConstants",
     "analyze_vertical_profile",
-    "calculate_wind_shear_analysis",
+    "calculate_wind_shear_profile",
     "calculate_wind_shear",
-    "calculate_shear_matrix",
     "fit_power_law",
     "get_time_range",
 ]

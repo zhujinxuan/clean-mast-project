@@ -16,12 +16,12 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_met
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 
 
 @dataclass(frozen=True)
-class SingleMastWindShearExponentAtom(ReportAtom[WindShearSchema, VerticalProfileAtomMeta]):
+class SingleMastWindShearExponentAtom(ReportAtom[WindShearAggregateProfileSchema, VerticalProfileAtomMeta]):
     profile_df: pl.DataFrame = field(default_factory=pl.DataFrame)
 
     @property
@@ -47,7 +47,7 @@ class SingleMastWindShearExponentAtom(ReportAtom[WindShearSchema, VerticalProfil
         alpha_lookup: dict[tuple[float, float], float] = {}
         for row in self.df.iter_rows(named=True):
             key = (row["from_height"], row["to_height"])
-            alpha_lookup[key] = row["alpha_mean"]
+            alpha_lookup[key] = row["alpha"]
 
         wind_speed_lookup: dict[float, str] = {}
         for row in self.profile_df.iter_rows(named=True):
@@ -183,7 +183,7 @@ class SingleMastWindShearExponentAtom(ReportAtom[WindShearSchema, VerticalProfil
         if self.df.height == 0:
             return [TypstParagraph(text=f"{self.meta.mast_name}测风塔无风切变矩阵数据。")]
 
-        avg_alpha = self.profile_df["alpha"].mean()
+        avg_alpha = self.df["alpha"].mean()
         text = f"根据 {self.meta.mast_name}，得到总体高度的风切变指数为 {avg_alpha:.3f}。"
         return [TypstParagraph(text=text)]
 
@@ -191,7 +191,7 @@ class SingleMastWindShearExponentAtom(ReportAtom[WindShearSchema, VerticalProfil
 def create_single_mast_wind_shear_exponent_atom(
     profile_schema: type[VerticalProfileSchema],
     profile_df: pl.DataFrame,
-    shear_schema: type[WindShearSchema],
+    shear_schema: type[WindShearAggregateProfileSchema],
     shear_df: pl.DataFrame,
     meta: VerticalProfileAtomMeta,
 ) -> SingleMastWindShearExponentAtom:

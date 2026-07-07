@@ -14,7 +14,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.assemble import 
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear_exponent_atom import (
     SingleMastWindShearExponentAtom,
@@ -25,9 +25,9 @@ class TestVerticalProfileBuilderSchemaImport:
     def test_vertical_profile_schema_imports_from_value_objects(self):
         import cleanmast.subdomains.reporting.subdomains.vertical_profile.assemble as builder_module
         assert hasattr(builder_module, 'VerticalProfileSchema')
-        assert hasattr(builder_module, 'WindShearSchema')
+        assert hasattr(builder_module, 'WindShearAggregateProfileSchema')
         assert builder_module.VerticalProfileSchema is VerticalProfileSchema
-        assert builder_module.WindShearSchema is WindShearSchema
+        assert builder_module.WindShearAggregateProfileSchema is WindShearAggregateProfileSchema
 
     def test_vertical_profile_schema_columns_match_analyzer_output(self):
         schema_columns = {
@@ -45,12 +45,11 @@ class TestVerticalProfileBuilderSchemaImport:
         schema_columns = {
             "from_height",
             "to_height",
-            "alpha_mean",
-            "alpha_std",
-            "alpha_min",
-            "alpha_max",
+            "from_v",
+            "to_v",
+            "alpha",
         }
-        expected_columns = set(WindShearSchema.columns().keys())
+        expected_columns = set(WindShearAggregateProfileSchema.columns().keys())
         assert schema_columns == expected_columns
 
 
@@ -96,12 +95,11 @@ class TestVerticalProfileBuilderAtoms:
                 data=pl.DataFrame({
                     "from_height": [50.0, 80.0, 100.0],
                     "to_height": [80.0, 100.0, 120.0],
-                    "alpha_mean": [0.15, 0.14, 0.13],
-                    "alpha_std": [0.03, 0.025, 0.02],
-                    "alpha_min": [0.08, 0.07, 0.06],
-                    "alpha_max": [0.25, 0.22, 0.20],
+                    "from_v": [5.2, 6.1, 6.8],
+                    "to_v": [6.1, 6.8, 7.2],
+                    "alpha": [0.15, 0.14, 0.13],
                 }),
-                schema=WindShearSchema,
+                schema=WindShearAggregateProfileSchema,
                 metadata=meta,
             )
         ]
@@ -116,7 +114,7 @@ class TestSchemaConsistency:
             schemas as vo_schemas,
         )
         assert hasattr(vo_schemas, 'VerticalProfileSchema')
-        assert hasattr(vo_schemas, 'WindShearSchema')
+        assert hasattr(vo_schemas, 'WindShearAggregateProfileSchema')
         import dataframely as dy
         assert issubclass(vo_schemas.VerticalProfileSchema, dy.Schema)
-        assert issubclass(vo_schemas.WindShearSchema, dy.Schema)
+        assert issubclass(vo_schemas.WindShearAggregateProfileSchema, dy.Schema)

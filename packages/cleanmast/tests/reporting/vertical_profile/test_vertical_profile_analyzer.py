@@ -22,7 +22,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.compute import (
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 
 
@@ -337,47 +337,6 @@ class TestWindShearCalculations:
         assert np.isfinite(alpha)
 
 
-class TestShearMatrix:
-    def test_calculate_shear_matrix_basic(self, analyzer: VerticalProfileAnalyzer) -> None:
-        heights = [100.0, 120.0, 140.0]
-        speeds = [8.0, 8.5, 9.0]
-        matrix = analyzer.calculate_shear_matrix(heights, speeds)
-        assert len(matrix) == 3
-        assert all(len(row) == 3 for row in matrix)
-
-    def test_calculate_shear_matrix_diagonal_none(self, analyzer: VerticalProfileAnalyzer) -> None:
-        heights = [100.0, 120.0, 140.0]
-        speeds = [8.0, 8.5, 9.0]
-        matrix = analyzer.calculate_shear_matrix(heights, speeds)
-        for i in range(len(heights)):
-            assert matrix[i][i] is None
-
-    def test_calculate_shear_matrix_symmetric(self, analyzer: VerticalProfileAnalyzer) -> None:
-        heights = [100.0, 120.0, 140.0]
-        speeds = [8.0, 8.5, 9.0]
-        matrix = analyzer.calculate_shear_matrix(heights, speeds)
-        n = len(heights)
-        for i in range(n):
-            for j in range(n):
-                if i != j:
-                    assert matrix[i][j] is not None
-                    assert matrix[j][i] is not None
-                    assert matrix[i][j] == pytest.approx(matrix[j][i], abs=0.001)
-
-    def test_calculate_shear_matrix_empty(self, analyzer: VerticalProfileAnalyzer) -> None:
-        matrix = analyzer.calculate_shear_matrix([], [])
-        assert matrix == []
-
-    def test_calculate_shear_matrix_mismatched_lengths(self, analyzer: VerticalProfileAnalyzer) -> None:
-        matrix = analyzer.calculate_shear_matrix([100.0, 120.0], [8.0])
-        assert matrix == []
-
-    def test_calculate_shear_matrix_single_height(self, analyzer: VerticalProfileAnalyzer) -> None:
-        matrix = analyzer.calculate_shear_matrix([100.0], [8.0])
-        assert len(matrix) == 1
-        assert matrix[0][0] is None
-
-
 class TestVerticalProfileAnalysis:
     def test_analyze_vertical_profile_single_height(
         self, analyzer: VerticalProfileAnalyzer, sample_input_single_height: SingleMastAnalysisInput
@@ -428,40 +387,28 @@ class TestVerticalProfileAnalysis:
         assert len(result.data) == 0
 
 
-class TestWindShearAnalysis:
-    def test_calculate_wind_shear_analysis(
+class TestWindShearProfile:
+    def test_calculate_wind_shear_profile(
         self, analyzer: VerticalProfileAnalyzer, sample_input_multiple_heights: SingleMastAnalysisInput
     ) -> None:
-        result = analyzer.calculate_wind_shear_analysis(sample_input_multiple_heights)
+        result = analyzer.calculate_wind_shear_profile(sample_input_multiple_heights)
         assert result is not None
-        assert result.schema == WindShearSchema
+        assert result.schema == WindShearAggregateProfileSchema
         assert len(result.data) == 3
-        expected_columns = {
-            "from_height", "to_height", "alpha_mean",
-            "alpha_std", "alpha_min", "alpha_max"
-        }
+        expected_columns = {"from_height", "to_height", "from_v", "to_v", "alpha"}
         assert set(result.data.columns) == expected_columns
 
-    def test_wind_shear_analysis_single_height(
+    def test_wind_shear_profile_single_height(
         self, analyzer: VerticalProfileAnalyzer, sample_input_single_height: SingleMastAnalysisInput
     ) -> None:
-        result = analyzer.calculate_wind_shear_analysis(sample_input_single_height)
+        result = analyzer.calculate_wind_shear_profile(sample_input_single_height)
         assert result is not None
         assert len(result.data) == 0
 
-    def test_wind_shear_analysis_statistics(
-        self, analyzer: VerticalProfileAnalyzer, sample_input_multiple_heights: SingleMastAnalysisInput
-    ) -> None:
-        result = analyzer.calculate_wind_shear_analysis(sample_input_multiple_heights)
-        for row in result.data.iter_rows(named=True):
-            assert row["alpha_min"] <= row["alpha_mean"] + 1e-10
-            assert row["alpha_mean"] <= row["alpha_max"] + 1e-10
-            assert row["alpha_std"] >= 0
-
-    def test_wind_shear_analysis_no_wind_sensors(
+    def test_wind_shear_profile_no_wind_sensors(
         self, analyzer: VerticalProfileAnalyzer, input_no_wind_speed: SingleMastAnalysisInput
     ) -> None:
-        result = analyzer.calculate_wind_shear_analysis(input_no_wind_speed)
+        result = analyzer.calculate_wind_shear_profile(input_no_wind_speed)
         assert result is not None
         assert len(result.data) == 0
 

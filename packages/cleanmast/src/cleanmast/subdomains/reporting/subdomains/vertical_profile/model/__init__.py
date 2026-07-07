@@ -6,7 +6,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_met
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.schemas import (
     VerticalProfileSchema,
-    WindShearSchema,
+    WindShearAggregateProfileSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear_exponent_atom import (
     SingleMastWindShearExponentAtom,
@@ -17,7 +17,7 @@ __all__ = [
     "VerticalProfileAtomMeta",
     "get_height_display_name",
     "VerticalProfileSchema",
-    "WindShearSchema",
+    "WindShearAggregateProfileSchema",
     "SingleMastWindShearExponentAtom",
     "create_single_mast_wind_shear_exponent_atom",
 ]

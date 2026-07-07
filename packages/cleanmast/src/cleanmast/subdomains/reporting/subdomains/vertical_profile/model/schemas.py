@@ -10,13 +10,12 @@ class VerticalProfileSchema(dy.Schema):
     r_squared = dy.Float64(nullable=True)
 
 
-class WindShearSchema(dy.Schema):
+class WindShearAggregateProfileSchema(dy.Schema):
     from_height = dy.Float64(nullable=False)
     to_height = dy.Float64(nullable=False)
-    alpha_mean = dy.Float64(nullable=False)
-    alpha_std = dy.Float64(nullable=False)
-    alpha_min = dy.Float64(nullable=False)
-    alpha_max = dy.Float64(nullable=False)
+    from_v = dy.Float64(nullable=False)
+    to_v = dy.Float64(nullable=False)
+    alpha = dy.Float64(nullable=False)
 
 
-__all__ = ["VerticalProfileSchema", "WindShearSchema"]
+__all__ = ["VerticalProfileSchema", "WindShearAggregateProfileSchema"]

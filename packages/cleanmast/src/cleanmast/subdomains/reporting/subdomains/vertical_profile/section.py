@@ -16,7 +16,7 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.assemble import 
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.compute import (
     analyze_vertical_profile,
-    calculate_wind_shear_analysis,
+    calculate_wind_shear_profile,
 )
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import (
     VerticalProfileAtomMeta,
@@ -56,7 +56,7 @@ class VerticalProfileSection(Section):
         atoms: list[ReportAtom] = []
         for input_data, item_meta in items:
             profile_result = analyze_vertical_profile(input_data)
-            shear_result = calculate_wind_shear_analysis(input_data)
+            shear_result = calculate_wind_shear_profile(input_data)
             atoms.extend(
                 build_vertical_profile_atoms(
                     mast_name=item_meta.mast_name,
