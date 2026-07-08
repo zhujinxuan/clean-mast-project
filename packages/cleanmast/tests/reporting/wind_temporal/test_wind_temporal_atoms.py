@@ -685,6 +685,16 @@ class TestSingleMastMonthlyDailyWindAtom:
         assert hash1 == hash2
         assert "SingleMastMonthlyDailyWindAtom_" in hash1
 
+    def test_facet_sorted_by_month(self, monthly_daily_wind_atom: SingleMastMonthlyDailyWindAtom) -> None:
+        """Facet must sort month_name by numeric month, not alphabetically."""
+        hourly_avg = monthly_daily_wind_atom._prepare_hourly_avg()
+        chart = monthly_daily_wind_atom._build_chart(hourly_avg)
+        spec = chart.to_dict()
+
+        assert spec["facet"]["sort"]["field"] == "month"
+        assert spec["facet"]["sort"]["op"] == "min"
+        assert spec["facet"]["sort"]["order"] == "ascending"
+
 
 class TestSingleMastMonthlyDailyPowerAtom:
     """Tests for SingleMastMonthlyDailyPowerAtom."""
@@ -716,6 +726,16 @@ class TestSingleMastMonthlyDailyPowerAtom:
 
         assert hash1 == hash2
         assert "SingleMastMonthlyDailyPowerAtom_" in hash1
+
+    def test_facet_sorted_by_month(self, monthly_daily_power_atom: SingleMastMonthlyDailyPowerAtom) -> None:
+        """Facet must sort month_name by numeric month, not alphabetically."""
+        hourly_avg = monthly_daily_power_atom._prepare_hourly_avg()
+        chart = monthly_daily_power_atom._build_chart(hourly_avg)
+        spec = chart.to_dict()
+
+        assert spec["facet"]["sort"]["field"] == "month"
+        assert spec["facet"]["sort"]["op"] == "min"
+        assert spec["facet"]["sort"]["order"] == "ascending"
 
 
 class TestMonthlyPatternAgreement:

@@ -58,15 +58,8 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
         """This atom is figure-only, so no table is rendered."""
         return None
 
-    @override
-    def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate 3x4 grid of monthly daily wind patterns."""
-        cache_key = self.get_or_compute_df_hashkey()
-        image_path = output_dir / f"monthly_daily_wind_{self.meta.mast_name}_{cache_key}.png"
-
-        if not force and image_path.exists():
-            return image_path
-
+    def _prepare_hourly_avg(self) -> pl.DataFrame:
+        """Prepare hourly-averaged DataFrame for chart rendering."""
         plot_df = self.df.filter(pl.col("height") >= 100)
 
         plot_df = plot_df.with_columns(
@@ -85,12 +78,14 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
             .alias("height_display")
         )
 
-        hourly_avg = (
+        return (
             plot_df.group_by(["month", "month_name", "hour", "height_display"])
             .agg(pl.col("mean_speed").mean().alias("wind_speed"))
             .sort(["month", "hour", "height_display"])
         )
 
+    def _build_chart(self, hourly_avg: pl.DataFrame) -> alt.Chart:
+        """Build the layered + faceted Altair chart."""
         base = alt.Chart(hourly_avg).mark_line(strokeWidth=2).encode(
             x=alt.X(
                 "hour:O",
@@ -131,10 +126,11 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
             ],
         )
 
-        chart = (base + points).facet(
+        return (base + points).facet(
             facet=alt.Facet(
                 "month_name:N",
                 title=None,
+                sort=alt.EncodingSortField(field="month", op="min", order="ascending"),
                 header=alt.Header(labelFontSize=12, labelAngle=0),
             ),
             columns=4,
@@ -149,6 +145,17 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
             titleFontSize=10,
         )
 
+    @override
+    def renderImage(self, output_dir: Path, force: bool = False) -> Path:
+        """Generate 3x4 grid of monthly daily wind patterns."""
+        cache_key = self.get_or_compute_df_hashkey()
+        image_path = output_dir / f"monthly_daily_wind_{self.meta.mast_name}_{cache_key}.png"
+
+        if not force and image_path.exists():
+            return image_path
+
+        hourly_avg = self._prepare_hourly_avg()
+        chart = self._build_chart(hourly_avg)
         chart.save(image_path, format="png", scale_factor=2)
 
         return image_path
