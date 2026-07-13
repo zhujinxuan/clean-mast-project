@@ -20,14 +20,19 @@ This skill provides structured workflow for using the `verify_baseline.py` scrip
 ## Quick Commands
 
 ```bash
-# Generate baseline
+# Generate baseline (pytest runs in parallel with 4 workers by default)
 uv run python scripts/verify_baseline.py --package {package}
 
 # Individual checks
 uv run ty check packages/{package} --output-format full
 uv run ruff check packages/{package}
-uv run pytest packages/{package}/tests -v
+uv run pytest packages/{package}/tests -q --tb=short -n 4
 uv run ast-grep scan --config packages/{package}/sgconfig.yml
+
+# Override parallel workers via env var (default is 4)
+# Windows: set PYTEST_XDIST_WORKERS=auto
+# Unix:     export PYTEST_XDIST_WORKERS=auto
+uv run python scripts/verify_baseline.py --package {package}
 ```
 
 ## What is a Wave?

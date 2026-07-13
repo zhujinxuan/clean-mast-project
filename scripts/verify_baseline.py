@@ -239,19 +239,24 @@ def parse_pytest_output(result: CheckResult) -> CheckResult:
     # Look for patterns like "X passed", "Y failed", "Z skipped"
     passed_match = re.search(r'(\d+)\s+passed', output)
     failed_match = re.search(r'(\d+)\s+failed', output)
+    error_match = re.search(r'(\d+)\s+error', output)
     skipped_match = re.search(r'(\d+)\s+skipped', output)
-    
+
     if passed_match:
         passed = int(passed_match.group(1))
     if failed_match:
         failed = int(failed_match.group(1))
+    if error_match:
+        errors = int(error_match.group(1))
     if skipped_match:
         skipped = int(skipped_match.group(1))
-    
-    result.error_count = failed
+
+    result.error_count = failed + errors
     result.warning_count = 0
-    result.summary_text = f"Passed: {passed} | Failed: {failed} | Skipped: {skipped}"
-    
+    result.summary_text = (
+        f"Passed: {passed} | Failed: {failed} | Errors: {errors} | Skipped: {skipped}"
+    )
+
     return result
 
 
@@ -315,8 +320,12 @@ def run_ruff_check() -> CheckResult:
 
 
 def run_pytest_check(package: str) -> CheckResult:
-    """Run pytest for a package."""
-    cmd = ["uv", "run", "pytest", f"packages/{package}/tests", "-q", "--tb=short"]
+    """Run pytest for a package (parallel by default)."""
+    workers = os.environ.get("PYTEST_XDIST_WORKERS", "4")
+    cmd = [
+        "uv", "run", "pytest", f"packages/{package}/tests",
+        "-q", "--tb=short", "-n", workers,
+    ]
     result = run_check("pytest", cmd, timeout=300)
     return parse_pytest_output(result)
 

@@ -1,16 +1,32 @@
-<!-- NOTE: CLAUDE.md and AGENTS.md must be kept in sync! -->
-
-# CleanMast Project Guide for Claude Code
+# CleanMast Project Guide
 
 CleanMast is a comprehensive toolkit for processing wind energy meteorological tower data.
+
+## Default Context
+
+Unless otherwise specified, work refers to **`packages/cleanmast/`**. The Julia package (`CleanMastProject/`) is in maintenance mode; no new features there.
+
+### Terminology
+
+- "Mast" = meteorological tower.
+- "Sensor" = a named measurement channel with metadata; never pattern-match raw column strings.
+- "Experiment" = a full CleanMast run from preprocessed mast/meso data to report.
+
+### Import conventions
+
+- Python packages import shared IR types from `cleanmast`, not across sibling packages ad hoc.
 
 ## Quick Reference
 
 | What | Command |
 |------|---------|
-| Run tests | `julia CleanMastProject/test/runtests.jl [test_set]` |
-| Type check (Python) | `uv run ty check packages/cleanmast` |
-| Run verification baseline | `uv run python scripts/verify_baseline.py` |
+| Type check | `uv run ty check packages/cleanmast --output-format full` |
+| Lint | `uv run ruff check packages/ --output-format json` |
+| Run tests | `uv run pytest packages/cleanmast/tests -q --tb=short -n 4` |
+| Run tests (serial) | `uv run pytest packages/cleanmast/tests -q --tb=short` |
+| Import contracts | `uv run lint-imports` |
+| Test-data verification | `uv run cleanmast verify --json -p cleanmast` |
+| Run full baseline | `uv run python scripts/verify_baseline.py --package cleanmast` |
 | Load Polars skill | `skill(name="polars")` |
 
 ## Spec-Driven Architecture
@@ -27,55 +43,69 @@ Each context and capability has a co-located `spec.md` with rules, anti-patterns
 
 ```
 clean-mast-project/
-├── CleanMastProject/     # Julia package (production)
+├── CleanMastProject/     # Julia package (maintenance mode; no new features)
 │   ├── src/              # Source code
 │   ├── test/             # Test suite
 │   └── adr/              # Architecture Decision Records
-└── packages/             # Python packages (in development)
-    ├── preprocess-tools/
-    └── cleanmast/
+└── packages/             # Python packages (active development)
+    ├── cleanmast/        # Primary development target
+    └── preprocess-tools/ # Legacy; being superseded by cleanmast
 ```
 
-## Critical Rules (Python)
+## Development Rules (packages/cleanmast)
 
-| Rule | Rationale |
-|------|-----------|
-| **Always specify `encoding="utf-8"`** when reading/writing text files | Windows defaults to `gbk` (Chinese locale) or `cp1252` (Western), causing `UnicodeDecodeError` on JSON, typst source, and log files. Never rely on system default. |
-| Use Pydantic `BaseModel` for all IR types | Type safety, JSON round-trip, validation |
-| Use `pathlib.Path` for all file operations | Cross-platform compatibility |
+### Code quality
 
-## Critical Rules (Julia)
+- Always specify `encoding="utf-8"` when reading/writing text files. Windows defaults to `gbk`/`cp1252`, which causes `UnicodeDecodeError` on JSON, typst source, and log files.
+- Use Pydantic `BaseModel` for all IR types.
+- Use `pathlib.Path` for all file operations.
+- Prefer domain-specific types over primitive strings/ints.
+- No bare `Any` unless the boundary genuinely cannot be typed.
 
-| Rule | Rationale |
-|------|-----------|
-| Use Symbols for DataFrame columns | Required by the DataFrames.jl column API |
-| Never pattern-match column names | Use sensor metadata instead of fragile string matching |
-| Use sensor.columnName for column access | Column names may change during preprocessing |
-| Functional style over imperative loops | Prefer filter/map over imperative `push!` loops |
-| Type annotations on all functions | Catch errors early and document interfaces |
-| Use `@with_kw` for config structs | Standardize keyword-based construction |
-| Use Comonicon `@cast` for CLI | Consistent modular CLI structure |
+### Imports
 
-## Verification Baseline
+- Import shared IR types from `cleanmast`, not from sibling packages.
+- Never create circular imports between subdomains; use `shared/` for cross-subdomain contracts.
+- Run `uv run lint-imports` before committing to verify DDD contracts.
+
+### Architecture
+
+- Read the relevant `spec.md` before coding in a context.
+- New code lives in the appropriate subdomain under `packages/cleanmast/src/cleanmast/subdomains/`.
+- Cross-context integration uses `packages/cleanmast/src/cleanmast/shared/`.
+
+## Consistency Gate
+
+Between waves or before final delivery, run a multi-dimensional consistency gate. A gate must check at least two dimensions in parallel.
+
+### Minimum gate (always)
+
+1. **Logical consistency** — tests pass, imports resolve, public API contracts hold.
+2. **Spec consistency** — directory layout and dependency direction match the relevant `spec.md`.
+
+### Add when risk warrants
+
+3. **Structural hygiene** — no one-line shim files, no bare `Any`, no dead exports.
+4. **Code taste consistency** — naming, error handling, and abstraction level match the codebase.
+5. **Scope fidelity** — no cross-task contamination or unaccounted changes.
+
+Use parallel subagents for each dimension. The gate passes only when all subagents pass.
+
+## packages/cleanmast
+
+### Verification
 
 Run after every implementation task, before committing:
 
 ```bash
-uv run python scripts/verify_baseline.py  # All packages
-uv run python scripts/verify_baseline.py --package cleanmast  # Single package
+uv run python scripts/verify_baseline.py --package cleanmast
 ```
 
-**What it does:** Runs 4 checks sequentially:
-1. **ty** - Type checking
-2. **ruff** - Linting  
-3. **pytest** - Unit tests
-4. **dvc-verify** - Dataset verification (10 min timeout for DVC experiments)
+This runs 5 checks sequentially: **ty**, **ruff**, **pytest**, **import-linter**, and **test-data check**. See **Quick Reference** for the individual commands.
 
-**Output:** Per-package baseline files at `packages/{package}/baseline-{timestamp}.md`
+**Output:** Per-package baseline files at `packages/cleanmast/baseline-{timestamp}.md`
 - Small errors (<500 chars): Inline in markdown
 - Large errors (≥500 chars): Written to `baseline-refs/{timestamp}-{tool}.json`
-
-**When to run:** After completing implementation, before git commit.
 
 ### Baseline-Driven Development Workflow
 
