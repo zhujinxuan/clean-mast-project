@@ -1,0 +1,11 @@
+*
+!**/
+!**/*.py
+!**/*.md
+!**/*.toml
+!**/*.json
+!**/*.yaml
+!**/*.yml
+!**/Justfile
+!.gitignore
+!**/*.dvc

@@ -1,0 +1,15 @@
+output = "merged.csv"
+duplicate_handling = "keep_last"
+column_mismatch = "union"
+
+[input]
+dir = "."
+delim = ","
+patterns = ["M1664_utf8.txt"]
+
+[input.datetime]
+col = "Date/Time"
+format = "%Y-%m-%d %H:%M:%S.0"
+
+[input.headline]
+number = 10

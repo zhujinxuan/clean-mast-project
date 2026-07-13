@@ -1,0 +1,5 @@
+outs:
+- md5: 3527b1c0675f809c92690a08e1541e25
+  size: 43861833
+  hash: md5
+  path: raw.tar.zst

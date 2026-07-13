@@ -1,0 +1,15 @@
+output = "merged.csv"
+duplicate_handling = "keep_last"
+column_mismatch = "union"
+
+[input]
+dir = "../../raw"
+delim = "\t"
+patterns = ["M3142.txt"]
+
+[input.datetime]
+col = "Timestamp"
+format = "%Y-%m-%d %H:%M:%S"
+
+[input.headline]
+number = 236

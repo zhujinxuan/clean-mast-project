@@ -1,0 +1,5 @@
+outs:
+- md5: d4ec2853691cf4a029ebcf38e17b2216
+  size: 46014774
+  hash: md5
+  path: masts.tar.zst
