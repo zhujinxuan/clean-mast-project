@@ -48,7 +48,7 @@ def _discover_csv_heights(sensors: list[SensorColumn]) -> list[float]:
 
 
 def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
-    """Find heights with both WS avg and WS sd sensors."""
+    """Find heights with both WS avg and WS sd sensors within turbine range (120–160m)."""
     all_heights = sorted(set(s.height for s in sensors))
 
     turbulence_heights: list[float] = []
@@ -68,7 +68,7 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
             for s in sensors
         )
 
-        if has_ws_avg and has_ws_sd:
+        if has_ws_avg and has_ws_sd and 120.0 <= height <= 160.0:
             turbulence_heights.append(height)
 
     return turbulence_heights

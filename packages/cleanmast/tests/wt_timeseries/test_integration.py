@@ -158,6 +158,14 @@ class TestFullWorkflow:
                 stat_type="sd",
                 unit="m/s",
             ),
+            SensorColumn(
+                column_name="WS_120m_sd",
+                sensor_type="WindSpeed",
+                sensor_direction="N",
+                height=120.0,
+                stat_type="sd",
+                unit="m/s",
+            ),
             # WindDirection sensors
             SensorColumn(
                 column_name="WD_100m_avg",
@@ -198,6 +206,7 @@ class TestFullWorkflow:
             "WS_80m_avg": np.random.uniform(5, 15, 145),
             "WS_100m_sd": np.random.uniform(0.5, 2, 145),
             "WS_80m_sd": np.random.uniform(0.5, 2, 145),
+            "WS_120m_sd": np.random.uniform(0.5, 2, 145),
             "WD_100m_avg": np.random.uniform(0, 360, 145),
             "WD_120m_avg": np.random.uniform(0, 360, 145),
             "WD_80m_avg": np.random.uniform(0, 360, 145),
@@ -226,9 +235,11 @@ class TestFullWorkflow:
         assert 120.0 in config.masts[0].csv_heights
         assert 80.0 not in config.masts[0].csv_heights  # < 100m
 
-        # Verify turbulence heights includes heights with WS avg + SD
-        assert 100.0 in config.masts[0].turbulence_heights
-        assert 80.0 in config.masts[0].turbulence_heights
+        # Verify turbulence heights only includes heights with WS avg + SD
+        # within the turbine-relevant 120–160m range.
+        assert 120.0 in config.masts[0].turbulence_heights
+        assert 100.0 not in config.masts[0].turbulence_heights
+        assert 80.0 not in config.masts[0].turbulence_heights
 
     def test_execute_command_processes_masts(self, tmp_path):
         """Test that execute command processes all configured masts."""

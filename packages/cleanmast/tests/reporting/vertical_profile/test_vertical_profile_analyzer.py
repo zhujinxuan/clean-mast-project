@@ -80,7 +80,7 @@ def sample_input_single_height(
         ),
     ]
     time_series = TimeSeriesData(df=sample_wind_data_single_height, sensors=sensors)
-    parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+    parameters = AnalysisParameters(air_density=1.225)
     return SingleMastAnalysisInput(
         time_series=time_series,
         parameters=parameters,
@@ -119,7 +119,7 @@ def sample_input_multiple_heights(
         ),
     ]
     time_series = TimeSeriesData(df=sample_wind_data_multi_height, sensors=sensors)
-    parameters = AnalysisParameters(heights=[100.0, 120.0, 140.0], air_density=1.225)
+    parameters = AnalysisParameters(air_density=1.225)
     return SingleMastAnalysisInput(
         time_series=time_series,
         parameters=parameters,
@@ -145,7 +145,7 @@ def insufficient_data_input() -> SingleMastAnalysisInput:
         ),
     ]
     time_series = TimeSeriesData(df=df, sensors=sensors)
-    parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+    parameters = AnalysisParameters(air_density=1.225)
     return SingleMastAnalysisInput(
         time_series=time_series,
         parameters=parameters,
@@ -171,7 +171,7 @@ def input_no_wind_speed() -> SingleMastAnalysisInput:
         ),
     ]
     time_series = TimeSeriesData(df=df, sensors=sensors)
-    parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+    parameters = AnalysisParameters(air_density=1.225)
     return SingleMastAnalysisInput(
         time_series=time_series,
         parameters=parameters,
@@ -446,7 +446,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -472,7 +472,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -498,7 +498,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -524,7 +524,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[100.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -598,7 +598,7 @@ class TestRealisticDataScenarios:
             for h in [80, 100, 120, 140]
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[80.0, 100.0, 120.0, 140.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -634,7 +634,7 @@ class TestRealisticDataScenarios:
             for h in [60, 100, 120]
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[60.0, 100.0, 120.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,
@@ -668,7 +668,7 @@ class TestRealisticDataScenarios:
             for h in [80, 100, 130]
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        parameters = AnalysisParameters(heights=[80.0, 100.0, 130.0], air_density=1.225)
+        parameters = AnalysisParameters(air_density=1.225)
         input_data = SingleMastAnalysisInput(
             time_series=time_series,
             parameters=parameters,

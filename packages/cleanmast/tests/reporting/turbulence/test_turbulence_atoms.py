@@ -3,14 +3,16 @@
 Adapted from assessment tests. Key changes:
 - Import from reporting.subdomains.turbulence.model instead of assessment
 - TurbulenceAtomMeta from reporting turbulence (frozen)
-- Updated mock paths for select_interested_heights
 """
 
+from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
+from typing import Any
 
+import numpy as np
 import polars as pl
 import pytest
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
 )
@@ -26,12 +28,13 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_per_h
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_summary_atom import (
     SingleMastTurbulenceSummaryAtom,
 )
+from cleanmast.subdomains.reporting.subdomains.turbulence.section import TurbulenceSection
 from typst_ir import TypstTable
 
 
 @pytest.fixture
 def sample_mast_meta() -> TurbulenceAtomMeta:
-    return TurbulenceAtomMeta(mast_name="M01")
+    return TurbulenceAtomMeta(mast_name="M01", interested_heights=[100.0, 140.0])
 
 
 @pytest.fixture
@@ -159,54 +162,6 @@ class TestSingleMastTurbulenceMultiHeightAtom:
         assert image_path.suffix == ".png"
         assert image_path.stat().st_size > 0
 
-    def test_render_image_uses_height_filter(
-        self,
-        multi_height_turbulence_atom: SingleMastTurbulenceMultiHeightAtom,
-        tmp_path: Path,
-    ) -> None:
-        with patch(
-            "cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_multi_atom._select_interested_heights"
-        ) as mock_filter:
-            mock_filter.return_value = [130.0, 150.0]
-
-            image_path = multi_height_turbulence_atom.renderImage(tmp_path, force=True)
-
-            mock_filter.assert_called_once_with([80.0, 100.0, 130.0, 150.0])
-            assert image_path.exists()
-            assert image_path.suffix == ".png"
-            assert image_path.stat().st_size > 0
-
-    def test_render_image_fallback_to_top_heights(
-        self, sample_mast_meta: TurbulenceAtomMeta, tmp_path: Path
-    ) -> None:
-        df = pl.DataFrame({
-            "wind_speed_bin": [3, 3, 5, 5],
-            "height": [50.0, 80.0, 50.0, 80.0],
-            "interpolation_marker": [None, None, None, None],
-            "mean_ti": [0.22, 0.20, 0.21, 0.19],
-            "std_ti": [0.04, 0.03, 0.04, 0.03],
-            "representative_ti": [0.26, 0.24, 0.25, 0.23],
-            "iec_category": ["B", "B", "B", "B"],
-            "count": [42, 42, 42, 42],
-        })
-        atom = SingleMastTurbulenceMultiHeightAtom.create(
-            schema=TurbulenceSchema,
-            df=df,
-            meta=sample_mast_meta,
-        )
-
-        with patch(
-            "cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_multi_atom._select_interested_heights"
-        ) as mock_filter:
-            mock_filter.return_value = [50.0, 80.0]
-
-            image_path = atom.renderImage(tmp_path, force=True)
-
-            mock_filter.assert_called_once_with([50.0, 80.0])
-            assert image_path.exists()
-            assert image_path.suffix == ".png"
-            assert image_path.stat().st_size > 0
-
 
 @pytest.fixture
 def sample_turbulence_summary_df() -> pl.DataFrame:
@@ -259,8 +214,7 @@ class TestSingleMastTurbulenceSummaryAtom:
         ]
         assert table.caption == "M01 湍流强度统计表"
 
-        # 140m is in range [120, 160]; 100m is not. With min_count=2,
-        # _select_interested_heights falls back to top 2 heights, so both appear.
+        # Both fixture heights are explicitly provided as interested heights.
         assert len(table.data) == 6
         assert table.data[0][0] == "100m"
         assert table.data[0][1] == ">3 m/s"
@@ -341,3 +295,124 @@ class TestSingleMastTurbulenceSummaryAtom:
 
         assert len(summary) == 1
         assert "暂无15m/s附近风速区间的有效湍流强度数据" in summary[0].text
+
+
+def _make_turbulence_time_series(
+    mast_name: str,
+    heights: list[float],
+    seed: int,
+) -> TimeSeriesData:
+    """Build a deterministic TimeSeriesData for turbulence analysis."""
+    rng = np.random.default_rng(seed)
+    timestamps = [datetime(2023, 1, 1) + timedelta(hours=i) for i in range(1000)]
+
+    data: dict[str, Any] = {"timestamp": timestamps}
+    sensors: list[SensorColumn] = []
+
+    for height in heights:
+        base_speed = 8.0 + rng.uniform(-1.0, 1.0)
+        wind_speeds = np.maximum(
+            base_speed
+            + 3.0 * np.sin(np.linspace(0, 4 * np.pi, 1000))
+            + rng.normal(0.0, 0.5, 1000),
+            0.5,
+        )
+        avg_col = f"WS_{int(height)}m_avg"
+        sd_col = f"WS_{int(height)}m_sd"
+        data[avg_col] = wind_speeds
+        data[sd_col] = wind_speeds * 0.15
+        sensors.append(
+            SensorColumn(
+                column_name=avg_col,
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=float(height),
+                stat_type="avg",
+                unit="m/s",
+            )
+        )
+        sensors.append(
+            SensorColumn(
+                column_name=sd_col,
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=float(height),
+                stat_type="sd",
+                unit="m/s",
+            )
+        )
+
+    return TimeSeriesData(df=pl.DataFrame(data), sensors=sensors)
+
+
+class TestTurbulenceSectionMultiMast:
+    """Integration tests for TurbulenceSection across multiple masts."""
+
+    def test_per_height_atoms_isolated_by_mast(self) -> None:
+        """Each mast's per-height atoms must only contain that mast's heights."""
+        mast1 = _make_turbulence_time_series("Mast1", [100, 130], seed=1)
+        mast2 = _make_turbulence_time_series("Mast2", [120, 150], seed=2)
+
+        section = TurbulenceSection.from_time_series(
+            [
+                (mast1, "Mast1"),
+                (mast2, "Mast2"),
+            ],
+            mast_turbulence_heights={
+                "Mast1": [100.0, 130.0],
+                "Mast2": [120.0, 150.0],
+            },
+        )
+
+        per_height_atoms = [
+            atom
+            for atom in section.atoms
+            if isinstance(atom, SingleMastTurbulencePerHeightAtom)
+        ]
+
+        # Each mast gets one summary, one multi-height, and per-height atoms.
+        assert len(per_height_atoms) == 4
+
+        expected_heights_by_mast = {
+            "Mast1": {100.0, 130.0},
+            "Mast2": {120.0, 150.0},
+        }
+
+        for atom in per_height_atoms:
+            mast = atom.meta.mast_name
+            atom_heights = set(atom.df["height"].unique().to_list())
+            assert atom_heights <= expected_heights_by_mast[mast]
+            assert atom.height in expected_heights_by_mast[mast]
+
+    def test_summary_and_multi_height_atoms_isolated_by_mast(self) -> None:
+        """Summary and multi-height atoms must only span their own mast's heights."""
+        mast1 = _make_turbulence_time_series("Mast1", [100, 130], seed=3)
+        mast2 = _make_turbulence_time_series("Mast2", [120, 150], seed=4)
+
+        section = TurbulenceSection.from_time_series(
+            [
+                (mast1, "Mast1"),
+                (mast2, "Mast2"),
+            ],
+            mast_turbulence_heights={
+                "Mast1": [100.0, 130.0],
+                "Mast2": [120.0, 150.0],
+            },
+        )
+
+        expected_heights_by_mast = {
+            "Mast1": {100.0, 130.0},
+            "Mast2": {120.0, 150.0},
+        }
+
+        for atom in section.atoms:
+            mast = atom.meta.mast_name
+            atom_heights = set(atom.df["height"].unique().to_list())
+            assert atom_heights <= expected_heights_by_mast[mast], (
+                f"{type(atom).__name__} for {mast} contains heights {atom_heights}"
+            )
+
+    def test_empty_input_returns_empty_section(self) -> None:
+        """Passing no masts should produce an empty atom list."""
+        section = TurbulenceSection.from_time_series([], mast_turbulence_heights={})
+        assert list(section.atoms) == []

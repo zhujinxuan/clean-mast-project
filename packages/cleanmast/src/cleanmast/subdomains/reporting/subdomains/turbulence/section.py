@@ -56,53 +56,40 @@ class TurbulenceSection:
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "TurbulenceSection":
         """Build section from standard mast input."""
         mast_data = [(item.time_series, item.mast_name) for item in items]
-        return cls.from_time_series(mast_data)
+        mast_turbulence_heights: dict[str, list[float]] = {}
+        for item in items:
+            if item.parameters.turbulence_heights:
+                mast_turbulence_heights[item.mast_name] = item.parameters.turbulence_heights
+        return cls.from_time_series(mast_data, mast_turbulence_heights=mast_turbulence_heights)
 
     @classmethod
     def from_time_series(
         cls,
         mast_data: list[tuple[TimeSeriesData, str]],
+        mast_turbulence_heights: dict[str, list[float]],
     ) -> "TurbulenceSection":
         """Build turbulence section from time series data.
 
         Args:
             mast_data: List of (time_series_data, mast_name) tuples.
+            mast_turbulence_heights: Per-mast selected heights.
 
         Returns:
             TurbulenceSection with computed atoms.
         """
-        # Collect all TI data across masts into a single DataFrame
-        all_dfs: list = []
+        computed: list[tuple[str, "pl.DataFrame"]] = []
         mast_names: list[str] = []
 
         for ts_data, mast_name in mast_data:
             ti_df = analyze_by_wind_speed(ts_data.df, ts_data.sensors)
-            all_dfs.append(ti_df)
+            computed.append((mast_name, ti_df))
             mast_names.append(mast_name)
 
-        import polars as pl
-        combined_df = pl.concat(all_dfs) if all_dfs else pl.DataFrame()
-
-        atoms = build_turbulence_atoms(combined_df, mast_names[0]) if mast_names else []
+        atoms = build_turbulence_atoms(
+            computed,
+            mast_turbulence_heights=mast_turbulence_heights,
+        ) if computed else []
         return cls(_atoms=atoms, _mast_names=mast_names)
-
-    @classmethod
-    def _from_ti_dataframe(
-        cls,
-        ti_df: "pl.DataFrame",
-        mast_name: str,
-    ) -> "TurbulenceSection":
-        """Build turbulence section directly from a pre-computed TI DataFrame.
-
-        Args:
-            ti_df: DataFrame matching TurbulenceSchema.
-            mast_name: Name of the mast.
-
-        Returns:
-            TurbulenceSection with computed atoms.
-        """
-        atoms = build_turbulence_atoms(ti_df, mast_name)
-        return cls(_atoms=atoms, _mast_names=[mast_name])
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""

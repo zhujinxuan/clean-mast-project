@@ -67,13 +67,14 @@ def _discover_csv_heights(sensors: list[SensorColumn]) -> list[float]:
 
 
 def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
-    """Find heights with both WS avg and WS sd sensors.
+    """Find heights with both WS avg and WS sd sensors within turbine range (120–160m).
 
     Args:
         sensors: List of available sensors from parquet metadata
 
     Returns:
         List of heights (meters) that have both WindSpeed avg and WindSpeed sd
+        and fall within the turbine-relevant 120–160m range.
     """
     # Get unique heights from all sensors
     all_heights = sorted(set(s.height for s in sensors))
@@ -97,8 +98,8 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
             for s in sensors
         )
 
-        # Need both WS avg and WS sd at same height
-        if has_ws_avg and has_ws_sd:
+        # Need both WS avg and WS sd at same height, within turbine range
+        if has_ws_avg and has_ws_sd and 120.0 <= height <= 160.0:
             turbulence_heights.append(height)
 
     return turbulence_heights

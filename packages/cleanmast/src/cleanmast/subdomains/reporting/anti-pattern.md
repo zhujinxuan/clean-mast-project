@@ -111,7 +111,7 @@ Unconsolidated duplicates (V1 DRY fix addressed `get_height_display_name` but no
 | Constant/Function | Duplicated in |
 |---|---|
 | `SECTOR_COUNT` / `SECTOR_WIDTH` | `wind_rose` — 3 model files + compute.py |
-| `_select_interested_heights`, `_IEC_CATEGORIES`, `_compute_iec_ti` | `turbulence` — 3 model atoms + compute.py |
+| `_IEC_CATEGORIES`, `_compute_iec_ti` | `turbulence` — 3 model atoms |
 | `_SECTOR_NAMES` | `representative_year` — compute.py + sector_table_atom.py |
 | `_MONTH_NAMES` | `wind_temporal` — monthly_daily_power + monthly_daily_wind atoms |
 | Gas constants (`GAS_CONSTANT_DRY_AIR`, etc.) | `air_density` — compute.py + air_density_atom.py |

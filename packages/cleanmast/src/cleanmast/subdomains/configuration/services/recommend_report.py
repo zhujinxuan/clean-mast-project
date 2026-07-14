@@ -29,6 +29,9 @@ from cleanmast.subdomains.configuration import (
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries_parquet,
 )
+from cleanmast.subdomains.dataingestion.value_objects.sensor_column import (
+    SensorColumn,
+)
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
@@ -63,6 +66,22 @@ _FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES: list[SubsectionType] = [
     "fifty_year_method3",
     "fifty_year_summary",
 ]
+
+
+def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
+    """Heights with both WS avg and WS sd sensors within turbine range (120–160m)."""
+    ws_avg = {
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
+    }
+    ws_sd = {
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed" and s.stat_type == "sd"
+    }
+    candidate = ws_avg & ws_sd
+    return sorted(h for h in candidate if 120.0 <= h <= 160.0)
 
 
 def _build_dataset_for_timeseries(
@@ -125,11 +144,15 @@ def _build_dataset_for_timeseries(
                 ) from e
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
+        turbulence_heights = _discover_turbulence_heights(
+            time_series_data.sensors
+        )
 
         mast_refs.append(MastRef(
             name=mast_name,
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=rel_data_path),
+            turbulence_heights=turbulence_heights,
         ))
 
     if not mast_refs:

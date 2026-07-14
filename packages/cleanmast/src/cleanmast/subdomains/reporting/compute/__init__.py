@@ -13,7 +13,6 @@ from cleanmast.subdomains.reporting.compute.air_density import (
     convert_to_standard_air_density,
     detect_interpolation_marker,
 )
-from cleanmast.subdomains.reporting.compute.height_filter import select_interested_heights
 from cleanmast.subdomains.reporting.compute.merge import merge_paragraphs
 
 __all__ = [
@@ -24,6 +23,5 @@ __all__ = [
     "calculate_air_density_for_height",
     "convert_to_standard_air_density",
     "detect_interpolation_marker",
-    "select_interested_heights",
     "merge_paragraphs",
 ]

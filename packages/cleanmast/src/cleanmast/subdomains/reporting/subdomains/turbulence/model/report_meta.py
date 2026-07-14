@@ -11,5 +11,6 @@ class TurbulenceAtomMeta:
     """Metadata for turbulence report atoms."""
 
     mast_name: str
+    interested_heights: list[float]
 
 

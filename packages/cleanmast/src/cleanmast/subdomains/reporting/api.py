@@ -43,8 +43,12 @@ class ReportGenerationService:
         time_series: TimeSeriesData,
         mast_name: str,
         air_density: float,
+        turbulence_heights: list[float] | None = None,
     ) -> SingleMastAnalysisInput:
-        return _build_analysis_input(time_series, mast_name, air_density)
+        return _build_analysis_input(
+            time_series, mast_name, air_density,
+            turbulence_heights=turbulence_heights,
+        )
 
     def generate_air_density_section(
         self, items: list[SingleMastAnalysisInput],
@@ -107,16 +111,12 @@ def _build_analysis_input(
     time_series: TimeSeriesData,
     mast_name: str,
     air_density: float,
+    turbulence_heights: list[float] | None = None,
 ) -> SingleMastAnalysisInput:
     """Build SingleMastAnalysisInput from time_series sensors."""
-    ws_heights = [
-        s.height
-        for s in time_series.sensors
-        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
-    ]
     params = AnalysisParameters(
-        heights=ws_heights,
         air_density=air_density,
+        turbulence_heights=turbulence_heights or [],
     )
     return SingleMastAnalysisInput(
         time_series=time_series,

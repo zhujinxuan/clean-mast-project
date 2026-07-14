@@ -16,31 +16,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
     TurbulenceSchema,
 )
 
-
-def _select_interested_heights(
-    heights: list[float],
-    min_height: float = 120.0,
-    max_height: float = 160.0,
-    min_count: int = 2,
-) -> list[float]:
-    """Select heights within the target range, falling back to top heights.
-
-    Returns all heights where ``min_height <= h <= max_height``, sorted
-    ascending. If fewer than ``min_count`` heights fall within the range,
-    returns the ``min_count`` highest heights from the full set.
-    """
-    filtered = [h for h in heights if min_height <= h <= max_height]
-    filtered.sort()
-
-    if len(filtered) >= min_count:
-        return filtered
-
-    sorted_heights = sorted(heights, reverse=True)
-    fallback = sorted_heights[:min_count]
-    fallback.sort()
-    return fallback
-
-
 # ── IEC reference constants/helpers (duplicated to avoid model→compute import) ─
 
 _IEC_CATEGORIES: dict[str, float] = {
@@ -91,9 +66,7 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
         Columns: 高度(m) | 风速范围 | 平均湍流强度 | 代表湍流强度(P90) | 湍流强度标准差
         Rows per interested height: >3 m/s, 14.5-16.5 m/s, 9.5-10.5 m/s
         """
-        interested_heights = _select_interested_heights(
-            self.df["height"].unique().to_list()
-        )
+        interested_heights = self.meta.interested_heights
         filtered_df = self.df.filter(pl.col("height").is_in(interested_heights))
 
         rows: list[list[str]] = []
@@ -172,9 +145,7 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
         P90 代表性湍流强度为 {v1}, {v2} ...；
         根据 15m/s 附近风速的代表湍流强度，暂定为 IEC {cat} 类。
         """
-        interested_heights = _select_interested_heights(
-            self.df["height"].unique().to_list()
-        )
+        interested_heights = self.meta.interested_heights
         filtered_df = self.df.filter(pl.col("height").is_in(interested_heights))
 
         height_strs: list[str] = []

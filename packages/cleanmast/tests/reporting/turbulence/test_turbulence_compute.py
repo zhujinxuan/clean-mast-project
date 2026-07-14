@@ -20,7 +20,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.compute import (
     SECTOR_NAMES,
     SECTOR_WIDTH,
     TI_REP_Z,
-    _select_interested_heights,
     analyze_by_sector,
     analyze_by_wind_speed,
     calculate_representative_ti,
@@ -648,45 +647,3 @@ class TestEdgeCases:
         assert SECTOR_NAMES[12] == "W"
 
 
-# =============================================================================
-# Test Height Filter
-# =============================================================================
-
-
-class TestSelectInterestedHeights:
-    """Tests for _select_interested_heights utility."""
-
-    @pytest.mark.parametrize(
-        ("heights", "expected"),
-        [
-            ([70, 90, 100], [90, 100]),
-            ([120, 130, 140, 170], [120, 130, 140]),
-            ([50], [50]),
-            ([125], [125]),
-            ([], []),
-        ],
-    )
-    def test_height_filter_cases(
-        self, heights: list[float], expected: list[float]
-    ) -> None:
-        """Test _select_interested_heights with expected input/output pairs."""
-        result = _select_interested_heights(heights)
-        assert result == expected
-
-    def test_height_filter_exact_boundaries(self) -> None:
-        """Test exact boundary values are included."""
-        assert _select_interested_heights([120.0, 160.0]) == [120.0, 160.0]
-
-    def test_height_filter_fallback_to_highest(self) -> None:
-        """Test fallback returns top min_count heights when range is empty."""
-        heights = [40.0, 80.0, 100.0]
-        result = _select_interested_heights(heights, min_height=120.0, max_height=160.0)
-        assert result == [80.0, 100.0]
-
-    def test_height_filter_custom_min_count(self) -> None:
-        """Test custom min_count returns expected number of heights."""
-        heights = [50.0, 60.0, 70.0, 80.0]
-        result = _select_interested_heights(
-            heights, min_height=120.0, max_height=160.0, min_count=3
-        )
-        assert result == [60.0, 70.0, 80.0]

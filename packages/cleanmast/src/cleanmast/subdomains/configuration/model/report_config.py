@@ -91,6 +91,7 @@ class MastRef(BaseModel):
     name: str
     air_density: float = Field(gt=0)
     input: TimeSeriesSource
+    turbulence_heights: list[float] = Field(default_factory=list)
 
 
 class MesoRef(BaseModel):

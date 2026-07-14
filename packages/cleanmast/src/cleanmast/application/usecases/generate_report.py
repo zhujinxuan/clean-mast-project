@@ -149,7 +149,10 @@ def load_datasets(
             source = TimeSeriesSource(data=str(resolved))
             timeseries = load_timeseries(source, ".")
             input_data = service._create_analysis_input(
-                timeseries, mast_ref.name, mast_ref.air_density
+                timeseries,
+                mast_ref.name,
+                mast_ref.air_density,
+                turbulence_heights=mast_ref.turbulence_heights,
             )
             mast_data.append(input_data)
         mast_analysis_windows: dict[str, TimeRange] = {}

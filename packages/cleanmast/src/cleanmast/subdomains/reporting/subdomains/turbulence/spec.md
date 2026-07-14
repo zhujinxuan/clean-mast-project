@@ -22,5 +22,4 @@ Single-mast turbulence intensity analysis for wind resource reports.
 ## When in doubt
 
 - If a calculation is reused by other capabilities → `reporting/compute/`.
-- If a height filter utility is reused → `reporting/compute/`.
 - If between compute and assemble: math → compute; wrapping → assemble.

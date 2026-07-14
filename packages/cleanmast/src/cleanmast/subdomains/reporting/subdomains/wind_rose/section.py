@@ -88,7 +88,7 @@ class WindRoseSection:
             [
                 SingleMastAnalysisInput(
                     time_series=time_series,
-                    parameters=AnalysisParameters(heights=[], air_density=air_density),
+                    parameters=AnalysisParameters(air_density=air_density),
                     mast_name=mast_name,
                 )
             ]
