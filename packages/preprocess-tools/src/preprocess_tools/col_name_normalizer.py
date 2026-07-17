@@ -9,7 +9,6 @@ import polars as pl
 import tomli
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-
 TIMESTAMP_NAMES = {"Timestamp", "TimeStamp", "timestamp", "TIMESTAMP"}
 
 
@@ -58,7 +57,6 @@ def load_config(config_path: str) -> ColNameNormalizerConfig:
     except Exception as e:
         click.echo(f"Error: Failed to load configuration: {e}", err=True)
         sys.exit(1)
-
 
 
 def normalize_column_names(df: pl.DataFrame, column_mappings: Dict[str, str], keep_unmapped: bool = True) -> pl.DataFrame:

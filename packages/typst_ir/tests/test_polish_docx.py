@@ -8,11 +8,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
-
 from typst_ir.nodes import (
     TypstDocument,
     TypstHeading,
@@ -40,7 +38,7 @@ def test_polish_docx_with_paragraphs(tmp_path: Path) -> None:
     for run in start.runs:
         run.style = verbatim
 
-    content = doc.add_paragraph("This is content")
+    doc.add_paragraph("This is content")
 
     end = doc.add_paragraph("irend:section0body0")
     for run in end.runs:
@@ -136,7 +134,7 @@ def test_polish_docx_with_heading(tmp_path: Path) -> None:
     for run in start.runs:
         run.style = verbatim
 
-    heading = doc.add_paragraph("Section Heading")
+    doc.add_paragraph("Section Heading")
 
     end = doc.add_paragraph("irend:section0heading0")
     for run in end.runs:
@@ -328,7 +326,7 @@ def test_polish_docx_table_format_no_tables(tmp_path: Path) -> None:
     for run in start.runs:
         run.style = verbatim
 
-    content = doc.add_paragraph("Just a paragraph")
+    doc.add_paragraph("Just a paragraph")
 
     end = doc.add_paragraph("irend:section0body0")
     for run in end.runs:

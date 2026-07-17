@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
-
 from typst_ir.docx_paragraph_map import DocxBlockRange, extract_paragraph_ranges
 
 
@@ -62,7 +61,7 @@ class TestExtractParagraphRanges:
         for run in start.runs:
             run.style = verbatim
 
-        content = doc.add_paragraph("Content paragraph")
+        doc.add_paragraph("Content paragraph")
 
         end = doc.add_paragraph("irend:block1")
         for run in end.runs:

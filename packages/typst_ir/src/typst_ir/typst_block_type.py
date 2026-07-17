@@ -11,12 +11,8 @@ from dataclasses import dataclass
 from typing import Type
 
 from typst_ir.nodes import (
-    TypstBodyBlock,
-    TypstBulletList,
     TypstDocument,
     TypstFigure,
-    TypstOrderedList,
-    TypstParagraph,
     TypstSection,
     TypstTable,
 )
@@ -50,7 +46,7 @@ def _walk_section(
     result: dict[str, TypstBlockType],
 ) -> None:
     """Recursively walk a section and populate the result map."""
-    section_id = _path_to_id(path)
+    _path_to_id(path)
 
     # Record heading
     heading_level = min(len(path), 5)

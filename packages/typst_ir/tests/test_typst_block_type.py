@@ -12,7 +12,6 @@ from typst_ir.nodes import (
     TypstParagraph,
     TypstSection,
     TypstTable,
-    TypstFigure,
 )
 from typst_ir.typst_block_type import TypstBlockType, build_block_type_map
 

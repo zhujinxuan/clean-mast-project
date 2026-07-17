@@ -118,7 +118,7 @@ def test_missing_target_style_raises_valueerror() -> None:
 
 def test_empty_indices_does_nothing() -> None:
     doc = Document()
-    target_style = doc.styles.add_style("TestStyle", WD_STYLE_TYPE.PARAGRAPH)
+    doc.styles.add_style("TestStyle", WD_STYLE_TYPE.PARAGRAPH)
 
     p0 = doc.add_paragraph("Paragraph 0")
     original_style = p0.style

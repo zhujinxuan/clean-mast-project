@@ -104,7 +104,7 @@ def process_file(config: TimestampNormalizerConfig, config_dir: Path) -> None:
             df = pl.read_csv(
                 input_path,
                 skip_rows=config.skip_rows if config.skip_rows else 0,
-                separator=config.delimiter,
+                separator=config.delimiter or ",",
                 infer_schema_length=10000,
             )
         else:

@@ -18,6 +18,7 @@ Example:
     >>> pdf_path = render_to_pdf(doc.model_dump_json())
 """
 
+from typst_ir.docx_paragraph_map import DocxBlockRange, extract_paragraph_ranges
 from typst_ir.enriched.enrich import enrich_with_depth
 from typst_ir.enriched.serialize_typst import serialize as _serialize_enriched
 from typst_ir.nodes import (
@@ -35,6 +36,8 @@ from typst_ir.nodes import (
     TypstSection,
     TypstTable,
 )
+from typst_ir.polish_ir import ChangeStyle, CreateStyle, EditStyle, PolishIR
+from typst_ir.polish_styles import DEFAULT_STYLE_DEFS, StyleDef, StyleProperties
 from typst_ir.renderer import (
     compile_typst_to_docx,
     compile_typst_to_pdf,
@@ -42,9 +45,6 @@ from typst_ir.renderer import (
     render_to_pdf,
     render_to_typst,
 )
-from typst_ir.docx_paragraph_map import DocxBlockRange, extract_paragraph_ranges
-from typst_ir.polish_ir import ChangeStyle, CreateStyle, EditStyle, PolishIR
-from typst_ir.polish_styles import DEFAULT_STYLE_DEFS, StyleDef, StyleProperties
 from typst_ir.typst_block_type import TypstBlockType, build_block_type_map
 from typst_ir.validation import (
     ValidationResult,

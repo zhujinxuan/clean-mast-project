@@ -77,15 +77,16 @@ def process_file(config: TypeNormalizerConfig, config_dir: Path) -> None:
         # Handle different file formats
         if input_path.suffix.lower() in ['.csv', '.dat', '.txt']:
             # Calculate skip_rows for polars
-            # Polars skip_rows skips N rows before reading the header
-            skip_rows_param = config.skip_rows if config.skip_rows else 0
+            # Polars skip_rows skips N rows before reading the header; it does not
+            # accept a list of row indices, so narrow the config union to int.
+            skip_rows_param = config.skip_rows if isinstance(config.skip_rows, int) else 0
             click.echo(f"DEBUG: skip_rows_param = {skip_rows_param}")
             click.echo(f"DEBUG: header_row = {config.header_row}")
 
             df = pl.read_csv(
                 input_path,
                 skip_rows=skip_rows_param,
-                separator=config.delimiter,
+                separator=config.delimiter or ",",
                 infer_schema_length=10000,  # Infer types from more rows
             )
 
