@@ -22,12 +22,6 @@ TI_REP_Z: float = 1.28
 # Minimum wind speed for TI calculation (avoid division by small numbers)
 MIN_WIND_SPEED: float = 1.0
 
-# Number of direction sectors (16: N, NNE, NE, ..., NNW)
-NUM_SECTORS: int = 16
-
-# Sector width in degrees
-SECTOR_WIDTH: float = 22.5
-
 # IEC reference turbulence intensity categories
 IEC_CATEGORIES: dict[str, float] = {
     "A+": 0.18,
@@ -35,12 +29,6 @@ IEC_CATEGORIES: dict[str, float] = {
     "B": 0.14,
     "C": 0.12,
 }
-
-# Sector names for 16-sector wind rose
-SECTOR_NAMES: list[str] = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
-]
 
 
 # ── Core TI Calculation ──────────────────────────────────────────────────────
@@ -155,20 +143,6 @@ def _find_matching_sd_sensor(
     return None
 
 
-def _find_matching_direction_sensor(
-    height: float,
-    wd_sensors: list[SensorColumn],
-) -> SensorColumn | None:
-    """Find the direction sensor closest to the given height."""
-    if not wd_sensors:
-        return None
-
-    closest = min(wd_sensors, key=lambda s: abs(s.height - height))
-    if abs(closest.height - height) <= 20.0:
-        return closest
-    return None
-
-
 # ── Wind Speed Bin Analysis ──────────────────────────────────────────────────
 
 
@@ -183,19 +157,6 @@ def _create_empty_turbulence_dataframe() -> pl.DataFrame:
         "representative_ti": pl.Series([], dtype=pl.Float64),
         "iec_category": pl.Series([], dtype=pl.String),
         "count": pl.Series([], dtype=pl.Int64),
-    })
-
-
-def _create_empty_sector_dataframe() -> pl.DataFrame:
-    """Create an empty DataFrame with TurbulenceSectorSchema columns."""
-    return pl.DataFrame({
-        "sector": pl.Series([], dtype=pl.Int64),
-        "sector_name": pl.Series([], dtype=pl.String),
-        "height": pl.Series([], dtype=pl.Float64),
-        "interpolation_marker": pl.Series([], dtype=pl.String),
-        "mean_ti": pl.Series([], dtype=pl.Float64),
-        "representative_ti": pl.Series([], dtype=pl.Float64),
-        "iec_category": pl.Series([], dtype=pl.String),
     })
 
 
@@ -304,131 +265,3 @@ def _process_wind_speed_analysis(
             })
 
     return pl.DataFrame(rows) if rows else _create_empty_turbulence_dataframe()
-
-
-# ── Sector Analysis ──────────────────────────────────────────────────────────
-
-
-def analyze_by_sector(
-    df: pl.DataFrame,
-    sensors: list[SensorColumn],
-) -> pl.DataFrame:
-    """Analyze turbulence intensity by 16 direction sectors (long format).
-
-    For each height, calculate mean TI and representative TI grouped by
-    16 direction sectors using paired avg, sd, and direction sensors.
-
-    Args:
-        df: DataFrame with timestamp and sensor columns.
-        sensors: List of SensorColumn objects.
-
-    Returns:
-        DataFrame with columns: sector, sector_name, height,
-        interpolation_marker, mean_ti, representative_ti, iec_category.
-    """
-    ws_avg_sensors = [
-        s for s in sensors
-        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
-    ]
-    wd_avg_sensors = [
-        s for s in sensors
-        if s.sensor_type == "WindDirection" and s.stat_type == "avg"
-    ]
-
-    if not ws_avg_sensors or not wd_avg_sensors:
-        return _create_empty_sector_dataframe()
-
-    return _process_sector_analysis(df, ws_avg_sensors, wd_avg_sensors, sensors)
-
-
-def _process_sector_analysis(
-    df: pl.DataFrame,
-    ws_sensors: list[SensorColumn],
-    wd_sensors: list[SensorColumn],
-    all_sensors: list[SensorColumn],
-) -> pl.DataFrame:
-    """Process data into TI by direction sectors (long format)."""
-    rows: list[dict] = []
-
-    for ws_sensor in ws_sensors:
-        height = ws_sensor.height
-        avg_col = ws_sensor.column_name
-
-        sd_sensor = _find_matching_sd_sensor(ws_sensor, all_sensors)
-        if sd_sensor is None:
-            continue
-        sd_col = sd_sensor.column_name
-
-        wd_sensor = _find_matching_direction_sensor(height, wd_sensors)
-        if wd_sensor is None:
-            continue
-        wd_col = wd_sensor.column_name
-
-        if (
-            avg_col not in df.columns
-            or sd_col not in df.columns
-            or wd_col not in df.columns
-        ):
-            continue
-
-        interpolation_marker = ws_sensor.detect_interpolation_marker()
-
-        valid_df = df.filter(
-            (pl.col(avg_col).is_not_null())
-            & (pl.col(avg_col) > 0)
-            & (pl.col(sd_col).is_not_null())
-            & (pl.col(sd_col) > 0)
-            & (pl.col(wd_col).is_not_null())
-        )
-
-        if valid_df.is_empty():
-            continue
-
-        ti_expr = (
-            pl.col(sd_col)
-            / pl.max_horizontal(pl.col(avg_col), pl.lit(1.0))
-        ).clip(upper_bound=1.0)
-
-        sector_expr = (
-            (pl.col(wd_col) / SECTOR_WIDTH).floor() % NUM_SECTORS
-        ).cast(pl.Int64)
-
-        df_with_ti = valid_df.with_columns([
-            ti_expr.alias("ti"),
-            sector_expr.alias("sector"),
-        ])
-
-        sector_stats = (
-            df_with_ti.group_by("sector")
-            .agg([
-                pl.col("ti").mean().alias("mean_ti"),
-                pl.col("ti").std().alias("std_ti"),
-                pl.col("ti").count().alias("count"),
-                pl.col(avg_col).mean().alias("mean_ws"),
-            ])
-            .sort("sector")
-        )
-
-        for row in sector_stats.iter_rows(named=True):
-            sector = int(row["sector"])
-            mean_ti = row["mean_ti"]
-            std_ti = row["std_ti"] if row["std_ti"] is not None else 0.0
-            count = row["count"]
-
-            if count < MIN_SAMPLES:
-                continue
-
-            rep_ti = mean_ti + TI_REP_Z * std_ti
-            iec_category = classify_iec_category(rep_ti, row["mean_ws"])
-
-            rows.append({
-                "sector": sector,
-                "sector_name": SECTOR_NAMES[sector],
-                "height": height,
-                "interpolation_marker": interpolation_marker,
-                "mean_ti": mean_ti,
-                "representative_ti": rep_ti,
-                "iec_category": iec_category,
-            })
-
-    return pl.DataFrame(rows) if rows else _create_empty_sector_dataframe()

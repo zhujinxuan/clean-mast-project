@@ -6,7 +6,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta impo
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
     TurbulenceSchema,
-    TurbulenceSectorSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_multi_atom import (
     SingleMastTurbulenceMultiHeightAtom,
@@ -22,7 +21,6 @@ __all__ = [
     "TurbulenceAtomMeta",
     "get_height_display_name",
     "TurbulenceSchema",
-    "TurbulenceSectorSchema",
     "SingleMastTurbulenceMultiHeightAtom",
     "SingleMastTurbulencePerHeightAtom",
     "SingleMastTurbulenceSummaryAtom",

@@ -16,11 +16,7 @@ from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.subdomains.reporting.subdomains.turbulence.compute import (
     MIN_SAMPLES,
     MIN_WIND_SPEED,
-    NUM_SECTORS,
-    SECTOR_NAMES,
-    SECTOR_WIDTH,
     TI_REP_Z,
-    analyze_by_sector,
     analyze_by_wind_speed,
     calculate_representative_ti,
     calculate_ti_series,
@@ -71,29 +67,6 @@ def sample_turbulence_data_multi_height() -> pl.DataFrame:
         "WS_100m_sd": wind_speeds_100m * 0.15,
         "WS_120m_avg": wind_speeds_120m,
         "WS_120m_sd": wind_speeds_120m * 0.15,
-    })
-
-
-@pytest.fixture
-def sample_turbulence_data_with_direction() -> pl.DataFrame:
-    """Create sample turbulence data with wind direction."""
-    np.random.seed(42)
-    timestamps = [datetime(2023, 1, 1) + timedelta(hours=i) for i in range(1000)]
-
-    base_speeds = 8.0 + 3.0 * np.sin(np.linspace(0, 4 * np.pi, 1000))
-    noise = np.random.normal(0, 0.5, 1000)
-    wind_speeds = np.maximum(base_speeds + noise, 0.5)
-
-    directions = (
-        np.random.uniform(0, 360, 1000)
-        + 30 * np.sin(np.linspace(0, 2 * np.pi, 1000))
-    ) % 360
-
-    return pl.DataFrame({
-        "timestamp": timestamps,
-        "WS_100m_avg": wind_speeds,
-        "WS_100m_sd": wind_speeds * 0.15,
-        "WD_100m_avg": directions,
     })
 
 
@@ -153,36 +126,6 @@ def sensors_multi_height() -> list[SensorColumn]:
             height=120.0,
             stat_type="sd",
             unit="m/s",
-        ),
-    ]
-
-
-@pytest.fixture
-def sensors_with_direction() -> list[SensorColumn]:
-    return [
-        SensorColumn(
-            column_name="WS_100m_avg",
-            sensor_type="WindSpeed",
-            sensor_direction="",
-            height=100.0,
-            stat_type="avg",
-            unit="m/s",
-        ),
-        SensorColumn(
-            column_name="WS_100m_sd",
-            sensor_type="WindSpeed",
-            sensor_direction="",
-            height=100.0,
-            stat_type="sd",
-            unit="m/s",
-        ),
-        SensorColumn(
-            column_name="WD_100m_avg",
-            sensor_type="WindDirection",
-            sensor_direction="",
-            height=100.0,
-            stat_type="avg",
-            unit="deg",
         ),
     ]
 
@@ -497,94 +440,6 @@ class TestWindSpeedAnalysis:
 
 
 # =============================================================================
-# Test Sector Analysis
-# =============================================================================
-
-
-class TestSectorAnalysis:
-    """Tests for direction sector turbulence analysis."""
-
-    def test_analyze_by_sector(
-        self,
-        sample_turbulence_data_with_direction: pl.DataFrame,
-        sensors_with_direction: list[SensorColumn],
-    ) -> None:
-        """Test analysis by direction sectors."""
-        result = analyze_by_sector(
-            sample_turbulence_data_with_direction, sensors_with_direction
-        )
-
-        assert result is not None
-
-        expected_columns = {
-            "sector", "sector_name", "height", "interpolation_marker",
-            "mean_ti", "representative_ti", "iec_category",
-        }
-        assert set(result.columns) == expected_columns
-
-    def test_sector_names_are_valid(self) -> None:
-        """Test that sector names match expected 16-sector naming."""
-        np.random.seed(42)
-        timestamps = [datetime(2023, 1, 1) + timedelta(hours=i) for i in range(500)]
-        wind_speeds = np.maximum(np.random.normal(8.0, 2.0, 500), 0.5)
-        directions = np.random.uniform(0, 360, 500)
-
-        df = pl.DataFrame({
-            "timestamp": timestamps,
-            "WS_100m_avg": wind_speeds,
-            "WS_100m_sd": wind_speeds * 0.15,
-            "WD_100m_avg": directions,
-        })
-
-        sensors = [
-            SensorColumn(
-                column_name="WS_100m_avg", sensor_type="WindSpeed",
-                sensor_direction="", height=100.0, stat_type="avg", unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WS_100m_sd", sensor_type="WindSpeed",
-                sensor_direction="", height=100.0, stat_type="sd", unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WD_100m_avg", sensor_type="WindDirection",
-                sensor_direction="", height=100.0, stat_type="avg", unit="deg",
-            ),
-        ]
-
-        result = analyze_by_sector(df, sensors)
-
-        for row in result.iter_rows(named=True):
-            assert row["sector_name"] in SECTOR_NAMES
-            assert 0 <= row["sector"] <= 15
-
-    def test_analyze_by_sector_no_direction_sensor(
-        self,
-        sample_turbulence_data: pl.DataFrame,
-        sensors_single_height: list[SensorColumn],
-    ) -> None:
-        """Test sector analysis with no direction sensor."""
-        result = analyze_by_sector(sample_turbulence_data, sensors_single_height)
-
-        assert result is not None
-        assert len(result) == 0
-
-    def test_analyze_by_sector_no_wind_sensor(
-        self,
-        sensors_no_wind: list[SensorColumn],
-    ) -> None:
-        """Test sector analysis with no wind speed sensor."""
-        df = pl.DataFrame({
-            "timestamp": [datetime(2023, 1, 1) + timedelta(hours=i) for i in range(100)],
-            "Temp_100m_avg": [15.0] * 100,
-        })
-
-        result = analyze_by_sector(df, sensors_no_wind)
-
-        assert result is not None
-        assert len(result) == 0
-
-
-# =============================================================================
 # Test Edge Cases
 # =============================================================================
 
@@ -635,15 +490,4 @@ class TestEdgeCases:
         assert MIN_SAMPLES == 10
         assert TI_REP_Z == 1.28
         assert MIN_WIND_SPEED == 1.0
-        assert NUM_SECTORS == 16
-        assert SECTOR_WIDTH == 22.5
-
-    def test_sector_names_count(self) -> None:
-        """Test that SECTOR_NAMES has 16 entries."""
-        assert len(SECTOR_NAMES) == 16
-        assert SECTOR_NAMES[0] == "N"
-        assert SECTOR_NAMES[4] == "E"
-        assert SECTOR_NAMES[8] == "S"
-        assert SECTOR_NAMES[12] == "W"
-
 
