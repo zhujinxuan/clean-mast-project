@@ -7,5 +7,6 @@
 !**/*.yaml
 !**/*.yml
 !**/Justfile
+!**/justfile.archive
 !.gitignore
 !**/*.dvc

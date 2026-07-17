@@ -1,9 +1,11 @@
 """Generic wrapper for discovered/generated configuration files."""
 
 from pathlib import Path
-from typing import Any, Generic, TypeVar, cast
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
+
+from cleanmast.subdomains.configuration.services.config_io import save_config
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -19,14 +21,6 @@ class DiscoveredConfig(BaseModel, Generic[T]):
     config: T
     filename: str
 
-    def write_to(self, directory: Path) -> Path:
-        """Write the config to directory/self.filename. Returns the output path."""
-        path = directory / self.filename
-        if hasattr(self.config, "to_toml"):
-            cast(Any, self.config).to_toml(path)
-        else:
-            import tomli_w  # noqa: PLC0415
-
-            with open(path, "wb") as f:
-                tomli_w.dump(self.config.model_dump(exclude_none=True), f)
-        return path
+    def write_to(self, directory: Path) -> None:
+        """Write the config to directory/self.filename."""
+        save_config(self.config, directory / self.filename)

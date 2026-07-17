@@ -39,6 +39,7 @@ from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
+from cleanmast.subdomains.configuration.services.config_io import load_config, save_config
 from cleanmast.subdomains.configuration.services.project_config import ProjectConfig
 
 __all__ = [
@@ -68,4 +69,6 @@ __all__ = [
     "WindSpeedHeightConfig",
     "WtTimeSeriesConfiguration",
     "WtTimeSeriesMast",
+    "load_config",
+    "save_config",
 ]

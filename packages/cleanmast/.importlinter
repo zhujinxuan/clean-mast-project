@@ -77,15 +77,17 @@ forbidden_modules =
     cleanmast.subdomains.*.*.entities
 
 [importlinter:contract:tomli-configuration-gateway-only]
-name = No raw TOML I/O — use configuration gateway Pydantic models
+name = Only config_io and sensor-metadata file I/O import tomli/tomli_w
 type = forbidden
 source_modules =
-    cleanmast.subdomains.reporting
-    cleanmast.application.usecases
-    cleanmast.subdomains.dataingestion
-    cleanmast.subdomains.dataprocessing
+    cleanmast
 forbidden_modules =
     tomli
     tomli_w
-allowed_modules =
-    cleanmast.subdomains.configuration
+ignore_imports =
+    cleanmast.subdomains.configuration.services.config_io -> tomli
+    cleanmast.subdomains.configuration.services.config_io -> tomli_w
+    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli
+    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli_w
+    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli
+    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli_w

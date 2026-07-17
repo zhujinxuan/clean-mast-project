@@ -2,16 +2,16 @@
 
 import json
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 import pytest
 from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
-from cleanmast.subdomains.configuration import ProjectConfig
-from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
-    load_wt_timeseries_config,
+from cleanmast.subdomains.configuration import (
+    ProjectConfig,
+    WtTimeSeriesConfiguration,
+    load_config,
 )
 from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import (
     recommend_wt_timeseries,
@@ -226,7 +226,7 @@ class TestFullWorkflow:
         assert config_path.exists()
 
         # Load and verify config
-        config = load_wt_timeseries_config(config_path)
+        config = load_config(WtTimeSeriesConfiguration, config_path)
         assert len(config.masts) == 1
         assert config.masts[0].name == "TGL1"
 
@@ -522,90 +522,6 @@ class TestHeightFiltering:
         # Verify turbulence file was created
         turbulence_file = project_dir / "wt-timeseries" / "turbulence-TGL1" / "meteodyn_ti_80m.txt"
         assert turbulence_file.exists()
-
-
-class TestPathResolution:
-    """Tests for path resolution in configuration."""
-
-    def test_relative_paths_resolved(self, tmp_path):
-        """Test that relative paths are resolved relative to config file."""
-        project_dir = tmp_path / "test-project"
-        project_dir.mkdir()
-
-        filled_dir = project_dir / "representative-year" / "filled"
-        filled_dir.mkdir(parents=True)
-
-        # Create minimal parquet
-        sensors = [
-            SensorColumn(
-                column_name="WS_100m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WD_100m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="deg",
-            ),
-        ]
-
-        # Create data with proper timestamp type
-        data = {
-            "timestamp": pl.Series("timestamp", [datetime(2023, 1, 1, 0, 0, 0)], dtype=pl.Datetime),
-            "WS_100m_avg": [10.0],
-            "WD_100m_avg": [180.0],
-        }
-
-        df = pl.DataFrame(data)
-        table = df.to_arrow()
-
-        sensors_list = [
-            {
-                "columnName": s.column_name,
-                "sensorType": s.sensor_type,
-                "sensorDirection": s.sensor_direction,
-                "height": s.height,
-                "statType": s.stat_type,
-                "unit": s.unit,
-            }
-            for s in sensors
-        ]
-        sensors_json = json.dumps({"sensors": sensors_list})
-
-        parquet_path = filled_dir / "TGL1.parquet"
-        writer = pq.ParquetWriter(parquet_path, table.schema)
-        writer.add_key_value_metadata({"cleanmast_sensors": sensors_json})
-        writer.write_table(table)
-        writer.close()
-
-        # Create config file with relative path
-        config_file = project_dir / "wt-timeseries.toml"
-        config_file.write_text("""
-[[masts]]
-name = "TGL1"
-input.data = "./representative-year/filled/TGL1.parquet"
-csv_heights = [100.0]
-turbulence_heights = []
-""")
-
-        # Load config
-        config = load_wt_timeseries_config(config_file)
-
-        # Path should be resolved to absolute
-        expected_path = (project_dir / "representative-year" / "filled" / "TGL1.parquet").resolve()
-        assert Path(config.masts[0].input.data) == expected_path
-
-        # Should be able to process with resolved path
-        process_single_mast_csv(config.masts[0], project_dir)
-
-        # Verify output
-        assert (project_dir / "wt-timeseries" / "TGL1.csv").exists()
 
 
 class TestErrorHandling:

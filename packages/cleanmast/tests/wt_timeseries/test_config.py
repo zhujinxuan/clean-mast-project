@@ -1,12 +1,8 @@
 """Tests for wt_timeseries configuration module."""
 
-from pathlib import Path
 
 import pytest
 from cleanmast.subdomains.configuration import WtTimeSeriesConfiguration, WtTimeSeriesMast
-from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
-    load_wt_timeseries_config,
-)
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -147,101 +143,3 @@ class TestWtTimeSeriesConfiguration:
             ]
         )
         assert len(config.masts) == 1
-
-
-class TestLoadWtTimeSeriesConfig:
-    """Tests for load_wt_timeseries_config function."""
-
-    def test_load_valid_config(self, tmp_path):
-        """Test loading a valid TOML configuration file."""
-        config_file = tmp_path / "wt-timeseries.toml"
-        config_file.write_text("""
-[[masts]]
-name = "TGL1"
-input.data = "./representative-year/filled/TGL1.parquet"
-csv_heights = [100.0, 120.0, 140.0]
-turbulence_heights = [80.0, 100.0, 120.0]
-""")
-
-        config = load_wt_timeseries_config(config_file)
-        assert len(config.masts) == 1
-        assert config.masts[0].name == "TGL1"
-        assert config.masts[0].csv_heights == [100.0, 120.0, 140.0]
-
-    def test_path_resolution_relative_to_config(self, tmp_path):
-        """Test that relative paths are resolved relative to config file."""
-        config_dir = tmp_path / "config"
-        config_dir.mkdir()
-        config_file = config_dir / "wt-timeseries.toml"
-        config_file.write_text("""
-[[masts]]
-name = "TGL1"
-input.data = "../data/TGL1.parquet"
-csv_heights = [100.0]
-turbulence_heights = [80.0]
-""")
-
-        config = load_wt_timeseries_config(config_file)
-        # Path should be resolved to absolute (concatenated with config dir)
-        expected_path = str(config_dir / "../data/TGL1.parquet")
-        assert Path(config.masts[0].input.data) == Path(expected_path)
-
-    def test_absolute_path_preserved(self, tmp_path):
-        """Test that absolute paths are preserved."""
-        config_file = tmp_path / "wt-timeseries.toml"
-        # Use platform-appropriate absolute path
-        import sys
-        if sys.platform == "win32":
-            abs_path = "C:/absolute/path/to/data.parquet"
-        else:
-            abs_path = "/absolute/path/to/data.parquet"
-        config_file.write_text(f"""
-[[masts]]
-name = "TGL1"
-input.data = "{abs_path}"
-csv_heights = [100.0]
-turbulence_heights = [80.0]
-""")
-
-        config = load_wt_timeseries_config(config_file)
-        assert config.masts[0].input.data == abs_path
-
-    def test_missing_config_file(self, tmp_path):
-        """Test error when config file doesn't exist."""
-        config_file = tmp_path / "nonexistent.toml"
-
-        with pytest.raises(FileNotFoundError):
-            load_wt_timeseries_config(config_file)
-
-    def test_invalid_toml_syntax(self, tmp_path):
-        """Test error for invalid TOML syntax."""
-        config_file = tmp_path / "invalid.toml"
-        config_file.write_text("""
-[[masts
-name = "TGL1"
-""")
-
-        with pytest.raises((ValueError, Exception)):
-            load_wt_timeseries_config(config_file)
-
-    def test_multiple_masts_in_config(self, tmp_path):
-        """Test loading config with multiple masts."""
-        config_file = tmp_path / "wt-timeseries.toml"
-        config_file.write_text("""
-[[masts]]
-name = "TGL1"
-input.data = "./data/TGL1.parquet"
-csv_heights = [100.0, 120.0]
-turbulence_heights = [80.0, 100.0]
-
-[[masts]]
-name = "TGL2"
-input.data = "./data/TGL2.parquet"
-csv_heights = [100.0]
-turbulence_heights = [80.0]
-""")
-
-        config = load_wt_timeseries_config(config_file)
-        assert len(config.masts) == 2
-        assert config.masts[0].name == "TGL1"
-        assert config.masts[1].name == "TGL2"

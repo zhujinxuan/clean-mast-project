@@ -22,10 +22,9 @@ def execute_wt_timeseries_cli(config_path):
 
     try:
         generate_wt_timeseries_usecase(config_path_obj)
+        click.echo("\n✓ Processing complete!")
+        click.echo(f"Output directory: {config_path_obj.parent / 'wt-timeseries'}")
     except FileNotFoundError as e:
         raise click.ClickException(f"File not found: {e}")
     except ValueError as e:
         raise click.ClickException(f"Configuration error: {e}")
-
-    click.echo("\n✓ Processing complete!")
-    click.echo(f"Output directory: {config_path_obj.parent / 'wt-timeseries'}")

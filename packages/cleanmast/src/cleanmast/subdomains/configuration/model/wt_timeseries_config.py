@@ -5,13 +5,8 @@ Compliance: Subdomain layout ✓ | Value Object ✓ | Validation ✓
 Description: Pydantic models for the wt-timeseries TOML configuration
 """
 
-from pathlib import Path
-from typing import Union
-
-import tomli
 from pydantic import BaseModel, field_validator
 
-from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -48,25 +43,3 @@ class WtTimeSeriesConfiguration(BaseModel):
         if len(names) != len(set(names)):
             raise ValueError("Duplicate mast names found in configuration")
         return v
-
-
-def load_wt_timeseries_config(config_path: Union[str, Path]) -> WtTimeSeriesConfiguration:
-    """Load wt-timeseries configuration from TOML file.
-
-    Note: Kept for backward compatibility during transition. The canonical
-    discovery path is ``ProjectConfig.discover_wt_timeseries_config()``.
-    """
-    config_path = Path(config_path)
-    config_dir = config_path.parent.resolve()
-
-    with open(config_path, "rb") as f:
-        data = tomli.load(f)
-
-    # Resolve input paths to absolute
-    for mast_data in data.get("masts", []):
-        if "input" in mast_data and "data" in mast_data["input"]:
-            input_path = Path(mast_data["input"]["data"])
-            if not input_path.is_absolute():
-                mast_data["input"]["data"] = to_posix_path(config_dir / input_path)
-
-    return WtTimeSeriesConfiguration(**data)

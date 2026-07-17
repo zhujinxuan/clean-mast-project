@@ -19,13 +19,17 @@ payload** from `projects/` into the DVC-tracked `experiments-archived/` storage
 area. The original `projects/` directory is left untouched — this is a **copy**,
 not a move.
 
+Acceptance criteria for a full archive → deploy cycle: see
+`@references/e2e-test-criteria.md`. Run it after any change to this skill or
+to `references/deploy.py`.
+
 ## File Classification
 
 Every file in the experiment falls into exactly one category:
 
 | Category | Rule | Storage |
 |---|---|---|
-| Git-tracked | Extension in `{.toml, .json, .yaml, .yml, .md, .py}` or filename is `Justfile` | Committed directly to git |
+| Git-tracked | Extension in `{.toml, .json, .yaml, .yml, .md, .py}` or filename is `Justfile` / `justfile.archive` | Committed directly to git |
 | DVC parquet | Extension is `.parquet` | Individual DVC files, `dvc add`'d one-by-one |
 | DVC plaintext | Everything else (e.g. `.csv`, `.txt`, `.png`, `.docx`, `.pdf`, `.dat`) | Tarred into `<dirname>.tar.zst`, one per directory, then `dvc add`'d |
 
@@ -104,10 +108,18 @@ robocopy projects\%EXPERIMENT_DIR% %DEST% /COPYALL /R:0 /W:0 ^
     masts\ ^
     mesos\ ^
     raw\ ^
-    just-override\
+    just-override\ ^
+    formats\
 ```
 
 (`%EXPERIMENT_DIR%` = full source dir basename with date prefix, e.g. `2026-07-02-松原`.)
+
+`formats/` holds the sensor/clean format configs (`formats/sensor/*.toml`,
+`formats/clean/*.toml`). `parse-sensors.toml` and the generated
+`process-clean.toml` reference them PROJECT-RELATIVE (e.g.
+`formats/sensor/nrg.toml`), so the experiment cannot re-run without them.
+All files inside are `.toml` → git-tracked by the classification rule; no
+`.tar.zst` is needed for this directory.
 
 **Do NOT copy** generated/derived artifacts such as `meso-models/`,
 `reconstruct-*/`, `representative-year/`, `rep-ts/`, `investigation/`,
@@ -134,6 +146,7 @@ Everything else is ignored by default:
 !**/*.yaml
 !**/*.yml
 !**/Justfile
+!**/justfile.archive
 !.gitignore
 !**/*.dvc
 ```
@@ -151,6 +164,7 @@ echo !**/*.json
 echo !**/*.yaml
 echo !**/*.yml
 echo !**/Justfile
+echo !**/justfile.archive
 echo !.gitignore
 echo !**/*.dvc
 ) > %DEST%\.gitignore
@@ -273,80 +287,58 @@ Create `ARCHIVE.md` in the archive root:
 
 ## Git-Tracked Files
 
-- `Justfile`
+- `justfile.archive`
+- `deploy.py`
 - `<path/to/config.toml>`
 - ...
 
-## Pull Instructions
+## Deploy (Restore for Replay)
 
 ```bash
-# Clone the repo and pull DVC data for this archive
-git clone <repo-url>
-cd <repo-name>
-dvc pull -R experiments-archived/<archive-dir-name>/
-
-# Extract all archives
-just -f experiments-archived/<archive-dir-name>/Justfile pull
+# From the repository root. Restores DVC data, extracts archives, copies
+# the payload to the target, renames justfile.archive -> Justfile, and
+# strips read-only attributes so pipeline steps can rewrite raw/*.parquet.
+# The deployed directory is NOT DVC-tracked.
+uv run python experiments-archived/<archive-dir-name>/deploy.py projects/<new-project-name>
 ```
+
+For raw data access without deploying: `dvc pull -R
+experiments-archived/<archive-dir-name>/`, then extract each `.tar.zst`
+from the directory containing it.
 ```
 
 Fill in every table row with actual content from the archive.
 
 ---
 
-## Step 7: Update the Copied `Justfile`
+## Step 7: Pristine `justfile.archive` + Deploy Script
 
-### 7a: Fix `PROJECT` and `ROOT`
+The copied `Justfile` is NEVER modified. Rename it and add the deploy script:
 
-The original Justfile has:
-
-```make
-PROJECT := "projects/" + PROJECT_NAME
-ROOT := replace(clean(justfile_directory() / "../.."), "/", "\\")
+```cmd
+ren %DEST%\Justfile justfile.archive
+copy /Y <skill-dir>\references\deploy.py %DEST%\deploy.py
 ```
-The archive Justfile lives at `experiments-archived/<name>/`. Update:
-
-```make
-PROJECT := "experiments-archived/" + PROJECT_NAME
-ROOT := replace(clean(justfile_directory() / "../.."), "/", "\\")
-```
-
-**Dependent variables:** Variables that reference output artifacts (e.g.
-`REPORT_PDF`, `clean` recipes that delete `rep-ts/` or `investigation/`) are
-only valid if those artifacts are regenerated from the archive. Add a comment
-noting this, e.g.:
-
-```make
-# NOTE: REPORT_PDF and clean target reference generated artifacts not included
-# in the archive. These are only valid after re-running the experiment.
-```
-
-### 7b: Add a `pull` Recipe
-
-Add at the end of the Justfile:
-
-```make
-# ============================================================================
-# DVC data pull + archive extraction
-# ============================================================================
-
-pull:
-    cd {{ROOT}} && dvc pull -R {{PROJECT}}
-    cd {{ROOT}}\{{PROJECT}} && zstd -d masts.tar.zst -c | tar xf -
-    cd {{ROOT}}\{{PROJECT}} && zstd -d mesos.tar.zst -c | tar xf -
-    cd {{ROOT}}\{{PROJECT}} && zstd -d raw.tar.zst -c | tar xf -
-    @REM Add one line per .tar.zst. cd to the directory containing the archive.
-    @REM Top-level archives: cd to experiment root.
-    @REM Nested archives: cd to the parent directory of the archive.
-```
-
 
 **Rules:**
-- One `zstd -d ... | tar xf -` line per `.tar.zst` archive. NO loops or scripts.
-- Each line cd's to the **directory containing** that `.tar.zst`:
-  - Top-level → `cd {{ROOT}}\{{PROJECT}}`
-  - Nested (e.g. `pre-masts/subdir.tar.zst`) → `cd {{ROOT}}\{{PROJECT}}\pre-masts`
-- `dvc pull -R {{PROJECT}}` is scoped to the archive, not the whole repo.
+- `justfile.archive` is a PRISTINE byte-copy of the original project's
+  Justfile. No `PROJECT`/`ROOT` rewrites, no added recipes — mutation causes
+  drift (bug fixes would have to be re-applied inside every archive copy).
+  It works unmodified when deployed under `projects/<name>/` because
+  `PROJECT_NAME` derives from the directory name at runtime.
+- `deploy.py` (see `@references/deploy.py`) is the ONLY supported restore
+  path. It runs `dvc pull -R <archive>`, extracts every `.tar.zst` from the
+  directory containing it, copies the payload to the target excluding DVC
+  metadata (`*.dvc`, `*.tar.zst`, `.gitignore`, `ARCHIVE.md`, `deploy.py`),
+  renames `justfile.archive` → `Justfile`, strips read-only attributes, and
+  sanity-checks the result.
+- The deployed target is NOT DVC-tracked — pipeline steps may rewrite
+  `raw/*.parquet` and other files freely. NEVER run the pipeline inside
+  `experiments-archived/`: DVC-pulled files may be read-only hardlinks, and
+  rewriting them can corrupt the shared DVC cache.
+- Why the read-only strip matters: DVC-pulled files carry the read-only
+  attribute, `robocopy /COPY:DAT` preserves it, and Julia then fails with
+  `SystemError: opening file ... Permission denied` when rewriting outputs.
 
 ---
 

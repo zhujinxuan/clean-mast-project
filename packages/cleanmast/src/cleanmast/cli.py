@@ -136,7 +136,7 @@ def clean(project_dir: str, output: str):
     """Generate configuration for data cleaning step."""
     raise NotImplementedError(
         "Data cleaning configuration is not yet implemented in Python. "
-        "Use: julia bin/CleanMast.jl recommend clean"
+        "Use: julia bin/CleanMast.jl recommend process-clean"
     )
 
 

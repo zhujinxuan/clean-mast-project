@@ -28,7 +28,7 @@ def process_wt_timeseries(config: WtTimeSeriesConfiguration, project_dir: Path) 
         project_dir: Project directory for resolving relative paths
 
     Example:
-        >>> config = load_wt_timeseries_config("config.toml")
+        >>> config = load_config(WtTimeSeriesConfiguration, "config.toml")
         >>> process_wt_timeseries(config, Path("./my-project"))
     """
     for mast in config.masts:

@@ -7,7 +7,6 @@
 !**/*.yaml
 !**/*.yml
 !**/Justfile
+!**/justfile.archive
 !.gitignore
 !**/*.dvc
-/masts.tar.zst
-/mesos.tar.zst

@@ -8,8 +8,8 @@
 # Usage from the project directory:
 #   just <recipe>
 
-# Use Windows CMD so paths and `start` behave predictably on Windows
-set shell := ["cmd", "/c"]
+# Use nushell: recipes are plain `;`-sequenced commands, no cmd idioms
+set shell := ["nu", "-c"]
 
 # Project directory name (e.g. "tongdao-2026-06-24")
 PROJECT_NAME := file_name(justfile_directory())
@@ -35,10 +35,10 @@ _default:
 # ============================================================================
 
 recommend-parse-sensors:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend parse-sensors {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend parse-sensors {{PROJECT}}
 
 parse-sensors:
-    cd {{ROOT}} && julia bin/CleanMast.jl project parse-sensors {{PROJECT}}/parse-sensors.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl project parse-sensors {{PROJECT}}/parse-sensors.toml
 
 # ============================================================================
 # Julia processing pipeline (16 steps)
@@ -65,102 +65,102 @@ parse-sensors:
 # updating the corresponding recommend-* recipe. See just-override/README.md.
 
 process-list:
-    cd {{ROOT}} && julia bin/CleanMast.jl process steps {{PROJECT}}/ --list
+    cd {{ROOT}} ; julia bin/CleanMast.jl process steps {{PROJECT}}/ --list
 
 # --- Steps 1-2: Clean ---
 recommend-clean:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend clean {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend process-clean {{PROJECT}}
 
 process-clean:
-    cd {{ROOT}} && julia bin/CleanMast.jl process clean {{PROJECT}}/process-clean.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process clean {{PROJECT}}/process-clean.toml
 
 # --- Steps 3-4: Tower shading ---
 recommend-tower-shading:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend tower-shading {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend tower-shading {{PROJECT}}
 
 process-tower-shading:
-    cd {{ROOT}} && julia bin/CleanMast.jl process tower-shading {{PROJECT}}/tower-shading.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process tower-shading {{PROJECT}}/tower-shading.toml
 
 # --- Steps 5-6: Single-mast reconstruction ---
 recommend-reconstruct-single:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-single {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend reconstruct-single {{PROJECT}}
 
 process-reconstruct-single:
-    cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-single {{PROJECT}}/reconstruct-single.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process reconstruct-single {{PROJECT}}/reconstruct-single.toml
 
 # --- Steps 7-10: Cross-mast training & reconstruction ---
 recommend-train-cross:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend train-cross {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend train-reconstruct-cross {{PROJECT}}
 
 process-train-cross:
-    cd {{ROOT}} && julia bin/CleanMast.jl process train-cross {{PROJECT}}/train-reconstruct-cross.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl train reconstruct-cross {{PROJECT}}/train-reconstruct-cross.toml
 
 recommend-reconstruct-cross:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-cross {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend reconstruct-cross {{PROJECT}}/train-reconstruct-cross/train-results.toml {{PROJECT}}
 
 process-reconstruct-cross:
-    cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-cross {{PROJECT}}/reconstruct-cross.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process reconstruct-cross {{PROJECT}}/reconstruct-cross.toml
 
 # --- Steps 11-14: Mesoscale training & reconstruction ---
 recommend-train-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend train-meso {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend train-meso {{PROJECT}}
 
 process-train-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl process train-meso {{PROJECT}}/train-meso.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process train-meso {{PROJECT}}/train-meso.toml
 
 recommend-reconstruct-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend reconstruct-meso {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend reconstruct-meso {{PROJECT}}
 
 process-reconstruct-meso:
-    cd {{ROOT}} && julia bin/CleanMast.jl process reconstruct-meso {{PROJECT}}/reconstruct-meso.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process reconstruct-meso {{PROJECT}}/reconstruct-meso.toml
 
 # --- Steps 15-16: Representative year ---
 recommend-representative-year:
-    cd {{ROOT}} && julia bin/CleanMast.jl recommend representative-year {{PROJECT}}
+    cd {{ROOT}} ; julia bin/CleanMast.jl recommend representative-year {{PROJECT}}
 
 process-representative-year:
-    cd {{ROOT}} && julia bin/CleanMast.jl process representative-year {{PROJECT}}/representative-year.toml
+    cd {{ROOT}} ; julia bin/CleanMast.jl process representative-year {{PROJECT}}/representative-year.toml
 
 # ============================================================================
 # Python fill-heights pipeline
 # ============================================================================
 
 recommend-fill-heights:
-    cd {{ROOT}} && uv run cleanmast recommend fill-heights {{PROJECT}}/
+    cd {{ROOT}} ; uv run cleanmast recommend fill-heights {{PROJECT}}/
 
 fill-heights-meso:
-    cd {{ROOT}} && uv run cleanmast fill-heights {{PROJECT}}/fill-heights-reconstruct-meso.toml
+    cd {{ROOT}} ; uv run cleanmast fill-heights {{PROJECT}}/fill-heights-reconstruct-meso.toml
 
 fill-heights-representative-year:
-    cd {{ROOT}} && uv run cleanmast fill-heights {{PROJECT}}/fill-heights-representative-year.toml
+    cd {{ROOT}} ; uv run cleanmast fill-heights {{PROJECT}}/fill-heights-representative-year.toml
 
 # --- Wind turbine time series ---
 recommend-wt-timeseries:
-    cd {{ROOT}} && uv run cleanmast recommend wt-timeseries {{PROJECT}}/
+    cd {{ROOT}} ; uv run cleanmast recommend wt-timeseries {{PROJECT}}/
 
 process-wt-timeseries:
-    cd {{ROOT}} && uv run cleanmast wt-timeseries {{PROJECT}}/wt-timeseries.toml
+    cd {{ROOT}} ; uv run cleanmast wt-timeseries {{PROJECT}}/wt-timeseries.toml
 
 # ============================================================================
 # Report generation
 # ============================================================================
 
 recommend-report-config:
-    cd {{ROOT}} && uv run cleanmast recommend report-configs timeseries {{PROJECT}}/
+    cd {{ROOT}} ; uv run cleanmast recommend report-configs timeseries {{PROJECT}}/
 
 report-timeseries:
-    cd {{ROOT}} && uv run cleanmast report timeseries {{PROJECT}}/rep-ts-report.toml
+    cd {{ROOT}} ; uv run cleanmast report timeseries {{PROJECT}}/rep-ts-report.toml
 
 open-report:
-    cd {{ROOT}} && start report {{REPORT_PDF}}
+    cd {{ROOT}}; explorer {{REPORT_PDF}}
 
 # ============================================================================
 # Custom config hook
 # ============================================================================
 
 customize-configs:
-    @echo Custom config hook: checking for {{CUSTOMIZE_SCRIPT}} ...
-    @if exist {{ROOT}}\{{CUSTOMIZE_SCRIPT}} (cd {{ROOT}} && python {{CUSTOMIZE_SCRIPT}} {{PROJECT}}) else (echo No customize script found, skipping.)
+    @echo 'Custom config hook: checking for {{CUSTOMIZE_SCRIPT}} ...'
+    @if ('{{ROOT}}\{{CUSTOMIZE_SCRIPT}}' | path exists) { cd {{ROOT}}; uv run python {{CUSTOMIZE_SCRIPT}} {{PROJECT}} } else { echo "No customize script found, skipping." }
 
 # ============================================================================
 # Convenience pipelines
@@ -174,9 +174,9 @@ run-all: recommend-parse-sensors parse-sensors recommend-clean process-clean rec
 # ============================================================================
 
 clean:
-    cd {{ROOT}} && rmdir /s /q projects\{{PROJECT_NAME}}\raw 2>nul || exit 0
-    cd {{ROOT}} && rmdir /s /q projects\{{PROJECT_NAME}}\rep-ts 2>nul || exit 0
+    try { rm -rf '{{ROOT}}\projects\{{PROJECT_NAME}}\raw' } catch { }
+    try { rm -rf '{{ROOT}}\projects\{{PROJECT_NAME}}\rep-ts' } catch { }
 
 config:
-    @echo Project: {{PROJECT}}
-    @echo Root:    {{ROOT}}
+    @echo 'Project: {{PROJECT}}'
+    @echo 'Root:    {{ROOT}}'

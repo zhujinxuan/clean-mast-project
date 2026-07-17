@@ -8,7 +8,6 @@ Compliance: Value Object ✓ | DDD Compliant ✓
 Description: Representative year calibration configuration
 """
 
-import tomli
 from pydantic import BaseModel
 
 from cleanmast.subdomains.configuration.model.reconstruct_meso import MesoSource
@@ -62,18 +61,3 @@ class RepresentativeYearConfiguration(BaseModel):
 
     masts: list[RepresentativeYearMast]
     mesos: list[MesoSource]
-
-
-def load_representative_year_config(config_path: str) -> RepresentativeYearConfiguration:
-    """Load representative year configuration from TOML file.
-
-    Args:
-        config_path: Path to representative-year.toml file
-
-    Returns:
-        RepresentativeYearConfiguration parsed from the file
-    """
-    with open(config_path, "rb") as f:
-        data = tomli.load(f)
-
-    return RepresentativeYearConfiguration(**data)

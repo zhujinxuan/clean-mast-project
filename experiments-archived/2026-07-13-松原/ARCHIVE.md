@@ -4,7 +4,9 @@
 - **Archive date**: 2026-07-13
 - **Archive policy**: DVC plaintext files compressed into `.tar.zst` per
   directory. Parquet files tracked individually. Git-tracked files (.toml,
-  .json, .yaml, .yml, .md, .py, Justfile) committed directly.
+  .json, .yaml, .yml, .md, .py, justfile.archive) committed directly.
+  The original project's Justfile is stored PRISTINE as `justfile.archive`;
+  `deploy.py` restores the experiment to a target directory.
 
 ## DVC-Tracked Archives
 
@@ -33,8 +35,19 @@
 
 ## Git-Tracked Files
 
-- `Justfile`
+- `justfile.archive` (pristine copy of the original project's Justfile)
+- `deploy.py` (deploy/restore script — see below)
 - `parse-sensors.toml`
+- `formats/sensor/freemeso-meso.toml`
+- `formats/sensor/gangbei-231013.toml`
+- `formats/sensor/gt.toml`
+- `formats/sensor/lidar.toml`
+- `formats/sensor/nrg-rwd.toml`
+- `formats/sensor/nrg.toml`
+- `formats/clean/default.toml`
+- `formats/clean/lidar-availability.toml`
+- `formats/clean/nrg-guideline.toml`
+- `formats/clean/nrg-strict.toml`
 - `masts/README.md`
 - `mesos/README.md`
 - `pre-masts/README.md`
@@ -59,14 +72,15 @@
 - `just-override/override-representative-year.md`
 - `just-override/override_representative_year.py`
 
-## Pull Instructions
+## Deploy (Restore for Replay)
 
 ```bash
-# Clone the repo and pull DVC data for this archive
-git clone <repo-url>
-cd <repo-name>
-dvc pull -R experiments-archived/2026-07-13-松原/
-
-# Extract all archives
-just -f experiments-archived/2026-07-13-松原/Justfile pull
+# From the repository root. Restores DVC data, extracts archives, copies
+# the payload to the target, renames justfile.archive -> Justfile, and
+# strips read-only attributes so pipeline steps can rewrite raw/*.parquet.
+# The deployed directory is NOT DVC-tracked.
+uv run python experiments-archived/2026-07-13-松原/deploy.py projects/<new-project-name>
 ```
+
+For raw data access without deploying: `dvc pull -R experiments-archived/2026-07-13-松原/`,
+then extract each `.tar.zst` from the directory containing it.

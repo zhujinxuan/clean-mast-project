@@ -14,7 +14,7 @@ Multi-mast representative year calibration analysis for wind resource reports. P
 ## Anti-patterns
 
 - IO in compute or assemble.
-- Importing loaders (`load_timeseries`, `load_representative_year_config`) into compute/section.
+- Importing loaders (`load_timeseries`) into compute/section.
 - Passing `str(path)` into domain code.
 - Importing from sibling capabilities.
 - Unfrozen model classes.

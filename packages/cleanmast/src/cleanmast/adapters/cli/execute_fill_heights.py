@@ -26,9 +26,8 @@ def execute_fill_heights(config_path: str):
 
     try:
         execute_fill_heights_usecase(config_path)
+        click.echo("\nFill-heights complete!")
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:
         raise click.ClickException(str(e))
-
-    click.echo("\nFill-heights complete!")

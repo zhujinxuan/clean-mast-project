@@ -90,19 +90,13 @@ def generate_report(config_path: str) -> BuildResult:
         FileNotFoundError: If config file not found
         ValueError: If a document section contains a non-timeseries subsection directly
     """
-    config_file_path = Path(config_path)
-    base_dir = config_file_path.parent.resolve()
+    from cleanmast.subdomains.configuration import load_config
+    from cleanmast.subdomains.configuration.model.report_config import (
+        FlatReportConfig,
+    )
 
-    from cleanmast.subdomains.configuration import ProjectConfig
-
-    pc = ProjectConfig(base_dir)
-    report_dc = pc.discover_report_config()
-    if report_dc is None:
-        raise FileNotFoundError(
-            f"Config file not found: {config_path}. "
-            "Run 'recommend report timeseries' command first."
-        )
-    config = report_dc.config
+    base_dir = Path(config_path).parent.resolve()
+    config = load_config(FlatReportConfig, config_path)
     output_dir = base_dir / "rep-ts"
     output_dir.mkdir(parents=True, exist_ok=True)
     service = ReportGenerationService(project_dir=base_dir)

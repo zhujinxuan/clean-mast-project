@@ -62,6 +62,12 @@ clean-mast-project/
 - Prefer domain-specific types over primitive strings/ints.
 - No bare `Any` unless the boundary genuinely cannot be typed.
 
+### Justfiles
+
+- All Justfiles use nushell: `set shell := ["nu", "-c"]`. Never `cmd`.
+- Recipes must be nushell syntax — no cmd idioms (`&&`, `if exist`, `rmdir /s /q`, `start`, `2>nul`, `%VAR%`). Use `;` sequencing, `path exists`, `rm -rf`, `try { … } catch { … }`.
+- No naked `python` in recipes; always `uv run python`.
+
 ### Imports
 
 - Import shared IR types from `cleanmast`, not from sibling packages.

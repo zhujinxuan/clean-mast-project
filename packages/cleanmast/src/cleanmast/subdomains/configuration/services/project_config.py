@@ -3,9 +3,6 @@
 from pathlib import Path
 from typing import ClassVar
 
-import tomli
-
-from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
 from cleanmast.subdomains.configuration.model.fill_height_meso_config import (
     FillHeightsMesoConfiguration,
@@ -23,8 +20,29 @@ from cleanmast.subdomains.configuration.model.representative_year_config import 
 from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
 )
+from cleanmast.subdomains.configuration.services.config_io import load_config
 
 
+# ===========================================================================
+# USAGE RESTRICTION: ProjectConfig is for RECOMMEND and ANALYZE commands ONLY.
+#
+# Registered consumers (Python):
+#   recommend:  cleanmast recommend fill-heights
+#               cleanmast recommend wt-timeseries
+#               cleanmast recommend report-configs timeseries
+#   analyze:    (none; analyse commands are Julia-side)
+#
+# EXECUTE COMMANDS MUST NOT call any discover_*_config() method.  They
+# receive an explicit config_path from the CLI and MUST use:
+#   from cleanmast.subdomains.configuration import load_config
+#   config = load_config(ModelType, config_path)
+#
+# Reason: execute commands accept a specific config file as argument.
+# Re-discovering by convention ignores the explicit path and creates
+# unreachable branches when two configs of the same family coexist in one
+# project (e.g. fill-heights-reconstruct-meso.toml and
+# fill-heights-representative-year.toml).
+# ===========================================================================
 class ProjectConfig:
     """Lazy discovery of all known TOML configs in a project directory.
 
@@ -67,9 +85,7 @@ class ProjectConfig:
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        config = ReconstructMesoConfiguration(**data)
+        config = load_config(ReconstructMesoConfiguration, path)
         self._reconstruct_meso_config = DiscoveredConfig(config=config, filename=filename)
         return self._reconstruct_meso_config
 
@@ -81,31 +97,19 @@ class ProjectConfig:
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        config = RepresentativeYearConfiguration(**data)
+        config = load_config(RepresentativeYearConfiguration, path)
         self._representative_year_config = DiscoveredConfig(config=config, filename=filename)
         return self._representative_year_config
 
     def discover_wt_timeseries_config(self) -> DiscoveredConfig[WtTimeSeriesConfiguration] | None:
-        """Discover and cache ``wt-timeseries.toml`` with path resolution."""
+        """Discover and cache ``wt-timeseries.toml``."""
         if self._wt_timeseries_config is not None:
             return self._wt_timeseries_config
         filename = self._FILENAMES[WtTimeSeriesConfiguration]
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-
-        # Resolve input paths to absolute (replicates old load_wt_timeseries_config logic)
-        for mast_data in data.get("masts", []):
-            if "input" in mast_data and "data" in mast_data["input"]:
-                input_path = Path(mast_data["input"]["data"])
-                if not input_path.is_absolute():
-                    mast_data["input"]["data"] = to_posix_path(self.project_dir / input_path)
-
-        config = WtTimeSeriesConfiguration(**data)
+        config = load_config(WtTimeSeriesConfiguration, path)
         self._wt_timeseries_config = DiscoveredConfig(config=config, filename=filename)
         return self._wt_timeseries_config
 
@@ -117,9 +121,7 @@ class ProjectConfig:
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        config = FillHeightsMesoConfiguration(**data)
+        config = load_config(FillHeightsMesoConfiguration, path)
         self._fill_heights_meso_config = DiscoveredConfig(config=config, filename=filename)
         return self._fill_heights_meso_config
 
@@ -131,9 +133,7 @@ class ProjectConfig:
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        config = FillHeightsRepYearConfiguration(**data)
+        config = load_config(FillHeightsRepYearConfiguration, path)
         self._fill_heights_rep_year_config = DiscoveredConfig(config=config, filename=filename)
         return self._fill_heights_rep_year_config
 
@@ -145,8 +145,6 @@ class ProjectConfig:
         path = self.project_dir / filename
         if not path.exists():
             return None
-        with open(path, "rb") as f:
-            data = tomli.load(f)
-        config = FlatReportConfig(**data)
+        config = load_config(FlatReportConfig, path)
         self._report_config = DiscoveredConfig(config=config, filename=filename)
         return self._report_config
