@@ -27,6 +27,7 @@ from cleanmast.subdomains.configuration import (
     SubsectionType,
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
+    load_timeseries,
     load_timeseries_parquet,
 )
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import (
@@ -165,14 +166,19 @@ def _build_dataset_for_timeseries(
 
 
 def _build_subsections(
-    reconstruct_meso_dataset: DatasetConfig | None,
+    filled_meso_dataset: DatasetConfig | None,
     repyear_dataset: DatasetConfig | None,
     calibration_dataset: DatasetConfig | None,
+    original_meso_dataset: DatasetConfig | None,
 ) -> list[FlatSubsectionConfig]:
     """Build flat subsections with hardcoded indices.
 
     Index scheme:
       2.4 = meso (timeseries)
+        2.4.4 vertical_profile and 2.4.7 turbulence use the original-heights
+        dataset when available (fill-heights interpolation corrupts shear
+        exponents and TI statistics); all other 2.4 children use the
+        filled-heights dataset.
       2.5 = repyear (timeseries)
         2.5.1 = calibration (uses repyear_calibration dataset)
         2.5.2+ = other repyear analysis types
@@ -180,18 +186,22 @@ def _build_subsections(
     """
     subsections: list[FlatSubsectionConfig] = []
 
-    if reconstruct_meso_dataset:
+    if filled_meso_dataset:
         subsections.append(FlatSubsectionConfig(
             index="2.4",
             type="timeseries",
             title="测风年风资源分析",
-            datasets=[reconstruct_meso_dataset.name],
+            datasets=[filled_meso_dataset.name],
         ))
         for i, subtype in enumerate(_MESO_ANALYSIS_SUBSECTION_TYPES, start=1):
+            if subtype in ("turbulence", "vertical_profile") and original_meso_dataset is not None:
+                ds_name = original_meso_dataset.name
+            else:
+                ds_name = filled_meso_dataset.name
             subsections.append(FlatSubsectionConfig(
                 index=f"2.4.{i}",
                 type=cast(SubsectionType, subtype),
-                datasets=[reconstruct_meso_dataset.name],
+                datasets=[ds_name],
             ))
 
     if repyear_dataset:
@@ -219,7 +229,7 @@ def _build_subsections(
                 datasets=[repyear_dataset.name],
             ))
 
-    fifty_year_dataset = reconstruct_meso_dataset or repyear_dataset
+    fifty_year_dataset = filled_meso_dataset or repyear_dataset
     if fifty_year_dataset:
         subsections.append(FlatSubsectionConfig(
             index="2.6",
@@ -250,33 +260,92 @@ def _build_analysis_windows(
     ]
 
 
-def _build_reconstruct_meso_dataset(
-    meso_dc: DiscoveredConfig | None,
-    project_path: Path,
+def _build_meso_filled_heights_dataset(
+    project_config: ProjectConfig,
 ) -> DatasetConfig | None:
-    """Build reconstruct_meso dataset from fill-heights config."""
-    if meso_dc is None:
+    """Build reconstruct_meso_filled_heights dataset from fill-heights config."""
+    fill_heights_meso_dc = project_config.discover_fill_heights_meso_config()
+    if fill_heights_meso_dc is None:
         return None
     return _build_dataset_for_timeseries(
-        project_path,
-        meso_dc,
+        project_config.project_dir,
+        fill_heights_meso_dc,
         "reconstruct-meso-fill-heights",
-        "reconstruct_meso",
+        "reconstruct_meso_filled_heights",
         fallback_air_density=STANDARD_AIR_DENSITY,
+    )
+
+
+def _build_meso_original_heights_dataset(
+    project_config: ProjectConfig,
+) -> DatasetConfig | None:
+    """Build dataset from original reconstruct-meso output (pre-fill-heights).
+
+    Uses mast.output.data directly from reconstruct-meso.toml.
+    Discovers turbulence_heights from original sensors (real avg+sd pairs
+    in 120–160m, not interpolated columns from fill-heights).
+    """
+    recon_meso_dc = project_config.discover_reconstruct_meso_config()
+    if recon_meso_dc is None:
+        return None
+    project_path = project_config.project_dir
+    masts = recon_meso_dc.config.masts
+    mast_refs: list[MastRef] = []
+
+    for mast in masts:
+        data_path = mast.output.data
+        parquet_path = project_path / data_path
+
+        if not parquet_path.exists():
+            raise FileNotFoundError(
+                f"Original reconstruct-meso parquet not found for mast "
+                f"{mast.name}: {parquet_path}"
+            )
+
+        source = TimeSeriesSource(data=data_path, sensors=None)
+        time_series_data = load_timeseries(source, str(project_path))
+
+        try:
+            air_density = calculate_air_density(time_series_data)
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Cannot calculate air density for mast {mast.name}: {e}. "
+                f"Using fallback {STANDARD_AIR_DENSITY}"
+            )
+            air_density = STANDARD_AIR_DENSITY
+
+        turbulence_heights = _discover_turbulence_heights(
+            time_series_data.sensors
+        )
+
+        mast_refs.append(MastRef(
+            name=mast.name,
+            air_density=round(air_density, 3),
+            input=TimeSeriesSource(data=data_path),
+            turbulence_heights=turbulence_heights,
+        ))
+
+    if not mast_refs:
+        return None
+
+    return DatasetConfig(
+        name="reconstruct_meso_original_heights",
+        masts=mast_refs,
     )
 
 
 def _build_repyear_dataset(
     project_config: ProjectConfig,
-    rep_yr_dc: DiscoveredConfig | None,
-    project_path: Path,
 ) -> DatasetConfig | None:
     """Build repyear dataset from fill-heights config enriched with representative-year.toml."""
-    if rep_yr_dc is None:
+    fill_heights_rep_year_dc = project_config.discover_fill_heights_rep_year_config()
+    if fill_heights_rep_year_dc is None:
         return None
+    project_path = project_config.project_dir
     repyear_dataset = _build_dataset_for_timeseries(
         project_path,
-        rep_yr_dc,
+        fill_heights_rep_year_dc,
         "representative-year-fill-heights",
         "repyear",
         fallback_air_density=STANDARD_AIR_DENSITY,
@@ -314,15 +383,15 @@ def _build_repyear_dataset(
 
 
 def _build_calibration_dataset(
-    reconstruct_meso_dataset: DatasetConfig | None,
+    filled_meso_dataset: DatasetConfig | None,
     repyear_dataset: DatasetConfig | None,
 ) -> DatasetConfig | None:
     """Build calibration dataset combining uncalibrated masts with calibrated mesos."""
-    if reconstruct_meso_dataset is None or repyear_dataset is None:
+    if filled_meso_dataset is None or repyear_dataset is None:
         return None
     return DatasetConfig(
         name="repyear_calibration",
-        masts=reconstruct_meso_dataset.masts,
+        masts=filled_meso_dataset.masts,
         mesos=repyear_dataset.mesos,
         analysis_windows=repyear_dataset.analysis_windows,
     )
@@ -354,31 +423,30 @@ def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatRepo
             are not found
         ValueError: If no valid masts found for report configuration
     """
-    project_path = project_config.project_dir
+    filled_meso_dataset = _build_meso_filled_heights_dataset(project_config)
+    repyear_dataset = _build_repyear_dataset(project_config)
+    original_meso_dataset = _build_meso_original_heights_dataset(project_config)
+    calibration_dataset = _build_calibration_dataset(filled_meso_dataset, repyear_dataset)
 
-    meso_dc = project_config.discover_fill_heights_meso_config()
-    rep_yr_dc = project_config.discover_fill_heights_rep_year_config()
-
-    reconstruct_meso_dataset = _build_reconstruct_meso_dataset(meso_dc, project_path)
-    repyear_dataset = _build_repyear_dataset(project_config, rep_yr_dc, project_path)
-    calibration_dataset = _build_calibration_dataset(reconstruct_meso_dataset, repyear_dataset)
-
-    if not reconstruct_meso_dataset and not repyear_dataset:
+    if not filled_meso_dataset and not repyear_dataset:
         raise ValueError(
             "No valid masts found for report configuration. "
             "Ensure fill-heights configuration files exist and contain valid masts."
         )
 
     datasets: list[DatasetConfig] = []
-    if reconstruct_meso_dataset:
-        datasets.append(reconstruct_meso_dataset)
+    if filled_meso_dataset:
+        datasets.append(filled_meso_dataset)
     if repyear_dataset:
         datasets.append(repyear_dataset)
+    if original_meso_dataset:
+        datasets.append(original_meso_dataset)
     if calibration_dataset:
         datasets.append(calibration_dataset)
 
     subsections = _build_subsections(
-        reconstruct_meso_dataset, repyear_dataset, calibration_dataset,
+        filled_meso_dataset, repyear_dataset, calibration_dataset,
+        original_meso_dataset=original_meso_dataset,
     )
     report_config = FlatReportConfig(
         datasets=datasets,

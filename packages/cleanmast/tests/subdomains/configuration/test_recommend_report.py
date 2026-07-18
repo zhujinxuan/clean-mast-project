@@ -97,6 +97,30 @@ def _valid_mast(name: str, data_dir: str) -> dict:
     }
 
 
+def _valid_reconstruct_meso_mast(name: str, data_dir: str) -> dict:
+    return {
+        "name": name,
+        "input": {"data": f"input/{name}.csv"},
+        "output": {"data": f"{data_dir}/{name}.parquet"},
+        "time_range": {
+            "min": datetime(2025, 3, 1),
+            "max": datetime(2026, 2, 28),
+        },
+        "models": {
+            "windspeed": {
+                "method": "1-sector",
+                "meso_name": "ERA5",
+                "model_file": "models/ws.jld2",
+            },
+            "winddirection": {
+                "method": "constant-offset",
+                "meso_name": "ERA5",
+                "model_file": "models/wd.jld2",
+            },
+        },
+    }
+
+
 class TestRecommendReport:
     def _create_fill_heights_toml(self, tmp_path: Path, filename: str, data_dir: str) -> None:
         config = {"masts": [_valid_mast("M1", data_dir)]}
@@ -160,11 +184,11 @@ class TestRecommendReport:
             config = FlatReportConfig.model_validate(tomli.load(f))
         assert len(config.datasets) == 3
 
-        reconstruct_meso_ds = next(ds for ds in config.datasets if ds.name == "reconstruct_meso")
+        filled_meso_ds = next(ds for ds in config.datasets if ds.name == "reconstruct_meso_filled_heights")
         repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
-        assert len(reconstruct_meso_ds.masts) == 1
+        assert len(filled_meso_ds.masts) == 1
         assert len(repyear_ds.masts) == 1
-        assert reconstruct_meso_ds.masts[0].air_density == 1.225
+        assert filled_meso_ds.masts[0].air_density == 1.225
         assert repyear_ds.masts[0].air_density == 1.225
 
     @patch(
@@ -199,7 +223,7 @@ class TestRecommendReport:
         assert meso_subsections[0].type == "timeseries"
         assert meso_subsections[0].title == "测风年风资源分析"
         for child in meso_subsections[1:]:
-            assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
+            assert child.datasets == ["reconstruct_meso_filled_heights"], f"Expected datasets=['reconstruct_meso_filled_heights'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
@@ -268,7 +292,7 @@ class TestRecommendReport:
         assert fifty_year_subsections[0].type == "fifty_year_max_wind"
         assert fifty_year_subsections[0].title == "五十年一遇最大风速"
         for child in fifty_year_subsections[1:]:
-            assert child.datasets == ["reconstruct_meso"], f"Expected datasets=['reconstruct_meso'] for {child.index}, got {child.datasets}"
+            assert child.datasets == ["reconstruct_meso_filled_heights"], f"Expected datasets=['reconstruct_meso_filled_heights'] for {child.index}, got {child.datasets}"
 
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
@@ -392,10 +416,127 @@ class TestRecommendReport:
             tmp_path,
             dc,
             'reconstruct-meso-fill-heights',
-            'reconstruct_meso',
+            'reconstruct_meso_filled_heights',
         )
 
         assert len(ds.masts) == 2
         assert ds.masts[0].input.data.endswith("M1.parquet")
         assert ds.masts[1].input.data.endswith("M2.parquet")
         assert ds.masts[0].input.data != ds.masts[1].input.data
+
+
+class TestOriginalHeightsDataset:
+    def _create_reconstruct_meso_toml(self, tmp_path: Path, data_dir: str = "reconstruct-meso") -> None:
+        config = {
+            "masts": [_valid_reconstruct_meso_mast("M1", data_dir)],
+            "mesos": [{"name": "ERA5", "input": {"data": "raw/ERA5.csv"}}],
+        }
+        import tomli_w
+        with open(tmp_path / "reconstruct-meso.toml", "wb") as f:
+            tomli_w.dump(config, f)
+
+        parquet_path = tmp_path / data_dir / "M1.parquet"
+        parquet_path.parent.mkdir(parents=True, exist_ok=True)
+        parquet_path.write_bytes(b"")
+
+    def _create_fill_heights_toml(self, tmp_path: Path, filename: str, data_dir: str) -> None:
+        config = {"masts": [_valid_mast("M1", data_dir)]}
+        import tomli_w
+        with open(tmp_path / filename, "wb") as f:
+            tomli_w.dump(config, f)
+
+        parquet_path = tmp_path / data_dir / "M1.parquet"
+        parquet_path.parent.mkdir(parents=True, exist_ok=True)
+        parquet_path.write_bytes(b"")
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries",
+        return_value=MagicMock(),
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_original_heights_dataset_built_and_assigned(
+        self, mock_load_parquet, mock_load_ts, mock_calc_density, tmp_path
+    ):
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+        self._create_reconstruct_meso_toml(tmp_path)
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        dataset_names = [ds.name for ds in config.datasets]
+        assert "reconstruct_meso_filled_heights" in dataset_names
+        assert "reconstruct_meso_original_heights" in dataset_names
+        assert len(config.datasets) == 4  # filled + repyear + original + calibration
+
+        by_index = {s.index: s for s in config.subsections}
+        assert by_index["2.4.4"].type == "vertical_profile"
+        assert by_index["2.4.4"].datasets == ["reconstruct_meso_original_heights"]
+        assert by_index["2.4.7"].type == "turbulence"
+        assert by_index["2.4.7"].datasets == ["reconstruct_meso_original_heights"]
+        for idx in ("2.4.1", "2.4.2", "2.4.3", "2.4.5", "2.4.6"):
+            assert by_index[idx].datasets == ["reconstruct_meso_filled_heights"], (
+                f"Expected filled-heights dataset for {idx}, got {by_index[idx].datasets}"
+            )
+
+        original_ds = next(
+            ds for ds in config.datasets if ds.name == "reconstruct_meso_original_heights"
+        )
+        assert len(original_ds.masts) == 1
+        # Original dataset references reconstruct-meso parquet directly (no path rewrite)
+        assert original_ds.masts[0].input.data == "reconstruct-meso/M1.parquet"
+        assert original_ds.masts[0].air_density == 1.225
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_turbulence_and_vertical_profile_fall_back_to_filled(
+        self, mock_load_parquet, mock_calc_density, tmp_path
+    ):
+        """Without reconstruct-meso.toml, 2.4.4 and 2.4.7 use the filled-heights dataset."""
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        dataset_names = [ds.name for ds in config.datasets]
+        assert "reconstruct_meso_original_heights" not in dataset_names
+
+        by_index = {s.index: s for s in config.subsections}
+        assert by_index["2.4.4"].datasets == ["reconstruct_meso_filled_heights"]
+        assert by_index["2.4.7"].datasets == ["reconstruct_meso_filled_heights"]

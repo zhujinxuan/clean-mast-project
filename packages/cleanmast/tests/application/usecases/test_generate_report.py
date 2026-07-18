@@ -31,7 +31,7 @@ class TestGenerateReport:
         config = {
             "datasets": [
                 {
-                    "name": "reconstruct_meso",
+                    "name": "reconstruct_meso_filled_heights",
                     "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./reconstruct_meso/M1.parquet"}}],
                 },
                 {
@@ -40,9 +40,9 @@ class TestGenerateReport:
                 },
             ],
             "subsections": [
-                {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["reconstruct_meso"]},
-                {"index": "2.4.1", "type": "wind_rose", "datasets": ["reconstruct_meso"]},
-                {"index": "2.4.2", "type": "temporal", "datasets": ["reconstruct_meso"]},
+                {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["reconstruct_meso_filled_heights"]},
+                {"index": "2.4.1", "type": "wind_rose", "datasets": ["reconstruct_meso_filled_heights"]},
+                {"index": "2.4.2", "type": "temporal", "datasets": ["reconstruct_meso_filled_heights"]},
                 {"index": "2.5", "type": "timeseries", "title": "代表年风资源分析", "datasets": ["rep"]},
                 {"index": "2.5.1", "type": "wind_rose", "datasets": ["rep"]},
                 {"index": "2.5.2", "type": "temporal", "datasets": ["rep"]},
