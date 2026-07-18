@@ -9,6 +9,13 @@ from pathlib import Path
 
 import polars as pl
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.subdomains.reporting.model.analysis_input import (
+    RepresentativeYearCalibrationPayload,
+    SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.reporting.model.analysis_parameters import (
+    AnalysisParameters,
+)
 from cleanmast.subdomains.reporting.subdomains.representative_year.section import (
     RepresentativeYearSection,
 )
@@ -57,15 +64,20 @@ class TestRepresentativeYearCalibrationIntegration:
     def test_section_renders_with_chinese_rep_year_content(self, tmp_path: Path) -> None:
         """Section produces TypstSection containing Chinese rep year headers and summary."""
         meso_data = _create_meso_timeseries()
-        section = RepresentativeYearSection.from_mast_data([
-            (
-                meso_data,
-                "M01",
-                "era5",
-                datetime(2020, 1, 1),
-                datetime(2020, 6, 30, 23, 0),
-            ),
-        ])
+        payload = RepresentativeYearCalibrationPayload(
+            meso_time_series=meso_data,
+            meso_name="era5",
+            sampling_period="1h",
+            analysis_start=datetime(2020, 1, 1),
+            analysis_end=datetime(2020, 6, 30, 23, 0),
+        )
+        item = SingleMastAnalysisInput(
+            time_series=meso_data,
+            parameters=AnalysisParameters(air_density=1.225),
+            mast_name="M01",
+            representative_year_calibration_payload=payload,
+        )
+        section = RepresentativeYearSection.from_inputs([item])
 
         section_node = section.render_ir(tmp_path)
 

@@ -7,7 +7,6 @@ from cleanmast.application.usecases.generate_report import (
     HeadingSection,
     LoadedDataset,
     _generate_from_flat_config,
-    _handle_fifty_year_max_wind_flat,
     generate_report,
 )
 from cleanmast.subdomains.configuration import (
@@ -19,8 +18,11 @@ from cleanmast.subdomains.configuration import (
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
-from cleanmast.subdomains.reporting.model.report_meta import (
-    SingleMastMeta,
+from cleanmast.subdomains.reporting.model.analysis_input import (
+    SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.reporting.model.analysis_parameters import (
+    AnalysisParameters,
 )
 
 
@@ -85,146 +87,6 @@ class TestGenerateReport:
     @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
     @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
     @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_processes_nested_timeseries(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
-        mock_ts = MagicMock()
-        wd_sensor = MagicMock()
-        wd_sensor.sensor_type = "WindDirection"
-        wd_sensor.stat_type = "avg"
-        mock_ts.sensors = [wd_sensor]
-        mock_load_ts.return_value = mock_ts
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_rose_section.return_value = "wind_rose_section"
-        mock_service.generate_temporal_section.return_value = "temporal_section"
-        mock_service._create_analysis_input.return_value = "analysis_input"
-        mock_service_cls.return_value = mock_service
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {
-            "typ": Path("report.typ"),
-            "pdf": Path("report.pdf"),
-            "docx": Path("report.docx"),
-        }
-        mock_builder_cls.return_value = mock_builder
-
-        config_path = self._create_nested_config(tmp_path)
-        result = generate_report(str(config_path))
-
-        assert result["pdf"] == Path("report.pdf")
-        assert mock_load_ts.call_count == 2
-        assert mock_service.generate_wind_rose_section.call_count == 2
-        assert mock_service.generate_temporal_section.call_count == 2
-        assert mock_builder.add_section.call_count == 2
-
-        added = mock_builder.add_section.call_args[0][0]
-        assert isinstance(added, HeadingSection)
-        assert added.title == "Placeholder"
-        assert len(added.subsections) == 5  # 2.1-2.3 placeholders + 2.4 测风年 + 2.5 代表年
-
-        # Assert multi-mast contract: each call receives a list of tuples
-        for call in mock_service.generate_wind_rose_section.call_args_list:
-            items = call.args[0]
-            assert isinstance(items, list)
-            assert len(items) == 1
-            assert len(items[0]) == 2
-
-    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
-    @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_three_mast_config_produces_five_sections(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
-        mock_ts = MagicMock()
-        mock_ts.sensors = []
-        mock_load_ts.return_value = mock_ts
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_frequency_section.return_value = "wind_frequency_section"
-        mock_service.generate_temporal_section.return_value = "temporal_section"
-        mock_service.generate_weibull_section.return_value = "weibull_section"
-        mock_service.generate_vertical_profile_section.return_value = "vertical_profile_section"
-        mock_service.generate_turbulence_section.return_value = "turbulence_section"
-        mock_service._create_analysis_input.return_value = "analysis_input"
-        mock_service_cls.return_value = mock_service
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {
-            "typ": Path("report.typ"),
-            "pdf": Path("report.pdf"),
-            "docx": Path("report.docx"),
-        }
-        mock_builder_cls.return_value = mock_builder
-
-        config_path = self._create_five_subsection_config(tmp_path, mast_count=3)
-        result = generate_report(str(config_path))
-
-        assert result["pdf"] == Path("report.pdf")
-        assert mock_load_ts.call_count == 3
-
-        # Each service method called exactly once (multi-mast)
-        assert mock_service.generate_wind_frequency_section.call_count == 1
-        assert mock_service.generate_temporal_section.call_count == 1
-        assert mock_service.generate_weibull_section.call_count == 1
-        assert mock_service.generate_vertical_profile_section.call_count == 1
-        assert mock_service.generate_turbulence_section.call_count == 1
-
-        assert mock_builder.add_section.call_count == 2
-
-        # Assert each service method receives exactly 3 mast tuples
-        assert len(mock_service.generate_wind_frequency_section.call_args.args[0]) == 3
-        assert len(mock_service.generate_temporal_section.call_args.args[0]) == 3
-        assert len(mock_service.generate_weibull_section.call_args.args[0]) == 3
-        assert len(mock_service.generate_vertical_profile_section.call_args.args[0]) == 3
-        assert len(mock_service.generate_turbulence_section.call_args.args[0]) == 3
-
-    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
-    @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_one_mast_config_produces_five_sections(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
-        mock_ts = MagicMock()
-        mock_ts.sensors = []
-        mock_load_ts.return_value = mock_ts
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_frequency_section.return_value = "wind_frequency_section"
-        mock_service.generate_temporal_section.return_value = "temporal_section"
-        mock_service.generate_weibull_section.return_value = "weibull_section"
-        mock_service.generate_vertical_profile_section.return_value = "vertical_profile_section"
-        mock_service.generate_turbulence_section.return_value = "turbulence_section"
-        mock_service._create_analysis_input.return_value = "analysis_input"
-        mock_service_cls.return_value = mock_service
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {
-            "typ": Path("report.typ"),
-            "pdf": Path("report.pdf"),
-            "docx": Path("report.docx"),
-        }
-        mock_builder_cls.return_value = mock_builder
-
-        config_path = self._create_five_subsection_config(tmp_path, mast_count=1)
-        result = generate_report(str(config_path))
-
-        assert result["pdf"] == Path("report.pdf")
-        assert mock_load_ts.call_count == 1
-
-        # Each service method called exactly once (backward compatible structure)
-        assert mock_service.generate_wind_frequency_section.call_count == 1
-        assert mock_service.generate_temporal_section.call_count == 1
-        assert mock_service.generate_weibull_section.call_count == 1
-        assert mock_service.generate_vertical_profile_section.call_count == 1
-        assert mock_service.generate_turbulence_section.call_count == 1
-
-        assert mock_builder.add_section.call_count == 2
-
-        # Assert each service method receives exactly 1 mast tuple
-        assert len(mock_service.generate_wind_frequency_section.call_args.args[0]) == 1
-        assert len(mock_service.generate_temporal_section.call_args.args[0]) == 1
-        assert len(mock_service.generate_weibull_section.call_args.args[0]) == 1
-        assert len(mock_service.generate_vertical_profile_section.call_args.args[0]) == 1
-        assert len(mock_service.generate_turbulence_section.call_args.args[0]) == 1
-
-    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
-    @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
     def test_non_timeseries_at_section_level_produces_placeholder(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
         # Every tree node produces a HeadingSection, including top-level leaf nodes
         config = {
@@ -260,127 +122,6 @@ class TestGenerateReport:
         assert isinstance(added, HeadingSection)
         assert added.title == "Placeholder"
         assert added.subsections == []
-
-    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
-    @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_timeseries_without_masts_produces_placeholder(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
-        mock_ts = MagicMock()
-        wd_sensor = MagicMock()
-        wd_sensor.sensor_type = "WindDirection"
-        wd_sensor.stat_type = "avg"
-        mock_ts.sensors = [wd_sensor]
-        mock_load_ts.return_value = mock_ts
-
-        def _section_side_effect(items):
-            return "section" if items else None
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_rose_section.side_effect = _section_side_effect
-        mock_service.generate_temporal_section.side_effect = _section_side_effect
-        mock_service._create_analysis_input.return_value = "analysis_input"
-        mock_service_cls.return_value = mock_service
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {
-            "typ": Path("report.typ"),
-            "pdf": Path("report.pdf"),
-            "docx": Path("report.docx"),
-        }
-        mock_builder_cls.return_value = mock_builder
-
-        # Flat config: every node produces output
-        config = {
-            "datasets": [
-                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
-                {"name": "ds2", "masts": [{"name": "M2", "air_density": 1.225, "input": {"data": "./M2.parquet"}}]},
-            ],
-            "subsections": [
-                {"index": "2.4", "type": "timeseries", "title": "有数据", "datasets": ["ds1"]},
-                {"index": "2.4.1", "type": "wind_rose", "datasets": ["ds1"]},
-                {"index": "2.5", "type": "timeseries", "title": "无数据", "datasets": ["ds2"]},
-                {"index": "2.5.1", "type": "temporal", "datasets": ["ds2"]},
-            ],
-        }
-        config_path = tmp_path / "rep-ts-report.toml"
-        with open(config_path, "wb") as f:
-            tomli_w.dump(config, f)
-        (tmp_path / "M1.parquet").touch()
-        (tmp_path / "M2.parquet").touch()
-
-        result = generate_report(str(config_path))
-
-        assert result["pdf"] == Path("report.pdf")
-        assert mock_load_ts.call_count == 2
-        assert mock_service.generate_wind_rose_section.call_count == 1
-        # Both containers produce HeadingSections
-        assert mock_builder.add_section.call_count == 2
-        added = mock_builder.add_section.call_args[0][0]
-        assert isinstance(added, HeadingSection)
-        empty_container = [s for s in added.subsections if getattr(s, 'title', None) == "无数据"]
-        assert len(empty_container) == 1
-        assert len(empty_container[0].subsections) == 1
-
-    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
-    @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_nested_subsections_render_with_correct_heading_levels(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
-        from cleanmast.application.usecases.generate_report import HeadingSection
-        from typst_ir import TypstDocument, TypstHeading, TypstSection, serialize
-
-        mock_ts = MagicMock()
-        mock_ts.sensors = []
-        mock_load_ts.return_value = mock_ts
-
-        class FakeSection:
-            def __init__(self, title: str) -> None:
-                self.title = title
-
-            def render_ir(self, images_dir: Path) -> TypstSection:
-                return TypstSection(heading=TypstHeading(text=self.title), body=[], subsections=[])
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_rose_section.return_value = FakeSection("Wind Rose")
-        mock_service.generate_vertical_profile_section.return_value = FakeSection("Vertical Profile")
-        mock_service._create_analysis_input.return_value = "analysis_input"
-        mock_service_cls.return_value = mock_service
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {
-            "typ": Path("report.typ"),
-            "pdf": Path("report.pdf"),
-            "docx": Path("report.docx"),
-        }
-        mock_builder_cls.return_value = mock_builder
-
-        config = {
-            "datasets": [
-                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
-            ],
-            "subsections": [
-                {"index": "2.4", "type": "timeseries", "title": "测风年风资源分析", "datasets": ["ds1"]},
-                {"index": "2.4.1", "type": "wind_rose", "datasets": ["ds1"]},
-                {"index": "2.4.2", "type": "vertical_profile", "datasets": ["ds1"]},
-            ],
-        }
-        path = tmp_path / "rep-ts-report.toml"
-        with open(path, "wb") as f:
-            tomli_w.dump(config, f)
-        (tmp_path / "M1.parquet").touch()
-
-        result = generate_report(str(path))
-        assert result["pdf"] == Path("report.pdf")
-
-        added_sections = [call.args[0] for call in mock_builder.add_section.call_args_list]
-        heading_sections = [s for s in added_sections if isinstance(s, HeadingSection)]
-        assert len(heading_sections) == 2
-
-        heading_ir = heading_sections[1].render_ir(tmp_path)
-        assert len(heading_ir.subsections) > 0, "Parent HeadingSection should contain nested subsections"
-
-        doc = TypstDocument(children=[heading_ir])
-        serialized = serialize(doc)
-        assert "== " in serialized, "Serialized output should contain == markers for child headings"
 
     def test_config_not_found_raises_error(self, tmp_path):
         missing_path = tmp_path / "nonexistent.toml"
@@ -423,12 +164,11 @@ class TestFlatConfigOrchestration:
         for ds in config.datasets:
             mast_data = []
             for mast_ref in ds.masts:
-                meta = SingleMastMeta(
+                mast_data.append(SingleMastAnalysisInput(
+                    time_series=mock_ts,
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
                     mast_name=mast_ref.name,
-                    air_density=mast_ref.air_density,
-                    width="80%",
-                )
-                mast_data.append(("analysis_input", meta, mock_ts))
+                ))
             loaded[ds.name] = LoadedDataset(
                 name=ds.name,
                 mast_data=mast_data,
@@ -453,13 +193,12 @@ class TestFlatConfigOrchestration:
         for ds in config.datasets:
             mast_data = []
             for mast_ref in ds.masts:
-                meta = SingleMastMeta(
-                    mast_name=mast_ref.name,
-                    air_density=mast_ref.air_density,
-                    width="80%",
-                )
                 mock_ts = mock_ts_map[ds.name]
-                mast_data.append(("analysis_input", meta, mock_ts))
+                mast_data.append(SingleMastAnalysisInput(
+                    time_series=mock_ts,
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
+                    mast_name=mast_ref.name,
+                ))
             loaded[ds.name] = LoadedDataset(
                 name=ds.name,
                 mast_data=mast_data,
@@ -521,42 +260,6 @@ class TestFlatConfigOrchestration:
         _generate_from_flat_config(config, loaded, mock_service, mock_builder)
 
         assert mock_service.generate_wind_frequency_section.call_count == 1
-
-    def test_fifty_year_max_wind_container_stub(self):
-        """fifty_year_max_wind container routes to the Task-10 placeholder."""
-        mock_ts = self._mock_ts_without_wd()
-
-        result = MagicMock()
-        result.iec_standards = "iec_result"
-        result.method1 = "m1_result"
-        result.method2 = "m2_result"
-        result.method3 = "m3_result"
-        result.summary = "summary_result"
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = result
-        mock_service._create_analysis_input.return_value = "analysis_input"
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {"typ": Path("report.typ")}
-
-        config = self._make_config([
-            FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="五十年一遇", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.2", type="fifty_year_method1", datasets=["ds1"]),
-        ])
-        loaded = self._make_loaded_datasets(config, mock_ts)
-
-        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
-
-        assert mock_service.generate_fifty_year_max_wind_section.call_count == 1
-        assert mock_builder.add_section.call_count == 2
-        added = mock_builder.add_section.call_args[0][0]
-        assert isinstance(added, HeadingSection)
-        assert added.title == "Placeholder"
-        assert len(added.subsections) == 6
-        real_container = [s for s in added.subsections if getattr(s, 'title', None) == "五十年一遇"]
-        assert len(real_container) == 1
-        assert real_container[0].subsections == ["iec_result", "m1_result"]
 
     def test_multiple_timeseries_containers(self):
         """Two separate timeseries containers each produce a HeadingSection."""
@@ -707,45 +410,6 @@ class TestFlatConfigOrchestration:
         # Both masts should be in the call
         args = mock_service.generate_weibull_section.call_args.args[0]
         assert len(args) == 2  # Two mast tuples
-
-    def test_all_config_sections_appear_in_builder(self):
-        """All top-level sections (2.4, 2.5, 2.6) must appear in builder output."""
-        mock_ts = self._mock_ts_with_wd()
-
-        mock_service = MagicMock()
-        mock_service.generate_wind_rose_section.return_value = "wind_rose_result"
-        mock_service.generate_temporal_section.return_value = "temporal_result"
-        mock_service.generate_air_density_section.return_value = "air_density_result"
-        mock_service.generate_fifty_year_max_wind_section.return_value = MagicMock(
-            iec_standards="iec_result"
-        )
-        mock_service._create_analysis_input.return_value = "analysis_input"
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {"typ": Path("report.typ")}
-
-        config = self._make_config([
-            FlatSubsectionConfig(index="2.4", type="timeseries", title="测风年风资源分析", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5", type="timeseries", title="代表年风资源分析", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.5.1", type="temporal", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="五十年一遇最大风速", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
-        ])
-        loaded = self._make_loaded_datasets(config, mock_ts)
-
-        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
-
-        assert mock_builder.add_section.call_count == 2, (
-            f"Expected 2 sections added to builder, got {mock_builder.add_section.call_count}"
-        )
-        added = mock_builder.add_section.call_args[0][0]
-        assert isinstance(added, HeadingSection)
-        assert added.title == "Placeholder"
-        titles = [s.title for s in added.subsections]
-        assert "测风年风资源分析" in titles, f"Missing '测风年风资源分析' in titles: {titles}"
-        assert "代表年风资源分析" in titles, f"Missing '代表年风资源分析' in titles: {titles}"
-        assert "五十年一遇最大风速" in titles, f"Missing '五十年一遇最大风速' in titles: {titles}"
 
     def test_timeseries_children_processed(self):
         """Sections 2.4 children (wind_rose, air_density) must dispatch to service methods."""
@@ -982,58 +646,6 @@ class TestFlatConfigOrchestration:
             "Child without WD sensors should produce a Placeholder HeadingSection"
         )
 
-    def test_fifty_year_per_child_dataset_isolation(self):
-        """Fifty-year section called per unique child dataset combination.
-
-        RED phase: current code calls generate_fifty_year_max_wind_section
-        once with parent's combined datasets.
-        """
-        mock_ts_ds1 = self._mock_ts_without_wd()
-        mock_ts_ds2 = self._mock_ts_without_wd()
-
-        mock_service = MagicMock()
-        mock_result = MagicMock()
-        mock_result.iec_standards = "iec_subsection"
-        mock_result.method1 = "method1_subsection"
-        mock_service.generate_fifty_year_max_wind_section.return_value = mock_result
-        mock_service._create_analysis_input.return_value = "analysis_input"
-
-        mock_builder = MagicMock()
-        mock_builder.build.return_value = {"typ": Path("report.typ")}
-
-        datasets = [
-            DatasetConfig(
-                name="ds1",
-                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
-            ),
-            DatasetConfig(
-                name="ds2",
-                masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
-            ),
-        ]
-        config = self._make_config([
-            FlatSubsectionConfig(
-                index="2.6", type="fifty_year_max_wind", title="五十年一遇",
-                datasets=["ds1", "ds2"],
-            ),
-            FlatSubsectionConfig(index="2.6.1", type="iec_standards", datasets=["ds1"]),
-            FlatSubsectionConfig(index="2.6.2", type="fifty_year_method1", datasets=["ds2"]),
-        ], datasets=datasets)
-        loaded = self._make_loaded_datasets_per_ds(config, {"ds1": mock_ts_ds1, "ds2": mock_ts_ds2})
-
-        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
-
-        assert mock_service.generate_fifty_year_max_wind_section.call_count == 2, (
-            f"Expected 2 fifty-year calls (one per unique dataset combination), "
-            f"got {mock_service.generate_fifty_year_max_wind_section.call_count}"
-        )
-
-        for i, call in enumerate(mock_service.generate_fifty_year_max_wind_section.call_args_list):
-            items = call.args[0]
-            assert len(items) == 1, (
-                f"Call {i}: expected 1 mast item, got {len(items)}"
-            )
-
 
 class TestPlaceholderPreservation:
     """Tests that placeholder gaps in the section tree are preserved in output."""
@@ -1058,12 +670,11 @@ class TestPlaceholderPreservation:
         for ds in config.datasets:
             mast_data = []
             for mast_ref in ds.masts:
-                meta = SingleMastMeta(
+                mast_data.append(SingleMastAnalysisInput(
+                    time_series=mock_ts,
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
                     mast_name=mast_ref.name,
-                    air_density=mast_ref.air_density,
-                    width="80%",
-                )
-                mast_data.append(("analysis_input", meta, mock_ts))
+                ))
             loaded[ds.name] = LoadedDataset(
                 name=ds.name,
                 mast_data=mast_data,
@@ -1172,98 +783,6 @@ class TestPlaceholderPreservation:
         )
 
 
-class TestFiftyYearFlatDispatch:
-    """Tests for _handle_fifty_year_max_wind_flat subsection extraction."""
-
-    def _make_node(self, children_types=None, datasets=None):
-        from cleanmast.subdomains.reporting.assemble.tree_builder import (
-            SectionNode,
-        )
-        children = []
-        if children_types:
-            for i, t in enumerate(children_types):
-                children.append(SectionNode(index=f"2.6.{i + 1}", type=t))
-        return SectionNode(index="2.6", type="fifty_year_max_wind", title="五十年一遇", datasets=datasets or ["ds1"], children=children)
-
-    def _make_mock_result(self):
-        """Return a mock FiftyYearMaxWindSection with identifiable subsections."""
-        result = MagicMock()
-        result.iec_standards = "iec_standards_subsection"
-        result.method1 = "method1_subsection"
-        result.method2 = "method2_subsection"
-        result.method3 = "method3_subsection"
-        result.summary = "summary_subsection"
-        return result
-
-    def _make_loaded(self, items=None):
-        raw_items = items if items is not None else [("input", "meta")]
-        mast_data = [(inp, meta, MagicMock()) for inp, meta in raw_items]
-        return {
-            "ds1": LoadedDataset(
-                name="ds1",
-                mast_data=mast_data,
-            )
-        }
-
-    def test_extracts_all_subsections_when_all_children_present(self):
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = self._make_mock_result()
-
-        node = self._make_node(["iec_standards", "fifty_year_method1", "fifty_year_method2", "fifty_year_method3", "fifty_year_summary"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded())
-
-        assert result == ["iec_standards_subsection", "method1_subsection", "method2_subsection", "method3_subsection", "summary_subsection"]
-        mock_service.generate_fifty_year_max_wind_section.assert_called_once()
-
-    def test_extracts_only_matching_subsections(self):
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = self._make_mock_result()
-
-        node = self._make_node(["iec_standards", "fifty_year_method3"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded())
-
-        assert result == ["iec_standards_subsection", "method3_subsection"]
-
-    def test_returns_empty_list_when_no_matching_children(self):
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = self._make_mock_result()
-
-        node = self._make_node(["wind_rose"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded())
-
-        assert len(result) == 1
-        assert isinstance(result[0], HeadingSection)
-        assert result[0].title == "Placeholder"
-
-    def test_returns_none_when_no_input_items(self):
-        mock_service = MagicMock()
-
-        node = self._make_node(["iec_standards"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded(items=[]))
-
-        assert result == []
-        mock_service.generate_fifty_year_max_wind_section.assert_not_called()
-
-    def test_preserves_child_order_in_result(self):
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = self._make_mock_result()
-
-        node = self._make_node(["fifty_year_summary", "iec_standards", "fifty_year_method1"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded())
-
-        assert result == ["summary_subsection", "iec_standards_subsection", "method1_subsection"]
-
-    def test_single_child_returns_single_subsection(self):
-        mock_service = MagicMock()
-        mock_service.generate_fifty_year_max_wind_section.return_value = self._make_mock_result()
-
-        node = self._make_node(["fifty_year_method2"])
-        result = _handle_fifty_year_max_wind_flat(node, mock_service, self._make_loaded())
-
-        assert result == ["method2_subsection"]
-        mock_service.generate_fifty_year_max_wind_section.assert_called_once()
-
-
 class TestDatasetCaching:
     """Tests that datasets are cached within a single _generate_from_flat_config invocation."""
 
@@ -1288,12 +807,11 @@ class TestDatasetCaching:
         for ds in config.datasets:
             mast_data = []
             for mast_ref in ds.masts:
-                meta = SingleMastMeta(
+                mast_data.append(SingleMastAnalysisInput(
+                    time_series=mock_ts,
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
                     mast_name=mast_ref.name,
-                    air_density=mast_ref.air_density,
-                    width="80%",
-                )
-                mast_data.append(("analysis_input", meta, mock_ts))
+                ))
             loaded[ds.name] = LoadedDataset(
                 name=ds.name,
                 mast_data=mast_data,

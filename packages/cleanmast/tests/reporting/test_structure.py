@@ -5,7 +5,7 @@ DDD structure defined in ``subdomains/spec.md``.
 
 from pathlib import Path
 
-REPORTING_ROOT = Path(__file__).resolve().parents[4] / "src" / "cleanmast" / "subdomains" / "reporting"
+REPORTING_ROOT = Path(__file__).resolve().parents[2] / "src" / "cleanmast" / "subdomains" / "reporting"
 
 FORBIDDEN_DIRS = [
     REPORTING_ROOT / "domain",

@@ -234,6 +234,7 @@ def parse_pytest_output(result: CheckResult) -> CheckResult:
     
     passed = 0
     failed = 0
+    errors = 0
     skipped = 0
     
     # Look for patterns like "X passed", "Y failed", "Z skipped"
