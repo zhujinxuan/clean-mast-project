@@ -10,7 +10,7 @@ representative-year sources.
 """
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -90,6 +90,7 @@ def _build_dataset_for_timeseries(
     discovered_config: DiscoveredConfig[Any],
     report_data_subdir: str,
     dataset_name: str,
+    analysis_windows: list[AnalysisWindow],
     fallback_air_density: float | None = None,
 ) -> DatasetConfig | None:
     """Build a dataset configuration from a discovered fill-heights config.
@@ -125,6 +126,7 @@ def _build_dataset_for_timeseries(
                 f"Parquet file not found for mast {mast_name}: {parquet_path}"
             )
 
+        time_series_data = None
         try:
             source = TimeSeriesSource(data=data_path, sensors=None)
             time_series_data = load_timeseries_parquet(source, str(project_path))
@@ -145,8 +147,10 @@ def _build_dataset_for_timeseries(
                 ) from e
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
-        turbulence_heights = _discover_turbulence_heights(
-            time_series_data.sensors
+        turbulence_heights = (
+            _discover_turbulence_heights(time_series_data.sensors)
+            if time_series_data is not None
+            else []
         )
 
         mast_refs.append(MastRef(
@@ -158,10 +162,10 @@ def _build_dataset_for_timeseries(
 
     if not mast_refs:
         return None
-
     return DatasetConfig(
         name=dataset_name,
         masts=mast_refs,
+        analysis_windows=analysis_windows,
     )
 
 
@@ -260,24 +264,37 @@ def _build_analysis_windows(
     ]
 
 
+def _windows_for_mast_names(
+    rep_year_masts: Sequence[RepresentativeYearMast],
+    mast_names: Collection[str],
+) -> list[AnalysisWindow]:
+    """Filter rep_year_masts to those named in mast_names, then build analysis windows."""
+    filtered = [m for m in rep_year_masts if m.name in mast_names]
+    return _build_analysis_windows(filtered)
+
+
 def _build_meso_filled_heights_dataset(
     project_config: ProjectConfig,
+    rep_year_masts: Sequence[RepresentativeYearMast],
 ) -> DatasetConfig | None:
     """Build reconstruct_meso_filled_heights dataset from fill-heights config."""
     fill_heights_meso_dc = project_config.discover_fill_heights_meso_config()
     if fill_heights_meso_dc is None:
         return None
+    mast_names = [m.name for m in fill_heights_meso_dc.config.masts]
     return _build_dataset_for_timeseries(
         project_config.project_dir,
         fill_heights_meso_dc,
         "reconstruct-meso-fill-heights",
         "reconstruct_meso_filled_heights",
         fallback_air_density=STANDARD_AIR_DENSITY,
+        analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
     )
 
 
 def _build_meso_original_heights_dataset(
     project_config: ProjectConfig,
+    rep_year_masts: Sequence[RepresentativeYearMast],
 ) -> DatasetConfig | None:
     """Build dataset from original reconstruct-meso output (pre-fill-heights).
 
@@ -329,55 +346,59 @@ def _build_meso_original_heights_dataset(
     if not mast_refs:
         return None
 
+    mast_names = [m.name for m in mast_refs]
     return DatasetConfig(
         name="reconstruct_meso_original_heights",
         masts=mast_refs,
+        analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
     )
 
 
 def _build_repyear_dataset(
     project_config: ProjectConfig,
+    rep_year_masts: Sequence[RepresentativeYearMast],
 ) -> DatasetConfig | None:
     """Build repyear dataset from fill-heights config enriched with representative-year.toml."""
     fill_heights_rep_year_dc = project_config.discover_fill_heights_rep_year_config()
     if fill_heights_rep_year_dc is None:
-        return None
+        raise FileNotFoundError(
+            "fill-heights-representative-year.toml is required for report generation"
+        )
     project_path = project_config.project_dir
+    mast_names = [m.name for m in fill_heights_rep_year_dc.config.masts]
     repyear_dataset = _build_dataset_for_timeseries(
         project_path,
         fill_heights_rep_year_dc,
         "representative-year-fill-heights",
         "repyear",
         fallback_air_density=STANDARD_AIR_DENSITY,
+        analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
     )
 
     if repyear_dataset is not None:
         rep_year_dc = project_config.discover_representative_year_config()
-        if rep_year_dc is not None:
-            masts = rep_year_dc.config.masts
+        # representative-year.toml is guaranteed to exist (recommend_report checks first)
+        assert rep_year_dc is not None
+        masts = rep_year_dc.config.masts
 
-            meso_name_to_masts: dict[str, list[str]] = {}
-            for mast in masts:
-                meso_name_to_masts.setdefault(
-                    mast.meso_model.meso_name, []
-                ).append(mast.name)
+        meso_name_to_masts: dict[str, list[str]] = {}
+        for mast in masts:
+            meso_name_to_masts.setdefault(
+                mast.meso_model.meso_name, []
+            ).append(mast.name)
 
-            meso_refs: list[MesoRef] = []
-            for meso in rep_year_dc.config.mesos:
-                target_masts = meso_name_to_masts.get(meso.name, [])
-                if target_masts:
-                    meso_refs.append(MesoRef(
-                        input=meso.input,
-                        target_masts=target_masts,
-                        meso_name=meso.name,
-                    ))
+        meso_refs: list[MesoRef] = []
+        for meso in rep_year_dc.config.mesos:
+            target_masts = meso_name_to_masts.get(meso.name, [])
+            if target_masts:
+                meso_refs.append(MesoRef(
+                    input=meso.input,
+                    target_masts=target_masts,
+                    meso_name=meso.name,
+                ))
 
-            if meso_refs:
-                repyear_dataset = repyear_dataset.model_copy(update={"mesos": meso_refs})
-
-            analysis_windows = _build_analysis_windows(masts)
-            if analysis_windows:
-                repyear_dataset = repyear_dataset.model_copy(update={"analysis_windows": analysis_windows})
+        if meso_refs:
+            repyear_dataset = repyear_dataset.model_copy(update={"mesos": meso_refs})
 
     return repyear_dataset
 
@@ -385,15 +406,17 @@ def _build_repyear_dataset(
 def _build_calibration_dataset(
     filled_meso_dataset: DatasetConfig | None,
     repyear_dataset: DatasetConfig | None,
+    rep_year_masts: Sequence[RepresentativeYearMast],
 ) -> DatasetConfig | None:
     """Build calibration dataset combining uncalibrated masts with calibrated mesos."""
     if filled_meso_dataset is None or repyear_dataset is None:
         return None
+    filled_names = [m.name for m in filled_meso_dataset.masts] if filled_meso_dataset.masts else []
     return DatasetConfig(
         name="repyear_calibration",
         masts=filled_meso_dataset.masts,
         mesos=repyear_dataset.mesos,
-        analysis_windows=repyear_dataset.analysis_windows,
+        analysis_windows=_windows_for_mast_names(rep_year_masts, filled_names),
     )
 
 
@@ -407,6 +430,7 @@ def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatRepo
     4. Returns a DiscoveredConfig containing the FlatReportConfig
 
     Prerequisites:
+    - representative-year.toml must exist in project directory
     - fill-heights-representative-year.toml must exist in project directory
     - Parquet files must exist in the referenced subdirectories
     - fill-heights-reconstruct-meso.toml is optional; if absent, only the
@@ -419,14 +443,23 @@ def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatRepo
         DiscoveredConfig wrapping the FlatReportConfig.
 
     Raises:
-        FileNotFoundError: If required fill-heights config or parquet files
+        FileNotFoundError: If required representative-year.toml,
+            fill-heights-representative-year.toml, or parquet files
             are not found
         ValueError: If no valid masts found for report configuration
     """
-    filled_meso_dataset = _build_meso_filled_heights_dataset(project_config)
-    repyear_dataset = _build_repyear_dataset(project_config)
-    original_meso_dataset = _build_meso_original_heights_dataset(project_config)
-    calibration_dataset = _build_calibration_dataset(filled_meso_dataset, repyear_dataset)
+    rep_year_dc = project_config.discover_representative_year_config()
+    if rep_year_dc is None:
+        raise FileNotFoundError(
+            "representative-year.toml is required for report generation. "
+            "Meso-only reports are not supported."
+        )
+    rep_year_masts = rep_year_dc.config.masts
+
+    filled_meso_dataset = _build_meso_filled_heights_dataset(project_config, rep_year_masts)
+    repyear_dataset = _build_repyear_dataset(project_config, rep_year_masts)
+    original_meso_dataset = _build_meso_original_heights_dataset(project_config, rep_year_masts)
+    calibration_dataset = _build_calibration_dataset(filled_meso_dataset, repyear_dataset, rep_year_masts)
 
     if not filled_meso_dataset and not repyear_dataset:
         raise ValueError(

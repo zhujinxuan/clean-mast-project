@@ -46,7 +46,8 @@ class DatasetConfig(BaseModel):
         masts: List of mast references within this dataset.
         mesos: Optional list of mesoscale data references.
         note: Optional note or description.
-        analysis_windows: Optional analysis time windows (measurement year / representative year).
+        analysis_windows: Analysis time windows (measurement year / representative year).
+            Every mast in ``masts`` must be covered by exactly one window.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -54,7 +55,7 @@ class DatasetConfig(BaseModel):
     name: str
     masts: list[MastRef] | None = None
     mesos: list[MesoRef] | None = None
-    analysis_windows: list[AnalysisWindow] | None = None
+    analysis_windows: list[AnalysisWindow]
     note: str | None = None
 
     @model_validator(mode="after")
@@ -72,6 +73,42 @@ class DatasetConfig(BaseModel):
                         f"Duplicate mast name '{name}' in dataset '{self.name}'"
                     )
                 seen.add(name)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_analysis_window_coverage(self) -> "DatasetConfig":
+        """Validate analysis window coverage: every mast in exactly one window."""
+        if not self.analysis_windows:
+            raise ValueError("analysis_windows must contain at least one window")
+
+        mast_names = [m.name for m in self.masts] if self.masts else []
+
+        covered: dict[str, int] = {}
+        for aw in self.analysis_windows:
+            for target in aw.target_masts:
+                covered[target] = covered.get(target, 0) + 1
+
+        for target, count in covered.items():
+            if count > 1:
+                raise ValueError(
+                    f"Mast '{target}' in dataset '{self.name}' is covered by "
+                    f"multiple analysis windows"
+                )
+
+        for target in covered:
+            if target not in mast_names:
+                raise ValueError(
+                    f"Analysis window targets mast '{target}' which is not in "
+                    f"dataset '{self.name}' masts"
+                )
+
+        for mast_name in mast_names:
+            if mast_name not in covered:
+                raise ValueError(
+                    f"Mast '{mast_name}' in dataset '{self.name}' is not covered "
+                    f"by any analysis window"
+                )
 
         return self
 

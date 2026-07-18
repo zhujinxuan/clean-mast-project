@@ -2,8 +2,10 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 import tomli
 from cleanmast.subdomains.configuration import (
+    AnalysisWindow,
     DiscoveredConfig,
     FillHeightsConfiguration,
     FlatReportConfig,
@@ -152,6 +154,36 @@ class TestRecommendReport:
             parquet_path.parent.mkdir(parents=True, exist_ok=True)
             parquet_path.write_bytes(b"")
 
+    def _create_representative_year_toml(
+        self, tmp_path: Path, mast_names: list[str] | None = None, tr: TimeRange | None = None
+    ) -> None:
+        """Create representative-year.toml with given mast names and time range."""
+        if mast_names is None:
+            mast_names = ["M1"]
+        if tr is None:
+            tr = TR_A
+
+        masts = []
+        for name in mast_names:
+            masts.append({
+                "name": name,
+                "input": {"data": "/dev/null"},
+                "output": {"data": "/dev/null"},
+                "time_range": {"min": tr.min, "max": tr.max},
+                "meso_model": {
+                    "method": "16-sector",
+                    "meso_name": "ERA5",
+                    "model_file": "model.jld2",
+                },
+            })
+        config = {
+            "masts": masts,
+            "mesos": [{"name": "ERA5", "input": {"data": "raw/ERA5.csv"}}],
+        }
+        import tomli_w
+        with open(tmp_path / "representative-year.toml", "wb") as f:
+            tomli_w.dump(config, f)
+
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
@@ -171,6 +203,8 @@ class TestRecommendReport:
             "fill-heights-representative-year.toml",
             "representative-year-fill-heights",
         )
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
@@ -211,6 +245,8 @@ class TestRecommendReport:
             "representative-year-fill-heights",
         )
 
+        self._create_representative_year_toml(tmp_path)
+
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
         dc.write_to(tmp_path)
@@ -244,6 +280,8 @@ class TestRecommendReport:
             "fill-heights-representative-year.toml",
             "representative-year-fill-heights",
         )
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
@@ -281,6 +319,8 @@ class TestRecommendReport:
             "representative-year-fill-heights",
         )
 
+        self._create_representative_year_toml(tmp_path)
+
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
         dc.write_to(tmp_path)
@@ -308,6 +348,8 @@ class TestRecommendReport:
             "fill-heights-representative-year.toml",
             "representative-year-fill-heights",
         )
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
@@ -346,6 +388,8 @@ class TestRecommendReport:
             "representative-year-fill-heights",
         )
 
+        self._create_representative_year_toml(tmp_path)
+
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
         dc.write_to(tmp_path)
@@ -377,6 +421,8 @@ class TestRecommendReport:
             "fill-heights-representative-year.toml",
             "representative-year-fill-heights",
         )
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
@@ -412,17 +458,142 @@ class TestRecommendReport:
             data = tomli.load(f)
         config = FillHeightsConfiguration(**data)
         dc = DiscoveredConfig(config=config, filename='fill-heights-reconstruct-meso.toml')
+        windows = [AnalysisWindow(target_masts=["M1", "M2"], time_range=TR_A)]
         ds = _build_dataset_for_timeseries(
             tmp_path,
             dc,
             'reconstruct-meso-fill-heights',
             'reconstruct_meso_filled_heights',
+            analysis_windows=windows,
         )
 
         assert len(ds.masts) == 2
         assert ds.masts[0].input.data.endswith("M1.parquet")
         assert ds.masts[1].input.data.endswith("M2.parquet")
         assert ds.masts[0].input.data != ds.masts[1].input.data
+
+    def test_raises_when_representative_year_toml_missing(self, tmp_path):
+        """recommend_report raises FileNotFoundError when representative-year.toml is missing."""
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+        # NO representative-year.toml
+        pc = ProjectConfig(tmp_path)
+        with pytest.raises(FileNotFoundError, match="representative-year.toml is required"):
+            recommend_report(pc)
+
+    def test_raises_when_fill_heights_rep_year_toml_missing(self, tmp_path):
+        """recommend_report raises FileNotFoundError when fill-heights-representative-year.toml is missing."""
+        self._create_representative_year_toml(tmp_path)
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        # NO fill-heights-representative-year.toml
+        pc = ProjectConfig(tmp_path)
+        with pytest.raises(FileNotFoundError, match="fill-heights-representative-year.toml is required"):
+            recommend_report(pc)
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_meso_datasets_have_analysis_windows(self, mock_load_parquet, mock_calc_density, tmp_path):
+        """Meso datasets (filled + original) carry analysis_windows matching their mast names."""
+        self._create_representative_year_toml(tmp_path)
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        filled_meso_ds = next(ds for ds in config.datasets if ds.name == "reconstruct_meso_filled_heights")
+        assert len(filled_meso_ds.analysis_windows) >= 1
+        meso_mast_names = {aw_mast for aw in filled_meso_ds.analysis_windows for aw_mast in aw.target_masts}
+        assert "M1" in meso_mast_names
+
+        repyear_ds = next(ds for ds in config.datasets if ds.name == "repyear")
+        assert len(repyear_ds.analysis_windows) >= 1
+        repyear_mast_names = {aw_mast for aw in repyear_ds.analysis_windows for aw_mast in aw.target_masts}
+        assert "M1" in repyear_mast_names
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_calibration_dataset_windows_cover_filled_meso_masts(
+        self, mock_load_parquet, mock_calc_density, tmp_path
+    ):
+        """Calibration dataset windows cover filled-meso masts, not blindly repyear windows."""
+        self._create_representative_year_toml(tmp_path)
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        cal_ds = next(ds for ds in config.datasets if ds.name == "repyear_calibration")
+        assert len(cal_ds.analysis_windows) >= 1
+        # calibration windows should cover ONLY the filled-meso mast "M1"
+        cal_mast_names = {aw_mast for aw in cal_ds.analysis_windows for aw_mast in aw.target_masts}
+        assert cal_mast_names == {"M1"}
+
+    def test_mast_in_meso_but_absent_from_rep_year_raises(self, tmp_path):
+        """Mast present in meso dataset but absent from rep-year → ValueError from coverage validator."""
+        # representative-year.toml has mast "OtherMast", not "M1"
+        self._create_representative_year_toml(tmp_path, mast_names=["OtherMast"])
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-reconstruct-meso.toml",
+            "reconstruct-meso-fill-heights",
+        )
+        self._create_fill_heights_toml(
+            tmp_path,
+            "fill-heights-representative-year.toml",
+            "representative-year-fill-heights",
+        )
+
+        pc = ProjectConfig(tmp_path)
+        with pytest.raises(ValueError, match="analysis_windows must contain at least one window"):
+            recommend_report(pc)
 
 
 class TestOriginalHeightsDataset:
@@ -448,6 +619,36 @@ class TestOriginalHeightsDataset:
         parquet_path = tmp_path / data_dir / "M1.parquet"
         parquet_path.parent.mkdir(parents=True, exist_ok=True)
         parquet_path.write_bytes(b"")
+
+    def _create_representative_year_toml(
+        self, tmp_path: Path, mast_names: list[str] | None = None, tr: TimeRange | None = None
+    ) -> None:
+        """Create representative-year.toml with given mast names and time range."""
+        if mast_names is None:
+            mast_names = ["M1"]
+        if tr is None:
+            tr = TR_A
+
+        masts = []
+        for name in mast_names:
+            masts.append({
+                "name": name,
+                "input": {"data": "/dev/null"},
+                "output": {"data": "/dev/null"},
+                "time_range": {"min": tr.min, "max": tr.max},
+                "meso_model": {
+                    "method": "16-sector",
+                    "meso_name": "ERA5",
+                    "model_file": "model.jld2",
+                },
+            })
+        config = {
+            "masts": masts,
+            "mesos": [{"name": "ERA5", "input": {"data": "raw/ERA5.csv"}}],
+        }
+        import tomli_w
+        with open(tmp_path / "representative-year.toml", "wb") as f:
+            tomli_w.dump(config, f)
 
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
@@ -475,6 +676,8 @@ class TestOriginalHeightsDataset:
             "representative-year-fill-heights",
         )
         self._create_reconstruct_meso_toml(tmp_path)
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)
@@ -527,6 +730,8 @@ class TestOriginalHeightsDataset:
             "fill-heights-representative-year.toml",
             "representative-year-fill-heights",
         )
+
+        self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
         dc = recommend_report(pc)

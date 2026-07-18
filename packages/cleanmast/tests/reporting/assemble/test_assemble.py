@@ -1,13 +1,20 @@
 """Tests for reporting assembly layer."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Sequence
 
 from cleanmast.subdomains.configuration import (
+    AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
+    MastRef,
+)
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.assemble import (
     SECTION_REGISTRY,
@@ -128,7 +135,7 @@ class TestSectionAssembler:
 
     def test_assemble_section_tree_with_placeholders(self):
         config = FlatReportConfig(
-            datasets=[DatasetConfig(name="ds")],
+            datasets=[DatasetConfig(name="ds", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))], analysis_windows=[AnalysisWindow(target_masts=["M1"], time_range=TimeRange(min=datetime(2020, 1, 1), max=datetime(2021, 1, 1)))])],
             subsections=[
                 FlatSubsectionConfig(index="2.4.1", type="wind_rose", datasets=["ds"]),
             ],
@@ -149,7 +156,7 @@ class TestSectionAssembler:
 
     def test_assemble_section_tree_maps_sections(self):
         config = FlatReportConfig(
-            datasets=[DatasetConfig(name="ds")],
+            datasets=[DatasetConfig(name="ds", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))], analysis_windows=[AnalysisWindow(target_masts=["M1"], time_range=TimeRange(min=datetime(2020, 1, 1), max=datetime(2021, 1, 1)))])],
             subsections=[
                 FlatSubsectionConfig(index="1", type="wind_rose", datasets=["ds"]),
             ],

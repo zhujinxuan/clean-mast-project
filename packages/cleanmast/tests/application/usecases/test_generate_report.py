@@ -1,20 +1,26 @@
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import polars as pl
 import pytest
 import tomli_w
 from cleanmast.application.usecases.generate_report import (
     HeadingSection,
     LoadedDataset,
+    _clip_input_to_window,
     _generate_from_flat_config,
     generate_report,
 )
 from cleanmast.subdomains.configuration import (
+    AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
     MastRef,
 )
+from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -24,6 +30,14 @@ from cleanmast.subdomains.reporting.model.analysis_input import (
 from cleanmast.subdomains.reporting.model.analysis_parameters import (
     AnalysisParameters,
 )
+
+# Shared analysis window for tests
+TR = TimeRange(min=datetime(2020, 1, 1), max=datetime(2020, 12, 31, 23, 50))
+
+
+def _windows_for(*mast_names: str) -> list[AnalysisWindow]:
+    """Build a single AnalysisWindow covering the given mast names with ``TR``."""
+    return [AnalysisWindow(target_masts=list(mast_names), time_range=TR)]
 
 
 class TestGenerateReport:
@@ -91,7 +105,16 @@ class TestGenerateReport:
         # Every tree node produces a HeadingSection, including top-level leaf nodes
         config = {
             "datasets": [
-                {"name": "ds1", "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}]},
+                {
+                    "name": "ds1",
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}],
+                    "analysis_windows": [
+                        {
+                            "target_masts": ["M1"],
+                            "time_range": {"min": "2020-01-01T00:00:00", "max": "2020-12-31T23:50:00"},
+                        }
+                    ],
+                },
             ],
             "subsections": [
                 {"index": "1", "type": "wind_rose", "datasets": ["ds1"]},
@@ -139,6 +162,7 @@ class TestFlatConfigOrchestration:
                 DatasetConfig(
                     name="ds1",
                     masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=_windows_for("M1"),
                 )
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -361,10 +385,12 @@ class TestFlatConfigOrchestration:
             DatasetConfig(
                 name="reconstruct_meso",
                 masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/reconstruct_meso.parquet"))],
+                analysis_windows=_windows_for("M1"),
             ),
             DatasetConfig(
                 name="repyear",
                 masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/repyear.parquet"))],
+                analysis_windows=_windows_for("M1"),
             ),
         ]
         config = self._make_config([
@@ -397,6 +423,7 @@ class TestFlatConfigOrchestration:
                     MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
                     MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
                 ],
+                analysis_windows=_windows_for("M1", "M2"),
             ),
         ]
         config = self._make_config([
@@ -567,10 +594,12 @@ class TestFlatConfigOrchestration:
             DatasetConfig(
                 name="ds1",
                 masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+                analysis_windows=_windows_for("M1"),
             ),
             DatasetConfig(
                 name="ds2",
                 masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+                analysis_windows=_windows_for("M2"),
             ),
         ]
         config = self._make_config([
@@ -613,10 +642,12 @@ class TestFlatConfigOrchestration:
             DatasetConfig(
                 name="ds_with_wd",
                 masts=[MastRef(name="M_WD", air_density=1.225, input=TimeSeriesSource(data="/fake/wd.parquet"))],
+                analysis_windows=_windows_for("M_WD"),
             ),
             DatasetConfig(
                 name="ds_without_wd",
                 masts=[MastRef(name="M_NOWD", air_density=1.200, input=TimeSeriesSource(data="/fake/nowd.parquet"))],
+                analysis_windows=_windows_for("M_NOWD"),
             ),
         ]
         config = self._make_config([
@@ -656,6 +687,7 @@ class TestPlaceholderPreservation:
                 DatasetConfig(
                     name="ds1",
                     masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=_windows_for("M1"),
                 ),
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -792,6 +824,7 @@ class TestDatasetCaching:
                 DatasetConfig(
                     name="ds1",
                     masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=_windows_for("M1"),
                 ),
             ]
         return FlatReportConfig(datasets=datasets, subsections=subsections)
@@ -895,8 +928,10 @@ class TestDatasetCaching:
         mock_builder.build.return_value = {"typ": Path("report.typ")}
 
         datasets = [
-            DatasetConfig(name="ds1", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))]),
-            DatasetConfig(name="ds2", masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))]),
+            DatasetConfig(name="ds1", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+                          analysis_windows=_windows_for("M1")),
+            DatasetConfig(name="ds2", masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+                          analysis_windows=_windows_for("M2")),
         ]
         config = self._make_config([
             FlatSubsectionConfig(index="2.4", type="timeseries", title="Container1", datasets=["ds1", "ds2"]),
@@ -929,6 +964,7 @@ class TestDatasetCaching:
                     MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
                     MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
                 ],
+                analysis_windows=_windows_for("M1", "M2"),
             ),
         ]
         config = self._make_config([
@@ -943,3 +979,188 @@ class TestDatasetCaching:
 
         assert len(mock_service.generate_weibull_section.call_args_list[0].args[0]) == 2
         assert len(mock_service.generate_weibull_section.call_args_list[1].args[0]) == 2
+
+
+class TestAnalysisWindowClipping:
+    """Tests that analysis windows clip timeseries at subsection dispatch."""
+
+    @staticmethod
+    def _make_ts(
+        timestamps: list[datetime],
+        ws_values: list[float] | None = None,
+        sensors: list | None = None,
+    ) -> TimeSeriesData:
+        """Build a real TimeSeriesData with a polars DataFrame."""
+        if ws_values is None:
+            ws_values = [float(i) for i in range(len(timestamps))]
+        df = pl.DataFrame({"timestamp": timestamps, "ws": ws_values})
+        return TimeSeriesData(df=df, sensors=sensors or [])
+
+    def test_clip_applied_to_normal_subsection(self):
+        """Normal subsections (e.g. wind_rose) receive timeseries clipped to the window."""
+        # DataFrame: 2 rows inside 2020, 1 row outside (2021)
+        ts = self._make_ts([
+            datetime(2020, 3, 1),
+            datetime(2020, 9, 1),
+            datetime(2021, 3, 1),  # outside TR (2020 full year)
+        ])
+        input_data = SingleMastAnalysisInput(
+            time_series=ts,
+            parameters=AnalysisParameters(air_density=1.225),
+            mast_name="M1",
+        )
+
+        aw = AnalysisWindow(target_masts=["M1"], time_range=TR)
+        loaded = {
+            "ds1": LoadedDataset(
+                name="ds1",
+                mast_data=[input_data],
+                analysis_windows={"M1": aw.time_range},
+            ),
+        }
+
+        config = FlatReportConfig(
+            datasets=[
+                DatasetConfig(
+                    name="ds1",
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=[aw],
+                ),
+            ],
+            subsections=[
+                FlatSubsectionConfig(index="2.4", type="timeseries", title="WindYear", datasets=["ds1"]),
+                FlatSubsectionConfig(index="2.4.1", type="wind_frequency", datasets=["ds1"]),
+            ],
+        )
+
+        mock_service = MagicMock()
+        mock_service.generate_wind_frequency_section.return_value = "wf_result"
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        # The wind_frequency subsection should receive clipped data (2 rows)
+        assert mock_service.generate_wind_frequency_section.call_count == 1
+        items = mock_service.generate_wind_frequency_section.call_args.args[0]
+        assert len(items) == 1
+        clipped_df = items[0].time_series.df
+        assert len(clipped_df) == 2
+        assert 2021 not in [d.year for d in clipped_df["timestamp"].to_list()]
+
+    def test_fifty_year_exemption(self):
+        """fifty_year_max_wind subsection is structurally exempt from clipping.
+
+        Its code path (_handle_fifty_year_max_wind_flat) bypasses
+        _process_flat_timeseries_node entirely — it receives mast_data
+        directly from LoadedDataset without any clip step.
+        """
+        ts = self._make_ts([
+            datetime(2020, 3, 1),
+            datetime(2021, 3, 1),  # outside TR but should still be present
+        ])
+        input_data = SingleMastAnalysisInput(
+            time_series=ts,
+            parameters=AnalysisParameters(air_density=1.225),
+            mast_name="M1",
+        )
+
+        aw = AnalysisWindow(target_masts=["M1"], time_range=TR)
+        loaded = {
+            "ds1": LoadedDataset(
+                name="ds1",
+                mast_data=[input_data],
+                analysis_windows={"M1": aw.time_range},
+            ),
+        }
+
+        config = FlatReportConfig(
+            datasets=[
+                DatasetConfig(
+                    name="ds1",
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=[aw],
+                ),
+            ],
+            subsections=[
+                FlatSubsectionConfig(index="2.6", type="fifty_year_max_wind", title="50Year", datasets=["ds1"]),
+            ],
+        )
+
+        mock_service = MagicMock()
+        mock_service.generate_fifty_year_max_wind_section.return_value = "fifty_result"
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        # fifty_year_max_wind receives FULL data — including 2021 row
+        assert mock_service.generate_fifty_year_max_wind_section.call_count == 1
+        items = mock_service.generate_fifty_year_max_wind_section.call_args.args[0]
+        assert len(items) == 1
+        full_df = items[0].time_series.df
+        assert len(full_df) == 2  # both rows, not clipped
+
+    def test_calibration_exemption(self):
+        """representative_year_calibration subsections receive unclipped mast items."""
+        ts = self._make_ts([
+            datetime(2020, 3, 1),
+            datetime(2021, 3, 1),  # outside TR but exempt from clipping
+        ])
+        input_data = SingleMastAnalysisInput(
+            time_series=ts,
+            parameters=AnalysisParameters(air_density=1.225),
+            mast_name="M1",
+        )
+
+        aw = AnalysisWindow(target_masts=["M1"], time_range=TR)
+        loaded = {
+            "ds1": LoadedDataset(
+                name="ds1",
+                mast_data=[input_data],
+                analysis_windows={"M1": aw.time_range},
+            ),
+        }
+
+        config = FlatReportConfig(
+            datasets=[
+                DatasetConfig(
+                    name="ds1",
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    analysis_windows=[aw],
+                ),
+            ],
+            subsections=[
+                FlatSubsectionConfig(index="2.4", type="timeseries", title="Container", datasets=["ds1"]),
+                FlatSubsectionConfig(index="2.4.1", type="representative_year_calibration", datasets=["ds1"]),
+            ],
+        )
+
+        mock_service = MagicMock()
+        mock_service.generate_representative_year_calibration_section.return_value = "calib_result"
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+
+        _generate_from_flat_config(config, loaded, mock_service, mock_builder)
+
+        # calibration receives unclipped data — both rows present
+        assert mock_service.generate_representative_year_calibration_section.call_count == 1
+        items = mock_service.generate_representative_year_calibration_section.call_args.args[0]
+        assert len(items) == 1
+        full_df = items[0].time_series.df
+        assert len(full_df) == 2  # unclipped
+
+    def test_empty_after_clip_raises_valueerror(self):
+        """Clipping a DataFrame with no rows in the window raises ValueError naming the mast."""
+        ts = self._make_ts([
+            datetime(2019, 6, 1),  # well before TR
+            datetime(2022, 6, 1),  # well after TR
+        ])
+        input_data = SingleMastAnalysisInput(
+            time_series=ts,
+            parameters=AnalysisParameters(air_density=1.225),
+            mast_name="M1",
+        )
+
+        with pytest.raises(ValueError, match="M1.*ds1"):
+            _clip_input_to_window(input_data, TR, "ds1")

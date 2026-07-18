@@ -12,6 +12,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
+import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
@@ -62,9 +63,13 @@ class LoadedDataset:
         name: Dataset identifier
         mast_data: List of per-mast analysis inputs (each carries its own
             time series data via ``SingleMastAnalysisInput.time_series``)
+        analysis_windows: Per-mast analysis time window bounds (mast_name → TimeRange).
+            Derived from the dataset's ``analysis_windows`` configuration.
+            Used downstream to clip timeseries to the analysis window before dispatch.
     """
     name: str
     mast_data: list[SingleMastAnalysisInput]
+    analysis_windows: dict[str, TimeRange] = field(default_factory=dict)
 
 
 def generate_report(config_path: str) -> BuildResult:
@@ -150,7 +155,7 @@ def load_datasets(
             )
             mast_data.append(input_data)
         mast_analysis_windows: dict[str, TimeRange] = {}
-        for aw in ds.analysis_windows or []:
+        for aw in ds.analysis_windows:
             for mast_name in aw.target_masts:
                 mast_analysis_windows[mast_name] = aw.time_range
         # Attach calibration payloads from meso references
@@ -183,8 +188,48 @@ def load_datasets(
         loaded[ds.name] = LoadedDataset(
             name=ds.name,
             mast_data=mast_data,
+            analysis_windows=mast_analysis_windows,
         )
     return loaded
+
+
+def _clip_input_to_window(
+    input_data: SingleMastAnalysisInput,
+    window: TimeRange,
+    dataset_name: str,
+) -> SingleMastAnalysisInput:
+    """Clip a mast timeseries to the given analysis window.
+
+    Parquet timestamps are tz-naive, so the window bounds are also
+    stripped of timezone info before comparison.
+
+    Args:
+        input_data: Single-mast analysis input with timeseries data.
+        window: Analysis time window bounds.
+        dataset_name: Name of the dataset the input belongs to (for errors).
+
+    Returns:
+        New SingleMastAnalysisInput with time_series clipped to the window.
+
+    Raises:
+        ValueError: If the filtered DataFrame is empty (no data in window).
+    """
+    start = window.min.replace(tzinfo=None)
+    end = window.max.replace(tzinfo=None)
+    df = input_data.time_series.df
+    filtered = df.filter(
+        (pl.col("timestamp") >= start) & (pl.col("timestamp") <= end)
+    )
+    if filtered.is_empty():
+        raise ValueError(
+            f"Mast '{input_data.mast_name}' in dataset '{dataset_name}' has no "
+            f"data within analysis window [{start}, {end}]; "
+            f"data spans [{df['timestamp'].min()}, {df['timestamp'].max()}]"
+        )
+    return replace(
+        input_data,
+        time_series=replace(input_data.time_series, df=filtered),
+    )
 
 
 def _has_wind_direction_sensors(timeseries: TimeSeriesData) -> bool:
@@ -309,10 +354,12 @@ def _process_flat_timeseries_node(
 
     input_cache: dict[frozenset[str], list[SingleMastAnalysisInput]] = {}
     wd_cache: dict[frozenset[str], bool] = {}
+    windows_cache: dict[frozenset[str], dict[str, tuple[TimeRange, str]]] = {}
 
     def _aggregate(key: frozenset[str]) -> None:
         input_items: list[SingleMastAnalysisInput] = []
         any_has_wd = False
+        merged_windows: dict[str, tuple[TimeRange, str]] = {}
         for ds_name in key:
             loaded = loaded_datasets.get(ds_name)
             if loaded is None:
@@ -321,8 +368,12 @@ def _process_flat_timeseries_node(
                 input_items.append(input_data)
                 if _has_wind_direction_sensors(input_data.time_series):
                     any_has_wd = True
+            merged_windows.update(
+                {mast: (tr, ds_name) for mast, tr in loaded.analysis_windows.items()}
+            )
         input_cache[key] = input_items
         wd_cache[key] = any_has_wd
+        windows_cache[key] = merged_windows
 
     leaf_sections: list[Any] = []
     for child in node.children:
@@ -339,6 +390,16 @@ def _process_flat_timeseries_node(
         any_has_wd_sensors = wd_cache[key]
 
         subsection_type = child.type
+
+        # Clip mast timeseries to their analysis windows (exempt: calibration)
+        if subsection_type != "representative_year_calibration":
+            child_windows = windows_cache.get(key, {})
+            input_items = [
+                _clip_input_to_window(i, *child_windows[i.mast_name])
+                if i.mast_name in child_windows
+                else i
+                for i in input_items
+            ]
 
         if subsection_type == "wind_rose" and not any_has_wd_sensors:
             leaf_sections.append(HeadingSection(title="Placeholder"))
