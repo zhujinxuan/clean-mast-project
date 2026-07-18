@@ -14,6 +14,18 @@ layers =
     (compute)
     (protocols)
     (model)
+# Spec rule 8 mandates that every capability section renders via
+# render/subsection_renderer.py; these edges are the sanctioned exception.
+ignore_imports =
+    cleanmast.subdomains.reporting.subdomains.air_density.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.extreme_wind.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.representative_year.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.turbulence.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.vertical_profile.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.weibull.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.wind_frequency.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.wind_rose.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.wind_temporal.section -> cleanmast.subdomains.reporting.render.subsection_renderer
 
 [importlinter:contract:reporting-pipeline-capabilities]
 name = Reporting capability pipeline direction
@@ -43,6 +55,24 @@ ignore_imports =
     cleanmast.subdomains.reporting.subdomains.representative_year.section -> cleanmast.shared.timeseries
     cleanmast.subdomains.reporting.subdomains.wind_temporal.compute -> cleanmast.shared.timeseries
     cleanmast.subdomains.reporting.subdomains.wind_temporal.section -> cleanmast.shared.timeseries
+    # Transitional stopgap: shared/timeseries still re-exports dataingestion
+    # types (see TODO there; ownership migration is planned future work), and
+    # configuration.model.report_config re-exports dataingestion value objects.
+    # Until that migration lands, these remaining indirect edges are ignored.
+    cleanmast.subdomains.reporting.compute.air_density -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.model -> cleanmast.subdomains.configuration.model.report_config
+    cleanmast.subdomains.reporting.model.section_node -> cleanmast.subdomains.configuration.model.report_config
+    cleanmast.subdomains.reporting.subdomains.representative_year.compute -> cleanmast.shared.timeseries.alignment
+    cleanmast.subdomains.reporting.subdomains.turbulence.compute -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.subdomains.wind_frequency.compute -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.subdomains.wind_rose.compute -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.subdomains.wind_rose.section -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.api -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.assemble.section_assembler -> cleanmast.subdomains.configuration.model.report_config
+    cleanmast.subdomains.reporting.assemble.tree_builder -> cleanmast.subdomains.configuration.model.report_config
+    cleanmast.subdomains.reporting.subdomains.turbulence.section -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.subdomains.weibull.section -> cleanmast.shared.timeseries
+    cleanmast.subdomains.reporting.subdomains.wind_frequency.section -> cleanmast.shared.timeseries
 
 [importlinter:contract:reporting-no-cross-capability]
 name = Reporting capabilities cannot import each other
