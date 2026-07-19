@@ -14,7 +14,7 @@ from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
-from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.gumbel_qq import (
     generate_gumbel_qq_subgrid,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (

@@ -15,15 +15,15 @@ from typing_extensions import override
 from typst_ir import TypstParagraph
 
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
-from cleanmast.subdomains.reporting.subdomains.representative_year.compute import (
-    _SECTOR_NAMES,
-    _find_sector,
-)
 from cleanmast.subdomains.reporting.subdomains.representative_year.model.report_meta import (
     RepYearSectorAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.representative_year.model.schemas import (
     RepYearSectorSchema,
+)
+from cleanmast.subdomains.reporting.subdomains.representative_year.model.sectors import (
+    SECTOR_NAMES,
+    find_sector,
 )
 
 
@@ -99,7 +99,7 @@ class RepYearSectorFigureAtom(ReportAtom[RepYearSectorSchema, RepYearSectorAtomM
         merged = merged.with_columns(
             pl.col(wd_col)
             .map_elements(
-                lambda x: _find_sector(x) if x is not None else 0,
+                lambda x: find_sector(x) if x is not None else 0,
                 return_dtype=pl.Int32,
             )
             .alias("_sector")
@@ -107,7 +107,7 @@ class RepYearSectorFigureAtom(ReportAtom[RepYearSectorSchema, RepYearSectorAtomM
         merged = merged.filter(pl.col("_sector") > 0)
 
         # ── Vectorized per-sector R² via group_by ───────────────────────
-        sector_name_map = {i + 1: name for i, name in enumerate(_SECTOR_NAMES)}
+        sector_name_map = {i + 1: name for i, name in enumerate(SECTOR_NAMES)}
 
         def _r2(group: pl.DataFrame) -> float:
             x = group[meso_ws_col].to_numpy()

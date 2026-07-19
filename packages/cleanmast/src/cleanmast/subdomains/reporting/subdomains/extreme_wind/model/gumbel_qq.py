@@ -1,8 +1,11 @@
-"""Gumbel Q-Q plot generation — pure functions.
+"""Gumbel Q-Q plot rendering — pure render-logic module.
+
+Lives in model/ (pipeline bottom layer). Generates Gumbel Q-Q plots
+with Monte Carlo confidence bands as PNG images via Altair + vl-convert.
+Renders subgrid visualizations consumed by Method 2 atoms.
 
 LOGIC-PRESERVATION: Ported from assessment entities/_gumbel_qq.py.
-Key improvement: eliminated `Any` in _arrange_charts_in_subgrid,
-using proper altair types (alt.Chart | alt.LayerChart).
+Resolves anti-pattern V6: IO-in-compute (gumbel_qq writes PNGs).
 """
 
 import hashlib

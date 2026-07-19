@@ -7,7 +7,6 @@ Pure functions only — no IO, no side effects.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Sequence, cast
@@ -17,12 +16,10 @@ from scipy import stats as scipy_stats
 
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.shared.timeseries.alignment import align_to_interval
-
-# 16 sectors, clockwise from N
-_SECTOR_NAMES: list[str] = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
-]
+from cleanmast.subdomains.reporting.subdomains.representative_year.model.sectors import (
+    SECTOR_NAMES,
+    find_sector,
+)
 
 _MIN_DATA_POINTS = 3  # minimum rows per sector for regression
 
@@ -136,11 +133,6 @@ def _find_climatology_timerange(
     return climatology_start, climatology_end
 
 
-def _find_sector(angle: float) -> int:
-    """Map wind direction angle (0-360) to 1-indexed sector (1=N, 2=NNE, ..., 16=NNW)."""
-    return int(math.floor((angle + 11.25) / 22.5)) % 16 + 1
-
-
 # ── Main computation ───────────────────────────────────────────────────
 
 
@@ -238,7 +230,7 @@ def _compute_meso_sector_stats(
     # Add sector assignment on original data
     meso_with_sector = meso_df.with_columns(
         pl.col(meso_wd_sensor.column_name)
-        .map_elements(lambda x: _find_sector(x) if x is not None else 0, return_dtype=pl.Int32)
+        .map_elements(lambda x: find_sector(x) if x is not None else 0, return_dtype=pl.Int32)
         .alias("_sector")
     ).filter(pl.col("_sector") > 0)
 
@@ -296,7 +288,7 @@ def _compute_per_sector_regression(
     # Add sector assignment
     aligned_df = aligned_df.with_columns(
         pl.col(meso_wd_sensor.column_name)
-        .map_elements(lambda x: _find_sector(x) if x is not None else 0, return_dtype=pl.Int32)
+        .map_elements(lambda x: find_sector(x) if x is not None else 0, return_dtype=pl.Int32)
         .alias("_sector")
     ).filter(pl.col("_sector") > 0)
 
@@ -343,7 +335,7 @@ def _combine_sector_rows(
     for stat, reg in zip(sector_stats, reg_results):
         adjustment = round(reg.slope * stat.diff, 4)
         rows.append(RepYearSectorRow(
-            sector=_SECTOR_NAMES[stat.sector_index - 1],
+            sector=SECTOR_NAMES[stat.sector_index - 1],
             sector_index=stat.sector_index,
             climatology_mean=stat.clim_mean,
             rep_year_mean=stat.rep_mean,

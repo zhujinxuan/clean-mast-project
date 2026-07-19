@@ -419,7 +419,7 @@ class TestExtremeWindSection:
 
 class TestGumbelQQ:
     def test_monte_carlo_band_correctness(self) -> None:
-        from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
+        from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.gumbel_qq import (
             generate_qq_monte_carlo_bands,
         )
         mu = 10.0
@@ -438,7 +438,7 @@ class TestGumbelQQ:
             assert q <= u
 
     def test_generate_subgrid_returns_png(self, tmp_path: Path) -> None:
-        from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute.gumbel_qq import (
+        from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.gumbel_qq import (
             generate_gumbel_qq_subgrid,
         )
         data_list = [{

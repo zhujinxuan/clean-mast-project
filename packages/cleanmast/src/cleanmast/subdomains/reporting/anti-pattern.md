@@ -44,18 +44,18 @@ Audit date: 2026-06-26. Updated: 2026-07-01. Checked against `reporting/spec.md`
 **File**: `subdomains/extreme_wind/model/method2_atom.py:25-27`  
 **Rule**: Pipeline direction — model ← protocols ← compute (model must not import compute).
 
-`Method2QQSustainedAtom` and `Method2QQExtremeAtom` import `generate_gumbel_qq_subgrid` from `compute/gumbel_qq.py`. Model layer depending on compute breaks the pipeline architecture.
+`Method2QQSustainedAtom` and `Method2QQExtremeAtom` imported `generate_gumbel_qq_subgrid` from `compute/gumbel_qq.py`. Model layer depending on compute breaks the pipeline architecture.
 
-**Status**: ⛔ OPEN.
+**Status**: ✅ RESOLVED (2026-07-19) — `gumbel_qq.py` moved to `extreme_wind/model/`; the atoms' import is now legal model→model.
 
 ### V6. IO inside compute layer — `extreme_wind/compute/gumbel_qq.py`
 
 **File**: `subdomains/extreme_wind/compute/gumbel_qq.py:157,160,228,231`  
 **Rule**: Spec anti-pattern — "IO inside compute/; keep calculations pure."
 
-`output_dir.mkdir()` + `image_path.write_bytes()` — writes PNG files from the compute layer. Image writing should move to the assemble or render layer.
+`output_dir.mkdir()` + `image_path.write_bytes()` — wrote PNG files from the compute layer.
 
-**Status**: ⛔ OPEN.
+**Status**: ✅ RESOLVED (2026-07-19) — module relocated to `extreme_wind/model/gumbel_qq.py`; Q-Q chart generation is render logic and lives with the atoms that consume it. `compute/` no longer performs image IO.
 
 ### V7. Dead code in `wind_rose/compute.py`
 
@@ -98,7 +98,7 @@ Audit date: 2026-06-26. Updated: 2026-07-01. Checked against `reporting/spec.md`
 **Files**:
 - `subdomains/extreme_wind/section.py` — 4× `list[dict[str, Any]]`
 - `subdomains/extreme_wind/compute/__init__.py` — `dict[str, Any]` return types
-- `subdomains/extreme_wind/compute/gumbel_qq.py` — bare `list[dict]`
+- `subdomains/extreme_wind/model/gumbel_qq.py` — bare `list[dict]`
 - `subdomains/wind_temporal/compute.py` — 3× bare `list[dict]`
 - `subdomains/representative_year/compute.py` — missing annotations on `item` params + bare `list`
 
@@ -112,7 +112,7 @@ Unconsolidated duplicates (V1 DRY fix addressed `get_height_display_name` but no
 |---|---|
 | `SECTOR_COUNT` / `SECTOR_WIDTH` | `wind_rose` — 3 model files + compute.py |
 | `_IEC_CATEGORIES`, `_compute_iec_ti` | `turbulence` — 3 model atoms |
-| `_SECTOR_NAMES` | `representative_year` — compute.py + sector_table_atom.py |
+| ~~`_SECTOR_NAMES`~~ ✅ | `representative_year` — consolidated into `model/sectors.py` as public `SECTOR_NAMES` / `find_sector` (2026-07-19) |
 | `_MONTH_NAMES` | `wind_temporal` — monthly_daily_power + monthly_daily_wind atoms |
 | Gas constants (`GAS_CONSTANT_DRY_AIR`, etc.) | `air_density` — compute.py + air_density_atom.py |
 
