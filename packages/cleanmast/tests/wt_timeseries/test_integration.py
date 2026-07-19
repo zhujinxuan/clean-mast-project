@@ -8,6 +8,8 @@ import polars as pl
 import pyarrow.parquet as pq
 import pytest
 from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
+from cleanmast.shared.timeseries import SensorColumn
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     ProjectConfig,
     WtTimeSeriesConfiguration,
@@ -15,10 +17,6 @@ from cleanmast.subdomains.configuration import (
 )
 from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import (
     recommend_wt_timeseries,
-)
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from cleanmast.subdomains.dataprocessing.services import (
     process_single_mast_csv,
@@ -88,12 +86,12 @@ class TestFullWorkflow:
 
         # Create fill-heights-representative-year.toml config
         import tomli_w
+        from cleanmast.shared.timeseries.time_series_source import (
+            TimeSeriesSource,
+        )
         from cleanmast.subdomains.configuration import (
             FillHeightsConfiguration,
             MastFillConfig,
-        )
-        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-            TimeSeriesSource,
         )
 
         fill_heights_config = FillHeightsConfiguration(
@@ -252,12 +250,12 @@ class TestFullWorkflow:
 
         # Create fill-heights-representative-year.toml config
         import tomli_w
+        from cleanmast.shared.timeseries.time_series_source import (
+            TimeSeriesSource,
+        )
         from cleanmast.subdomains.configuration import (
             FillHeightsConfiguration,
             MastFillConfig,
-        )
-        from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-            TimeSeriesSource,
         )
 
         fill_heights_config = FillHeightsConfiguration(

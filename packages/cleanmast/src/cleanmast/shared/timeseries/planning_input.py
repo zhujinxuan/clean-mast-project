@@ -8,9 +8,7 @@ Description: Minimal dataclass carrying mast name and output source
 
 from dataclasses import dataclass
 
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 
 
 @dataclass(frozen=True)

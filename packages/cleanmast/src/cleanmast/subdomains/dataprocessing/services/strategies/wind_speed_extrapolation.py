@@ -54,10 +54,10 @@ Execution will compute:
 
 from cleanmast.shared.timeseries import (
     HeightReference,
+    SensorColumn,
     TimeSeriesData,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     get_existing_sensors,
 )

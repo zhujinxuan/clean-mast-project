@@ -6,8 +6,8 @@ Tests the actual wind speed and wind direction filling operations.
 import numpy as np
 import polars as pl
 import pytest
+from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.subdomains.configuration import HeightReference
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
 from cleanmast.subdomains.dataprocessing.services import apply_wd_fill, apply_ws_fill
 
 

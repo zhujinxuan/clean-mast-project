@@ -1,8 +1,7 @@
 """Tests for height filling DDD services."""
 
 import polars as pl
-from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.subdomains.dataprocessing.services.height_filling import (
     build_sensor_column_map,
     create_fill_target_sensor,

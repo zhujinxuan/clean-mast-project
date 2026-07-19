@@ -6,8 +6,7 @@ Includes CRITICAL tests for vector-based wind direction handling.
 import numpy as np
 import polars as pl
 import pytest
-from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.subdomains.dataprocessing.services.height_filling.fitting import (
     calculate_wd_deg_diff,
     calculate_ws_shear,

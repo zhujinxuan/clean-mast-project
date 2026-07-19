@@ -13,8 +13,10 @@ from typing import Literal
 
 import numpy as np
 
-from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries import (
+    SensorColumn,
+    TimeSeriesData,
+)
 
 
 def get_existing_sensors(

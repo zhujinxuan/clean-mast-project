@@ -12,17 +12,13 @@ from cleanmast.application.usecases.generate_report import (
     _generate_from_flat_config,
     generate_report,
 )
-from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries import TimeRange, TimeSeriesData, TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
     MastRef,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.model.analysis_input import (
     SingleMastAnalysisInput,

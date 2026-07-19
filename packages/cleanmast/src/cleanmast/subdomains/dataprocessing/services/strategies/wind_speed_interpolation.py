@@ -51,10 +51,10 @@ planner should use extrapolation instead.
 
 from cleanmast.shared.timeseries import (
     HeightReference,
+    SensorColumn,
     TimeSeriesData,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     calculate_interpolation_weights,
     get_existing_sensors,

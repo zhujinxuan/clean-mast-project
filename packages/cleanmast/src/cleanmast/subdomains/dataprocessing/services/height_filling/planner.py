@@ -83,11 +83,11 @@ from cleanmast.shared.timeseries import (
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
+from cleanmast.shared.timeseries.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
     ParquetRepository,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 from .fitting import (

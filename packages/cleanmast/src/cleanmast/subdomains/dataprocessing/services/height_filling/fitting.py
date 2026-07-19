@@ -16,8 +16,10 @@ from typing import Literal, cast
 import numpy as np
 import polars as pl
 
-from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries import (
+    SensorColumn,
+    TimeSeriesData,
+)
 
 logger = logging.getLogger(__name__)
 

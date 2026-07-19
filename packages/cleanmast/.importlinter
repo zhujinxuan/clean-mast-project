@@ -16,9 +16,10 @@ modules =
 name = Domain Layer Purity
 type = forbidden
 source_modules =
-    cleanmast.subdomains.dataingestion.value_objects
+    cleanmast.shared.timeseries.sensor_column
+    cleanmast.shared.timeseries.time_series_source
+    cleanmast.shared.timeseries.time_range
     cleanmast.subdomains.dataingestion.entities
-forbidden_modules =
     polars
     pandas
     sqlalchemy

@@ -8,18 +8,14 @@ from pathlib import Path
 import pytest
 import tomli
 import tomli_w
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     ExtremeWindGustFactor,
     MastRef,
 )
 from cleanmast.subdomains.configuration.services.recommend_report import (
     _discover_extreme_wind_heights,
-)
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import (
-    SensorColumn,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from pydantic import ValidationError
 

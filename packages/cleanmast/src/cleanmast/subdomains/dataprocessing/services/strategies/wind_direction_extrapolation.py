@@ -70,10 +70,10 @@ Wraparound example:
 
 from cleanmast.shared.timeseries import (
     HeightReference,
+    SensorColumn,
     TimeSeriesData,
     WindDirectionHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     get_existing_sensors,
 )

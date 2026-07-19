@@ -6,10 +6,10 @@ Compliance: Subdomain layout ✓ | Strategy Pattern ✓
 
 from cleanmast.shared.timeseries import (
     HeightReference,
+    SensorColumn,
     TimeSeriesData,
     WindDirectionHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 from ..helpers import get_existing_sensors
 

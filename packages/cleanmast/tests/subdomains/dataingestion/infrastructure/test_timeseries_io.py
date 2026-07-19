@@ -6,14 +6,10 @@ from pathlib import Path
 import polars as pl
 import pytest
 import yaml
-from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries,
     save_timeseries,
-)
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 
@@ -310,3 +306,234 @@ class TestSaveTimeseries:
         orig_ws = original.df["WindSpeed_100m_avg [m/s]"].to_list()
         load_ws = loaded.df["WindSpeed_100m_avg [m/s]"].to_list()
         assert orig_ws == load_ws
+
+
+class TestCsvSensorColumnFullFidelity:
+    """CSV round-trip preserves ALL 6 SensorColumn fields (gap 1)."""
+
+    def test_csv_roundtrip_all_sensor_fields(self, tmp_path: Path):
+        """Round-trip through CSV save/load; assert every SensorColumn field."""
+        df = pl.DataFrame(
+            {
+                "timestamp": [
+                    datetime(2024, 1, 1, 0, 0),
+                    datetime(2024, 1, 1, 0, 10),
+                ],
+                "WindSpeed_100m_avg [m/s]": [5.5, 6.0],
+                "WindDirection_100m_avg [deg]": [180.0, 185.0],
+                "Temperature_10m_avg [C]": [15.5, 16.0],
+            }
+        )
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="NNE",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WindDirection_100m_avg [deg]",
+                sensor_type="WindDirection",
+                sensor_direction="NNE",
+                height=100.0,
+                stat_type="avg",
+                unit="deg",
+            ),
+            SensorColumn(
+                column_name="Temperature_10m_avg [C]",
+                sensor_type="Temperature",
+                sensor_direction="",
+                height=10.0,
+                stat_type="avg",
+                unit="C",
+            ),
+        ]
+        original = TimeSeriesData(df=df, sensors=sensors)
+
+        # Save
+        source = TimeSeriesSource(data="./fidelity.csv", sensors="./fidelity.yaml")
+        save_timeseries(source, str(tmp_path), original)
+
+        # Load back
+        loaded = load_timeseries(source, str(tmp_path))
+
+        # Assert all 6 fields for every sensor
+        assert len(loaded.sensors) == 3
+        for i in range(3):
+            assert loaded.sensors[i].column_name == sensors[i].column_name
+            assert loaded.sensors[i].sensor_type == sensors[i].sensor_type
+            assert loaded.sensors[i].sensor_direction == sensors[i].sensor_direction
+            assert loaded.sensors[i].height == sensors[i].height
+            assert loaded.sensors[i].stat_type == sensors[i].stat_type
+            assert loaded.sensors[i].unit == sensors[i].unit
+
+        # DataFrame values match
+        for col in df.columns:
+            assert df[col].to_list() == loaded.df[col].to_list()
+
+
+class TestPathVsStrArgs:
+    """Path-vs-str arg handling for load_timeseries and save_timeseries (gap 3)."""
+
+    def test_str_base_dir(self, tmp_path: Path):
+        """Pass str base_dir: works as always."""
+        df = pl.DataFrame({
+            "timestamp": [datetime(2024, 1, 1)],
+            "WindSpeed_100m_avg [m/s]": [5.0],
+        })
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(df=df, sensors=sensors)
+        source = TimeSeriesSource(data="./str_test.csv", sensors="./str_test.yaml")
+
+        base_dir_str = str(tmp_path)
+        save_timeseries(source, base_dir_str, ts_data)
+        loaded = load_timeseries(source, base_dir_str)
+
+        assert loaded.sensors[0].height == 100.0
+        assert loaded.df.shape == (1, 2)
+
+    def test_path_base_dir(self, tmp_path: Path):
+        """Pass Path base_dir: same behavior as str."""
+        df = pl.DataFrame({
+            "timestamp": [datetime(2024, 1, 1)],
+            "WindSpeed_100m_avg [m/s]": [5.0],
+        })
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(df=df, sensors=sensors)
+        source = TimeSeriesSource(data="./path_test.csv", sensors="./path_test.yaml")
+
+        # Pass Path instead of str
+        save_timeseries(source, tmp_path, ts_data)
+        loaded = load_timeseries(source, tmp_path)
+
+        assert loaded.sensors[0].height == 100.0
+        assert loaded.df.shape == (1, 2)
+
+
+class TestAbsolutePathResolution:
+    """Absolute path resolution through _resolve_path (gap 4)."""
+
+    def test_absolute_data_path_save_and_load(self, tmp_path: Path):
+        """Save and load with an absolute data path; resolution works."""
+        df = pl.DataFrame({
+            "timestamp": [datetime(2024, 1, 1)],
+            "WindSpeed_100m_avg [m/s]": [5.0],
+        })
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(df=df, sensors=sensors)
+
+        # Use absolute paths
+        abs_data = str(tmp_path / "abs_data.csv")
+        abs_sensors = str(tmp_path / "abs_sensors.yaml")
+        source = TimeSeriesSource(data=abs_data, sensors=abs_sensors)
+
+        # base_dir is irrelevant for absolute paths, pass anything
+        save_timeseries(source, "/unused", ts_data)
+        loaded = load_timeseries(source, "/unused")
+
+        assert loaded.sensors[0].height == 100.0
+        assert loaded.df.shape == (1, 2)
+
+
+class TestCsvMissingSensorsError:
+    """CSV loading error when sensors file is missing (gap 5)."""
+
+    def test_csv_missing_sensors_file_raises(self, tmp_path: Path):
+        """Load CSV with nonexistent sensors file raises FileNotFoundError."""
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text(
+            "timestamp,WindSpeed_100m_avg [m/s]\n2024-01-01 00:00:00,5.5\n",
+            encoding="utf-8",
+        )
+
+        source = TimeSeriesSource(
+            data=str(csv_path),
+            sensors=str(tmp_path / "nonexistent_sensors.yaml"),
+        )
+
+        with pytest.raises(FileNotFoundError, match="Sensors file not found"):
+            load_timeseries(source, str(tmp_path))
+
+
+class TestTomlSaveRoundtrip:
+    """TOML save round-trip: _save_sensors_to_file → reload (gap 6)."""
+
+    def test_save_toml_sensors_roundtrip(self, tmp_path: Path):
+        """Save sensors to TOML via save_timeseries, reload, assert full fidelity."""
+        df = pl.DataFrame({
+            "timestamp": [
+                datetime(2024, 1, 1, 0, 0),
+                datetime(2024, 1, 1, 0, 10),
+            ],
+            "WindSpeed_100m_avg [m/s]": [5.5, 6.0],
+            "WindDirection_100m_avg [deg]": [180.0, 185.0],
+        })
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="NNE",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WindDirection_100m_avg [deg]",
+                sensor_type="WindDirection",
+                sensor_direction="NNE",
+                height=100.0,
+                stat_type="avg",
+                unit="deg",
+            ),
+        ]
+        ts_data = TimeSeriesData(df=df, sensors=sensors)
+
+        # Save with .toml sensors path
+        source = TimeSeriesSource(data="./toml_data.csv", sensors="./toml_sensors.toml")
+        save_timeseries(source, str(tmp_path), ts_data)
+
+        # Verify the TOML file exists
+        toml_path = tmp_path / "toml_sensors.toml"
+        assert toml_path.exists()
+
+        # Reload
+        loaded = load_timeseries(source, str(tmp_path))
+
+        # Full fidelity
+        assert len(loaded.sensors) == 2
+        for i in range(2):
+            assert loaded.sensors[i].column_name == sensors[i].column_name
+            assert loaded.sensors[i].sensor_type == sensors[i].sensor_type
+            assert loaded.sensors[i].sensor_direction == sensors[i].sensor_direction
+            assert loaded.sensors[i].height == sensors[i].height
+            assert loaded.sensors[i].stat_type == sensors[i].stat_type
+            assert loaded.sensors[i].unit == sensors[i].unit

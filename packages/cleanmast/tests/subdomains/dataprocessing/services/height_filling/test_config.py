@@ -5,16 +5,14 @@ WindDirectionHeightConfig, and MastFillConfig models.
 """
 
 import pytest
+from cleanmast.shared.timeseries import SensorColumn
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     FillHeightsConfiguration,
     HeightReference,
     MastFillConfig,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
-)
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 

@@ -6,15 +6,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 import yaml
-from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     _write_parquet_with_metadata,
     load_timeseries,
     save_timeseries,
-)
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 

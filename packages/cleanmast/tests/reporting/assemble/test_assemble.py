@@ -5,16 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Sequence
 
+from cleanmast.shared.timeseries.time_range import TimeRange
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
     MastRef,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.assemble import (
     SECTION_REGISTRY,

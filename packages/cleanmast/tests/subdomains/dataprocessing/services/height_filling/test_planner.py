@@ -12,14 +12,12 @@ import polars as pl
 import pytest
 from cleanmast.shared.timeseries import (
     MastPlanningEntry,
+    SensorColumn,
     TimeSeriesData,
+    TimeSeriesSource,
 )
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     save_timeseries_parquet,
-)
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (
     _build_wd_configs,

@@ -11,8 +11,8 @@ against actual sensor metadata in timeseries data.
 from cleanmast.shared.timeseries import (
     HeightReference,
     MastFillConfig,
+    SensorColumn,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 
 def build_sensor_column_map(timeseries) -> dict[str, SensorColumn]:

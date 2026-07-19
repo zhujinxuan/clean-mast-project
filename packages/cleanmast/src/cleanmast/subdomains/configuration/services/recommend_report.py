@@ -14,6 +14,13 @@ from collections.abc import Collection, Sequence
 from pathlib import Path
 from typing import Any, cast
 
+from cleanmast.shared.timeseries.sensor_column import (
+    SensorColumn,
+)
+from cleanmast.shared.timeseries.time_range import TimeRange
+from cleanmast.shared.timeseries.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DatasetConfig,
@@ -30,13 +37,6 @@ from cleanmast.subdomains.configuration import (
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries,
     load_timeseries_parquet,
-)
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import (
-    SensorColumn,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from cleanmast.subdomains.reporting.compute.air_density import (
     STANDARD_AIR_DENSITY,

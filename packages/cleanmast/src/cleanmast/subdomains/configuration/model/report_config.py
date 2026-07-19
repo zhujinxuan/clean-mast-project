@@ -11,8 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+from cleanmast.shared.timeseries.time_range import TimeRange
+from cleanmast.shared.timeseries.time_series_source import (
     TimeSeriesSource,
 )
 

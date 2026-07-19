@@ -12,10 +12,10 @@ from pathlib import Path
 
 from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
     ParquetRepository,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.height_filler import (
     apply_wd_fill,
     apply_ws_fill,

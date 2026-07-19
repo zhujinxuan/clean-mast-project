@@ -21,12 +21,12 @@ import dataframely as dy
 import polars as pl
 
 from cleanmast.shared.timeseries import (
+    SensorColumn,
     WtTimeSeriesMast,
 )
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
     ParquetRepository,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 logger = logging.getLogger(__name__)
 

@@ -15,19 +15,21 @@ from cleanmast.shared.timeseries.fill_height_rep_year_config import (
     FillHeightsRepYearConfiguration,
 )
 from cleanmast.shared.timeseries.planning_input import MastPlanningEntry
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
+from cleanmast.shared.timeseries.time_series_source import (
+    TimeSeriesSource,
+)
 from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
-)
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 __all__ = [
     "TimeSeriesData",
     "SensorColumn",
+    "TimeRange",
     "TimeSeriesSource",
     "WtTimeSeriesConfiguration",
     "WtTimeSeriesMast",

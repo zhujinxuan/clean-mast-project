@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import polars as pl
 import pytest
-from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.shared.timeseries.alignment import (
     _add_uv_helpers,
     _compute_from_uv,
@@ -19,7 +19,6 @@ from cleanmast.shared.timeseries.alignment import (
     _upsample_to_interval,
     align_to_interval,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
 

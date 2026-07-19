@@ -14,7 +14,7 @@ import hashlib
 import dataframely as dy
 import polars as pl
 
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.shared.timeseries import SensorColumn
 
 
 def _hash_sensors(sensors: list[SensorColumn]) -> str:

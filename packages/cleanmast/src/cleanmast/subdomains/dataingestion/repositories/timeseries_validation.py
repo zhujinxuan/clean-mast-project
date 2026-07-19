@@ -10,7 +10,7 @@ import hashlib
 import dataframely as dy
 import polars as pl
 
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 
 
 def _hash_sensors(sensors: list[SensorColumn]) -> str:

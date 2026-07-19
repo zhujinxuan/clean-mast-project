@@ -2,10 +2,8 @@
 
 
 import pytest
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import WtTimeSeriesConfiguration, WtTimeSeriesMast
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
 from pydantic import ValidationError
 
 

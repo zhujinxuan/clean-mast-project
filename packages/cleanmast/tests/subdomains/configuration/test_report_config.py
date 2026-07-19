@@ -1,16 +1,14 @@
 from datetime import datetime
 
 import pytest
+from cleanmast.shared.timeseries.time_range import TimeRange
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DatasetConfig,
     FlatReportConfig,
     FlatSubsectionConfig,
     MastRef,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 from pydantic import ValidationError
 

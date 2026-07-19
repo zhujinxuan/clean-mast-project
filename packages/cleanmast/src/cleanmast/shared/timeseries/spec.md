@@ -2,9 +2,8 @@
 Foundational time-series types and loaders
 
 ## Rules
-- TimeSeriesData, TimeSeriesSource, SensorColumn defined here
+- TimeSeriesData, SensorColumn, TimeSeriesSource, TimeRange defined here
 - Parquet loader as infrastructure
-- TimeSeriesData migrated to this package ✓; SensorColumn/TimeSeriesSource re-exported from dataingestion (stable)
 
 ## Anti-patterns
 - Context-specific types in shared

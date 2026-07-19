@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import tomli
+from cleanmast.shared.timeseries.time_range import TimeRange
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DiscoveredConfig,
@@ -17,10 +19,6 @@ from cleanmast.subdomains.configuration.services.recommend_report import (
     _build_analysis_windows,
     _build_dataset_for_timeseries,
     recommend_report,
-)
-from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
 )
 
 TR_A = TimeRange(min=datetime(2025, 3, 1), max=datetime(2026, 2, 28))

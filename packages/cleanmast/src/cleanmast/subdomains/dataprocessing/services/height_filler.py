@@ -43,8 +43,8 @@ import polars as pl
 
 from cleanmast.shared.timeseries import (
     HeightReference,
+    SensorColumn,
 )
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 
 def apply_ws_fill(

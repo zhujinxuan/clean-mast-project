@@ -7,9 +7,7 @@ Description: Pydantic models for the wt-timeseries TOML configuration
 
 from pydantic import BaseModel, field_validator
 
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 
 
 class WtTimeSeriesMast(BaseModel):

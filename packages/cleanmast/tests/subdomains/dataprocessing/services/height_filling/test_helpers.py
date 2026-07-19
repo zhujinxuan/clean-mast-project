@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.height_filling.helpers import (
     calculate_interpolation_weights,
     degrees_to_vector,

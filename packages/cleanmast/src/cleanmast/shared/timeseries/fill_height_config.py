@@ -9,10 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 
 
 class HeightReference(BaseModel):

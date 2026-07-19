@@ -7,11 +7,9 @@ import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 import pytest
+from cleanmast.shared.timeseries import SensorColumn
+from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import WtTimeSeriesMast
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
 from cleanmast.subdomains.dataprocessing.services import (
     process_single_mast_csv,
     process_wt_timeseries,

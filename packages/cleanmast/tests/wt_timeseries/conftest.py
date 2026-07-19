@@ -6,11 +6,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import polars as pl
 import pytest
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesSource
 from cleanmast.subdomains.configuration import WtTimeSeriesMast
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
-    TimeSeriesSource,
-)
 
 
 @pytest.fixture

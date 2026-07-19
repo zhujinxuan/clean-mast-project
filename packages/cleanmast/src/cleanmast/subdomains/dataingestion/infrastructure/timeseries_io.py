@@ -14,9 +14,9 @@ import tomli
 import tomli_w
 import yaml
 
+from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
-from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+from cleanmast.shared.timeseries.time_series_source import (
     TimeSeriesSource,
 )
 

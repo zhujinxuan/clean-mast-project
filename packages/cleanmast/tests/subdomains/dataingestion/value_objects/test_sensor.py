@@ -1,7 +1,7 @@
 """Tests for SensorColumn model."""
 
 import pytest
-from cleanmast.subdomains.dataingestion.value_objects import SensorColumn
+from cleanmast.shared.timeseries import SensorColumn
 
 
 class TestSensorColumn:

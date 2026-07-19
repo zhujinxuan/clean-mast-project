@@ -5,15 +5,11 @@ Compliance: Subdomain layout ✓ | Domain Entity ✓ | Sensor-based access ✓
 Description: Entity representing time series data with sensor metadata
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import polars as pl
 
-if TYPE_CHECKING:
-    from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 
 
 @dataclass

@@ -10,7 +10,7 @@ strategies. All functions are pure (no side effects) making them easy to test.
 
 from typing import Literal
 
-from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 
 
 def get_existing_sensors(
