@@ -1,19 +1,20 @@
-"""Tests for ParquetRepository class and its module-level convenience functions.
+"""Tests for FileTimeSeriesRepository class and its module-level convenience functions.
 
 Covers direct class instantiation, .load/.save on both parquet and csv+sidecar
 variants, and the module-level convenience functions load_timeseries/save_timeseries
-from repositories.parquet_repository.
-"""
+from shared.timeseries.io."""
 
 from datetime import datetime
 from pathlib import Path
 
 import polars as pl
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-    ParquetRepository,
+from cleanmast.shared.timeseries.io import (
     load_timeseries,
     save_timeseries,
+)
+from cleanmast.shared.timeseries.io.file_repository import (
+    FileTimeSeriesRepository,
 )
 
 
@@ -62,12 +63,12 @@ def _assert_sensors_equal(original: list[SensorColumn], loaded: list[SensorColum
         assert load.unit == orig.unit, f"sensor[{i}].unit"
 
 
-class TestParquetRepositoryClass:
-    """Direct ParquetRepository class tests — parquet and csv variants."""
+class TestFileTimeSeriesRepositoryClass:
+    """Direct FileTimeSeriesRepository class tests — parquet and csv variants."""
 
     def test_parquet_roundtrip(self, tmp_path: Path):
-        """Save/load parquet via ParquetRepository class; assert full fidelity."""
-        repo = ParquetRepository()
+        """Save/load parquet via FileTimeSeriesRepository class; assert full fidelity."""
+        repo = FileTimeSeriesRepository()
         original = _make_test_data()
         source = TimeSeriesSource(data="./data.parquet", sensors="")
 
@@ -81,8 +82,8 @@ class TestParquetRepositoryClass:
         _assert_sensors_equal(original.sensors, loaded.sensors)
 
     def test_csv_roundtrip(self, tmp_path: Path):
-        """Save/load CSV via ParquetRepository class; assert full fidelity."""
-        repo = ParquetRepository()
+        """Save/load CSV via FileTimeSeriesRepository class; assert full fidelity."""
+        repo = FileTimeSeriesRepository()
         original = _make_test_data()
         source = TimeSeriesSource(data="./data.csv", sensors="./sensors.yaml")
 
@@ -97,7 +98,7 @@ class TestParquetRepositoryClass:
 
     def test_parquet_load_with_sensor_direction(self, tmp_path: Path):
         """Parquet roundtrip preserves sensor_direction (non-empty)."""
-        repo = ParquetRepository()
+        repo = FileTimeSeriesRepository()
         # Use non-empty sensor_direction values
         df = pl.DataFrame({
             "timestamp": [datetime(2024, 1, 1)],
@@ -132,11 +133,11 @@ class TestParquetRepositoryClass:
         assert loaded.sensors[1].sensor_direction == "NW"
 
 
-class TestParquetRepositoryConvenienceFunctions:
-    """Module-level convenience functions from repositories.parquet_repository."""
+class TestFileTimeSeriesRepositoryConvenienceFunctions:
+    """Module-level convenience functions from shared.timeseries.io."""
 
     def test_convenience_parquet_roundtrip(self, tmp_path: Path):
-        """load_timeseries/save_timeseries (from repositories) for parquet."""
+        """load_timeseries/save_timeseries for parquet."""
         original = _make_test_data()
         source = TimeSeriesSource(data="./conv.parquet", sensors="")
 
@@ -148,7 +149,7 @@ class TestParquetRepositoryConvenienceFunctions:
         _assert_sensors_equal(original.sensors, loaded.sensors)
 
     def test_convenience_csv_roundtrip(self, tmp_path: Path):
-        """load_timeseries/save_timeseries (from repositories) for CSV."""
+        """load_timeseries/save_timeseries for CSV."""
         original = _make_test_data()
         source = TimeSeriesSource(data="./conv.csv", sensors="./conv_sensors.yaml")
 
@@ -159,29 +160,22 @@ class TestParquetRepositoryConvenienceFunctions:
             assert original.df[col].to_list() == loaded.df[col].to_list(), f"col {col}"
         _assert_sensors_equal(original.sensors, loaded.sensors)
 
-    def test_convenience_is_distinct_from_infrastructure(self, tmp_path: Path):
-        """Verify repos convenience functions import is distinct from infrastructure."""
-        # If this test passes, we have a valid import from the correct module
-        from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
-            load_timeseries as infra_load,
+    def test_convenience_is_same_as_file_repository(self, tmp_path: Path):
+        """Verify io convenience functions are the same as file_repository exports."""
+        from cleanmast.shared.timeseries.io.file_repository import (
+            load_timeseries as file_repo_load,
         )
-        from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
-            save_timeseries as infra_save,
-        )
-        from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-            load_timeseries as repo_load,
-        )
-        from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-            save_timeseries as repo_save,
+        from cleanmast.shared.timeseries.io.file_repository import (
+            save_timeseries as file_repo_save,
         )
 
-        # They are different objects (different modules)
-        assert repo_load is not infra_load
-        assert repo_save is not infra_save
+        # Both paths refer to the same function objects
+        assert load_timeseries is file_repo_load
+        assert save_timeseries is file_repo_save
 
-        # But both work correctly
+        # And they work correctly
         original = _make_test_data()
         source = TimeSeriesSource(data="./distinct.csv", sensors="./distinct.yaml")
-        repo_save(source, str(tmp_path), original)
-        loaded = repo_load(source, str(tmp_path))
+        file_repo_save(source, str(tmp_path), original)
+        loaded = file_repo_load(source, str(tmp_path))
         _assert_sensors_equal(original.sensors, loaded.sensors)

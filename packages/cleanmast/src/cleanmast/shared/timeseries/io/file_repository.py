@@ -1,8 +1,13 @@
-"""Time series I/O operations.
+"""File-based time series repository — realization of TimeSeriesRepository.
 
-Functions for loading and saving time series data with sensor metadata.
-Supports both CSV and Parquet formats with automatic format detection.
+Dispatches on TimeSeriesSource.data suffix: .parquet → embedded metadata;
+.csv → sidecar metadata file.
+
+Module-level load_timeseries / save_timeseries convenience functions are
+the public API for most consumers.
 """
+
+from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -14,13 +19,17 @@ import tomli
 import tomli_w
 import yaml
 
-from cleanmast.shared.timeseries import SensorColumn
+from cleanmast.shared.timeseries.io.validation import validate_timeseries
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
 from cleanmast.shared.timeseries.time_series_source import (
     TimeSeriesSource,
 )
 
-from .timeseries_validation import validate_timeseries
+# ---------------------------------------------------------------------------
+# Private helpers — single copy, merged from the two prior implementations.
+# Audit confirmed zero behavioral drift between them.
+# ---------------------------------------------------------------------------
 
 
 def _detect_format(path: Path) -> Literal["csv", "parquet"]:
@@ -31,7 +40,9 @@ def _detect_format(path: Path) -> Literal["csv", "parquet"]:
     elif suffix in (".csv",):
         return "csv"
     else:
-        raise ValueError(f"Unsupported data file format: {suffix}. Expected .csv or .parquet")
+        raise ValueError(
+            f"Unsupported data file format: {suffix}. Expected .csv or .parquet"
+        )
 
 
 def _resolve_path(path: str, base_dir: str) -> Path:
@@ -67,15 +78,6 @@ def _extract_sensors_from_parquet(filepath: Path) -> list[SensorColumn]:
 
     Reads sensor metadata from file-level metadata in Parquet files.
     Uses JSON format under key "cleanmast_sensors".
-
-    Args:
-        filepath: Path to Parquet file with embedded sensor metadata
-
-    Returns:
-        List of SensorColumn objects
-
-    Raises:
-        ValueError: If no sensor metadata found in file-level metadata
     """
     pf = pq.ParquetFile(filepath)
     file_meta = pf.metadata.metadata  # Dict[bytes, bytes]
@@ -83,10 +85,8 @@ def _extract_sensors_from_parquet(filepath: Path) -> list[SensorColumn]:
     if b"cleanmast_sensors" not in file_meta:
         raise ValueError(f"No sensor metadata in {filepath}")
 
-    # Parse JSON
     sensors_json = json.loads(file_meta[b"cleanmast_sensors"].decode("utf-8"))
 
-    # Convert to SensorColumn objects
     sensors = []
     for s in sensors_json["sensors"]:
         sensor = SensorColumn(
@@ -111,17 +111,9 @@ def _write_parquet_with_metadata(
 
     Embeds sensor metadata at the file level using JSON format.
     Both Python and Julia can read this metadata format.
-
-    Args:
-        df: Polars DataFrame to write
-        filepath: Output Parquet file path
-        sensors: List of SensorColumn metadata to embed
     """
-    import json
-
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    # Serialize sensors to JSON (camelCase keys)
     sensors_list = [
         {
             "columnName": s.column_name,
@@ -135,92 +127,12 @@ def _write_parquet_with_metadata(
     ]
     sensors_json = json.dumps({"sensors": sensors_list})
 
-    # Write DataFrame
     table = df.to_arrow()
 
-    # Use ParquetWriter to add file-level metadata
     writer = pq.ParquetWriter(filepath, table.schema)
     writer.add_key_value_metadata({"cleanmast_sensors": sensors_json})
     writer.write_table(table)
     writer.close()
-
-
-def load_timeseries_parquet(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
-    """Load time series data from Parquet file with embedded sensor metadata.
-
-    Reads sensor metadata from the Parquet file's embedded metadata section.
-    This is the preferred format for CleanMast as it preserves type information
-    and maintains consistency with the Julia implementation.
-
-    Args:
-        source: TimeSeriesSource with paths to data and sensors files
-                (sensors file is ignored for Parquet - metadata must be embedded)
-        base_dir: Base directory for resolving relative paths
-
-    Returns:
-        TimeSeriesData with DataFrame and sensor metadata
-
-    Raises:
-        FileNotFoundError: If data file doesn't exist
-        ValueError: If sensor metadata cannot be extracted from Parquet
-    """
-    data_path = _resolve_path(source.data, base_dir)
-
-    # Check file exists
-    if not data_path.exists():
-        raise FileNotFoundError(f"Data file not found: {data_path}")
-
-    # Parquet reads sensors ONLY from column metadata (NO external sensor files)
-    try:
-        sensors = _extract_sensors_from_parquet(data_path)
-    except ValueError as e:
-        # Re-raise with filename for clarity
-        raise ValueError(
-            f"No sensor metadata in Parquet file: {data_path}. "
-            f"Parquet files must have embedded column-level metadata. "
-            f"Original error: {e}"
-        ) from e
-
-    # Load Parquet with polars
-    df = pl.read_parquet(data_path)
-
-    # Ensure timestamp column is datetime
-    if "timestamp" in df.columns:
-        if df["timestamp"].dtype != pl.Datetime:
-            df = df.with_columns(
-                pl.col("timestamp").str.to_datetime().alias("timestamp")
-            )
-
-    # Validate DataFrame against sensor metadata
-    mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.parquet"
-    df = validate_timeseries(df, sensors, mast_name)
-
-    return TimeSeriesData(df=df, sensors=sensors)
-
-
-def save_timeseries_parquet(
-    source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
-) -> None:
-    """Save time series data to Parquet with embedded sensor metadata.
-
-    Embeds sensor metadata in the Parquet file's schema metadata for
-    interoperability with the Julia implementation.
-
-    Args:
-        source: TimeSeriesSource with paths to data and sensors files
-                (sensors file is optional - metadata is embedded in Parquet)
-        base_dir: Base directory for resolving relative paths
-        data: TimeSeriesData to save
-    """
-    data_path = _resolve_path(source.data, base_dir)
-
-    # Write Parquet with embedded metadata
-    _write_parquet_with_metadata(data.df, data_path, data.sensors)
-
-    # Optionally save sensors file if specified (for backward compatibility)
-    if source.sensors:
-        sensors_path = _resolve_path(source.sensors, base_dir)
-        _save_sensors_to_file(sensors_path, data.sensors)
 
 
 def _save_sensors_to_file(filepath: Path, sensors: list[SensorColumn]) -> None:
@@ -232,7 +144,6 @@ def _save_sensors_to_file(filepath: Path, sensors: list[SensorColumn]) -> None:
         "sensors": [sensor.model_dump(by_alias=True) for sensor in sensors]
     }
 
-    # Ensure parent directory exists
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     if suffix in (".yaml", ".yml"):
@@ -245,66 +156,220 @@ def _save_sensors_to_file(filepath: Path, sensors: list[SensorColumn]) -> None:
         raise ValueError(f"Unsupported sensor file format: {suffix}")
 
 
-def load_timeseries(source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
-    """Load time series data from CSV or Parquet with sensor metadata.
+# ---------------------------------------------------------------------------
+# Format-specific load/save — module-level (backward-compatible public API)
+# ---------------------------------------------------------------------------
 
-    Automatically detects format from file extension (.csv or .parquet).
-    For Parquet files, sensor metadata is read from embedded metadata.
+def load_timeseries_parquet(
+    source: TimeSeriesSource, base_dir: str
+) -> TimeSeriesData:
+    """Load time series data from Parquet file with embedded sensor metadata.
 
-    Args:
-        source: TimeSeriesSource with paths to data and sensors files
-        base_dir: Base directory for resolving relative paths
-
-    Returns:
-        TimeSeriesData with DataFrame and sensor metadata
-
-    Raises:
-        FileNotFoundError: If data or sensors file doesn't exist
-        ValueError: If unsupported file format
+    Reads sensor metadata from the Parquet file's embedded metadata section.
+    This is the preferred format for CleanMast as it preserves type information
+    and maintains consistency with the Julia implementation.
     """
     data_path = _resolve_path(source.data, base_dir)
 
-    # Detect format from file extension
-    format = _detect_format(data_path)
+    if not data_path.exists():
+        raise FileNotFoundError(f"Data file not found: {data_path}")
 
-    if format == "parquet":
-        return load_timeseries_parquet(source, base_dir)
-    else:
-        # CSV format
-        if source.sensors is None:
-            raise FileNotFoundError(
-                "Sensors file not specified. CSV format requires sensors file."
+    # Parquet reads sensors ONLY from column metadata (NO external sensor files)
+    try:
+        sensors = _extract_sensors_from_parquet(data_path)
+    except ValueError as e:
+        raise ValueError(
+            f"No sensor metadata in Parquet file: {data_path}. "
+            f"Parquet files must have embedded column-level metadata. "
+            f"Original error: {e}"
+        ) from e
+
+    df = pl.read_parquet(data_path)
+
+    if "timestamp" in df.columns:
+        if df["timestamp"].dtype != pl.Datetime:
+            df = df.with_columns(
+                pl.col("timestamp").str.to_datetime().alias("timestamp")
             )
-        sensors_path = _resolve_path(source.sensors, base_dir)
 
-        # Check files exist
+    mast_name = data_path.stem
+    df = validate_timeseries(df, sensors, mast_name)
+
+    return TimeSeriesData(df=df, sensors=sensors)
+
+
+def save_timeseries_parquet(
+    source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
+) -> None:
+    """Save time series data to Parquet with embedded sensor metadata.
+
+    Embeds sensor metadata in the Parquet file's schema metadata for
+    interoperability with the Julia implementation.
+    """
+    data_path = _resolve_path(source.data, base_dir)
+
+    _write_parquet_with_metadata(data.df, data_path, data.sensors)
+
+    # Optionally save sensors file if specified (for backward compatibility)
+    if source.sensors:
+        sensors_path = _resolve_path(source.sensors, base_dir)
+        _save_sensors_to_file(sensors_path, data.sensors)
+
+
+# ---------------------------------------------------------------------------
+# FileTimeSeriesRepository — the realization
+# ---------------------------------------------------------------------------
+
+class FileTimeSeriesRepository:
+    """Repository implementation using file storage with automatic format detection.
+
+    Dispatches on TimeSeriesSource.data extension:
+    - .parquet → embedded sensor metadata (file-level JSON)
+    - .csv → sidecar metadata file (YAML/TOML)
+
+    Features:
+        - Automatic format detection (.csv vs .parquet)
+        - Embedded sensor metadata in Parquet files
+        - Julia-compatible camelCase serialization
+        - Schema validation on load
+
+    Example:
+        repo = FileTimeSeriesRepository()
+        data = repo.load(source, base_dir)
+        repo.save(source, base_dir, data)
+    """
+
+    def load(self, source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
+        """Load time series data from CSV or Parquet with sensor metadata."""
+        data_path = _resolve_path(source.data, base_dir)
+        fmt = _detect_format(data_path)
+
+        if fmt == "parquet":
+            return self._load_parquet(source, base_dir)
+        else:
+            return self._load_csv(source, base_dir)
+
+    def save(
+        self, source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
+    ) -> None:
+        """Save time series data to CSV or Parquet with sensor metadata."""
+        data_path = _resolve_path(source.data, base_dir)
+        fmt = _detect_format(data_path)
+
+        if fmt == "parquet":
+            self._save_parquet(source, base_dir, data)
+        else:
+            self._save_csv(source, base_dir, data)
+
+    def _load_parquet(
+        self, source: TimeSeriesSource, base_dir: str
+    ) -> TimeSeriesData:
+        data_path = _resolve_path(source.data, base_dir)
+
         if not data_path.exists():
             raise FileNotFoundError(f"Data file not found: {data_path}")
-        if not sensors_path.exists():
-            raise FileNotFoundError(f"Sensors file not found: {sensors_path}")
 
-        # Load sensors metadata
-        sensors = _load_sensors_from_file(sensors_path)
+        try:
+            sensors = _extract_sensors_from_parquet(data_path)
+        except ValueError as e:
+            raise ValueError(
+                f"No sensor metadata in Parquet file: {data_path}. "
+                f"Parquet files must have embedded column-level metadata. "
+                f"Original error: {e}"
+            ) from e
 
-        # Load CSV with polars
-        df = pl.read_csv(
-            data_path,
-            try_parse_dates=True,
-            null_values=["", "NA", "NaN", "null"],
-        )
+        df = pl.read_parquet(data_path)
 
-        # Ensure timestamp column is datetime
         if "timestamp" in df.columns:
             if df["timestamp"].dtype != pl.Datetime:
                 df = df.with_columns(
                     pl.col("timestamp").str.to_datetime().alias("timestamp")
                 )
 
-        # Validate DataFrame against sensor metadata
-        mast_name = data_path.stem  # e.g., "TGL1" from "TGL1.csv"
+        mast_name = data_path.stem
         df = validate_timeseries(df, sensors, mast_name)
 
         return TimeSeriesData(df=df, sensors=sensors)
+
+    def _save_parquet(
+        self, source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
+    ) -> None:
+        data_path = _resolve_path(source.data, base_dir)
+
+        _write_parquet_with_metadata(data.df, data_path, data.sensors)
+
+        if source.sensors:
+            sensors_path = _resolve_path(source.sensors, base_dir)
+            _save_sensors_to_file(sensors_path, data.sensors)
+
+    def _load_csv(
+        self, source: TimeSeriesSource, base_dir: str
+    ) -> TimeSeriesData:
+        data_path = _resolve_path(source.data, base_dir)
+
+        # Pinned quirk: this branch is unreachable because TimeSeriesSource's
+        # validator catches the null-sensors case first. Preserved as-is.
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
+        sensors_path = _resolve_path(source.sensors, base_dir)
+
+        if not data_path.exists():
+            raise FileNotFoundError(f"Data file not found: {data_path}")
+        if not sensors_path.exists():
+            raise FileNotFoundError(f"Sensors file not found: {sensors_path}")
+
+        sensors = _load_sensors_from_file(sensors_path)
+
+        df = pl.read_csv(
+            data_path,
+            try_parse_dates=True,
+            null_values=["", "NA", "NaN", "null"],
+        )
+
+        if "timestamp" in df.columns:
+            if df["timestamp"].dtype != pl.Datetime:
+                df = df.with_columns(
+                    pl.col("timestamp").str.to_datetime().alias("timestamp")
+                )
+
+        mast_name = data_path.stem
+        df = validate_timeseries(df, sensors, mast_name)
+
+        return TimeSeriesData(df=df, sensors=sensors)
+
+    def _save_csv(
+        self, source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
+    ) -> None:
+        data_path = _resolve_path(source.data, base_dir)
+
+        if source.sensors is None:
+            raise FileNotFoundError(
+                "Sensors file not specified. CSV format requires sensors file."
+            )
+        sensors_path = _resolve_path(source.sensors, base_dir)
+
+        data_path.parent.mkdir(parents=True, exist_ok=True)
+
+        data.df.write_csv(data_path)
+
+        _save_sensors_to_file(sensors_path, data.sensors)
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience functions — the public API most consumers use
+# ---------------------------------------------------------------------------
+
+def load_timeseries(
+    source: TimeSeriesSource, base_dir: str
+) -> TimeSeriesData:
+    """Load time series data from CSV or Parquet with sensor metadata.
+
+    Convenience function using FileTimeSeriesRepository.
+    """
+    repo = FileTimeSeriesRepository()
+    return repo.load(source, base_dir)
 
 
 def save_timeseries(
@@ -312,34 +377,7 @@ def save_timeseries(
 ) -> None:
     """Save time series data to CSV or Parquet with sensor metadata.
 
-    Automatically detects format from file extension (.csv or .parquet).
-    For Parquet files, sensor metadata is embedded in the file.
-
-    Args:
-        source: TimeSeriesSource with paths to data and sensors files
-        base_dir: Base directory for resolving relative paths
-        data: TimeSeriesData to save
+    Convenience function using FileTimeSeriesRepository.
     """
-    data_path = _resolve_path(source.data, base_dir)
-
-    # Detect format from file extension
-    format = _detect_format(data_path)
-
-    if format == "parquet":
-        save_timeseries_parquet(source, base_dir, data)
-    else:
-        # CSV format
-        if source.sensors is None:
-            raise FileNotFoundError(
-                "Sensors file not specified. CSV format requires sensors file."
-            )
-        sensors_path = _resolve_path(source.sensors, base_dir)
-
-        # Ensure parent directories exist
-        data_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Save CSV
-        data.df.write_csv(data_path)
-
-        # Save sensors metadata
-        _save_sensors_to_file(sensors_path, data.sensors)
+    repo = FileTimeSeriesRepository()
+    return repo.save(source, base_dir, data)

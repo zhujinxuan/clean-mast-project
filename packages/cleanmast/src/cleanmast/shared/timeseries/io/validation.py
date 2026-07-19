@@ -1,8 +1,12 @@
 """Timeseries validation utilities using dataframely.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, types-001-type-annotations
-Compliance: Subdomain layout ✓ | Repository pattern ✓ | Data validation ✓
-Description: Schema validation for timeseries DataFrames against sensor metadata
+This module provides schema validation for timeseries DataFrames against
+sensor metadata. It creates dynamic dataframely schemas based on the
+SensorColumn definitions to ensure data integrity at load time.
+
+Functions:
+    create_wind_schema: Dynamically create a dataframely Schema from sensors
+    validate_timeseries: Validate a DataFrame against sensor metadata
 """
 
 import hashlib
@@ -21,7 +25,7 @@ def _hash_sensors(sensors: list[SensorColumn]) -> str:
 
 def create_wind_schema(
     sensors: list[SensorColumn],
-    mast_name: str | None = None
+    mast_name: str | None = None,
 ) -> type[dy.Schema]:
     """Dynamically create a dataframely Schema from sensor metadata."""
     fields: dict[str, dy.Column] = {"timestamp": dy.Datetime(nullable=False)}
@@ -42,7 +46,7 @@ def create_wind_schema(
 def validate_timeseries(
     df: pl.DataFrame,
     sensors: list[SensorColumn],
-    mast_name: str | None = None
+    mast_name: str | None = None,
 ) -> pl.DataFrame:
     """Validate timeseries DataFrame against sensor metadata."""
     schema_class = create_wind_schema(sensors, mast_name)

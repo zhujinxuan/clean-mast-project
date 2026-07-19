@@ -18,9 +18,7 @@ from cleanmast.shared.timeseries import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-    ParquetRepository,
-)
+from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +142,7 @@ def process_single_mast_csv(mast: WtTimeSeriesMast, project_dir: Path) -> None:
         >>> process_single_mast_csv(mast, Path("./my-project"))
     """
     # 1. Load parquet with sensor metadata
-    repo = ParquetRepository()
+    repo = FileTimeSeriesRepository()
     ts_data = repo.load(mast.input, str(project_dir))
     df = ts_data.df
     sensors = ts_data.sensors

@@ -9,7 +9,7 @@ import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
+from cleanmast.shared.timeseries.io import (
     load_timeseries,
     save_timeseries,
 )

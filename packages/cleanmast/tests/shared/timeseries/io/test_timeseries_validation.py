@@ -9,7 +9,7 @@ from datetime import datetime
 import polars as pl
 import pytest
 from cleanmast.shared.timeseries import SensorColumn
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_validation import (
+from cleanmast.shared.timeseries.io.validation import (
     _hash_sensors,
     create_wind_schema,
     validate_timeseries,

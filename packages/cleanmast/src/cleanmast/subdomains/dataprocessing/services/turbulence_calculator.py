@@ -24,9 +24,7 @@ from cleanmast.shared.timeseries import (
     SensorColumn,
     WtTimeSeriesMast,
 )
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-    ParquetRepository,
-)
+from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
 
 logger = logging.getLogger(__name__)
 
@@ -636,7 +634,7 @@ def process_turbulence_for_mast(
         >>> process_turbulence_for_mast(mast, Path("./my-project"))
     """
     # Load data
-    repo = ParquetRepository()
+    repo = FileTimeSeriesRepository()
     ts_data_result = repo.load(mast.input, str(project_dir))
     df = ts_data_result.df
     sensors = ts_data_result.sensors

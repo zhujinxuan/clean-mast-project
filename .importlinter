@@ -89,7 +89,5 @@ forbidden_modules =
 ignore_imports =
     cleanmast.subdomains.configuration.services.config_io -> tomli
     cleanmast.subdomains.configuration.services.config_io -> tomli_w
-    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli
-    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli_w
-    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli
-    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli_w
+    cleanmast.shared.timeseries.io.file_repository -> tomli
+    cleanmast.shared.timeseries.io.file_repository -> tomli_w

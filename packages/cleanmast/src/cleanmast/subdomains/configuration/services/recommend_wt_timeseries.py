@@ -7,6 +7,7 @@ This module provides the use case for generating wt-timeseries.toml
 configuration files based on auto-discovering heights from representative-year data.
 """
 
+from cleanmast.shared.timeseries.io import load_timeseries
 from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.shared.timeseries.time_series_source import (
     TimeSeriesSource,
@@ -17,7 +18,6 @@ from cleanmast.subdomains.configuration import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
 
 
 def _discover_csv_heights(sensors: list[SensorColumn]) -> list[float]:

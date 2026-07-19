@@ -16,7 +16,7 @@ from cleanmast.shared.timeseries import (
     TimeSeriesData,
     TimeSeriesSource,
 )
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
+from cleanmast.shared.timeseries.io.file_repository import (
     save_timeseries_parquet,
 )
 from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (

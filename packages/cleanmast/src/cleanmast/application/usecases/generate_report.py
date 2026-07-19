@@ -16,10 +16,10 @@ import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.shared.timeseries import TimeSeriesData
+from cleanmast.shared.timeseries.io import load_timeseries
 from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
-from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.reporting.api import ReportGenerationService
 from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
 from cleanmast.subdomains.reporting.model.analysis_input import (

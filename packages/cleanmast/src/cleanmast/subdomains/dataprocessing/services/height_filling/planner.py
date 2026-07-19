@@ -83,11 +83,9 @@ from cleanmast.shared.timeseries import (
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
+from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries.time_series_source import (
     TimeSeriesSource,
-)
-from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
-    ParquetRepository,
 )
 
 from .fitting import (
@@ -219,9 +217,8 @@ def _load_and_fit(
         fitted = _load_and_fit(entries, "/project")
         # fitted["M01"]["ws_shear_top3"] -> 0.142
     """
-    repo = ParquetRepository()
+    repo = FileTimeSeriesRepository()
     fitted = {}
-
     for entry in mast_entries:
         timeseries = repo.load(entry.output, base_dir)
 
@@ -259,8 +256,8 @@ def _build_mast_configs(
     Returns:
         List of MastFillConfig, one per mast entry
     """
-    repo = ParquetRepository()
-    masts = []
+    repo = FileTimeSeriesRepository()
+    masts: list[MastFillConfig] = []
 
     for entry in mast_entries:
         # Get fitted data for this mast

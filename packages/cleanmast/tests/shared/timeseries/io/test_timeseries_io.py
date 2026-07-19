@@ -7,7 +7,7 @@ import polars as pl
 import pytest
 import yaml
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
+from cleanmast.shared.timeseries.io import (
     load_timeseries,
     save_timeseries,
 )

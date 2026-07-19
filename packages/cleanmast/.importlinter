@@ -43,8 +43,6 @@ source_modules =
 forbidden_modules =
     cleanmast.subdomains.configuration
     cleanmast.subdomains.reporting
-    cleanmast.subdomains.dataingestion.entities
-    cleanmast.subdomains.dataingestion.infrastructure
 
 [importlinter:contract:cli-isolation]
 name = CLI Isolation
@@ -64,8 +62,7 @@ modules = cleanmast
 name = TimeSeriesData instantiation restricted to I/O and pipeline modules
 type = forbidden
 source_modules = 
-    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io
-    cleanmast.subdomains.dataingestion.repositories.parquet_repository
+    cleanmast.shared.timeseries.io.file_repository
     cleanmast.application.usecases.execute_fill_heights
 allowed_modules = cleanmast.subdomains.dataingestion.entities.time_series_data
 
@@ -88,7 +85,5 @@ forbidden_modules =
 ignore_imports =
     cleanmast.subdomains.configuration.services.config_io -> tomli
     cleanmast.subdomains.configuration.services.config_io -> tomli_w
-    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli
-    cleanmast.subdomains.dataingestion.infrastructure.timeseries_io -> tomli_w
-    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli
-    cleanmast.subdomains.dataingestion.repositories.parquet_repository -> tomli_w
+    cleanmast.shared.timeseries.io.file_repository -> tomli
+    cleanmast.shared.timeseries.io.file_repository -> tomli_w

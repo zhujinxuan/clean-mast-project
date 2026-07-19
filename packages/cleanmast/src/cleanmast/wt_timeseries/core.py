@@ -10,7 +10,7 @@ from pathlib import Path
 
 import polars as pl
 from cleanmast.shared.timeseries import SensorColumn
-from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
+from cleanmast.shared.timeseries.io import load_timeseries
 
 from .config import WtTimeSeriesConfiguration, WtTimeSeriesMast
 

@@ -1,26 +1,26 @@
-"""Time series repository protocol (ABC).
+"""Time series repository protocol.
 
 ADR-GUARDRAILS: structure-001-subdomain-layout, persistence-001-parquet-storage
-Compliance: Subdomain layout ✓ | Repository Pattern ✓ | Protocol-based ✓
+Compliance: Protocol-based ✓ | Repository Pattern ✓
 Description: Repository protocol defining interface for time series data access
 """
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
+    from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 
 
+@runtime_checkable
 class TimeSeriesRepository(Protocol):
     """Protocol defining interface for time series data repositories.
 
-    Implementations:
-        - ParquetRepository: Parquet-based storage with embedded metadata
-        - Future: DatabaseRepository, CloudRepository, etc.
+    Realization: FileTimeSeriesRepository (file-based store dispatching on
+    TimeSeriesSource.data extension: .parquet → embedded metadata; .csv →
+    sidecar metadata).
 
     Design Pattern:
         Repository pattern abstracts data access, allowing:
@@ -29,31 +29,29 @@ class TimeSeriesRepository(Protocol):
         - Consistent interface regardless of storage
     """
 
-    @abstractmethod
-    def load(self, data_path: str | Path, sensors_path: str | Path | None = None) -> TimeSeriesData:
+    def load(self, source: TimeSeriesSource, base_dir: str) -> TimeSeriesData:
         """Load time series data from repository.
 
         Args:
-            data_path: Path to data file (format depends on implementation)
-            sensors_path: Optional path to sensor metadata (for formats without embedded metadata)
+            source: TimeSeriesSource with paths to data and sensors files
+            base_dir: Base directory for resolving relative paths
 
         Returns:
             TimeSeriesData with DataFrame and sensor metadata
 
         Raises:
-            FileNotFoundError: If data file doesn't exist
+            FileNotFoundError: If data or sensors file doesn't exist
             ValueError: If data format is invalid or metadata missing
         """
         ...
 
-    @abstractmethod
-    def save(self, data_path: str | Path, data: TimeSeriesData, sensors_path: str | Path | None = None) -> None:
+    def save(self, source: TimeSeriesSource, base_dir: str, data: TimeSeriesData) -> None:
         """Save time series data to repository.
 
         Args:
-            data_path: Path where data should be saved
+            source: TimeSeriesSource with paths to data and sensors files
+            base_dir: Base directory for resolving relative paths
             data: TimeSeriesData to save
-            sensors_path: Optional path for sensor metadata file
 
         Raises:
             ValueError: If data is invalid
