@@ -341,11 +341,11 @@ def run_dvc_verify_check(package: str) -> CheckResult:
 def run_ast_grep_check(package: str) -> CheckResult:
     """Run ast-grep scan for a package.
 
-    For cleanmast, scan the reporting subdomain using shared .ast-grep/rules/.
+    For cleanmast, scan the whole package source using shared .ast-grep/rules/.
     For other packages, fall back to package-specific sgconfig.yml.
     """
     if package == "cleanmast":
-        target = "packages/cleanmast/src/cleanmast/subdomains/reporting/"
+        target = "packages/cleanmast/src/cleanmast/"
         cmd = [
             "uv",
             "run",

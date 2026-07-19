@@ -56,14 +56,6 @@ name = No Circular Imports
 type = independence
 modules = cleanmast
 
-[importlinter:contract:timeseriesdata-creation-gate]
-name = TimeSeriesData instantiation restricted to I/O and pipeline modules
-type = forbidden
-source_modules = 
-    cleanmast.shared.timeseries.io.file_repository
-    cleanmast.application.usecases.execute_fill_heights
-allowed_modules = cleanmast.subdomains.dataingestion.entities.time_series_data
-
 [importlinter:contract:entities-package-marker-banned]
 name = No import from entities package marker __init__.py
 type = forbidden

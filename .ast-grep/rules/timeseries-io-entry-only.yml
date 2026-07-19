@@ -1,0 +1,14 @@
+id: timeseries-io-entry-only
+language: python
+severity: error
+message: Timeseries file IO must go through shared/timeseries/io (FileTimeSeriesRepository / load_timeseries); direct file reads are forbidden outside the io layer
+rule:
+  any:
+    - pattern: pl.read_parquet($$$ARGS)
+    - pattern: pl.read_csv($$$ARGS)
+    - pattern: pl.scan_parquet($$$ARGS)
+    - pattern: pq.read_table($$$ARGS)
+files:
+  - packages/cleanmast/src/**
+ignores:
+  - packages/cleanmast/src/cleanmast/shared/timeseries/io/**

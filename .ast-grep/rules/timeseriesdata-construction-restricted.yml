@@ -1,0 +1,12 @@
+id: timeseriesdata-construction-restricted
+language: python
+severity: error
+message: TimeSeriesData may only be constructed via the io entry (shared/timeseries/io/file_repository.py) or sanctioned transform modules (shared/timeseries/alignment.py, application/usecases/execute_fill_heights.py)
+rule:
+  pattern: TimeSeriesData($$$ARGS)
+files:
+  - packages/cleanmast/src/**
+ignores:
+  - packages/cleanmast/src/cleanmast/shared/timeseries/io/file_repository.py
+  - packages/cleanmast/src/cleanmast/shared/timeseries/alignment.py
+  - packages/cleanmast/src/cleanmast/application/usecases/execute_fill_heights.py
