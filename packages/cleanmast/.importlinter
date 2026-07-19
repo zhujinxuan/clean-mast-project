@@ -8,7 +8,6 @@ exclude_type_checking_imports = true
 name = DDD Bounded Context Isolation
 type = independence
 modules =
-    cleanmast.subdomains.dataingestion
     cleanmast.subdomains.dataprocessing
     cleanmast.subdomains.configuration
 
@@ -19,7 +18,7 @@ source_modules =
     cleanmast.shared.timeseries.sensor_column
     cleanmast.shared.timeseries.time_series_source
     cleanmast.shared.timeseries.time_range
-    cleanmast.subdomains.dataingestion.entities
+forbidden_modules =
     polars
     pandas
     sqlalchemy
@@ -49,7 +48,6 @@ name = CLI Isolation
 type = forbidden
 source_modules = cleanmast.cli
 forbidden_modules =
-    cleanmast.subdomains.dataingestion
     cleanmast.subdomains.dataprocessing
     cleanmast.db.repositories
 

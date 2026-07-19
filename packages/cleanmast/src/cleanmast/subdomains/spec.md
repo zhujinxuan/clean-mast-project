@@ -23,9 +23,9 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
 12. All section `render_ir` methods must use `render_subsection_content` 
     from `render/subsection_renderer.py`. Manual atom iteration in 
     `render_ir` is forbidden.
-13. `cleanmast.subdomains.dataingestion` is a foundational context; 
-    reporting may import `TimeSeriesSource` and `load_timeseries` from it 
-    as an exception to rule 3.
+13. Timeseries loading (``load_timeseries``, ``TimeSeriesRepository``, and
+    validation) lives in ``cleanmast.shared.timeseries.io`` — subdomains
+    import timeseries data through this shared I/O layer.
 
 ## Anti-patterns
 

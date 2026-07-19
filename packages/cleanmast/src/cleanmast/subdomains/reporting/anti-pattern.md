@@ -79,11 +79,6 @@ Audit date: 2026-06-26. Updated: 2026-07-01. Checked against `reporting/spec.md`
 
 ## SMELLS
 
-### S1. `api.py` imports from `dataingestion.infrastructure`
-
-`api.py:16` imports `load_timeseries` from `dataingestion.infrastructure`. Permitted by `subdomains/spec.md` Rule 13 but reaches into a downstream `infrastructure` module.
-
-> **Note**: Low priority — permitted by spec and low risk.
 
 ### S2. Two `SingleMastAnalysisInput` classes in different subdomains (RESOLVED)
 
