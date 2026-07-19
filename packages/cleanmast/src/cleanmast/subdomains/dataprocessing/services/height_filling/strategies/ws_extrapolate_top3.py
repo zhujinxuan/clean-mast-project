@@ -4,11 +4,11 @@ ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
 Compliance: Subdomain layout ✓ | Strategy Pattern ✓
 """
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     HeightReference,
+    TimeSeriesData,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 from ..helpers import get_existing_sensors

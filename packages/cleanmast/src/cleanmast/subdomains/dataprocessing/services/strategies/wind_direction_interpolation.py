@@ -54,11 +54,11 @@ Existing WD sensors at 80m and 120m, target at 100m:
 Without vector math: (352° + 350°)/2 = 171° (WRONG!)
 """
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     HeightReference,
+    TimeSeriesData,
     WindDirectionHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     calculate_interpolation_weights,

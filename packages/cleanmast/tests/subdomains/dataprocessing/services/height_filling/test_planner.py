@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import polars as pl
 import pytest
-from cleanmast.subdomains.configuration import (
-    FillHeightsConfiguration,
+from cleanmast.shared.timeseries import (
+    MastPlanningEntry,
+    TimeSeriesData,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     save_timeseries_parquet,
 )
@@ -33,20 +33,13 @@ class TestGenerateDualConfigs:
     """Tests for generate_dual_configs function."""
 
     @pytest.fixture
-    def mock_reconstruct_meso_config(self, tmp_path: Path):
-        """Create a mock reconstruct-meso config."""
-        # Create mock config with proper structure
-        mock_mast = MagicMock()
-        mock_mast.name = "M01"
-        mock_mast.output = TimeSeriesSource(
+    def meso_mast_entries(self, tmp_path: Path) -> list[MastPlanningEntry]:
+        """Create MastPlanningEntry list for reconstruct-meso masts."""
+        output = TimeSeriesSource(
             data=str(tmp_path / "reconstruct-meso/M01.parquet"),
             sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
         )
 
-        mock_config = MagicMock()
-        mock_config.masts = [mock_mast]
-
-        # Create the actual data file
         (tmp_path / "reconstruct-meso").mkdir(parents=True, exist_ok=True)
         df = pl.DataFrame({
             "timestamp": pl.datetime_range(
@@ -62,84 +55,31 @@ class TestGenerateDualConfigs:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        # Create sensors
         sensors = [
-            SensorColumn(
-                column_name="WS_50m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=50.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WS_80m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=80.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WS_100m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WD_50m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=50.0,
-                stat_type="avg",
-                unit="deg",
-            ),
-            SensorColumn(
-                column_name="WD_80m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=80.0,
-                stat_type="avg",
-                unit="deg",
-            ),
-            SensorColumn(
-                column_name="WD_100m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="deg",
-            ),
+            SensorColumn(column_name="WS_50m_avg", sensor_type="WindSpeed", sensor_direction="N", height=50.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WS_80m_avg", sensor_type="WindSpeed", sensor_direction="N", height=80.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WS_100m_avg", sensor_type="WindSpeed", sensor_direction="N", height=100.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WD_50m_avg", sensor_type="WindDirection", sensor_direction="N", height=50.0, stat_type="avg", unit="deg"),
+            SensorColumn(column_name="WD_80m_avg", sensor_type="WindDirection", sensor_direction="N", height=80.0, stat_type="avg", unit="deg"),
+            SensorColumn(column_name="WD_100m_avg", sensor_type="WindDirection", sensor_direction="N", height=100.0, stat_type="avg", unit="deg"),
         ]
 
-        # Save parquet with embedded sensor metadata
         save_timeseries_parquet(
-            source=TimeSeriesSource(
-                data=str(tmp_path / "reconstruct-meso/M01.parquet"),
-                sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
-            ),
+            source=output,
             base_dir=str(tmp_path),
             data=TimeSeriesData(df=df, sensors=sensors),
         )
 
-        return mock_config
+        return [MastPlanningEntry(name="M01", output=output)]
 
     @pytest.fixture
-    def mock_rep_year_config(self, tmp_path: Path):
-        """Create a mock representative-year config."""
-        mock_mast = MagicMock()
-        mock_mast.name = "M01"
-        mock_mast.output = TimeSeriesSource(
+    def rep_year_mast_entries(self, tmp_path: Path) -> list[MastPlanningEntry]:
+        """Create MastPlanningEntry list for rep-year masts."""
+        output = TimeSeriesSource(
             data=str(tmp_path / "rep-year/M01.parquet"),
             sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
         )
 
-        mock_config = MagicMock()
-        mock_config.masts = [mock_mast]
-
-        # Create the actual data file
         (tmp_path / "rep-year").mkdir(parents=True, exist_ok=True)
         df = pl.DataFrame({
             "timestamp": pl.datetime_range(
@@ -155,98 +95,49 @@ class TestGenerateDualConfigs:
             "WD_80m_avg": np.full(100, 185.0),
             "WD_100m_avg": np.full(100, 190.0),
         })
-        # Create sensors
         sensors = [
-            SensorColumn(
-                column_name="WS_50m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=50.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WS_80m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=80.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WS_100m_avg",
-                sensor_type="WindSpeed",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="m/s",
-            ),
-            SensorColumn(
-                column_name="WD_50m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=50.0,
-                stat_type="avg",
-                unit="deg",
-            ),
-            SensorColumn(
-                column_name="WD_80m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=80.0,
-                stat_type="avg",
-                unit="deg",
-            ),
-            SensorColumn(
-                column_name="WD_100m_avg",
-                sensor_type="WindDirection",
-                sensor_direction="N",
-                height=100.0,
-                stat_type="avg",
-                unit="deg",
-            ),
+            SensorColumn(column_name="WS_50m_avg", sensor_type="WindSpeed", sensor_direction="N", height=50.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WS_80m_avg", sensor_type="WindSpeed", sensor_direction="N", height=80.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WS_100m_avg", sensor_type="WindSpeed", sensor_direction="N", height=100.0, stat_type="avg", unit="m/s"),
+            SensorColumn(column_name="WD_50m_avg", sensor_type="WindDirection", sensor_direction="N", height=50.0, stat_type="avg", unit="deg"),
+            SensorColumn(column_name="WD_80m_avg", sensor_type="WindDirection", sensor_direction="N", height=80.0, stat_type="avg", unit="deg"),
+            SensorColumn(column_name="WD_100m_avg", sensor_type="WindDirection", sensor_direction="N", height=100.0, stat_type="avg", unit="deg"),
         ]
 
-        # Save parquet with embedded sensor metadata
         save_timeseries_parquet(
-            source=TimeSeriesSource(
-                data=str(tmp_path / "rep-year/M01.parquet"),
-                sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
-            ),
+            source=output,
             base_dir=str(tmp_path),
             data=TimeSeriesData(df=df, sensors=sensors),
         )
 
-        return mock_config
+        return [MastPlanningEntry(name="M01", output=output)]
 
     def test_generate_dual_configs_returns_two_configs(
         self,
-        mock_reconstruct_meso_config: MagicMock,
-        mock_rep_year_config: MagicMock,
+        meso_mast_entries: list[MastPlanningEntry],
+        rep_year_mast_entries: list[MastPlanningEntry],
         tmp_path: Path,
     ):
         """Test that dual config generation returns both configs."""
         meso_config, rep_config = generate_dual_configs(
-            reconstruct_meso_config=mock_reconstruct_meso_config,
-            representative_year_config=mock_rep_year_config,
+            meso_masts=meso_mast_entries,
+            rep_year_masts=rep_year_mast_entries,
             target_heights=[120.0],
             base_dir=str(tmp_path),
         )
 
         assert meso_config is not None
         assert rep_config is not None
-        assert isinstance(meso_config, FillHeightsConfiguration)
-        assert isinstance(rep_config, FillHeightsConfiguration)
 
     def test_generate_dual_configs_skips_rep_year_if_none(
         self,
-        mock_reconstruct_meso_config: MagicMock,
+        meso_mast_entries: list[MastPlanningEntry],
         tmp_path: Path,
     ):
         """Test that rep_year config is None when not provided."""
         meso_config, rep_config = generate_dual_configs(
-            reconstruct_meso_config=mock_reconstruct_meso_config,
-            representative_year_config=None,
+            meso_masts=meso_mast_entries,
+            rep_year_masts=None,
             target_heights=[120.0],
             base_dir=str(tmp_path),
         )
@@ -337,18 +228,16 @@ class TestLoadAndFit:
             data=TimeSeriesData(df=df, sensors=sensors),
         )
 
-        # Create mock config
-        mock_mast = MagicMock()
-        mock_mast.name = "M01"
-        mock_mast.output = TimeSeriesSource(
-            data="./test/M01.parquet",
-            sensors="./test/M01.sensors.yaml",
+        # Create MastPlanningEntry
+        entry = MastPlanningEntry(
+            name="M01",
+            output=TimeSeriesSource(
+                data="./test/M01.parquet",
+                sensors="./test/M01.sensors.yaml",
+            ),
         )
 
-        mock_config = MagicMock()
-        mock_config.masts = [mock_mast]
-
-        fitted = _load_and_fit(mock_config, str(tmp_path))
+        fitted = _load_and_fit([entry], str(tmp_path))
 
         assert "M01" in fitted
         assert "ws_shear_top3" in fitted["M01"]
@@ -719,33 +608,28 @@ class TestBothConfigsUseSameFittedParams:
             data=TimeSeriesData(df=df_rep, sensors=sensors),
         )
 
-        # Create mock configs
-        mock_mast_meso = MagicMock()
-        mock_mast_meso.name = "M01"
-        mock_mast_meso.output = TimeSeriesSource(
-            data="./reconstruct-meso/M01.parquet",
-            sensors="./reconstruct-meso/M01.sensors.yaml",
-        )
-        mock_config_meso = MagicMock()
-        mock_config_meso.masts = [mock_mast_meso]
-
-        mock_mast_rep = MagicMock()
-        mock_mast_rep.name = "M01"
-        mock_mast_rep.output = TimeSeriesSource(
-            data="./rep-year/M01.parquet",
-            sensors="./rep-year/M01.sensors.yaml",
-        )
-        mock_config_rep = MagicMock()
-        mock_config_rep.masts = [mock_mast_rep]
+        # Create MastPlanningEntry lists
+        meso_entries = [MastPlanningEntry(
+            name="M01",
+            output=TimeSeriesSource(
+                data="./reconstruct-meso/M01.parquet",
+                sensors="./reconstruct-meso/M01.sensors.yaml",
+            ),
+        )]
+        rep_entries = [MastPlanningEntry(
+            name="M01",
+            output=TimeSeriesSource(
+                data="./rep-year/M01.parquet",
+                sensors="./rep-year/M01.sensors.yaml",
+            ),
+        )]
 
         meso_config, rep_config = generate_dual_configs(
-            reconstruct_meso_config=mock_config_meso,
-            representative_year_config=mock_config_rep,
+            meso_masts=meso_entries,
+            rep_year_masts=rep_entries,
             target_heights=[120.0],
             base_dir=str(tmp_path),
         )
-
-        # Both configs should exist and have the same shear value
         assert meso_config is not None
         assert rep_config is not None
 

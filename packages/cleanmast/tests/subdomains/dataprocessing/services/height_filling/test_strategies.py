@@ -1,11 +1,11 @@
 """Tests for fill_heights strategy classes."""
 
 
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.configuration import (
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataprocessing.services.height_filling.helpers import (
     create_fill_target_sensor,
     get_existing_sensors,

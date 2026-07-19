@@ -9,10 +9,10 @@ from configuration file.
 
 from pathlib import Path
 
-from cleanmast.subdomains.configuration import load_config
-from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
+from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
 )
+from cleanmast.subdomains.configuration import load_config
 from cleanmast.subdomains.dataprocessing.services.turbulence_calculator import (
     process_turbulence_for_mast,
 )

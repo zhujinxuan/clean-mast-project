@@ -41,7 +41,7 @@ Vector Math for Wind Direction:
 
 import polars as pl
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     HeightReference,
 )
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn

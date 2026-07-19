@@ -1,6 +1,6 @@
 """FillHeights configuration subtype for reconstruct-meso context."""
 
-from cleanmast.subdomains.configuration.model.fill_height_config import (
+from cleanmast.shared.timeseries.fill_height_config import (
     FillHeightsConfiguration,
 )
 

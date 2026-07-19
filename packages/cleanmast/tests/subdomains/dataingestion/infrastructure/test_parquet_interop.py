@@ -8,7 +8,7 @@ import pandas as pd
 import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries,
     save_timeseries,

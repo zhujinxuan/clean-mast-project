@@ -6,7 +6,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 import yaml
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import (
     load_timeseries,
     save_timeseries,

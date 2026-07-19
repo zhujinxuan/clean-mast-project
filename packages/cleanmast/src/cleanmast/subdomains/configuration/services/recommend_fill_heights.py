@@ -9,6 +9,7 @@ files based on reconstruct-meso data.
 """
 
 from cleanmast.infrastructure.path_utils import to_posix_path
+from cleanmast.shared.timeseries import MastPlanningEntry
 from cleanmast.subdomains.configuration import (
     DiscoveredConfig,
     FillHeightsMesoConfiguration,
@@ -74,10 +75,14 @@ def recommend_fill_heights(
     rep_year_dc = project_config.discover_representative_year_config()
     rep_year_config = rep_year_dc.config if rep_year_dc else None
 
+    # Build MastPlanningEntry lists from config objects
+    meso_entries = [MastPlanningEntry(name=m.name, output=m.output) for m in reconstruct_config.masts]
+    rep_entries = [MastPlanningEntry(name=m.name, output=m.output) for m in rep_year_config.masts] if rep_year_config else None
+
     # Generate dual configs
     meso_config, rep_config = generate_dual_configs(
-        reconstruct_meso_config=reconstruct_config,
-        representative_year_config=rep_year_config,
+        meso_masts=meso_entries,
+        rep_year_masts=rep_entries,
         target_heights=target_heights,
         base_dir=to_posix_path(project_path),
         deg_diff_limit=deg_diff_limit,

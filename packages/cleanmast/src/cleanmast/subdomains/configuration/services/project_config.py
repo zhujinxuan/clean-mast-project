@@ -3,22 +3,22 @@
 from pathlib import Path
 from typing import ClassVar
 
-from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
-from cleanmast.subdomains.configuration.model.fill_height_meso_config import (
+from cleanmast.shared.timeseries.fill_height_meso_config import (
     FillHeightsMesoConfiguration,
 )
-from cleanmast.subdomains.configuration.model.fill_height_rep_year_config import (
+from cleanmast.shared.timeseries.fill_height_rep_year_config import (
     FillHeightsRepYearConfiguration,
 )
+from cleanmast.shared.timeseries.wt_timeseries_config import (
+    WtTimeSeriesConfiguration,
+)
+from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
 from cleanmast.subdomains.configuration.model.reconstruct_meso import (
     ReconstructMesoConfiguration,
 )
 from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
 from cleanmast.subdomains.configuration.model.representative_year_config import (
     RepresentativeYearConfiguration,
-)
-from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
-    WtTimeSeriesConfiguration,
 )
 from cleanmast.subdomains.configuration.services.config_io import load_config
 

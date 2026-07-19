@@ -1,10 +1,10 @@
-"""WT TimeSeries configuration models - re-exported from DDD location.
+"""WT TimeSeries configuration models - re-exported from shared/timeseries.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout  
-This module re-exports from the canonical DDD location for backward compatibility.
+ADR-GUARDRAILS: structure-001-subdomain-layout
+This module re-exports from the canonical shared location for backward compatibility.
 """
 
-from cleanmast.subdomains.configuration.model.wt_timeseries_config import (
+from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )

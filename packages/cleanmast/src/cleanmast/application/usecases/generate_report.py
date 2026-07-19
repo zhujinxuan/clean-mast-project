@@ -15,8 +15,8 @@ from typing import Any, Callable
 import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.infrastructure import load_timeseries
 from cleanmast.subdomains.dataingestion.value_objects.time_range import TimeRange
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
@@ -27,6 +27,9 @@ from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_t
 from cleanmast.subdomains.reporting.model.analysis_input import (
     RepresentativeYearCalibrationPayload,
     SingleMastAnalysisInput,
+)
+from cleanmast.subdomains.reporting.model.extreme_wind_gust_factor import (
+    ExtremeWindGustFactor,
 )
 from cleanmast.subdomains.reporting.model.section_node import SectionNode
 from cleanmast.subdomains.reporting.protocols.report_builder import BuildResult
@@ -147,11 +150,24 @@ def load_datasets(
                 )
             source = TimeSeriesSource(data=str(resolved))
             timeseries = load_timeseries(source, ".")
+            # Map config ExtremeWindGustFactor → reporting ExtremeWindGustFactor
+            # at the composition boundary, mirroring the turbulence_heights handoff.
+            reporting_gust_factors = None
+            if mast_ref.extreme_wind_gust_factors is not None:
+                reporting_gust_factors = [
+                    ExtremeWindGustFactor(
+                        height=gf.height, gust_factor=gf.gust_factor
+                    )
+                    for gf in mast_ref.extreme_wind_gust_factors
+                ]
             input_data = service._create_analysis_input(
                 timeseries,
                 mast_ref.name,
                 mast_ref.air_density,
                 turbulence_heights=mast_ref.turbulence_heights,
+                extreme_wind_10min_heights=mast_ref.extreme_wind_10min_heights,
+                extreme_wind_3s_heights=mast_ref.extreme_wind_3s_heights,
+                extreme_wind_gust_factors=reporting_gust_factors,
             )
             mast_data.append(input_data)
         mast_analysis_windows: dict[str, TimeRange] = {}

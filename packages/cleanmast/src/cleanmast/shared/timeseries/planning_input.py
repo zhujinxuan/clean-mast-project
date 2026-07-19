@@ -1,0 +1,21 @@
+"""Lightweight mast metadata entries for fill-heights planning.
+
+ADR-GUARDRAILS: structure-001-subdomain-layout
+Compliance: Subdomain layout ✓ | Value Object ✓
+Description: Minimal dataclass carrying mast name and output source
+             for fill-heights planning — avoids importing heavy config types.
+"""
+
+from dataclasses import dataclass
+
+from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
+    TimeSeriesSource,
+)
+
+
+@dataclass(frozen=True)
+class MastPlanningEntry:
+    """Minimal mast metadata for fill-heights planning (name + output source)."""
+
+    name: str
+    output: TimeSeriesSource

@@ -11,7 +11,7 @@ from configuration files.
 from pathlib import Path
 
 from cleanmast.infrastructure.path_utils import to_posix_path
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
     ParquetRepository,
 )
@@ -55,10 +55,10 @@ def execute_fill_heights(config_path: str) -> None:
         FileNotFoundError: If config file doesn't exist
         ValueError: If configuration is invalid
     """
-    from cleanmast.subdomains.configuration import load_config
-    from cleanmast.subdomains.configuration.model.fill_height_config import (
+    from cleanmast.shared.timeseries.fill_height_config import (
         FillHeightsConfiguration,
     )
+    from cleanmast.subdomains.configuration import load_config
 
     config = load_config(FillHeightsConfiguration, config_path)
     base_dir = to_posix_path(Path(config_path).parent)

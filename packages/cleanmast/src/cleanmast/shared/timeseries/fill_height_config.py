@@ -76,14 +76,14 @@ class WindSpeedHeightConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_weights_sum(self) -> "WindSpeedHeightConfig":
-        """Ensure interpolation weights sum to 1.0 (�0.001 tolerance)."""
+        """Ensure interpolation weights sum to 1.0 (±0.001 tolerance)."""
         method = self._extract_method()
 
         if method == "interpolated":
             total_weight = sum(r.weight for r in self.references)
             if abs(total_weight - 1.0) > 0.001:
                 raise ValueError(
-                    f"Interpolation weights must sum to 1.0 (�0.001), got {total_weight}"
+                    f"Interpolation weights must sum to 1.0 (±0.001), got {total_weight}"
                 )
 
         return self
@@ -167,14 +167,14 @@ class WindDirectionHeightConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_weights_sum(self) -> "WindDirectionHeightConfig":
-        """Ensure interpolation weights sum to 1.0 (�0.001 tolerance)."""
+        """Ensure interpolation weights sum to 1.0 (±0.001 tolerance)."""
         method = self._extract_method()
 
         if method == "interpolated":
             total_weight = sum(r.weight for r in self.references)
             if abs(total_weight - 1.0) > 0.001:
                 raise ValueError(
-                    f"Interpolation weights must sum to 1.0 (�0.001), got {total_weight}"
+                    f"Interpolation weights must sum to 1.0 (±0.001), got {total_weight}"
                 )
 
         return self

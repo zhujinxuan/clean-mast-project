@@ -52,11 +52,11 @@ Execution will compute:
     WS_120m = WS_100m * (120/100)^0.15
 """
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     HeightReference,
+    TimeSeriesData,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     get_existing_sensors,

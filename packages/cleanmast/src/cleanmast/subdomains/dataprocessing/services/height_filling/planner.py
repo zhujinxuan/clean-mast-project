@@ -74,17 +74,18 @@ Available Strategies:
 """
 
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     FillHeightsMesoConfiguration,
     FillHeightsRepYearConfiguration,
     MastFillConfig,
-    ReconstructMesoConfiguration,
-    RepresentativeYearConfiguration,
+    MastPlanningEntry,
+    TimeSeriesData,
     WindDirectionHeightConfig,
     WindSpeedHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
-from cleanmast.subdomains.dataingestion.infrastructure.timeseries_io import load_timeseries
+from cleanmast.subdomains.dataingestion.repositories.parquet_repository import (
+    ParquetRepository,
+)
 from cleanmast.subdomains.dataingestion.value_objects.time_series_source import (
     TimeSeriesSource,
 )
@@ -108,8 +109,8 @@ from .strategies.ws_interpolate_inter import WSInterpolateInterStrategy
 
 
 def generate_dual_configs(
-    reconstruct_meso_config: ReconstructMesoConfiguration,
-    representative_year_config: RepresentativeYearConfiguration | None,
+    meso_masts: list[MastPlanningEntry],
+    rep_year_masts: list[MastPlanningEntry] | None,
     target_heights: list[float],
     base_dir: str,
     deg_diff_limit: float = 1.125,
@@ -125,10 +126,9 @@ def generate_dual_configs(
     3. Generate config for rep-year output (using SAME fitted params, if provided)
 
     Args:
-        reconstruct_meso_config: Config with reconstruct-meso output paths.
-            Contains mast configurations pointing to reconstructed data.
-        representative_year_config: Optional rep-year config.
-            If provided, generates a second config using the same fitted parameters.
+        meso_masts: MastPlanningEntry list for reconstruct-meso masts.
+            Each entry carries a mast name and output TimeSeriesSource.
+        rep_year_masts: Optional MastPlanningEntry list for rep-year masts.
         target_heights: Target heights to fill.
             Heights in meters where we want to generate wind speed/direction data.
         base_dir: Base directory for resolving relative paths.
@@ -146,21 +146,20 @@ def generate_dual_configs(
         FileNotFoundError: If source data files don't exist
 
     Example:
-        meso_config = ReconstructMesoConfiguration(...)
-        rep_config = RepresentativeYearConfiguration(...)
+        entries = [MastPlanningEntry(name="M01", output=source)]
         heights = [120.0, 140.0, 160.0]
 
-        meso, rep = generate_dual_configs(meso_config, rep_config, heights, "/project")
-        # meso → fill-heights-reconstruct-meso.toml
-        # rep  → fill-heights-representative-year.toml
+        meso, rep = generate_dual_configs(entries, entries, heights, "/project")
+        # meso -> fill-heights-reconstruct-meso.toml
+        # rep  -> fill-heights-representative-year.toml
     """
     # Step 1: Load reconstruct-meso data and fit parameters
     # We fit ONCE on reconstruct-meso data
-    fit_data = _load_and_fit(reconstruct_meso_config, base_dir, deg_diff_limit)
+    fit_data = _load_and_fit(meso_masts, base_dir, deg_diff_limit)
 
     # Step 2: Generate reconstruct-meso config
-    meso_masts = _build_mast_configs(
-        source_config=reconstruct_meso_config,
+    meso_mast_configs = _build_mast_configs(
+        mast_entries=meso_masts,
         target_heights=target_heights,
         fitted_params=fit_data,
         output_subdir="reconstruct-meso-fill-heights",
@@ -168,13 +167,13 @@ def generate_dual_configs(
     )
     meso_output = FillHeightsMesoConfiguration(
         strategy="default",
-        masts=meso_masts,
+        masts=meso_mast_configs,
     )
 
     # Step 3: Generate rep-year config (if provided)
-    if representative_year_config:
-        rep_masts = _build_mast_configs(
-            source_config=representative_year_config,
+    if rep_year_masts:
+        rep_mast_configs = _build_mast_configs(
+            mast_entries=rep_year_masts,
             target_heights=target_heights,
             fitted_params=fit_data,  # SAME fitted params!
             output_subdir="representative-year-fill-heights",
@@ -182,7 +181,7 @@ def generate_dual_configs(
         )
         rep_output = FillHeightsRepYearConfiguration(
             strategy="default",
-            masts=rep_masts,
+            masts=rep_mast_configs,
         )
         return meso_output, rep_output
 
@@ -190,19 +189,19 @@ def generate_dual_configs(
 
 
 def _load_and_fit(
-    reconstruct_meso_config: ReconstructMesoConfiguration,
+    mast_entries: list[MastPlanningEntry],
     base_dir: str,
     deg_diff_limit: float = 1.125,
 ) -> dict:
     """Load reconstruct-meso data and fit shear/deg_diff for all masts.
 
-    For each mast in the configuration:
+    For each mast entry:
     1. Load the reconstructed timeseries data
     2. Fit wind speed shear from top 3 layers
     3. Fit wind direction change from top 3 WD layers
 
     Args:
-        reconstruct_meso_config: Configuration with mast definitions
+        mast_entries: List of MastPlanningEntry with mast names and output sources
         base_dir: Base directory for resolving paths
         deg_diff_limit: Maximum absolute value for deg_diff_per_m in deg/m.
             Default is 1.125 deg/m (22.5° over 20m).
@@ -216,13 +215,15 @@ def _load_and_fit(
         }
 
     Example:
-        fitted = _load_and_fit(config, "/project")
-        # fitted["mast-01"]["ws_shear_top3"] -> 0.142
+        entries = [MastPlanningEntry(name="M01", output=source)]
+        fitted = _load_and_fit(entries, "/project")
+        # fitted["M01"]["ws_shear_top3"] -> 0.142
     """
+    repo = ParquetRepository()
     fitted = {}
 
-    for mast in reconstruct_meso_config.masts:
-        timeseries = load_timeseries(mast.output, base_dir)
+    for entry in mast_entries:
+        timeseries = repo.load(entry.output, base_dir)
 
         # Fit WS shear (top3 and we can use for neighbors too)
         ws_shear_top3 = fit_shear_top3(timeseries)
@@ -230,7 +231,7 @@ def _load_and_fit(
         # Fit WD deg_diff
         wd_deg_diff_top3 = fit_deg_diff_top3(timeseries, deg_diff_limit)
 
-        fitted[mast.name] = {
+        fitted[entry.name] = {
             "timeseries": timeseries,
             "ws_shear_top3": ws_shear_top3,
             "wd_deg_diff_top3": wd_deg_diff_top3,
@@ -240,35 +241,33 @@ def _load_and_fit(
 
 
 def _build_mast_configs(
-    source_config,  # ReconstructMesoConfiguration or RepresentativeYearConfiguration
+    mast_entries: list[MastPlanningEntry],
     target_heights: list[float],
     fitted_params: dict,
     output_subdir: str,
     base_dir: str,
 ) -> list[MastFillConfig]:
-    """Build mast configs for given source (reconstruct-meso or rep-year).
-
-    This is a polymorphic function that works with both ReconstructMesoConfiguration
-    and RepresentativeYearConfiguration. Both have the same structure for masts.
+    """Build mast configs for given mast entries (reconstruct-meso or rep-year).
 
     Args:
-        source_config: Either ReconstructMesoConfiguration or RepresentativeYearConfiguration
+        mast_entries: List of MastPlanningEntry with mast names and output sources
         target_heights: List of heights to generate fill configurations for
         fitted_params: Dictionary from _load_and_fit with fitted parameters
         output_subdir: Subdirectory for output files
         base_dir: Base directory for resolving paths
 
     Returns:
-        List of MastFillConfig, one per mast in source_config
+        List of MastFillConfig, one per mast entry
     """
+    repo = ParquetRepository()
     masts = []
 
-    for mast in source_config.masts:
+    for entry in mast_entries:
         # Get fitted data for this mast
-        fit_data = fitted_params[mast.name]
+        fit_data = fitted_params[entry.name]
 
         # Get existing heights from source timeseries
-        source_timeseries = load_timeseries(mast.output, base_dir)
+        source_timeseries = repo.load(entry.output, base_dir)
 
         # Build WS configs
         ws_configs = _build_ws_configs(
@@ -285,13 +284,13 @@ def _build_mast_configs(
         )
 
         # Create output paths
-        output_data = f"./{output_subdir}/{mast.name}.parquet"
-        output_sensors = f"./{output_subdir}/{mast.name}.sensors.yaml"
+        output_data = f"./{output_subdir}/{entry.name}.parquet"
+        output_sensors = f"./{output_subdir}/{entry.name}.sensors.yaml"
 
         masts.append(
             MastFillConfig(
-                name=mast.name,
-                input=mast.output,  # Use source output as input
+                name=entry.name,
+                input=entry.output,  # Use source output as input
                 output=TimeSeriesSource(data=output_data, sensors=output_sensors),
                 windspeed=ws_configs,
                 winddirection=wd_configs,

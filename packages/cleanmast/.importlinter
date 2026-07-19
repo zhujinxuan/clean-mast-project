@@ -39,9 +39,11 @@ name = Repository Protocol Access
 type = forbidden
 source_modules =
     cleanmast.subdomains.dataprocessing
-allowed_modules =
-    cleanmast.subdomains.dataingestion.repositories
-    cleanmast.subdomains.dataingestion.value_objects
+forbidden_modules =
+    cleanmast.subdomains.configuration
+    cleanmast.subdomains.reporting
+    cleanmast.subdomains.dataingestion.entities
+    cleanmast.subdomains.dataingestion.infrastructure
 
 [importlinter:contract:cli-isolation]
 name = CLI Isolation
@@ -51,8 +53,6 @@ forbidden_modules =
     cleanmast.subdomains.dataingestion
     cleanmast.subdomains.dataprocessing
     cleanmast.db.repositories
-allowed_modules =
-    cleanmast.application
 
 [importlinter:contract:no-circular-imports]
 name = No Circular Imports

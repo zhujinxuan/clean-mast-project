@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+    from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
 
 
 class TimeSeriesRepository(Protocol):

@@ -15,7 +15,7 @@ from typing import cast
 
 import polars as pl
 
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
+from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 
 log = logging.getLogger(__name__)

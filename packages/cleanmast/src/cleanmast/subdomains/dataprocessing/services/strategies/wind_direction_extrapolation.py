@@ -68,11 +68,11 @@ Wraparound example:
     (Correctly wraps to 0°, not 360°)
 """
 
-from cleanmast.subdomains.configuration import (
+from cleanmast.shared.timeseries import (
     HeightReference,
+    TimeSeriesData,
     WindDirectionHeightConfig,
 )
-from cleanmast.subdomains.dataingestion.entities.time_series_data import TimeSeriesData
 from cleanmast.subdomains.dataingestion.value_objects.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.strategies._helpers import (
     get_existing_sensors,
