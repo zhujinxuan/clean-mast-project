@@ -28,11 +28,16 @@ def calculate_method1(
     air_density: float,
     reference_height: float,
     interpolation_markers: dict[float, str] | None = None,
+    gust_factor: float = 1.4,
 ) -> pl.DataFrame:
     """Calculate Method 1 (5x average wind speed) for given heights.
 
-    For each height: sustained = 5.0 * avg_speed, extreme = 1.4 * sustained.
+    For each height: sustained = 5.0 * avg_speed,
+    extreme = gust_factor * sustained.
     Converts both to standard air density equivalent.
+
+    Args:
+        gust_factor: Gust factor for 10min→3s conversion (default 1.4).
 
     Returns DataFrame with FiftyYearMaxWindMethod1DetailSchema columns.
     """
@@ -45,7 +50,7 @@ def calculate_method1(
     for i, height in enumerate(heights):
         avg_speed = wind_speed_values[i]
         sustained = 5.0 * avg_speed
-        extreme = 1.4 * sustained
+        extreme = gust_factor * sustained
 
         rho_h = air_densities[i]
         sustained_std = _convert_to_standard(sustained, rho_h)
@@ -306,9 +311,6 @@ def build_iec_class_table(
 
 # ---- Internal helpers ----
 
-_EXTREME_THRESHOLD_RATIO = 1.4
-
-
 def _compute_density_at_height(
     height: float,
     reference_density: float,
@@ -373,10 +375,23 @@ def compute_method2_extreme_fallback(
     height: float,
     air_density: float,
     reference_height: float,
+    gust_factor: float,
     interpolation_marker: str = "",
 ) -> dict[str, Any]:
-    """Compute extreme wind from sustained using 1.4x fallback."""
-    extreme_ws = sustained_wind_speed * _EXTREME_THRESHOLD_RATIO
+    """Compute extreme wind from sustained using a per-height gust factor.
+
+    Args:
+        sustained_wind_speed: Sustained (10min-avg) wind speed at the height.
+        height: Measurement height in meters.
+        air_density: Reference air density in kg/m³.
+        reference_height: Reference height for air density extrapolation.
+        gust_factor: Gust factor for 10min→3s conversion.
+        interpolation_marker: Interpolation label if filled height.
+
+    Returns:
+        Dict with extreme wind computation result.
+    """
+    extreme_ws = sustained_wind_speed * gust_factor
     rho_h = _compute_density_at_height(height, air_density, reference_height)
     extreme_std = _convert_to_standard(extreme_ws, rho_h)
     return {

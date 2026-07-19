@@ -113,6 +113,20 @@ class DatasetConfig(BaseModel):
         return self
 
 
+class ExtremeWindGustFactor(BaseModel):
+    """Gust factor for deriving 3s extremes from 10min wind speeds at a height.
+
+    Attributes:
+        height: Measurement height in meters.
+        gust_factor: Ratio of 3s gust to 10min sustained wind speed at this height.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    height: float
+    gust_factor: float = 1.4
+
+
 # LOGIC-PRESERVATION: Ported from assessment domain/value_objects/dataset_config.py — same fields, same validators, added frozen=True
 class MastRef(BaseModel):
     """Reference to a mast within a dataset.
@@ -121,6 +135,13 @@ class MastRef(BaseModel):
         name: Mast identifier (e.g., "M6002").
         air_density: Air density value in kg/m³; must be strictly positive.
         input: Time series data source for this mast.
+        turbulence_heights: Heights with both WS avg and WS sd sensors in turbine range.
+        extreme_wind_10min_heights: Heights (120–160m) with WindSpeed avg sensors for
+            10min-averaged extreme wind analysis. None retains legacy hardcoded behavior.
+        extreme_wind_3s_heights: Heights (120–160m) with WindSpeed max sensors for
+            3s gust extreme wind analysis.
+        extreme_wind_gust_factors: Gust-factor table keyed by height, used to derive
+            3s extremes from 10min data when a height lacks a max sensor.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -129,6 +150,9 @@ class MastRef(BaseModel):
     air_density: float = Field(gt=0)
     input: TimeSeriesSource
     turbulence_heights: list[float] = Field(default_factory=list)
+    extreme_wind_10min_heights: list[float] | None = None
+    extreme_wind_3s_heights: list[float] | None = None
+    extreme_wind_gust_factors: list[ExtremeWindGustFactor] | None = None
 
 
 class MesoRef(BaseModel):

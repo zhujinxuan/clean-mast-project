@@ -9,6 +9,9 @@ from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalys
 from cleanmast.subdomains.reporting.model.analysis_metadata import AnalysisMetadata
 from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.model.analysis_result import AnalysisResult
+from cleanmast.subdomains.reporting.model.extreme_wind_gust_factor import (
+    ExtremeWindGustFactor,
+)
 from cleanmast.subdomains.reporting.model.height_label import (
     get_height_display_name,
 )
@@ -19,6 +22,7 @@ __all__ = [
     "AnalysisParameters",
     "AnalysisResult",
     "DatasetConfig",
+    "ExtremeWindGustFactor",
     "FlatReportConfig",
     "FlatSubsectionConfig",
     "MastRef",

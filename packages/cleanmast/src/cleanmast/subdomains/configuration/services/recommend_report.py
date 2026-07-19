@@ -18,6 +18,7 @@ from cleanmast.subdomains.configuration import (
     AnalysisWindow,
     DatasetConfig,
     DiscoveredConfig,
+    ExtremeWindGustFactor,
     FlatReportConfig,
     FlatSubsectionConfig,
     MastRef,
@@ -85,6 +86,67 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
     return sorted(h for h in candidate if 120.0 <= h <= 160.0)
 
 
+def _discover_extreme_wind_heights(
+    sensors: list[SensorColumn],
+) -> tuple[list[float], list[float], list[ExtremeWindGustFactor]]:
+    """Discover extreme-wind heights and gust factors from mast sensor columns.
+
+    Args:
+        sensors: Sensor metadata columns for a single mast.
+
+    Returns:
+        Tuple of (10min_heights, 3s_heights, gust_factors).
+        - 10min_heights: sorted heights 120–160m with WindSpeed avg sensors.
+          Interpolated (内插) fill heights are excluded when a real (非内插)
+          height with BOTH avg AND max sensors exists within ≤10m.
+        - 3s_heights: sorted heights 120–160m with WindSpeed max sensors.
+        - gust_factors: one ExtremeWindGustFactor per 10min height (default 1.4).
+    """
+    # Collect WindSpeed sensors in 120–160m
+    ws_sensors = [
+        s for s in sensors
+        if s.sensor_type == "WindSpeed" and 120.0 <= s.height <= 160.0
+    ]
+
+    # Candidate 10min heights: all WindSpeed/avg
+    ten_min_candidates: list[SensorColumn] = [
+        s for s in ws_sensors if s.stat_type == "avg"
+    ]
+
+    # 3s heights: all WindSpeed/max (no exclusion)
+    three_sec = sorted(
+        s.height for s in ws_sensors if s.stat_type == "max"
+    )
+
+    # Real both-sensor heights: non-interpolated heights with BOTH avg AND max
+    real_avg_heights = {
+        s.height for s in ten_min_candidates
+        if s.detect_interpolation_marker() != "内插"
+    }
+    real_max_heights = {
+        s.height for s in ws_sensors
+        if s.stat_type == "max" and s.detect_interpolation_marker() != "内插"
+    }
+    real_both_sensor_heights = sorted(real_avg_heights & real_max_heights)
+
+    # Filter: exclude fill heights bracketed by a real both-sensor neighbor
+    # within ≤10m (inclusive)
+    def _is_fill_excluded(fill_height: float) -> bool:
+        return any(
+            abs(fill_height - real_h) <= 10.0
+            for real_h in real_both_sensor_heights
+        )
+
+    ten_min = sorted(
+        s.height for s in ten_min_candidates
+        if s.detect_interpolation_marker() != "内插"
+        or not _is_fill_excluded(s.height)
+    )
+
+    gust_factors = [ExtremeWindGustFactor(height=h) for h in ten_min]
+    return ten_min, three_sec, gust_factors
+
+
 def _build_dataset_for_timeseries(
     project_path: Path,
     discovered_config: DiscoveredConfig[Any],
@@ -147,17 +209,27 @@ def _build_dataset_for_timeseries(
                 ) from e
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
-        turbulence_heights = (
-            _discover_turbulence_heights(time_series_data.sensors)
-            if time_series_data is not None
-            else []
-        )
+        if time_series_data is not None:
+            turbulence_heights = _discover_turbulence_heights(
+                time_series_data.sensors
+            )
+            ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
+                time_series_data.sensors
+            )
+        else:
+            turbulence_heights = []
+            ew_10min = None
+            ew_3s = None
+            ew_gust = None
 
         mast_refs.append(MastRef(
             name=mast_name,
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=rel_data_path),
             turbulence_heights=turbulence_heights,
+            extreme_wind_10min_heights=ew_10min,
+            extreme_wind_3s_heights=ew_3s,
+            extreme_wind_gust_factors=ew_gust,
         ))
 
     if not mast_refs:
@@ -335,12 +407,18 @@ def _build_meso_original_heights_dataset(
         turbulence_heights = _discover_turbulence_heights(
             time_series_data.sensors
         )
+        ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
+            time_series_data.sensors
+        )
 
         mast_refs.append(MastRef(
             name=mast.name,
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=data_path),
             turbulence_heights=turbulence_heights,
+            extreme_wind_10min_heights=ew_10min,
+            extreme_wind_3s_heights=ew_3s,
+            extreme_wind_gust_factors=ew_gust,
         ))
 
     if not mast_refs:
