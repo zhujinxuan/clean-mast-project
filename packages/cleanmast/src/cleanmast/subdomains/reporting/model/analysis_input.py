@@ -19,8 +19,8 @@ class RepresentativeYearCalibrationPayload:
     meso_time_series: TimeSeriesData
     meso_name: str
     sampling_period: str  # "10min" or "1h"
-    analysis_start: datetime
-    analysis_end: datetime
+    rep_year_start: datetime
+    rep_year_end: datetime
 
 
 @dataclass(frozen=True)

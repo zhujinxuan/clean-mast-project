@@ -139,7 +139,7 @@ def _find_climatology_timerange(
 def _compute_calibration_summary(
     item,
 ) -> RepYearMastSummary:
-    """Compute summary from ORIGINAL (unaligned) mast + meso data.
+    """Compute summary from ORIGINAL (unaligned) meso data + rep-year window.
 
     Does NOT use aligned data — alignment is for regression only.
     """
@@ -149,17 +149,11 @@ def _compute_calibration_summary(
     payload = item.representative_year_calibration_payload
     assert payload is not None
 
-    mast_ts = item.time_series
     meso_ts = payload.meso_time_series
     mast_name = item.mast_name
     meso_name = payload.meso_name
 
     meso_ws_sensor = _find_highest_windspeed_sensor(meso_ts.sensors)
-
-    # Training time range from mast data
-    mast_df = mast_ts.df
-    train_min = cast(datetime, mast_df["timestamp"].min())
-    train_max = cast(datetime, mast_df["timestamp"].max())
 
     # Climatology from meso data
     meso_df = meso_ts.df
@@ -172,26 +166,20 @@ def _compute_calibration_summary(
     )
     climatology_mean = cast(float, clim_df[meso_ws_sensor.column_name].mean())
 
-    # Training mean from meso (full period)
-    train_df = meso_df.filter(
-        (pl.col("timestamp") >= train_min) & (pl.col("timestamp") <= train_max)
-    )
-    training_mean = cast(float, train_df[meso_ws_sensor.column_name].mean())
-
-    # Check calibration needed
-    anomaly = (training_mean - climatology_mean) / climatology_mean * 100.0
-    anomaly = round(anomaly, 2)
-    needs_correction = abs(anomaly) > 2.0
-
     # Rep-year time range from payload (from config AnalysisWindow)
     # Strip timezone — parquet timestamps are timezone-naive
-    rep_year_start = payload.analysis_start.replace(tzinfo=None)
-    rep_year_end = payload.analysis_end.replace(tzinfo=None)
+    rep_year_start = payload.rep_year_start.replace(tzinfo=None)
+    rep_year_end = payload.rep_year_end.replace(tzinfo=None)
 
     rep_year_mean_df = meso_df.filter(
         (pl.col("timestamp") >= rep_year_start) & (pl.col("timestamp") <= rep_year_end)
     )
     rep_year_mean = cast(float, rep_year_mean_df[meso_ws_sensor.column_name].mean())
+
+    # Check calibration needed
+    anomaly = (rep_year_mean - climatology_mean) / climatology_mean * 100.0
+    anomaly = round(anomaly, 2)
+    needs_correction = abs(anomaly) > 2.0
 
     year_range = f"{rep_year_start.year}{rep_year_start.month:02d}~{rep_year_end.year}{rep_year_end.month:02d}"
 
@@ -224,8 +212,8 @@ def _compute_meso_sector_stats(
     clim_start, clim_end = _find_climatology_timerange(meso_start, meso_end)
 
     # Strip timezone — parquet timestamps are timezone-naive
-    rep_year_start = payload.analysis_start.replace(tzinfo=None)
-    rep_year_end = payload.analysis_end.replace(tzinfo=None)
+    rep_year_start = payload.rep_year_start.replace(tzinfo=None)
+    rep_year_end = payload.rep_year_end.replace(tzinfo=None)
 
     # Add sector assignment on original data
     meso_with_sector = meso_df.with_columns(

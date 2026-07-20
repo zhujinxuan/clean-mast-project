@@ -293,7 +293,7 @@ class TestRecommendReport:
         assert rep_subsections[0].type == "timeseries"
         for child in rep_subsections[1:]:
             if child.index == "2.5.1":
-                assert child.datasets == ["repyear_calibration"]
+                assert child.datasets == ["receive_repyear_calibration_input"]
             else:
                 assert child.datasets == ["repyear"], f"Expected datasets=['repyear'] for {child.index}, got {child.datasets}"
 
@@ -568,7 +568,7 @@ class TestRecommendReport:
         with open(tmp_path / dc.filename, "rb") as f:
             config = FlatReportConfig.model_validate(tomli.load(f))
 
-        cal_ds = next(ds for ds in config.datasets if ds.name == "repyear_calibration")
+        cal_ds = next(ds for ds in config.datasets if ds.name == "receive_repyear_calibration_input")
         assert len(cal_ds.analysis_windows) >= 1
         # calibration windows should cover ONLY the filled-meso mast "M1"
         cal_mast_names = {aw_mast for aw in cal_ds.analysis_windows for aw_mast in aw.target_masts}

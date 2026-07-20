@@ -68,8 +68,8 @@ class TestRepresentativeYearCalibrationIntegration:
             meso_time_series=meso_data,
             meso_name="era5",
             sampling_period="1h",
-            analysis_start=datetime(2020, 1, 1),
-            analysis_end=datetime(2020, 6, 30, 23, 0),
+            rep_year_start=datetime(2020, 1, 1),
+            rep_year_end=datetime(2020, 6, 30, 23, 0),
         )
         item = SingleMastAnalysisInput(
             time_series=meso_data,

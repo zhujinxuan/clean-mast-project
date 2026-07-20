@@ -256,7 +256,7 @@ def _build_subsections(
         exponents and TI statistics); all other 2.4 children use the
         filled-heights dataset.
       2.5 = repyear (timeseries)
-        2.5.1 = calibration (uses repyear_calibration dataset)
+        2.5.1 = calibration (uses receive_repyear_calibration_input dataset)
         2.5.2+ = other repyear analysis types
       2.6 = fifty_year_max_wind
     """
@@ -491,7 +491,7 @@ def _build_calibration_dataset(
         return None
     filled_names = [m.name for m in filled_meso_dataset.masts] if filled_meso_dataset.masts else []
     return DatasetConfig(
-        name="repyear_calibration",
+        name="receive_repyear_calibration_input",
         masts=filled_meso_dataset.masts,
         mesos=repyear_dataset.mesos,
         analysis_windows=_windows_for_mast_names(rep_year_masts, filled_names),

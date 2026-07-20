@@ -191,8 +191,8 @@ def load_datasets(
                             meso_time_series=meso_data[meso_ref.meso_name],
                             meso_name=meso_ref.meso_name,
                             sampling_period="10min",
-                            analysis_start=tr.min,
-                            analysis_end=tr.max,
+                            rep_year_start=tr.min,
+                            rep_year_end=tr.max,
                         )
                         mast_data[i] = replace(
                             input_data,
