@@ -69,7 +69,9 @@
 - `pre-masts/preprocessed/M5972/02_col_normalize.toml`
 - `pre-masts/preprocessed/M5972/03_type_normalize.toml`
 - `pre-masts/preprocessed/M5972/evidence.md`
+- `just-override/override-reconstruct-meso.md`
 - `just-override/override-representative-year.md`
+- `just-override/override_reconstruct_meso.py`
 - `just-override/override_representative_year.py`
 
 ## Deploy (Restore for Replay)
