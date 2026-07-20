@@ -150,14 +150,12 @@ def load_datasets(
             timeseries = load_timeseries(source, ".")
             # Map config ExtremeWindGustFactor → reporting ExtremeWindGustFactor
             # at the composition boundary, mirroring the turbulence_heights handoff.
-            reporting_gust_factors = None
-            if mast_ref.extreme_wind_gust_factors is not None:
-                reporting_gust_factors = [
-                    ExtremeWindGustFactor(
-                        height=gf.height, gust_factor=gf.gust_factor
-                    )
-                    for gf in mast_ref.extreme_wind_gust_factors
-                ]
+            reporting_gust_factors = [
+                ExtremeWindGustFactor(
+                    height=gf.height, gust_factor=gf.gust_factor
+                )
+                for gf in mast_ref.extreme_wind_gust_factors
+            ]
             input_data = service._create_analysis_input(
                 timeseries,
                 mast_ref.name,

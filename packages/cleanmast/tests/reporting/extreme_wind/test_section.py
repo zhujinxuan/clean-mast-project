@@ -91,9 +91,9 @@ def _make_input(
     air_density: float = 1.225,
     mast_name: str = "TestMast",
     n_hours: int = 8760,
-    extreme_wind_10min_heights: list[float] | None = None,
-    extreme_wind_3s_heights: list[float] | None = None,
-    extreme_wind_gust_factors: list[ExtremeWindGustFactor] | None = None,
+    extreme_wind_10min_heights: list[float],
+    extreme_wind_3s_heights: list[float] = [],
+    extreme_wind_gust_factors: list[ExtremeWindGustFactor] = [],
 ) -> SingleMastAnalysisInput:
     """Build SingleMastAnalysisInput from sensors."""
     ts = _make_timeseries(sensors, n_hours=n_hours)
@@ -162,48 +162,6 @@ class TestConfigDrivenHeights:
         for atom in section.method1_atoms:
             all_h.update(atom.df["height"].unique().to_list())
         assert 130.0 in all_h, "Interpolated height 130m should be included"
-
-
-class TestLegacyBehavior:
-    """None config reproduces legacy 120-160 + no-interpolation selection."""
-
-    def test_legacy_filters_120_to_160(self) -> None:
-        """Heights outside 120-160 are excluded under legacy."""
-        sensors = [
-            _make_sensor(height=100.0),
-            _make_sensor(height=120.0),
-            _make_sensor(height=140.0),
-            _make_sensor(height=160.0),
-            _make_sensor(height=180.0),
-        ]
-        item = _make_input(sensors, extreme_wind_10min_heights=None, n_hours=2000)
-        section = ExtremeWindSection.from_inputs([item])
-
-        for atom in section.method1_atoms:
-            used = set(atom.df["height"].unique().to_list())
-            assert 100.0 not in used, "100m should be excluded (below 120)"
-            assert 180.0 not in used, "180m should be excluded (above 160)"
-            assert 120.0 in used
-            assert 140.0 in used
-            assert 160.0 in used
-
-    def test_legacy_excludes_interpolated(self) -> None:
-        """Interpolated heights are excluded under legacy."""
-        sensors = [
-            _make_sensor(height=120.0),
-            _make_sensor(height=130.0, fill="interpolated"),
-            _make_sensor(height=140.0),
-        ]
-        item = _make_input(sensors, extreme_wind_10min_heights=None, n_hours=2000)
-        section = ExtremeWindSection.from_inputs([item])
-
-        for atom in section.method1_atoms:
-            used = set(atom.df["height"].unique().to_list())
-            assert 130.0 not in used, (
-                "Interpolated 130m should be excluded under legacy"
-            )
-            assert 120.0 in used
-            assert 140.0 in used
 
 
 class TestMaxSensorExtreme:
@@ -283,7 +241,7 @@ class TestMaxSensorExtreme:
             sensors,
             extreme_wind_10min_heights=[120.0, 140.0],
             extreme_wind_3s_heights=[],
-            extreme_wind_gust_factors=None,
+            extreme_wind_gust_factors=[],
             n_hours=2000,
         )
         section = ExtremeWindSection.from_inputs([item])

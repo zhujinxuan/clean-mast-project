@@ -188,10 +188,9 @@ def _build_dataset_for_timeseries(
                 f"Parquet file not found for mast {mast_name}: {parquet_path}"
             )
 
-        time_series_data = None
+        source = TimeSeriesSource(data=data_path, sensors=None)
+        time_series_data = load_timeseries_parquet(source, str(project_path))
         try:
-            source = TimeSeriesSource(data=data_path, sensors=None)
-            time_series_data = load_timeseries_parquet(source, str(project_path))
             air_density = calculate_air_density(time_series_data)
         except Exception as e:
             logger = logging.getLogger(__name__)
@@ -209,18 +208,12 @@ def _build_dataset_for_timeseries(
                 ) from e
 
         rel_data_path = f"./{report_data_subdir}/{mast_name}.parquet"
-        if time_series_data is not None:
-            turbulence_heights = _discover_turbulence_heights(
-                time_series_data.sensors
-            )
-            ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
-                time_series_data.sensors
-            )
-        else:
-            turbulence_heights = []
-            ew_10min = None
-            ew_3s = None
-            ew_gust = None
+        turbulence_heights = _discover_turbulence_heights(
+            time_series_data.sensors
+        )
+        ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
+            time_series_data.sensors
+        )
 
         mast_refs.append(MastRef(
             name=mast_name,

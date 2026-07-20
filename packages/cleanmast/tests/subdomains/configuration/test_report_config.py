@@ -19,6 +19,9 @@ def _mast_ref(name: str) -> MastRef:
         name=name,
         air_density=1.225,
         input=TimeSeriesSource(data="/dev/null.parquet"),
+        extreme_wind_10min_heights=[],
+        extreme_wind_3s_heights=[],
+        extreme_wind_gust_factors=[],
     )
 
 

@@ -42,11 +42,11 @@ class TestGenerateReport:
             "datasets": [
                 {
                     "name": "reconstruct_meso_filled_heights",
-                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./reconstruct_meso/M1.parquet"}}],
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./reconstruct_meso/M1.parquet"}, "extreme_wind_10min_heights": [], "extreme_wind_3s_heights": [], "extreme_wind_gust_factors": []}],
                 },
                 {
                     "name": "rep",
-                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./rep/M1.parquet"}}],
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./rep/M1.parquet"}, "extreme_wind_10min_heights": [], "extreme_wind_3s_heights": [], "extreme_wind_gust_factors": []}],
                 },
             ],
             "subsections": [
@@ -103,7 +103,7 @@ class TestGenerateReport:
             "datasets": [
                 {
                     "name": "ds1",
-                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}}],
+                    "masts": [{"name": "M1", "air_density": 1.225, "input": {"data": "./M1.parquet"}, "extreme_wind_10min_heights": [], "extreme_wind_3s_heights": [], "extreme_wind_gust_factors": []}],
                     "analysis_windows": [
                         {
                             "target_masts": ["M1"],
@@ -157,7 +157,7 @@ class TestFlatConfigOrchestration:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=_windows_for("M1"),
                 )
             ]
@@ -186,7 +186,7 @@ class TestFlatConfigOrchestration:
             for mast_ref in ds.masts:
                 mast_data.append(SingleMastAnalysisInput(
                     time_series=mock_ts,
-                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                     mast_name=mast_ref.name,
                 ))
             loaded[ds.name] = LoadedDataset(
@@ -216,7 +216,7 @@ class TestFlatConfigOrchestration:
                 mock_ts = mock_ts_map[ds.name]
                 mast_data.append(SingleMastAnalysisInput(
                     time_series=mock_ts,
-                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                     mast_name=mast_ref.name,
                 ))
             loaded[ds.name] = LoadedDataset(
@@ -380,12 +380,12 @@ class TestFlatConfigOrchestration:
         datasets = [
             DatasetConfig(
                 name="reconstruct_meso",
-                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/reconstruct_meso.parquet"))],
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/reconstruct_meso.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M1"),
             ),
             DatasetConfig(
                 name="repyear",
-                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/repyear.parquet"))],
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/project/repyear.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M1"),
             ),
         ]
@@ -416,8 +416,8 @@ class TestFlatConfigOrchestration:
             DatasetConfig(
                 name="ds1",
                 masts=[
-                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
-                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
+                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
+                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                 ],
                 analysis_windows=_windows_for("M1", "M2"),
             ),
@@ -589,12 +589,12 @@ class TestFlatConfigOrchestration:
         datasets = [
             DatasetConfig(
                 name="ds1",
-                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+                masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M1"),
             ),
             DatasetConfig(
                 name="ds2",
-                masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+                masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M2"),
             ),
         ]
@@ -637,12 +637,12 @@ class TestFlatConfigOrchestration:
         datasets = [
             DatasetConfig(
                 name="ds_with_wd",
-                masts=[MastRef(name="M_WD", air_density=1.225, input=TimeSeriesSource(data="/fake/wd.parquet"))],
+                masts=[MastRef(name="M_WD", air_density=1.225, input=TimeSeriesSource(data="/fake/wd.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M_WD"),
             ),
             DatasetConfig(
                 name="ds_without_wd",
-                masts=[MastRef(name="M_NOWD", air_density=1.200, input=TimeSeriesSource(data="/fake/nowd.parquet"))],
+                masts=[MastRef(name="M_NOWD", air_density=1.200, input=TimeSeriesSource(data="/fake/nowd.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                 analysis_windows=_windows_for("M_NOWD"),
             ),
         ]
@@ -682,7 +682,7 @@ class TestPlaceholderPreservation:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=_windows_for("M1"),
                 ),
             ]
@@ -700,7 +700,7 @@ class TestPlaceholderPreservation:
             for mast_ref in ds.masts:
                 mast_data.append(SingleMastAnalysisInput(
                     time_series=mock_ts,
-                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                     mast_name=mast_ref.name,
                 ))
             loaded[ds.name] = LoadedDataset(
@@ -819,7 +819,7 @@ class TestDatasetCaching:
             datasets = [
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=_windows_for("M1"),
                 ),
             ]
@@ -838,7 +838,7 @@ class TestDatasetCaching:
             for mast_ref in ds.masts:
                 mast_data.append(SingleMastAnalysisInput(
                     time_series=mock_ts,
-                    parameters=AnalysisParameters(air_density=mast_ref.air_density),
+                    parameters=AnalysisParameters(air_density=mast_ref.air_density, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                     mast_name=mast_ref.name,
                 ))
             loaded[ds.name] = LoadedDataset(
@@ -924,9 +924,9 @@ class TestDatasetCaching:
         mock_builder.build.return_value = {"typ": Path("report.typ")}
 
         datasets = [
-            DatasetConfig(name="ds1", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"))],
+            DatasetConfig(name="ds1", masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/ds1.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                           analysis_windows=_windows_for("M1")),
-            DatasetConfig(name="ds2", masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"))],
+            DatasetConfig(name="ds2", masts=[MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/ds2.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                           analysis_windows=_windows_for("M2")),
         ]
         config = self._make_config([
@@ -957,8 +957,8 @@ class TestDatasetCaching:
             DatasetConfig(
                 name="ds1",
                 masts=[
-                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet")),
-                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet")),
+                    MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
+                    MastRef(name="M2", air_density=1.200, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
                 ],
                 analysis_windows=_windows_for("M1", "M2"),
             ),
@@ -1002,7 +1002,7 @@ class TestAnalysisWindowClipping:
         ])
         input_data = SingleMastAnalysisInput(
             time_series=ts,
-            parameters=AnalysisParameters(air_density=1.225),
+            parameters=AnalysisParameters(air_density=1.225, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
             mast_name="M1",
         )
 
@@ -1019,7 +1019,7 @@ class TestAnalysisWindowClipping:
             datasets=[
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=[aw],
                 ),
             ],
@@ -1057,7 +1057,7 @@ class TestAnalysisWindowClipping:
         ])
         input_data = SingleMastAnalysisInput(
             time_series=ts,
-            parameters=AnalysisParameters(air_density=1.225),
+            parameters=AnalysisParameters(air_density=1.225, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
             mast_name="M1",
         )
 
@@ -1074,7 +1074,7 @@ class TestAnalysisWindowClipping:
             datasets=[
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=[aw],
                 ),
             ],
@@ -1105,7 +1105,7 @@ class TestAnalysisWindowClipping:
         ])
         input_data = SingleMastAnalysisInput(
             time_series=ts,
-            parameters=AnalysisParameters(air_density=1.225),
+            parameters=AnalysisParameters(air_density=1.225, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
             mast_name="M1",
         )
 
@@ -1122,7 +1122,7 @@ class TestAnalysisWindowClipping:
             datasets=[
                 DatasetConfig(
                     name="ds1",
-                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"))],
+                    masts=[MastRef(name="M1", air_density=1.225, input=TimeSeriesSource(data="/fake/data.parquet"), extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[])],
                     analysis_windows=[aw],
                 ),
             ],
@@ -1154,7 +1154,7 @@ class TestAnalysisWindowClipping:
         ])
         input_data = SingleMastAnalysisInput(
             time_series=ts,
-            parameters=AnalysisParameters(air_density=1.225),
+            parameters=AnalysisParameters(air_density=1.225, extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
             mast_name="M1",
         )
 

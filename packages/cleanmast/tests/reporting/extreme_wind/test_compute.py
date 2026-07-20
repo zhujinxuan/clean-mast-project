@@ -17,62 +17,12 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
     build_iec_class_table,
     build_summary_comparison,
     calculate_gumbel_return_period,
-    calculate_method1,
     calculate_method2,
     calculate_method3,
     extract_five_day_maxima,
     fit_gumbel_distribution,
 )
 from scipy.stats import gumbel_r
-
-# =============================================================================
-# Method 1 - Five Times Average Wind Speed
-# =============================================================================
-
-
-class TestCalculateMethod1:
-    def test_basic_three_heights(self) -> None:
-        """Test basic calculation at 120m, 140m, 160m."""
-        df = calculate_method1(
-            wind_speed_values=[6.0, 7.0, 8.0],
-            heights=[120.0, 140.0, 160.0],
-            air_density=STANDARD_AIR_DENSITY,
-            reference_height=10.0,
-        )
-
-        assert len(df) == 6  # 3 heights x 2 wind_speed_types
-        for height, expected_avg in [(120.0, 6.0), (140.0, 7.0), (160.0, 8.0)]:
-            height_rows = df.filter(pl.col("height") == height)
-            assert len(height_rows) == 2
-            sustained_row = height_rows.filter(pl.col("wind_speed_type") == "sustained").row(0, named=True)
-            extreme_row = height_rows.filter(pl.col("wind_speed_type") == "extreme").row(0, named=True)
-
-            expected_sustained = 5.0 * expected_avg
-            expected_extreme = 1.4 * expected_sustained
-            assert math.isclose(sustained_row["max_wind_speed"], expected_sustained, rel_tol=1e-9)
-            assert math.isclose(extreme_row["max_wind_speed"], expected_extreme, rel_tol=1e-9)
-
-    def test_standard_density_conversion(self) -> None:
-        """Lower density gives lower standard-density equivalent."""
-        df = calculate_method1(
-            wind_speed_values=[7.0],
-            heights=[100.0],
-            air_density=1.1,
-            reference_height=10.0,
-        )
-        sustained_row = df.filter(pl.col("wind_speed_type") == "sustained").row(0, named=True)
-        assert sustained_row["standard_density_wind_speed"] < sustained_row["max_wind_speed"]
-
-    def test_all_method_values_are_method1(self) -> None:
-        """Verify all rows have method='method1'."""
-        df = calculate_method1(
-            wind_speed_values=[5.0],
-            heights=[100.0],
-            air_density=STANDARD_AIR_DENSITY,
-            reference_height=10.0,
-        )
-        assert all(m == "method1" for m in df["method"].to_list())
-
 
 # =============================================================================
 # Method 2 - Five-Day Maximum (Gumbel)
@@ -186,12 +136,15 @@ class TestCalculateMethod3:
 
 class TestBuildSummaryComparison:
     def test_three_heights_comparison(self) -> None:
-        m1 = calculate_method1(
-            wind_speed_values=[6.0, 7.0, 8.0],
-            heights=[120.0, 140.0, 160.0],
-            air_density=STANDARD_AIR_DENSITY,
-            reference_height=10.0,
-        )
+        m1 = pl.DataFrame({
+            "height": [120.0, 120.0, 140.0, 140.0, 160.0, 160.0],
+            "method": ["method1"] * 6,
+            "wind_speed_type": ["sustained", "extreme"] * 3,
+            "max_wind_speed": [30.0, 42.0, 35.0, 49.0, 40.0, 56.0],
+            "standard_density_wind_speed": [30.0, 42.0, 35.0, 49.0, 40.0, 56.0],
+            "observed_max": [0.0] * 6,
+            "interpolation_marker": [""] * 6,
+        })
         m3_data = [
             calculate_method3(
                 observed_max=20.0, height=h,
@@ -221,12 +174,15 @@ class TestBuildSummaryComparison:
 
 class TestBuildIECClassTable:
     def test_basic_classification(self) -> None:
-        m1 = calculate_method1(
-            wind_speed_values=[6.0],
-            heights=[100.0],
-            air_density=STANDARD_AIR_DENSITY,
-            reference_height=10.0,
-        )
+        m1 = pl.DataFrame({
+            "height": [100.0, 100.0],
+            "method": ["method1", "method1"],
+            "wind_speed_type": ["sustained", "extreme"],
+            "max_wind_speed": [30.0, 42.0],
+            "standard_density_wind_speed": [30.0, 42.0],
+            "observed_max": [0.0, 0.0],
+            "interpolation_marker": ["", ""],
+        })
         empty = pl.DataFrame({
             "height": pl.Series([], dtype=pl.Float64),
             "method1": pl.Series([], dtype=pl.Float64),

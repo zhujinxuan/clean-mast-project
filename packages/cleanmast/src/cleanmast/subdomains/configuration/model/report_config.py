@@ -137,11 +137,14 @@ class MastRef(BaseModel):
         input: Time series data source for this mast.
         turbulence_heights: Heights with both WS avg and WS sd sensors in turbine range.
         extreme_wind_10min_heights: Heights (120–160m) with WindSpeed avg sensors for
-            10min-averaged extreme wind analysis. None retains legacy hardcoded behavior.
+            10min-averaged extreme wind analysis. Required; empty list means no heights
+            are configured (mast is skipped).
         extreme_wind_3s_heights: Heights (120–160m) with WindSpeed max sensors for
-            3s gust extreme wind analysis.
+            3s gust extreme wind analysis. Required; empty list means no heights
+            are configured.
         extreme_wind_gust_factors: Gust-factor table keyed by height, used to derive
-            3s extremes from 10min data when a height lacks a max sensor.
+            3s extremes from 10min data when a height lacks a max sensor. Required;
+            empty list means no gust factors configured.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -150,9 +153,9 @@ class MastRef(BaseModel):
     air_density: float = Field(gt=0)
     input: TimeSeriesSource
     turbulence_heights: list[float] = Field(default_factory=list)
-    extreme_wind_10min_heights: list[float] | None = None
-    extreme_wind_3s_heights: list[float] | None = None
-    extreme_wind_gust_factors: list[ExtremeWindGustFactor] | None = None
+    extreme_wind_10min_heights: list[float]
+    extreme_wind_3s_heights: list[float]
+    extreme_wind_gust_factors: list[ExtremeWindGustFactor]
 
 
 class MesoRef(BaseModel):

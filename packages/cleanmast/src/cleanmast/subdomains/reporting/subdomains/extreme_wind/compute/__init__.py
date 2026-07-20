@@ -20,67 +20,6 @@ STD_TEMP_SEA_LEVEL = 288.15
 LAPSE_RATE = 0.0065
 
 
-# ---- Method 1: 五倍风速法 ----
-
-def calculate_method1(
-    wind_speed_values: list[float],
-    heights: list[float],
-    air_density: float,
-    reference_height: float,
-    interpolation_markers: dict[float, str] | None = None,
-    gust_factor: float = 1.4,
-) -> pl.DataFrame:
-    """Calculate Method 1 (5x average wind speed) for given heights.
-
-    For each height: sustained = 5.0 * avg_speed,
-    extreme = gust_factor * sustained.
-    Converts both to standard air density equivalent.
-
-    Args:
-        gust_factor: Gust factor for 10min→3s conversion (default 1.4).
-
-    Returns DataFrame with FiftyYearMaxWindMethod1DetailSchema columns.
-    """
-    markers = interpolation_markers or {}
-    air_densities = _compute_air_density_at_heights(
-        heights, air_density, reference_height
-    )
-
-    rows: list[dict[str, Any]] = []
-    for i, height in enumerate(heights):
-        avg_speed = wind_speed_values[i]
-        sustained = 5.0 * avg_speed
-        extreme = gust_factor * sustained
-
-        rho_h = air_densities[i]
-        sustained_std = _convert_to_standard(sustained, rho_h)
-        extreme_std = _convert_to_standard(extreme, rho_h)
-        marker = markers.get(height)
-
-        rows.append({
-            "height": height,
-            "interpolation_marker": marker,
-            "wind_speed_type": "sustained",
-            "method": "method1",
-            "max_wind_speed": sustained,
-            "standard_density_wind_speed": sustained_std,
-            "average_wind_speed": avg_speed,
-            "air_density": rho_h,
-        })
-        rows.append({
-            "height": height,
-            "interpolation_marker": marker,
-            "wind_speed_type": "extreme",
-            "method": "method1",
-            "max_wind_speed": extreme,
-            "standard_density_wind_speed": extreme_std,
-            "average_wind_speed": avg_speed,
-            "air_density": rho_h,
-        })
-
-    return pl.DataFrame(rows)
-
-
 # ---- Method 2: 五日最大法 ----
 
 def extract_five_day_maxima(

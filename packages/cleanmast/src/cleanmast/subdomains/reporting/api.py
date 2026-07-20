@@ -12,6 +12,9 @@ from pathlib import Path
 from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
 from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
+from cleanmast.subdomains.reporting.model.extreme_wind_gust_factor import (
+    ExtremeWindGustFactor,
+)
 from cleanmast.subdomains.reporting.protocols.section import Section
 from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.section import (
@@ -43,10 +46,10 @@ class ReportGenerationService:
         time_series: TimeSeriesData,
         mast_name: str,
         air_density: float,
+        extreme_wind_10min_heights: list[float],
+        extreme_wind_3s_heights: list[float],
+        extreme_wind_gust_factors: list[ExtremeWindGustFactor],
         turbulence_heights: list[float] | None = None,
-        extreme_wind_10min_heights: list[float] | None = None,
-        extreme_wind_3s_heights: list[float] | None = None,
-        extreme_wind_gust_factors: list | None = None,
     ) -> SingleMastAnalysisInput:
         return _build_analysis_input(
             time_series, mast_name, air_density,
@@ -117,10 +120,10 @@ def _build_analysis_input(
     time_series: TimeSeriesData,
     mast_name: str,
     air_density: float,
+    extreme_wind_10min_heights: list[float],
+    extreme_wind_3s_heights: list[float],
+    extreme_wind_gust_factors: list[ExtremeWindGustFactor],
     turbulence_heights: list[float] | None = None,
-    extreme_wind_10min_heights: list[float] | None = None,
-    extreme_wind_3s_heights: list[float] | None = None,
-    extreme_wind_gust_factors: list | None = None,
 ) -> SingleMastAnalysisInput:
     """Build SingleMastAnalysisInput from time_series sensors."""
     params = AnalysisParameters(

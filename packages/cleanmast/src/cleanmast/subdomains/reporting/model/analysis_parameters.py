@@ -14,9 +14,9 @@ class AnalysisParameters:
     """Configuration parameters for analysis calculations."""
 
     air_density: float
+    extreme_wind_10min_heights: list[float]
+    extreme_wind_3s_heights: list[float]
+    extreme_wind_gust_factors: list[ExtremeWindGustFactor]
     include_max_min: bool = True
     include_power: bool = True
     turbulence_heights: list[float] = field(default_factory=list)
-    extreme_wind_10min_heights: list[float] | None = None
-    extreme_wind_3s_heights: list[float] | None = None
-    extreme_wind_gust_factors: list[ExtremeWindGustFactor] | None = None

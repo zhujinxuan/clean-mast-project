@@ -260,16 +260,14 @@ class TestMastRefExtremeWind:
         ExtremeWindGustFactor(height=160.0),
     ]
 
-    def test_new_fields_default_to_none(self):
-        """MastRef without extreme-wind args has None for all three fields."""
-        mr = MastRef(
-            name="M1",
-            air_density=1.225,
-            input=TimeSeriesSource(data="./data/M1.parquet"),
-        )
-        assert mr.extreme_wind_10min_heights is None
-        assert mr.extreme_wind_3s_heights is None
-        assert mr.extreme_wind_gust_factors is None
+    def test_omission_raises_validation_error(self):
+        """MastRef without extreme-wind args raises ValidationError."""
+        with pytest.raises(ValidationError):
+            MastRef(
+                name="M1",
+                air_density=1.225,
+                input=TimeSeriesSource(data="./data/M1.parquet"),
+            )
 
     def test_fields_set_explicitly(self):
         """Fields can be set to explicit values."""
@@ -293,21 +291,11 @@ class TestMastRefExtremeWind:
             air_density=1.225,
             input=TimeSeriesSource(data="./data/M1.parquet"),
             extreme_wind_10min_heights=self._EW_10MIN,
+            extreme_wind_3s_heights=self._EW_3S,
+            extreme_wind_gust_factors=self._EW_GUST,
         )
         with pytest.raises(ValidationError):
             mr.extreme_wind_10min_heights = [100.0]
-
-    def test_serialize_excludes_none(self):
-        """model_dump(exclude_none=True) omits None fields."""
-        mr = MastRef(
-            name="M1",
-            air_density=1.225,
-            input=TimeSeriesSource(data="./data/M1.parquet"),
-        )
-        data = mr.model_dump(mode="json", exclude_none=True)
-        assert "extreme_wind_10min_heights" not in data
-        assert "extreme_wind_3s_heights" not in data
-        assert "extreme_wind_gust_factors" not in data
 
     def test_serialize_includes_set_fields(self):
         """model_dump(exclude_none=True) includes non-None extreme-wind fields."""
@@ -350,8 +338,8 @@ class TestMastRefExtremeWind:
         assert rehydrated.extreme_wind_gust_factors[0].gust_factor == 1.4
         tmp_path.unlink()
 
-    def test_old_toml_without_fields_loads(self):
-        """A TOML without extreme-wind fields loads with None defaults."""
+    def test_old_toml_without_fields_raises(self):
+        """A TOML without extreme-wind fields raises ValidationError."""
         old_data = {
             "name": "MOld",
             "air_density": 1.20,
@@ -364,12 +352,8 @@ class TestMastRefExtremeWind:
 
         with open(tmp_path, "rb") as f:
             loaded_data = tomli.load(f)
-        mr = MastRef(**loaded_data)
-        assert mr.name == "MOld"
-        assert mr.turbulence_heights == [100.0, 120.0]
-        assert mr.extreme_wind_10min_heights is None
-        assert mr.extreme_wind_3s_heights is None
-        assert mr.extreme_wind_gust_factors is None
+        with pytest.raises(ValidationError):
+            MastRef(**loaded_data)
         tmp_path.unlink()
 
     def test_empty_lists_in_fields(self):

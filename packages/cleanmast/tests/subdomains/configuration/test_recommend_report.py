@@ -487,7 +487,15 @@ class TestRecommendReport:
         with pytest.raises(FileNotFoundError, match="representative-year.toml is required"):
             recommend_report(pc)
 
-    def test_raises_when_fill_heights_rep_year_toml_missing(self, tmp_path):
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_raises_when_fill_heights_rep_year_toml_missing(self, mock_load_parquet, mock_calc_density, tmp_path):
         """recommend_report raises FileNotFoundError when fill-heights-representative-year.toml is missing."""
         self._create_representative_year_toml(tmp_path)
         self._create_fill_heights_toml(
@@ -574,7 +582,15 @@ class TestRecommendReport:
         cal_mast_names = {aw_mast for aw in cal_ds.analysis_windows for aw_mast in aw.target_masts}
         assert cal_mast_names == {"M1"}
 
-    def test_mast_in_meso_but_absent_from_rep_year_raises(self, tmp_path):
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
+        return_value=MagicMock(),
+    )
+    def test_mast_in_meso_but_absent_from_rep_year_raises(self, mock_load_parquet, mock_calc_density, tmp_path):
         """Mast present in meso dataset but absent from rep-year → ValueError from coverage validator."""
         # representative-year.toml has mast "OtherMast", not "M1"
         self._create_representative_year_toml(tmp_path, mast_names=["OtherMast"])

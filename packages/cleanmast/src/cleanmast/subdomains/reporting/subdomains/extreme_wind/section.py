@@ -25,7 +25,6 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
     _compute_density_at_height,
     _convert_to_standard,
-    calculate_method1,
     calculate_method2,
     calculate_method3,
     compute_method2_extreme_fallback,
@@ -242,16 +241,12 @@ class ExtremeWindSection:
         compute Method 1/2/3, assemble atoms, and aggregate them into
         a single ExtremeWindSection with list-based fields.
 
-        When ``extreme_wind_10min_heights`` is not None, height selection
-        is config-driven: all WindSpeed/avg sensors whose height appears
-        in the 10min list are used (including interpolated fills).
-        Extreme (3s) variants are computed from real WindSpeed/max sensors
-        where available; otherwise the per-height gust factor fallback
-        converts the sustained value.
-
-        When ``extreme_wind_10min_heights`` is None, legacy behaviour is
-        preserved exactly: 120–160 m range, interpolation markers excluded,
-        global 1.4 gust factor.
+        Height selection is config-driven: all WindSpeed/avg sensors whose
+        height appears in the ``extreme_wind_10min_heights`` list are used
+        (including interpolated fills). Extreme (3s) variants are computed
+        from real WindSpeed/max sensors where available; otherwise the
+        per-height gust factor from ``extreme_wind_gust_factors`` converts
+        the sustained value.
 
         Returns:
             ExtremeWindSection with all atoms for multi-mast rendering.
@@ -268,48 +263,27 @@ class ExtremeWindSection:
             mast_name = item.mast_name
             air_density = item.parameters.air_density
 
-            # ── Height selection (config-driven or legacy) ──
-            if item.parameters.extreme_wind_10min_heights is not None:
-                ten_min_heights = set(item.parameters.extreme_wind_10min_heights)
-                three_s_heights = set(item.parameters.extreme_wind_3s_heights or [])
-                # All WindSpeed/avg sensors whose height is in the 10min list
-                # (INCLUDING interpolated/fill heights — user requirement)
-                ws_sensors = [
-                    s for s in ts.sensors
-                    if s.sensor_type == "WindSpeed"
-                    and s.stat_type == "avg"
-                    and s.height in ten_min_heights
-                ]
-                # WindSpeed/max sensors keyed by height
-                max_sensor_by_height: dict[float, Any] = {}
-                for s in ts.sensors:
-                    if s.sensor_type == "WindSpeed" and s.stat_type == "max":
-                        max_sensor_by_height[s.height] = s
-            else:
-                ten_min_heights: set[float] = set()
-                three_s_heights: set[float] = set()
-                max_sensor_by_height: dict[float, Any] = {}
-                # Legacy: 120–160 m, non-interpolated
-                ws_sensors = [
-                    s for s in ts.sensors
-                    if s.sensor_type == "WindSpeed"
-                    and s.stat_type == "avg"
-                    and 120.0 <= s.height <= 160.0
-                    and s.detect_interpolation_marker() != "内插"
-                ]
-
-            if not ws_sensors:
-                continue
-
+            # ── Height selection (config-driven) ──
+            ten_min_heights = set(item.parameters.extreme_wind_10min_heights)
+            three_s_heights = set(item.parameters.extreme_wind_3s_heights)
+            # All WindSpeed/avg sensors whose height is in the 10min list
+            # (INCLUDING interpolated/fill heights — user requirement)
+            ws_sensors = [
+                s for s in ts.sensors
+                if s.sensor_type == "WindSpeed"
+                and s.stat_type == "avg"
+                and s.height in ten_min_heights
+            ]
+            # WindSpeed/max sensors keyed by height
+            max_sensor_by_height: dict[float, Any] = {}
+            for s in ts.sensors:
+                if s.sensor_type == "WindSpeed" and s.stat_type == "max":
+                    max_sensor_by_height[s.height] = s
             # ── Common per-mast values ──
-            heights = [s.height for s in ws_sensors]
-            reference_height = max(heights)
+            reference_height = max(s.height for s in ws_sensors)
             interpolation_markers = {
                 s.height: s.detect_interpolation_marker() for s in ws_sensors
             }
-            wind_speed_avgs = [
-                cast(float, ts.df[s.column_name].mean()) for s in ws_sensors
-            ]
 
             # ── Per-height gust factor lookup ──
             gust_factor_by_height: dict[float, float] = {}
@@ -321,58 +295,51 @@ class ExtremeWindSection:
                 return gust_factor_by_height.get(h, 1.4)
 
             # ── Method 1 ──
-            if item.parameters.extreme_wind_10min_heights is not None:
-                # Config-driven: per-height compute so max sensors can be used
-                m1_rows: list[dict[str, Any]] = []
-                for sensor in ws_sensors:
-                    h = sensor.height
-                    avg_speed = cast(float, ts.df[sensor.column_name].mean())
-                    sustained = 5.0 * avg_speed
-                    marker = interpolation_markers.get(h)
+            # Config-driven: per-height compute so max sensors can be used
+            m1_rows: list[dict[str, Any]] = []
+            for sensor in ws_sensors:
+                h = sensor.height
+                avg_speed = cast(float, ts.df[sensor.column_name].mean())
+                sustained = 5.0 * avg_speed
+                marker = interpolation_markers.get(h)
 
-                    rho_h = _compute_density_at_height(h, air_density, reference_height)
-                    sustained_std = _convert_to_standard(sustained, rho_h)
+                rho_h = _compute_density_at_height(h, air_density, reference_height)
+                sustained_std = _convert_to_standard(sustained, rho_h)
 
-                    m1_rows.append({
-                        "height": h,
-                        "interpolation_marker": marker,
-                        "wind_speed_type": "sustained",
-                        "method": "method1",
-                        "max_wind_speed": sustained,
-                        "standard_density_wind_speed": sustained_std,
-                        "average_wind_speed": avg_speed,
-                        "air_density": rho_h,
-                    })
+                m1_rows.append({
+                    "height": h,
+                    "interpolation_marker": marker,
+                    "wind_speed_type": "sustained",
+                    "method": "method1",
+                    "max_wind_speed": sustained,
+                    "standard_density_wind_speed": sustained_std,
+                    "average_wind_speed": avg_speed,
+                    "air_density": rho_h,
+                })
 
-                    # Extreme: from max sensor or gust-factor fallback
-                    max_sensor = max_sensor_by_height.get(h)
-                    if max_sensor is not None and h in three_s_heights:
-                        # Method 1 from real max sensor: 5x mean, no ×1.4
-                        max_avg = cast(
-                            float, ts.df[max_sensor.column_name].mean()
-                        )
-                        extreme = 5.0 * max_avg
-                    else:
-                        extreme = sustained * _gf(h)
-                    extreme_std = _convert_to_standard(extreme, rho_h)
+                # Extreme: from max sensor or gust-factor fallback
+                max_sensor = max_sensor_by_height.get(h)
+                if max_sensor is not None and h in three_s_heights:
+                    # Method 1 from real max sensor: 5x mean, no ×1.4
+                    max_avg = cast(
+                        float, ts.df[max_sensor.column_name].mean()
+                    )
+                    extreme = 5.0 * max_avg
+                else:
+                    extreme = sustained * _gf(h)
+                extreme_std = _convert_to_standard(extreme, rho_h)
 
-                    m1_rows.append({
-                        "height": h,
-                        "interpolation_marker": marker,
-                        "wind_speed_type": "extreme",
-                        "method": "method1",
-                        "max_wind_speed": extreme,
-                        "standard_density_wind_speed": extreme_std,
-                        "average_wind_speed": avg_speed,
-                        "air_density": rho_h,
-                    })
-                method1_df = pl.DataFrame(m1_rows) if m1_rows else pl.DataFrame()
-            else:
-                # Legacy: single call with default gust factor
-                method1_df = calculate_method1(
-                    wind_speed_avgs, heights, air_density,
-                    reference_height, interpolation_markers,
-                )
+                m1_rows.append({
+                    "height": h,
+                    "interpolation_marker": marker,
+                    "wind_speed_type": "extreme",
+                    "method": "method1",
+                    "max_wind_speed": extreme,
+                    "standard_density_wind_speed": extreme_std,
+                    "average_wind_speed": avg_speed,
+                    "air_density": rho_h,
+                })
+            method1_df = pl.DataFrame(m1_rows) if m1_rows else pl.DataFrame()
 
             # ── Method 2 (per height, sustained via Gumbel; extreme from
             #    max sensor or gust-factor fallback) ──
