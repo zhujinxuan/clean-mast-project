@@ -1,7 +1,7 @@
 # Handoff: Composition Root + DI (ddd-s-004) — Design & Execution Plan
 
 Audience: whoever picks this up later (human or agent). Read the main ADR first
-(`../../ddd-s-004-composition-root-di.md`). Everything below is evidence-backed as of
+(`../../2026-07-19-composition-root-di.md`). Everything below is evidence-backed as of
 2026-07-19; commit at writing: `79fc2ace`.
 
 ## 1. Context — why this exists
