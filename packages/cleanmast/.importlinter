@@ -43,14 +43,16 @@ forbidden_modules =
     cleanmast.subdomains.configuration
     cleanmast.subdomains.reporting
 
-[importlinter:contract:cli-isolation]
-name = CLI Isolation
+[importlinter:contract:interfaces-isolation]
+name = Interfaces Isolation
 type = forbidden
-source_modules = cleanmast.cli
+source_modules =
+    cleanmast.cli
+    cleanmast.interfaces
 forbidden_modules =
     cleanmast.subdomains.dataprocessing
     cleanmast.db.repositories
-
+allow_indirect_imports = true
 [importlinter:contract:no-circular-imports]
 name = No Circular Imports
 type = independence

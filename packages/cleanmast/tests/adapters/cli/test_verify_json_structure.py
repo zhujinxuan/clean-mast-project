@@ -27,7 +27,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from cleanmast.adapters.cli.verify import verify
+from cleanmast.interfaces.cli.verify import verify
 from click.testing import CliRunner
 
 
@@ -72,11 +72,11 @@ outputs = ["output.csv"]
         
         # Mock all the functions that interact with external systems
         with patch(
-            "cleanmast.adapters.cli.verify._find_test_data_root"
+            "cleanmast.interfaces.cli.verify._find_test_data_root"
         ) as mock_find_root, patch(
-            "cleanmast.adapters.cli.verify._run_dvc_pull"
+            "cleanmast.interfaces.cli.verify._run_dvc_pull"
         ) as mock_dvc_pull, patch(
-            "cleanmast.adapters.cli.verify._run_cleanmast_command"
+            "cleanmast.interfaces.cli.verify._run_cleanmast_command"
         ) as mock_run_cmd:
             
             # Configure mocks
@@ -166,11 +166,11 @@ outputs = ["output.csv"]
             (ds_dir / "output.csv").write_text("mock,data\n1,2\n")
         
         with patch(
-            "cleanmast.adapters.cli.verify._find_test_data_root"
+            "cleanmast.interfaces.cli.verify._find_test_data_root"
         ) as mock_find_root, patch(
-            "cleanmast.adapters.cli.verify._run_dvc_pull"
+            "cleanmast.interfaces.cli.verify._run_dvc_pull"
         ) as mock_dvc_pull, patch(
-            "cleanmast.adapters.cli.verify._run_cleanmast_command"
+            "cleanmast.interfaces.cli.verify._run_cleanmast_command"
         ) as mock_run_cmd:
             
             mock_find_root.return_value = mock_test_data
@@ -224,11 +224,11 @@ outputs = ["missing.csv"]
 """)
         
         with patch(
-            "cleanmast.adapters.cli.verify._find_test_data_root"
+            "cleanmast.interfaces.cli.verify._find_test_data_root"
         ) as mock_find_root, patch(
-            "cleanmast.adapters.cli.verify._run_dvc_pull"
+            "cleanmast.interfaces.cli.verify._run_dvc_pull"
         ) as mock_dvc_pull, patch(
-            "cleanmast.adapters.cli.verify._run_cleanmast_command"
+            "cleanmast.interfaces.cli.verify._run_cleanmast_command"
         ) as mock_run_cmd:
             
             mock_find_root.return_value = mock_test_data
