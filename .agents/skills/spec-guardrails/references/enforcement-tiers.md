@@ -72,6 +72,8 @@ rule:
 3. For each anti-pattern, scan the code for violations. A function in `compute/` that reads files is a violation even if no ast-grep rule catches it.
 4. Verdict: any violation means FAIL, with a file:line reference.
 
+**Note:** The `## 业务说明 (Business description)` section in each spec.md is NOT subject to mechanical enforcement. Only the `## Code rules` section's Rules, Anti-patterns, and When in doubt are walked through. The 业务 section documents domain knowledge for human reference and structural diff validation — it is a separate concern from the three enforcement tiers.
+
 **Example checklist for `subdomains/spec.md`:**
 
 | Rule | Check | Verdict |
@@ -90,3 +92,5 @@ rule:
 | LLM checklist | The walkthrough process is universal: read spec, check each rule, return verdict. | The questions come from each context's `spec.md` Rules section. |
 
 When adding enforcement for a new context, write the rules into that context's `spec.md` first. Then add import-linter contracts and ast-grep rules only for the rules the mechanical tiers can check.
+
+The `## 业务说明 (Business description)` section in each spec.md is a separate concern outside the three enforcement tiers. It records domain knowledge (wind energy concepts, pipeline meaning) that is timeless and should survive structural refactors unchanged. It is validated by diff comparison after structural migrations, not by import-linter, ast-grep, or LLM checklist.
