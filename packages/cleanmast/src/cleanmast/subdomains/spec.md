@@ -26,10 +26,21 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
 13. Timeseries loading (``load_timeseries``, ``TimeSeriesRepository``, and
     validation) lives in ``cleanmast.shared.timeseries.io`` — subdomains
     import timeseries data through this shared I/O layer.
+14. Cross-subdomain workflows live in ``cleanmast.application.usecases``.
+    A usecase may import ``configuration`` and ``dataprocessing`` in the same
+    function; a subdomain never imports a sibling (enforced by the
+    ``subdomain-isolation`` and ``repository-access`` import-linter
+    contracts).
+15. Train workflows follow one pattern: the usecase discovers input configs
+    via ``ProjectConfig.discover_*_config()``, calls a dataprocessing fit
+    service (e.g. ``planner.fit_all_masts``), and persists results via
+    ``ProjectConfig.save_*_model()``. Fitting code never touches TOML I/O.
 
 ## Anti-patterns
 
 - Cross-context imports; use shared contracts instead.
+- A subdomain service that discovers configs, calls a sibling subdomain, and
+  writes files — that is a usecase; move it to ``application/usecases/``.
 - IO inside compute; keep compute pure math.
 - String paths (`str(path)`); use `pathlib.Path`.
 - Unfrozen model without a `# mutable: <reason>` justification.
@@ -38,5 +49,7 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
 ## When in doubt
 
 - If a type is used by 2+ contexts → put it in `shared/`.
+- If a function needs configs from one subdomain AND services from another →
+  it is an application usecase, not a subdomain service.
 - If a function needs math AND file access → split it into compute + render.
 - If unsure whether compute or assemble: produces DataFrame/number → compute; wraps in atoms → assemble.

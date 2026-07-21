@@ -125,6 +125,9 @@ process-representative-year:
 # Python fill-heights pipeline
 # ============================================================================
 
+train-fill-heights:
+    cd {{ROOT}} ; uv run cleanmast train fill-heights {{PROJECT}}/
+
 recommend-fill-heights:
     cd {{ROOT}} ; uv run cleanmast recommend fill-heights {{PROJECT}}/
 
@@ -167,7 +170,7 @@ customize-configs:
 # ============================================================================
 
 # Full pipeline: all steps (individual), then fill-heights, wt-timeseries, then report
-run-all: recommend-parse-sensors parse-sensors recommend-clean process-clean recommend-tower-shading process-tower-shading recommend-reconstruct-single process-reconstruct-single recommend-train-cross process-train-cross recommend-reconstruct-cross process-reconstruct-cross recommend-train-meso process-train-meso recommend-reconstruct-meso process-reconstruct-meso recommend-representative-year process-representative-year recommend-fill-heights fill-heights-meso fill-heights-representative-year recommend-wt-timeseries process-wt-timeseries recommend-report-config report-timeseries
+run-all: recommend-parse-sensors parse-sensors recommend-clean process-clean recommend-tower-shading process-tower-shading recommend-reconstruct-single process-reconstruct-single recommend-train-cross process-train-cross recommend-reconstruct-cross process-reconstruct-cross recommend-train-meso process-train-meso recommend-reconstruct-meso process-reconstruct-meso recommend-representative-year process-representative-year train-fill-heights recommend-fill-heights fill-heights-meso fill-heights-representative-year recommend-wt-timeseries process-wt-timeseries recommend-report-config report-timeseries
 
 # ============================================================================
 # Cleanup

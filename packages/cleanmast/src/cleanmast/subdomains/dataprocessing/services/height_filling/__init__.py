@@ -16,11 +16,12 @@ from .helpers import (
     get_existing_sensors,
     get_top_sensors,
 )
-from .planner import generate_dual_configs
+from .planner import fit_all_masts, generate_dual_configs
 from .validation import build_sensor_column_map, validate_references
 
 __all__ = [
     "generate_dual_configs",
+    "fit_all_masts",
     "validate_references",
     "build_sensor_column_map",
     "fit_shear_top3",

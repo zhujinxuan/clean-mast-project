@@ -7,14 +7,14 @@ from pathlib import Path
 
 import click
 
-from cleanmast.subdomains.configuration import ProjectConfig
-from cleanmast.subdomains.configuration.services.recommend_fill_heights import (
+from cleanmast.application.usecases.recommend_fill_heights import (
     DEFAULT_DEG_DIFF_PER_M_LIMIT,
     DEFAULT_FILL_HEIGHTS,
 )
-from cleanmast.subdomains.configuration.services.recommend_fill_heights import (
+from cleanmast.application.usecases.recommend_fill_heights import (
     recommend_fill_heights as recommend_fill_heights_usecase,
 )
+from cleanmast.subdomains.configuration import ProjectConfig
 
 
 @click.command("fill-heights")

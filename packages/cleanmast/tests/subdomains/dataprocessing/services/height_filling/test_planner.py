@@ -22,7 +22,7 @@ from cleanmast.shared.timeseries.io.file_repository import (
 from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (
     _build_wd_configs,
     _build_ws_configs,
-    _load_and_fit,
+    fit_all_masts,
     generate_dual_configs,
 )
 
@@ -144,10 +144,10 @@ class TestGenerateDualConfigs:
         assert rep_config is None
 
 
-class TestLoadAndFit:
-    """Tests for _load_and_fit function."""
+class TestFitAllMasts:
+    """Tests for fit_all_masts function."""
 
-    def test_load_and_fit_fits_shear_for_all_masts(self, tmp_path: Path):
+    def testfit_all_masts_fits_shear_for_all_masts(self, tmp_path: Path):
         """Test that shear is fitted for all masts."""
         # Create test data
         (tmp_path / "test").mkdir(parents=True, exist_ok=True)
@@ -235,7 +235,7 @@ class TestLoadAndFit:
             ),
         )
 
-        fitted = _load_and_fit([entry], str(tmp_path))
+        fitted = fit_all_masts([entry], str(tmp_path))
 
         assert "M01" in fitted
         assert "ws_shear_top3" in fitted["M01"]

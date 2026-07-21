@@ -18,6 +18,9 @@ from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesMast,
 )
 from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
+from cleanmast.subdomains.configuration.model.fill_height_fit_result import (
+    FillHeightFitResult,
+)
 from cleanmast.subdomains.configuration.model.reconstruct_meso import (
     MesoSource,
     ReconstructMesoConfiguration,
@@ -51,6 +54,7 @@ __all__ = [
     "FillHeightsConfiguration",
     "FillHeightsMesoConfiguration",
     "FillHeightsRepYearConfiguration",
+    "FillHeightFitResult",
     "FlatReportConfig",
     "FlatSubsectionConfig",
     "HeightReference",

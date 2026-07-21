@@ -5,7 +5,10 @@ Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 Description: Application use case for generating fill-heights configuration files
 
 This module provides the use case for generating fill-heights configuration
-files based on reconstruct-meso data.
+files based on reconstruct-meso data.  It orchestrates across subdomains:
+discovery lives in ``configuration`` (ProjectConfig), planning lives in
+``dataprocessing`` (planner.generate_dual_configs).  Neither subdomain
+imports the other.
 """
 
 from cleanmast.infrastructure.path_utils import to_posix_path

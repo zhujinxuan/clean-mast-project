@@ -153,7 +153,7 @@ def generate_dual_configs(
     """
     # Step 1: Load reconstruct-meso data and fit parameters
     # We fit ONCE on reconstruct-meso data
-    fit_data = _load_and_fit(meso_masts, base_dir, deg_diff_limit)
+    fit_data = fit_all_masts(meso_masts, base_dir, deg_diff_limit)
 
     # Step 2: Generate reconstruct-meso config
     meso_mast_configs = _build_mast_configs(
@@ -186,11 +186,11 @@ def generate_dual_configs(
     return meso_output, None
 
 
-def _load_and_fit(
+def fit_all_masts(
     mast_entries: list[MastPlanningEntry],
     base_dir: str,
     deg_diff_limit: float = 1.125,
-) -> dict:
+) -> dict[str, dict]:
     """Load reconstruct-meso data and fit shear/deg_diff for all masts.
 
     For each mast entry:
@@ -214,7 +214,7 @@ def _load_and_fit(
 
     Example:
         entries = [MastPlanningEntry(name="M01", output=source)]
-        fitted = _load_and_fit(entries, "/project")
+        fitted = fit_all_masts(entries, "/project")
         # fitted["M01"]["ws_shear_top3"] -> 0.142
     """
     repo = FileTimeSeriesRepository()
@@ -249,7 +249,7 @@ def _build_mast_configs(
     Args:
         mast_entries: List of MastPlanningEntry with mast names and output sources
         target_heights: List of heights to generate fill configurations for
-        fitted_params: Dictionary from _load_and_fit with fitted parameters
+        fitted_params: Dictionary from fit_all_masts with fitted parameters
         output_subdir: Subdirectory for output files
         base_dir: Base directory for resolving paths
 

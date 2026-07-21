@@ -12,6 +12,7 @@ from .adapters.cli import (
     recommend_timeseries_report,
     recommend_wt_timeseries_cli,
     report_timeseries,
+    train_fill_heights,
     verify,
 )
 
@@ -69,6 +70,17 @@ main.add_command(execute_fill_heights, "fill-heights")
 # Register wt-timeseries commands
 recommend.add_command(recommend_wt_timeseries_cli, "wt-timeseries")
 main.add_command(execute_wt_timeseries_cli, "wt-timeseries")
+
+# === Train command group ===
+
+
+@main.group()
+def train():
+    """Train models for data processing."""
+    pass
+
+
+train.add_command(train_fill_heights, "fill-heights")
 
 # === Report command group ===
 

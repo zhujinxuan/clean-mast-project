@@ -1,7 +1,12 @@
 """ProjectConfig — lazy discovery of all known TOML configs in a project directory."""
 
 from pathlib import Path
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from cleanmast.subdomains.configuration.model.fill_height_fit_result import (
+        FillHeightFitResult,
+    )
 
 from cleanmast.shared.timeseries.fill_height_meso_config import (
     FillHeightsMesoConfiguration,
@@ -20,7 +25,7 @@ from cleanmast.subdomains.configuration.model.report_config import FlatReportCon
 from cleanmast.subdomains.configuration.model.representative_year_config import (
     RepresentativeYearConfiguration,
 )
-from cleanmast.subdomains.configuration.services.config_io import load_config
+from cleanmast.subdomains.configuration.services.config_io import load_config, save_config
 
 
 # ===========================================================================
@@ -68,6 +73,8 @@ class ProjectConfig:
         FlatReportConfig: "rep-ts-report.toml",
     }
 
+    _FILL_MODELS_SUBDIR: ClassVar[str] = "fill-models"
+
     def __init__(self, project_dir: Path) -> None:
         self.project_dir = project_dir
         self._reconstruct_meso_config: DiscoveredConfig[ReconstructMesoConfiguration] | None = None
@@ -76,6 +83,7 @@ class ProjectConfig:
         self._fill_heights_meso_config: DiscoveredConfig[FillHeightsMesoConfiguration] | None = None
         self._fill_heights_rep_year_config: DiscoveredConfig[FillHeightsRepYearConfiguration] | None = None
         self._report_config: DiscoveredConfig[FlatReportConfig] | None = None
+        self._fill_height_models: dict[str, dict[str, DiscoveredConfig[FillHeightFitResult]]] | None = None
 
     def discover_reconstruct_meso_config(self) -> DiscoveredConfig[ReconstructMesoConfiguration] | None:
         """Discover and cache ``reconstruct-meso.toml``."""
@@ -148,3 +156,75 @@ class ProjectConfig:
         config = load_config(FlatReportConfig, path)
         self._report_config = DiscoveredConfig(config=config, filename=filename)
         return self._report_config
+
+    def discover_fill_height_models(self) -> "dict[str, dict[str, DiscoveredConfig[FillHeightFitResult]]]":
+        """Discover and cache trained fill-height models under ``fill-models/``.
+
+        Walks ``fill-models/{mast}/{strategy}/*-fit.toml`` (two levels: mast,
+        then strategy) and lazy-loads each file.  The inner key is
+        ``"{strategy}/{variable}"``, e.g. ``"remove-top-layer/ws"``.
+
+        Returns:
+            ``{mast_name: {strategy_key: DiscoveredConfig}}``; empty dict when
+            the ``fill-models/`` directory does not exist.
+        """
+        from cleanmast.subdomains.configuration.model.fill_height_fit_result import (
+            FillHeightFitResult,
+        )
+
+        if self._fill_height_models is not None:
+            return self._fill_height_models
+
+        models: dict[str, dict[str, DiscoveredConfig[FillHeightFitResult]]] = {}
+        root = self.project_dir / self._FILL_MODELS_SUBDIR
+        if root.is_dir():
+            for mast_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+                mast_models: dict[str, DiscoveredConfig[FillHeightFitResult]] = {}
+                for strategy_dir in sorted(p for p in mast_dir.iterdir() if p.is_dir()):
+                    for fit_file in sorted(strategy_dir.glob("*-fit.toml")):
+                        variable = fit_file.stem.removesuffix("-fit")
+                        config = load_config(FillHeightFitResult, fit_file)
+                        key = f"{strategy_dir.name}/{variable}"
+                        filename = fit_file.relative_to(self.project_dir).as_posix()
+                        mast_models[key] = DiscoveredConfig(config=config, filename=filename)
+                if mast_models:
+                    models[mast_dir.name] = mast_models
+
+        self._fill_height_models = models
+        return models
+
+    def save_fill_height_model(
+        self,
+        result: "FillHeightFitResult",
+        mast_name: str,
+        strategy: str,
+        variable: str,
+    ) -> Path:
+        """Persist a trained fill-height model under ``fill-models/``.
+
+        Writes to
+        ``fill-models/{mast_name}/{strategy}/{variable}-fit.toml`` and updates
+        the discovery cache.  This method is the single owner of the
+        ``fill-models/`` directory layout — consumers never construct these
+        paths themselves.
+
+        Returns:
+            The path the model was written to.
+        """
+        path = (
+            self.project_dir
+            / self._FILL_MODELS_SUBDIR
+            / mast_name
+            / strategy
+            / f"{variable}-fit.toml"
+        )
+        save_config(result, path)
+
+        if self._fill_height_models is not None:
+            key = f"{strategy}/{variable}"
+            filename = path.relative_to(self.project_dir).as_posix()
+            self._fill_height_models.setdefault(mast_name, {})[key] = DiscoveredConfig(
+                config=result, filename=filename
+            )
+
+        return path
