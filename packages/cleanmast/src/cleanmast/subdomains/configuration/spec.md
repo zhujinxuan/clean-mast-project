@@ -33,3 +33,29 @@ Centralized configuration discovery and management for wind energy project direc
 - If a config is optional, return `None` from the discover method; if required, let the caller raise `FileNotFoundError`.
 - If a model is shared between two TOML files with different semantics (e.g. meso vs rep-year), create separate marker subclasses rather than a single model with a context field.
 - If a TOML is one-per-project, use `discover_*_config()`; if it is one-per-mast/strategy under a subdirectory, use `discover_*_models()`.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+项目配置是风资源评估管道的"总控": 定义哪些测风塔、用什么模型、
+输出到哪里。配置本身不执行计算 — 它描述意图。
+
+### Key concepts
+
+- **reconstruct-meso.toml**: 定义中尺度重建的输入测风塔、模型规格、输出目标。
+  是 fill-heights 和 wt-timeseries 等下游步骤的必要前提。
+- **fill-heights-reconstruct-meso.toml**: 描述每个测风塔的目标补全高度及策略。
+- **train vs recommend**: `recommend` 从项目约定和现有数据生成配置文件；
+  `train` 从数据学习参数 (如风切变指数 shear, 风向变化率 deg_diff_per_m)
+  并持久化为模型文件。两者互补: train 产出模型，recommend 消费模型生成配置。
+- **fill-models/{mast}/{strategy}/*.toml**: 训练好的补全模型参数。
+  风切变指数和风向变化率是站点物理属性，与数据源无关 —
+  从中尺度重建数据拟合的参数可复用于代表年数据。
+- **meso-models/**: 未来存储中尺度训练模型结果，与 fill-models/ 并行。
+
+### Business constraints
+
+- 推荐配置必须可审查/可覆盖: `recommend` 生成的是预测，人工可通过
+  `just-override/` 调整。
+- 配置类型与文件名一对一映射 (`_FILENAMES`)，不允许歧义。

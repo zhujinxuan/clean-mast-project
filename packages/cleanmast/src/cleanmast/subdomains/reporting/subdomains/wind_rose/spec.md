@@ -23,3 +23,13 @@ Wind rose frequency distribution (16-sector polar) computation and chart renderi
 
 - If a calculation is reused by other capabilities → `reporting/compute/`.
 - If between compute and assemble: math → compute; wrapping → assemble.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+风玫瑰图展示 16 扇区的风向频率和风速分布，是风场布局优化的基础输入。
+
+### Key concepts
+
+扇区从正北 (0°) 开始，顺时针每 22.5° 一个扇区；每个扇区包含频率和平均风速。

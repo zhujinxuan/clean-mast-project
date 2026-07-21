@@ -23,3 +23,13 @@ Single-mast wind speed frequency distribution analysis for wind resource reports
 
 - If a calculation is reused by other capabilities → `reporting/compute/`.
 - If between compute and assemble: math → compute; wrapping → assemble.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+风速频率分布直方图，按指定 bin 宽度统计各风速段的出现频率。
+
+### Key concepts
+
+bin 宽度默认 1 m/s；频率可表示为绝对频次或百分比。

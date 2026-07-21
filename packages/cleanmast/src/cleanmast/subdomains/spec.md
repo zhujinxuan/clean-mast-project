@@ -53,3 +53,26 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
   it is an application usecase, not a subdomain service.
 - If a function needs math AND file access → split it into compute + render.
 - If unsure whether compute or assemble: produces DataFrame/number → compute; wraps in atoms → assemble.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+测风塔 (meteorological mast) 风资源评估数据流经多个管道阶段:
+原始传感器数据 → 清洗 → 单塔/交叉/中尺度重建 → 目标高度补全 → 风机时序 → 报告。
+每个阶段消费前一阶段的产出，通过 `shared/` 中的契约类型传递。
+Bounded context 对应管道阶段: `configuration` (定义处理什么)、
+`dataprocessing` (执行处理)、`reporting` (生成评估报告)。
+
+### Key concepts
+
+- **Mast**: 测风塔，一个物理地点的多高度、多传感器安装。
+- **Sensor**: 单个测量通道 (风速/风向，安装高度，统计类型)。
+- **Reconstruct**: 利用参考数据源补全缺失时段或扩展低质量数据。
+- **Fill heights**: 利用风切变模型将已知高度数据推算至目标高度 (如轮毂高度)。
+- **Pipeline stage**: 阶段之间无直接依赖；编排由 application usecases 完成。
+
+### Business constraints
+
+- 数据完整性是报告可信度的前提: 缺失时段必须重建，目标高度必须补全。
+- 风机轮毂高度典型值: 125 m, 140 m, 160 m — 因此 fill-heights 默认目标高度为这三个。

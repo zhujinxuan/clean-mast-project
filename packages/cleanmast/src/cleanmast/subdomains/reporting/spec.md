@@ -38,3 +38,30 @@ Produces wind resource assessment reports from time-series data.
 - If a type is used by 2+ capabilities → `reporting/model/`.
 - If a calculation is used by 2+ capabilities → `reporting/compute/`.
 - If unsure between compute and assemble: produces DataFrame/number → compute; wraps atoms → assemble.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+风资源评估报告是管道的最终产出。按 IEC 61400 标准生成多维度评估结果。
+Reporting 是 vertical-slice 架构: 每个评估维度 (capability) 独立完成
+compute → assemble → render 流程。
+
+### Key concepts
+
+9 个评估维度 (capabilities):
+- **weibull**: 威布尔双参数分布拟合风速概率密度和风能密度。
+- **wind_rose**: 16 扇区风向频率和风速分布。
+- **turbulence**: 湍流强度 (TI) 分析，按 IEC 61400-1 分级。
+- **wind_frequency**: 风速频率直方图。
+- **wind_temporal**: 风速/风向日变化和月变化统计。
+- **vertical_profile**: 垂直风廓线 — 风切变幂律拟合。
+- **extreme_wind**: 极端风速重现期分析 (Gumbel 分布)。
+- **representative_year**: 代表年选取，匹配长期气候平均值。
+- **air_density**: 空气密度计算 (温度、气压、海拔校正)。
+
+### Business constraints
+
+- 评估结果直接影响风机选型和项目融资 — 准确性是硬约束。
+- IEC 61400 标准定义了湍流类别 (A/B/C)、参考风速、极端风模型。
+- 代表年 (representative year) 选取影响所有后续评估的参考基线。

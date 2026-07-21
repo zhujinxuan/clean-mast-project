@@ -23,3 +23,17 @@ Fifty-year max wind (extreme wind) analysis for wind resource reports. Covers IE
 - If a calculation is reused by other capabilities → `reporting/compute/`.
 - If between compute and assemble: math → compute; wrapping → assemble.
 - IEC standards table is not mast-specific → assembled as NoMast atom.
+
+## 业务说明 (Business description)
+
+### Domain context
+
+极端风速分析预测 N 年重现期的最大风速，使用 Gumbel 极值分布拟合年最大值序列。
+
+### Key concepts
+
+典型重现期: 50 年 (风机设计寿命)。
+
+### Business constraints
+
+样本量不足 (少于 10 年数据) 时重现期估计不可靠。
