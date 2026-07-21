@@ -1,7 +1,4 @@
-"""Report schemas for representative year calibration analysis.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Report schemas for representative year calibration analysis."""
 
 import dataframely as dy
 

@@ -1,7 +1,4 @@
-"""Metadata for wind temporal report atoms.
-
-Compliance: Subdomain layout | Value Object | frozen
-"""
+"""Metadata for wind temporal report atoms."""
 
 from dataclasses import dataclass
 

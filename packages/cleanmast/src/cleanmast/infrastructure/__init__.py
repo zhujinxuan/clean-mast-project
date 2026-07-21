@@ -1,8 +1,4 @@
-"""Infrastructure layer - external system adapters.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Infrastructure Pattern ✓ | Anti-Corruption Layer ✓
-"""
+"""Infrastructure layer - external system adapters."""
 
 from typst_ir import serialize
 

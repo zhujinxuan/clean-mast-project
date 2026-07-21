@@ -1,7 +1,4 @@
-"""Wind distribution subgrid atom for single mast analysis.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Wind distribution subgrid atom for single mast analysis."""
 
 from pathlib import Path
 

@@ -1,7 +1,5 @@
 """Sensor column value object - matches Julia's SensorColumn struct.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, domain-001-sensor-access
-Compliance: Subdomain layout ✓ | Value Object ✓ | Julia-compatible ✓
 Description: Value object representing sensor metadata with Julia-compatible camelCase serialization
 """
 

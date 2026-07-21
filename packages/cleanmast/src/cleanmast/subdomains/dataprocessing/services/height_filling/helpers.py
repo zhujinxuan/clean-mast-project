@@ -1,7 +1,5 @@
 """Pure helper functions for fill-heights operations.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 Description: Stateless utility functions for height filling operations
 
 This module contains stateless utility functions used throughout the fill-heights

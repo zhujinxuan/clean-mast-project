@@ -1,7 +1,4 @@
-"""Report schemas for multi-mast air density analysis.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Report schemas for multi-mast air density analysis."""
 
 import dataframely as dy
 

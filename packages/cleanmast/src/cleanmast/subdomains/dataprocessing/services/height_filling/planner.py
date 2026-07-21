@@ -1,7 +1,5 @@
 """Fill heights planning service.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 Description: Domain service for generating fill-heights configurations
 
 This module implements the planning layer of the fill-heights system.

@@ -1,8 +1,4 @@
-"""Wind direction interpolation strategy.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Strategy Pattern ✓
-"""
+"""Wind direction interpolation strategy."""
 
 from cleanmast.shared.timeseries import (
     HeightReference,

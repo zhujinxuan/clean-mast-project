@@ -1,7 +1,4 @@
-"""CLI adapters for fill-heights and wt-timeseries execution commands.
-
-ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
-"""
+"""CLI adapters for fill-heights and wt-timeseries execution commands."""
 
 from pathlib import Path
 

@@ -1,7 +1,4 @@
-"""CLI adapters for the process command group.
-
-ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
-"""
+"""CLI adapters for the process command group."""
 
 import click
 

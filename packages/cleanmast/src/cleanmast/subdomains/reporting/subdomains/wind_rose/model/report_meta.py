@@ -1,7 +1,4 @@
-"""Metadata for single mast report atoms.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Metadata for single mast report atoms."""
 
 from dataclasses import dataclass
 

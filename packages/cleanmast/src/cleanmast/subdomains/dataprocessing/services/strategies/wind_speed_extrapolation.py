@@ -1,7 +1,5 @@
 """Wind speed extrapolation strategy using top 3 fitted shear.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Strategy Pattern ✓ | Domain Service ✓
 Description: Strategy for extrapolating wind speed above highest sensor using top 3 shear
 
 This strategy fills wind speed at a target height ABOVE the highest existing

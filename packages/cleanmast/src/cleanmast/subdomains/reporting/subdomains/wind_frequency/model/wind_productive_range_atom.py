@@ -1,7 +1,4 @@
-"""Wind productive range atom for single mast analysis.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Wind productive range atom for single mast analysis."""
 
 from pathlib import Path
 from typing import cast

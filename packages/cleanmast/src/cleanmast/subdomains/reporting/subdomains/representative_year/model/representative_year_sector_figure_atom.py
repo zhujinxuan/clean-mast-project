@@ -1,7 +1,4 @@
-"""Per-mast 4×4 Altair scatter grid atom for representative year calibration.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Per-mast 4×4 Altair scatter grid atom for representative year calibration."""
 
 from __future__ import annotations
 

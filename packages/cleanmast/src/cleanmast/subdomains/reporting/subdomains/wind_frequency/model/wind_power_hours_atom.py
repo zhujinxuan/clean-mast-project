@@ -1,7 +1,4 @@
-"""Wind power hours atom for single mast analysis.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Wind power hours atom for single mast analysis."""
 
 from pathlib import Path
 from typing import cast

@@ -1,7 +1,4 @@
-"""CLI adapter for report generation command.
-
-ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
-"""
+"""CLI adapter for report generation command."""
 
 
 import click

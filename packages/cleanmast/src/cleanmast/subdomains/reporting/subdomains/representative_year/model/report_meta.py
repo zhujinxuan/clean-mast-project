@@ -1,7 +1,4 @@
-"""Metadata for representative year calibration report atoms.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Metadata for representative year calibration report atoms."""
 
 from __future__ import annotations
 

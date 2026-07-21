@@ -1,6 +1,5 @@
 """Wind rose grid atom for monthly 3x4 grid visualization.
 
-Compliance: Aggregate | Entity | Content-Addressable
 
 LOGIC-PRESERVATION: Ported from assessment/subdomains/wind_rose/entities/wind_rose_grid_atom.py.
 All chart rendering and summary logic preserved exactly.

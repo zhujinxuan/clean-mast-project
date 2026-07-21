@@ -1,7 +1,5 @@
 """Generate WT TimeSeries use case.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 
 This module provides the use case for executing wt-timeseries processing
 from configuration file.

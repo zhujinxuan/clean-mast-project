@@ -1,7 +1,5 @@
 """Time series repository protocol.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, persistence-001-parquet-storage
-Compliance: Protocol-based ✓ | Repository Pattern ✓
 Description: Repository protocol defining interface for time series data access
 """
 

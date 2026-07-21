@@ -1,7 +1,5 @@
 """Time series data entity for CleanMast.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, data-001-symbol-columns
-Compliance: Subdomain layout ✓ | Domain Entity ✓ | Sensor-based access ✓
 Description: Entity representing time series data with sensor metadata
 """
 

@@ -1,7 +1,4 @@
-"""Monthly daily wind power pattern atom for 3x4 grid visualization.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Monthly daily wind power pattern atom for 3x4 grid visualization."""
 
 from pathlib import Path
 

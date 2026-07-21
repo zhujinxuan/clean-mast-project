@@ -1,7 +1,4 @@
-"""Per-mast 16-sector representative year calibration table atom.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Per-mast 16-sector representative year calibration table atom."""
 
 from __future__ import annotations
 

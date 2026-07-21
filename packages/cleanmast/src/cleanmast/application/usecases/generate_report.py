@@ -1,7 +1,5 @@
 """Generate report use case.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 Description: Application use case for generating representative timeseries reports
 
 This module provides the use case for generating representative timeseries reports
@@ -134,7 +132,6 @@ def load_datasets(
     Raises:
         FileNotFoundError: If any dataset path does not exist.
 
-    ADR-GUARDRAILS: ddd-a-001-use-case-pattern
     I/O at use case boundary — domain logic is I/O-free.
     """
     loaded: dict[str, LoadedDataset] = {}

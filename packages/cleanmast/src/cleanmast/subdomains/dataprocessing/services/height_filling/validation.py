@@ -1,7 +1,5 @@
 """Validation utilities for fill-heights configuration.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 Description: Runtime validation for HeightReference configurations
 
 This module provides runtime validation for HeightReference configurations

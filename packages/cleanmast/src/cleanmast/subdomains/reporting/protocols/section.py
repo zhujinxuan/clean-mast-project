@@ -1,8 +1,4 @@
-"""Section protocol for reporting capabilities.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-s-002-context-maps
-Compliance: Subdomain layout ✓ | Protocol Definition ✓
-"""
+"""Section protocol for reporting capabilities."""
 
 from __future__ import annotations
 

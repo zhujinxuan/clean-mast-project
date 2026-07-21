@@ -1,7 +1,4 @@
-"""Metadata for single mast turbulence report atoms.
-
-Compliance: Subdomain layout | Value Object | frozen
-"""
+"""Metadata for single mast turbulence report atoms."""
 
 from dataclasses import dataclass
 

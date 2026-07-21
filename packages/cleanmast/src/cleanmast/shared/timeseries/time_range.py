@@ -1,7 +1,5 @@
 """Time range value object for CleanMast.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Value Object ✓ | DDD Compliant ✓
 Description: Time range specification with validation
 """
 

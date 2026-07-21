@@ -1,7 +1,5 @@
 """Recommend fill-heights use case.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 Description: Application use case for generating fill-heights configuration files
 
 This module provides the use case for generating fill-heights configuration

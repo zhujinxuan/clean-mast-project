@@ -1,7 +1,4 @@
-"""Metadata for vertical profile report atoms.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Metadata for vertical profile report atoms."""
 
 from dataclasses import dataclass
 

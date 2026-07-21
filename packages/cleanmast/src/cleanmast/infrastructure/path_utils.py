@@ -1,7 +1,5 @@
 """Path utilities for cross-platform path handling.
 
-ADR-GUARDRAILS: platform-001-cross-platform-paths
-Compliance: Cross-platform paths ✓
 Description: Utility functions for consistent path string representation
 """
 

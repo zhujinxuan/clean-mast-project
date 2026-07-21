@@ -1,7 +1,4 @@
-"""Height filling services.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-"""
+"""Height filling services."""
 
 from .fitting import (
     fit_deg_diff_neighbors,

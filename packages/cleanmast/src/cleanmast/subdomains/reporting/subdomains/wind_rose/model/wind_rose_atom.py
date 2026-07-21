@@ -1,6 +1,5 @@
 """Wind rose atoms for single mast analysis.
 
-Compliance: Subdomain layout | Entity | Atom Pattern
 
 LOGIC-PRESERVATION: Ported from assessment/subdomains/wind_rose/entities/wind_rose_atom.py.
 All chart rendering, table formatting, and summary logic preserved exactly.

@@ -1,7 +1,5 @@
 """Strategy-independent fitting functions for shear and direction change.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 Description: Mathematical fitting functions for shear and direction change
 
 This module contains the core mathematical fitting functions used to estimate

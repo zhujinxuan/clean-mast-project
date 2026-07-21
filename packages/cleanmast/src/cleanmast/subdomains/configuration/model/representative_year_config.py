@@ -3,8 +3,6 @@
 These models match the Julia RepresentativeYearConfig types and allow
 reading representative-year.toml configuration files.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Value Object ✓ | DDD Compliant ✓
 Description: Representative year calibration configuration
 """
 

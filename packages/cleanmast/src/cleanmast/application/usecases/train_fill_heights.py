@@ -1,7 +1,5 @@
 """Train fill-height models use case.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 
 Trains fill-height models (shear / deg_diff) from reconstruct-meso data and
 persists one TOML per mast x strategy x variable under

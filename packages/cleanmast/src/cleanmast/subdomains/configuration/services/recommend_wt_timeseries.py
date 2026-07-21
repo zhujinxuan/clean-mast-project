@@ -1,7 +1,5 @@
 """Recommend WT TimeSeries use case.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case ✓ | CLI Adapter Ready ✓
 
 This module provides the use case for generating wt-timeseries.toml
 configuration files based on auto-discovering heights from representative-year data.

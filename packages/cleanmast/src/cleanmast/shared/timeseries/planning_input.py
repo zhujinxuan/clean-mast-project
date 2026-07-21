@@ -1,7 +1,5 @@
 """Lightweight mast metadata entries for fill-heights planning.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Subdomain layout ✓ | Value Object ✓
 Description: Minimal dataclass carrying mast name and output source
              for fill-heights planning — avoids importing heavy config types.
 """

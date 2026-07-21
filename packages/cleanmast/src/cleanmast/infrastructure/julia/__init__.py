@@ -1,8 +1,4 @@
-"""Julia integration infrastructure.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Infrastructure Pattern ✓ | ACL Package ✓
-"""
+"""Julia integration infrastructure."""
 
 from cleanmast.infrastructure.julia.julia_acl import JuliaAntiCorruptionLayer
 

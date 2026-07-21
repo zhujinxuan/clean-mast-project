@@ -1,7 +1,5 @@
 """Wind direction extrapolation strategy using top 3 fitted deg_diff.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Strategy Pattern ✓ | Domain Service ✓
 Description: Strategy for extrapolating wind direction above highest sensor using top 3 deg_diff
 
 This strategy fills wind direction at a target height ABOVE the highest existing

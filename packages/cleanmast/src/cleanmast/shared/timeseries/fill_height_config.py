@@ -1,7 +1,5 @@
 """Fill heights configuration models and validation.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, config-001-config-structs
-Compliance: Subdomain layout ✓ | Value Object ✓ | Validation ✓
 Description: Pydantic models for the fill-heights TOML configuration
 """
 

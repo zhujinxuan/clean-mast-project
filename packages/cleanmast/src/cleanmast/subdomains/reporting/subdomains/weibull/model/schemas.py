@@ -1,7 +1,4 @@
-"""Weibull distribution schemas for the reporting domain.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Weibull distribution schemas for the reporting domain."""
 
 import dataframely as dy
 

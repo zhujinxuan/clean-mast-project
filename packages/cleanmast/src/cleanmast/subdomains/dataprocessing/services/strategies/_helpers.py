@@ -1,7 +1,5 @@
 """Pure helper functions for height filling strategies.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Pure Functions ✓ | Strategy Support ✓
 Description: Stateless utility functions used by height filling strategies
 
 This module contains stateless utility functions used by the height filling

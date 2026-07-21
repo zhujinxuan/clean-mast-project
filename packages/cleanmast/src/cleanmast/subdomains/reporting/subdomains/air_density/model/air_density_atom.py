@@ -1,7 +1,4 @@
-"""Multi-mast air density atom for the reporting domain.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Multi-mast air density atom for the reporting domain."""
 
 import math
 from pathlib import Path

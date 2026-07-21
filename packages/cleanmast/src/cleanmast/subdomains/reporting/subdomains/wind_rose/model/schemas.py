@@ -1,7 +1,4 @@
-"""Report schemas for wind_rose subdomain.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Report schemas for wind_rose subdomain."""
 
 import dataframely as dy
 

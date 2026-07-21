@@ -1,7 +1,5 @@
 """Application use cases.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-a-001-use-case-pattern
-Compliance: Subdomain layout ✓ | Use Case Layer ✓
 Description: Application use cases for CleanMast operations
 """
 

@@ -1,7 +1,5 @@
 """WT TimeSeries generator service.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 
 This module provides the domain service for generating WT TimeSeries CSV files
 for Meteodyn WT software. It processes mast data to create standardized

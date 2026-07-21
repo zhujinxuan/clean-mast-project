@@ -1,7 +1,4 @@
-"""CLI adapter for the fill-heights training command.
-
-ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
-"""
+"""CLI adapter for the fill-heights training command."""
 
 from pathlib import Path
 

@@ -1,8 +1,4 @@
-"""DataProcessing subdomain.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Subdomain layout ✓ | DataProcessing Domain ✓
-"""
+"""DataProcessing subdomain."""
 
 from cleanmast.subdomains.dataprocessing.services import (
     HeightFiller,

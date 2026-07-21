@@ -1,7 +1,4 @@
-"""Metadata for multi-mast air density report atoms.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Metadata for multi-mast air density report atoms."""
 
 from dataclasses import dataclass, field
 

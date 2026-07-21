@@ -1,7 +1,4 @@
-"""Wind frequency analysis result schema in long format.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Wind frequency analysis result schema in long format."""
 
 import dataframely as dy
 

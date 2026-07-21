@@ -1,7 +1,5 @@
 """Wind direction interpolation strategy between two layers.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Strategy Pattern ✓ | Domain Service ✓
 Description: Strategy for interpolating wind direction between two existing sensor heights
 
 This strategy fills wind direction at a target height by interpolating between

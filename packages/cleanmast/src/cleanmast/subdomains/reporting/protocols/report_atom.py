@@ -1,8 +1,4 @@
-"""ReportAtom base class for content-addressable report components.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-001-aggregates
-Compliance: Subdomain layout ✓ | Aggregate ✓ | Report Pattern ✓
-"""
+"""ReportAtom base class for content-addressable report components."""
 
 from __future__ import annotations
 

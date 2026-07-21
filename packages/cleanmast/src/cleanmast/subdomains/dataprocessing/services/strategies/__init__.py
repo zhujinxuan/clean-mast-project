@@ -1,7 +1,5 @@
 """Height filling strategies for DataProcessing domain.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-003-strategy-pattern
-Compliance: Subdomain layout ✓ | Strategy Pattern ✓
 Description: Strategy exports for height filling operations
 """
 

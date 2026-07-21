@@ -1,7 +1,5 @@
 """Height filling service for wind speed and wind direction.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓ | Strategy Pattern ✓
 Description: Domain service for filling missing sensor heights using interpolation/extrapolation
 
 This module implements the execution layer for wind speed and wind direction height filling.
@@ -234,8 +232,6 @@ def apply_wd_fill(
 class HeightFiller:
     """Domain service for filling sensor heights.
 
-    ADR-GUARDRAILS: ddd-t-004-domain-services
-    Compliance: Domain Service ✓ | Stateless ✓
     Description: Stateless domain service providing height filling operations
 
     This service provides a unified interface for both wind speed and

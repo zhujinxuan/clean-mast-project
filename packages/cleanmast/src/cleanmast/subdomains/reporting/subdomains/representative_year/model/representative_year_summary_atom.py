@@ -1,7 +1,4 @@
-"""All-mast representative year calibration summary atom.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""All-mast representative year calibration summary atom."""
 
 from __future__ import annotations
 

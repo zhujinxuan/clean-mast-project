@@ -1,7 +1,4 @@
-"""Combined Weibull parameters and distribution subgrid atom.
-
-Compliance: Subdomain layout | Entity | Atom Pattern
-"""
+"""Combined Weibull parameters and distribution subgrid atom."""
 
 import math
 from pathlib import Path

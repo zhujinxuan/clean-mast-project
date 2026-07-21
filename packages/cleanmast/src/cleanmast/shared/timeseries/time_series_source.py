@@ -1,7 +1,5 @@
 """Time series source value object for CleanMast.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout
-Compliance: Value Object ✓ | DDD Compliant ✓
 Description: Reference to time series data files
 """
 

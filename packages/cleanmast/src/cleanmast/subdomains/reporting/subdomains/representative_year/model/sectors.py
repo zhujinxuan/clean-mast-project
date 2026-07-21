@@ -1,7 +1,4 @@
-"""Domain constants and helpers for 16-direction wind-sector mapping.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Domain constants and helpers for 16-direction wind-sector mapping."""
 
 from __future__ import annotations
 

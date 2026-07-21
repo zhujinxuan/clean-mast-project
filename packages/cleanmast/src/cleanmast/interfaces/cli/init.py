@@ -1,7 +1,4 @@
-"""CLI adapter for project initialization command.
-
-ADR-GUARDRAILS: cli-001-comonicon-cli, structure-001-subdomain-layout
-"""
+"""CLI adapter for project initialization command."""
 
 import shutil
 from pathlib import Path

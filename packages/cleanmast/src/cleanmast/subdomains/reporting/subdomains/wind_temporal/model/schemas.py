@@ -1,7 +1,4 @@
-"""Temporal pattern schemas.
-
-Compliance: Subdomain layout | Value Object | Schema Validation
-"""
+"""Temporal pattern schemas."""
 
 import dataframely as dy
 

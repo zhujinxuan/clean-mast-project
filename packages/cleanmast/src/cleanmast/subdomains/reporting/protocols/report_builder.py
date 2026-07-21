@@ -1,8 +1,4 @@
-"""ReportBuilder protocol for orchestrating report generation.
-
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-s-001-services
-Compliance: Subdomain layout ✓ | Service Layer ✓ | Report Pattern ✓
-"""
+"""ReportBuilder protocol for orchestrating report generation."""
 
 from __future__ import annotations
 

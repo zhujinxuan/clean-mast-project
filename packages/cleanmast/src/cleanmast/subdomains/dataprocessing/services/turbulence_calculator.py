@@ -1,7 +1,5 @@
 """Turbulence calculator service.
 
-ADR-GUARDRAILS: structure-001-subdomain-layout, ddd-t-004-domain-services
-Compliance: Subdomain layout ✓ | Domain Service ✓
 
 This module provides the domain service for calculating Turbulence Intensity (TI)
 matrices from wind speed and direction data. TI is calculated as:

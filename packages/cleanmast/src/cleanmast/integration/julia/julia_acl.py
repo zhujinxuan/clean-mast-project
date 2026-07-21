@@ -1,7 +1,5 @@
 """Julia Anti-Corruption Layer.
 
-ADR-GUARDRAILS: integration-001-julia
-Compliance: ACL Pattern ✓ | Translation layer for Julia interoperability
 
 Future: Translate between Python and Julia data formats.
 Currently: Raises NotImplementedError with helpful message directing to Julia CLI.

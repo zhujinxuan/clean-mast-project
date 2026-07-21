@@ -1,7 +1,4 @@
-"""Metadata for Weibull report atoms.
-
-Compliance: Subdomain layout | Value Object
-"""
+"""Metadata for Weibull report atoms."""
 
 from dataclasses import dataclass
 
