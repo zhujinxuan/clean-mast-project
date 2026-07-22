@@ -1,4 +1,8 @@
-"""CleanMast CLI entry point — groups and registration only."""
+"""CleanMast CLI entry point — groups and registration only.
+
+CLI modules import from cleanmast.bootstrap only; never from
+cleanmast.application.usecases or cleanmast.subdomains directly.
+"""
 
 import click
 

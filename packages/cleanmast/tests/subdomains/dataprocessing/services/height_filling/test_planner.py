@@ -10,19 +10,21 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import polars as pl
 import pytest
+from cleanmast.infrastructure.file_repository import (
+    FileTimeSeriesRepository,
+    save_timeseries_parquet,
+)
 from cleanmast.shared.timeseries import (
     MastPlanningEntry,
     SensorColumn,
     TimeSeriesData,
     TimeSeriesSource,
 )
-from cleanmast.shared.timeseries.io.file_repository import (
-    save_timeseries_parquet,
-)
 from cleanmast.subdomains.dataprocessing.services.height_filling.planner import (
     _build_wd_configs,
     _build_ws_configs,
-    fit_all_masts,
+    build_one_mast_config,
+    fit_one_mast,
     generate_dual_configs,
 )
 
@@ -117,15 +119,42 @@ class TestGenerateDualConfigs:
         tmp_path: Path,
     ):
         """Test that dual config generation returns both configs."""
-        meso_config, rep_config = generate_dual_configs(
-            meso_masts=meso_mast_entries,
-            rep_year_masts=rep_year_mast_entries,
+        repo = FileTimeSeriesRepository()
+        base_dir = str(tmp_path)
+
+        # Load, fit, and build per mast for meso stream
+        meso_entry = meso_mast_entries[0]
+        ts_meso = repo.load(meso_entry.output, base_dir)
+        fitted_meso = fit_one_mast(ts_meso)
+        meso_config = build_one_mast_config(
+            timeseries=ts_meso,
+            fitted=fitted_meso,
             target_heights=[120.0],
-            base_dir=str(tmp_path),
+            output_subdir="reconstruct-meso-fill-heights",
+            name=meso_entry.name,
+            input_source=meso_entry.output,
         )
 
-        assert meso_config is not None
-        assert rep_config is not None
+        # Load, fit, and build per mast for rep-year stream
+        rep_entry = rep_year_mast_entries[0]
+        ts_rep = repo.load(rep_entry.output, base_dir)
+        fitted_rep = fit_one_mast(ts_rep)
+        rep_config = build_one_mast_config(
+            timeseries=ts_rep,
+            fitted=fitted_rep,
+            target_heights=[120.0],
+            output_subdir="representative-year-fill-heights",
+            name=rep_entry.name,
+            input_source=rep_entry.output,
+        )
+
+        meso_output, rep_output = generate_dual_configs(
+            meso_mast_configs=[meso_config],
+            rep_year_mast_configs=[rep_config],
+        )
+
+        assert meso_output is not None
+        assert rep_output is not None
 
     def test_generate_dual_configs_skips_rep_year_if_none(
         self,
@@ -133,22 +162,35 @@ class TestGenerateDualConfigs:
         tmp_path: Path,
     ):
         """Test that rep_year config is None when not provided."""
-        meso_config, rep_config = generate_dual_configs(
-            meso_masts=meso_mast_entries,
-            rep_year_masts=None,
+        repo = FileTimeSeriesRepository()
+        base_dir = str(tmp_path)
+
+        # Load, fit, and build per mast for meso stream
+        meso_entry = meso_mast_entries[0]
+        ts_meso = repo.load(meso_entry.output, base_dir)
+        fitted_meso = fit_one_mast(ts_meso)
+        meso_config = build_one_mast_config(
+            timeseries=ts_meso,
+            fitted=fitted_meso,
             target_heights=[120.0],
-            base_dir=str(tmp_path),
+            output_subdir="reconstruct-meso-fill-heights",
+            name=meso_entry.name,
+            input_source=meso_entry.output,
         )
 
-        assert meso_config is not None
-        assert rep_config is None
+        meso_output, rep_output = generate_dual_configs(
+            meso_mast_configs=[meso_config],
+        )
+
+        assert meso_output is not None
+        assert rep_output is None
 
 
-class TestFitAllMasts:
-    """Tests for fit_all_masts function."""
+class TestFitOneMast:
+    """Tests for fit_one_mast function."""
 
-    def testfit_all_masts_fits_shear_for_all_masts(self, tmp_path: Path):
-        """Test that shear is fitted for all masts."""
+    def test_fit_one_mast_fits_shear(self, tmp_path: Path):
+        """Test that shear and deg_diff are fitted for one mast."""
         # Create test data
         (tmp_path / "test").mkdir(parents=True, exist_ok=True)
         df = pl.DataFrame({
@@ -217,11 +259,12 @@ class TestFitAllMasts:
         ]
 
         # Save parquet with embedded sensor metadata
+        source = TimeSeriesSource(
+            data=str(tmp_path / "test/M01.parquet"),
+            sensors=str(tmp_path / "test/M01.sensors.yaml"),
+        )
         save_timeseries_parquet(
-            source=TimeSeriesSource(
-                data=str(tmp_path / "test/M01.parquet"),
-                sensors=str(tmp_path / "test/M01.sensors.yaml"),
-            ),
+            source=source,
             base_dir=str(tmp_path),
             data=TimeSeriesData(df=df, sensors=sensors),
         )
@@ -235,11 +278,14 @@ class TestFitAllMasts:
             ),
         )
 
-        fitted = fit_all_masts([entry], str(tmp_path))
+        # Load and fit one mast
+        repo = FileTimeSeriesRepository()
+        ts = repo.load(entry.output, str(tmp_path))
+        fitted = fit_one_mast(ts)
 
-        assert "M01" in fitted
-        assert "ws_shear_top3" in fitted["M01"]
-        assert "wd_deg_diff_top3" in fitted["M01"]
+        assert fitted.ws_shear_top3 is not None
+        assert fitted.wd_deg_diff_top3 is not None
+        assert fitted.timeseries is not None
 
 
 class TestBuildWSConfigs:
@@ -589,44 +635,72 @@ class TestBothConfigsUseSameFittedParams:
         ]
 
         # Save both parquets with embedded sensor metadata
+        meso_source = TimeSeriesSource(
+            data=str(tmp_path / "reconstruct-meso/M01.parquet"),
+            sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
+        )
         save_timeseries_parquet(
-            source=TimeSeriesSource(
-                data=str(tmp_path / "reconstruct-meso/M01.parquet"),
-                sensors=str(tmp_path / "reconstruct-meso/M01.sensors.yaml"),
-            ),
+            source=meso_source,
             base_dir=str(tmp_path),
             data=TimeSeriesData(df=df_meso, sensors=sensors),
         )
+        rep_source = TimeSeriesSource(
+            data=str(tmp_path / "rep-year/M01.parquet"),
+            sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
+        )
         save_timeseries_parquet(
-            source=TimeSeriesSource(
-                data=str(tmp_path / "rep-year/M01.parquet"),
-                sensors=str(tmp_path / "rep-year/M01.sensors.yaml"),
-            ),
+            source=rep_source,
             base_dir=str(tmp_path),
             data=TimeSeriesData(df=df_rep, sensors=sensors),
         )
 
-        # Create MastPlanningEntry lists
-        meso_entries = [MastPlanningEntry(
+        # Create MastPlanningEntry list for meso stream
+        meso_entry = MastPlanningEntry(
             name="M01",
             output=TimeSeriesSource(
                 data="./reconstruct-meso/M01.parquet",
                 sensors="./reconstruct-meso/M01.sensors.yaml",
             ),
-        )]
-        rep_entries = [MastPlanningEntry(
+        )
+        # Create MastPlanningEntry list for rep-year stream
+        rep_entry = MastPlanningEntry(
             name="M01",
             output=TimeSeriesSource(
                 data="./rep-year/M01.parquet",
                 sensors="./rep-year/M01.sensors.yaml",
             ),
-        )]
+        )
+
+        base_dir = str(tmp_path)
+        repo = FileTimeSeriesRepository()
+
+        # Fit ONCE from meso data — both configs reuse this FitResult
+        ts_meso = repo.load(meso_entry.output, base_dir)
+        fitted_meso = fit_one_mast(ts_meso)
+
+        # Build meso config using meso data + meso fit
+        meso_cfg = build_one_mast_config(
+            timeseries=ts_meso,
+            fitted=fitted_meso,
+            target_heights=[120.0],
+            output_subdir="reconstruct-meso-fill-heights",
+            name=meso_entry.name,
+            input_source=meso_entry.output,
+        )
+
+        # Build rep config using meso fit, but rep entry's input_source
+        rep_cfg = build_one_mast_config(
+            timeseries=ts_meso,  # same reference timeseries (meso)
+            fitted=fitted_meso,  # same fitted params
+            target_heights=[120.0],
+            output_subdir="representative-year-fill-heights",
+            name=rep_entry.name,
+            input_source=rep_entry.output,
+        )
 
         meso_config, rep_config = generate_dual_configs(
-            meso_masts=meso_entries,
-            rep_year_masts=rep_entries,
-            target_heights=[120.0],
-            base_dir=str(tmp_path),
+            meso_mast_configs=[meso_cfg],
+            rep_year_mast_configs=[rep_cfg],
         )
         assert meso_config is not None
         assert rep_config is not None

@@ -8,6 +8,7 @@ import polars as pl
 import pyarrow.parquet as pq
 import pytest
 from cleanmast.application.usecases.generate_wt_timeseries import generate_wt_timeseries
+from cleanmast.infrastructure.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
@@ -19,7 +20,6 @@ from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import 
     recommend_wt_timeseries,
 )
 from cleanmast.subdomains.dataprocessing.services import (
-    process_single_mast_csv,
     process_turbulence_for_mast,
 )
 
@@ -216,7 +216,7 @@ class TestFullWorkflow:
 
         # Run recommend command
         pc = ProjectConfig(project_dir)
-        dc = recommend_wt_timeseries(pc)
+        dc = recommend_wt_timeseries(pc, repo=FileTimeSeriesRepository())
         dc.write_to(project_dir)
         config_path = project_dir / dc.filename
 
@@ -315,12 +315,12 @@ class TestFullWorkflow:
 
         # Create config
         pc = ProjectConfig(project_dir)
-        dc = recommend_wt_timeseries(pc)
+        dc = recommend_wt_timeseries(pc, repo=FileTimeSeriesRepository())
         dc.write_to(project_dir)
         config_path = project_dir / dc.filename
 
         # Execute
-        generate_wt_timeseries(config_path)
+        generate_wt_timeseries(config_path, repo=FileTimeSeriesRepository())
 
         # Verify outputs
         output_dir = project_dir / "wt-timeseries"
@@ -515,7 +515,9 @@ class TestHeightFiltering:
         )
 
         # Process turbulence (should work at 80m)
-        process_turbulence_for_mast(mast, project_dir)
+        repo = FileTimeSeriesRepository()
+        ts_data = repo.load(mast.input, str(project_dir))
+        process_turbulence_for_mast(mast, ts_data, project_dir)
 
         # Verify turbulence file was created
         turbulence_file = project_dir / "wt-timeseries" / "turbulence-TGL1" / "meteodyn_ti_80m.txt"
@@ -539,8 +541,9 @@ class TestErrorHandling:
             turbulence_heights=[],
         )
 
+        repo = FileTimeSeriesRepository()
         with pytest.raises(FileNotFoundError):
-            process_single_mast_csv(mast, project_dir)
+            repo.load(mast.input, str(project_dir))
 
     def test_missing_representative_year_directory(self, tmp_path):
         """Test handling of missing representative-year directory."""
@@ -549,7 +552,7 @@ class TestErrorHandling:
 
         pc = ProjectConfig(project_dir)
         with pytest.raises(FileNotFoundError) as exc_info:
-            recommend_wt_timeseries(pc)
+            recommend_wt_timeseries(pc, repo=FileTimeSeriesRepository())
 
         assert "fill-heights" in str(exc_info.value).lower()
 
@@ -563,6 +566,6 @@ class TestErrorHandling:
 
         pc = ProjectConfig(project_dir)
         with pytest.raises(FileNotFoundError) as exc_info:
-            recommend_wt_timeseries(pc)
+            recommend_wt_timeseries(pc, repo=FileTimeSeriesRepository())
 
         assert "no parquet files" in str(exc_info.value).lower() or "parquet" in str(exc_info.value).lower()

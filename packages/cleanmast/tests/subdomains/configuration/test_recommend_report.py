@@ -25,6 +25,18 @@ TR_A = TimeRange(min=datetime(2025, 3, 1), max=datetime(2026, 2, 28))
 TR_B = TimeRange(min=datetime(2024, 1, 1), max=datetime(2024, 12, 31))
 
 
+class FakeRepo:
+    """Stub TimeSeriesRepository returning MagicMock for tests that patch calculate_air_density."""
+    def load(self, source, base_dir):
+        return MagicMock()
+
+    def save(self, source, base_dir, data):
+        raise NotImplementedError
+
+
+fake_repo = FakeRepo()
+
+
 def _mast(name: str, tr: TimeRange) -> RepresentativeYearMast:
     src = TimeSeriesSource(data="/dev/null")
     return RepresentativeYearMast(
@@ -186,11 +198,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_generates_flat_format_with_datasets_catalog(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_generates_flat_format_with_datasets_catalog(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -205,7 +213,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
 
@@ -227,11 +235,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_meso_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_meso_subsection_indices_and_ordering(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -246,7 +250,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -263,11 +267,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_rep_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_rep_subsection_indices_and_ordering(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -282,7 +282,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -301,11 +301,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_fifty_year_subsection_indices_and_ordering(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_fifty_year_subsection_indices_and_ordering(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -320,7 +316,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -336,11 +332,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_rep_only_generates_rep_and_fifty_year_subsections(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_rep_only_generates_rep_and_fifty_year_subsections(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-representative-year.toml",
@@ -350,7 +342,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -370,11 +362,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_air_density_per_mast_in_dataset(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_air_density_per_mast_in_dataset(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -389,7 +377,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -404,11 +392,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_output_file_is_valid_toml_roundtrip(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_output_file_is_valid_toml_roundtrip(self, mock_calc_density, tmp_path):
         self._create_fill_heights_toml(
             tmp_path,
             "fill-heights-reconstruct-meso.toml",
@@ -423,7 +407,7 @@ class TestRecommendReport:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         output_path = tmp_path / dc.filename
         with open(output_path, "rb") as f:
@@ -438,12 +422,8 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
     def test_build_dataset_multi_mast_distinct_paths(
-        self, mock_load_parquet, mock_calc_density, tmp_path
+        self, mock_calc_density, tmp_path
     ):
         self._create_multi_mast_fill_heights_toml(
             tmp_path,
@@ -463,6 +443,7 @@ class TestRecommendReport:
             'reconstruct-meso-fill-heights',
             'reconstruct_meso_filled_heights',
             analysis_windows=windows,
+            repo=fake_repo,
         )
 
         assert len(ds.masts) == 2
@@ -485,17 +466,13 @@ class TestRecommendReport:
         # NO representative-year.toml
         pc = ProjectConfig(tmp_path)
         with pytest.raises(FileNotFoundError, match="representative-year.toml is required"):
-            recommend_report(pc)
+            recommend_report(pc, repo=fake_repo)
 
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_raises_when_fill_heights_rep_year_toml_missing(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_raises_when_fill_heights_rep_year_toml_missing(self, mock_calc_density, tmp_path):
         """recommend_report raises FileNotFoundError when fill-heights-representative-year.toml is missing."""
         self._create_representative_year_toml(tmp_path)
         self._create_fill_heights_toml(
@@ -506,17 +483,13 @@ class TestRecommendReport:
         # NO fill-heights-representative-year.toml
         pc = ProjectConfig(tmp_path)
         with pytest.raises(FileNotFoundError, match="fill-heights-representative-year.toml is required"):
-            recommend_report(pc)
+            recommend_report(pc, repo=fake_repo)
 
     @patch(
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_meso_datasets_have_analysis_windows(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_meso_datasets_have_analysis_windows(self, mock_calc_density, tmp_path):
         """Meso datasets (filled + original) carry analysis_windows matching their mast names."""
         self._create_representative_year_toml(tmp_path)
         self._create_fill_heights_toml(
@@ -531,7 +504,7 @@ class TestRecommendReport:
         )
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         with open(tmp_path / dc.filename, "rb") as f:
             config = FlatReportConfig.model_validate(tomli.load(f))
@@ -550,12 +523,8 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
     def test_calibration_dataset_windows_cover_filled_meso_masts(
-        self, mock_load_parquet, mock_calc_density, tmp_path
+        self, mock_calc_density, tmp_path
     ):
         """Calibration dataset windows cover filled-meso masts, not blindly repyear windows."""
         self._create_representative_year_toml(tmp_path)
@@ -571,7 +540,7 @@ class TestRecommendReport:
         )
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         with open(tmp_path / dc.filename, "rb") as f:
             config = FlatReportConfig.model_validate(tomli.load(f))
@@ -586,11 +555,7 @@ class TestRecommendReport:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
-    def test_mast_in_meso_but_absent_from_rep_year_raises(self, mock_load_parquet, mock_calc_density, tmp_path):
+    def test_mast_in_meso_but_absent_from_rep_year_raises(self, mock_calc_density, tmp_path):
         """Mast present in meso dataset but absent from rep-year → ValueError from coverage validator."""
         # representative-year.toml has mast "OtherMast", not "M1"
         self._create_representative_year_toml(tmp_path, mast_names=["OtherMast"])
@@ -607,7 +572,7 @@ class TestRecommendReport:
 
         pc = ProjectConfig(tmp_path)
         with pytest.raises(ValueError, match="analysis_windows must contain at least one window"):
-            recommend_report(pc)
+            recommend_report(pc, repo=fake_repo)
 
 
 class TestOriginalHeightsDataset:
@@ -668,16 +633,8 @@ class TestOriginalHeightsDataset:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries",
-        return_value=MagicMock(),
-    )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
     def test_original_heights_dataset_built_and_assigned(
-        self, mock_load_parquet, mock_load_ts, mock_calc_density, tmp_path
+        self, mock_calc_density, tmp_path
     ):
         self._create_fill_heights_toml(
             tmp_path,
@@ -694,7 +651,7 @@ class TestOriginalHeightsDataset:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         with open(tmp_path / dc.filename, "rb") as f:
             config = FlatReportConfig.model_validate(tomli.load(f))
@@ -726,12 +683,8 @@ class TestOriginalHeightsDataset:
         "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
         return_value=1.225,
     )
-    @patch(
-        "cleanmast.subdomains.configuration.services.recommend_report.load_timeseries_parquet",
-        return_value=MagicMock(),
-    )
     def test_turbulence_and_vertical_profile_fall_back_to_filled(
-        self, mock_load_parquet, mock_calc_density, tmp_path
+        self, mock_calc_density, tmp_path
     ):
         """Without reconstruct-meso.toml, 2.4.4 and 2.4.7 use the filled-heights dataset."""
         self._create_fill_heights_toml(
@@ -748,7 +701,7 @@ class TestOriginalHeightsDataset:
         self._create_representative_year_toml(tmp_path)
 
         pc = ProjectConfig(tmp_path)
-        dc = recommend_report(pc)
+        dc = recommend_report(pc, repo=fake_repo)
         dc.write_to(tmp_path)
         with open(tmp_path / dc.filename, "rb") as f:
             config = FlatReportConfig.model_validate(tomli.load(f))

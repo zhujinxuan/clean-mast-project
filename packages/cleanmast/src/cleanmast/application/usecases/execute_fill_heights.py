@@ -10,7 +10,7 @@ from pathlib import Path
 
 from cleanmast.infrastructure.path_utils import to_posix_path
 from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
+from cleanmast.shared.timeseries.io import TimeSeriesRepository
 from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.subdomains.dataprocessing.services.height_filler import (
     apply_wd_fill,
@@ -21,12 +21,12 @@ from cleanmast.subdomains.dataprocessing.services.height_filling.validation impo
 )
 
 
-def execute_fill_heights(config_path: str) -> None:
+def execute_fill_heights(config_path: str, repo: TimeSeriesRepository) -> None:
     """Execute fill-heights from configuration file.
 
     This use case:
     1. Loads the fill-heights configuration
-    2. Loads input timeseries data for each mast
+    2. Loads input timeseries data for each mast via the injected repository
     3. Applies wind speed and direction filling
     4. Saves output with new columns
 
@@ -46,6 +46,7 @@ def execute_fill_heights(config_path: str) -> None:
 
     Args:
         config_path: Path to fill-heights-*.toml configuration file
+        repo: TimeSeriesRepository used to load/save mast timeseries
 
     Raises:
         FileNotFoundError: If config file doesn't exist
@@ -62,7 +63,6 @@ def execute_fill_heights(config_path: str) -> None:
     # Process each mast
     for mast_config in config.masts:
         # Load input timeseries
-        repo = FileTimeSeriesRepository()
         timeseries = repo.load(mast_config.input, base_dir)
         # Validate reference configurations against sensor metadata
         _validate_references(timeseries, mast_config)

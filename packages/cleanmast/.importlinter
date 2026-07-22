@@ -77,5 +77,14 @@ forbidden_modules =
 ignore_imports =
     cleanmast.subdomains.configuration.services.config_io -> tomli
     cleanmast.subdomains.configuration.services.config_io -> tomli_w
-    cleanmast.shared.timeseries.io.file_repository -> tomli
-    cleanmast.shared.timeseries.io.file_repository -> tomli_w
+    cleanmast.infrastructure.file_repository -> tomli
+    cleanmast.infrastructure.file_repository -> tomli_w
+
+[importlinter:contract:infrastructure-purity]
+name = Infrastructure Purity
+type = forbidden
+source_modules =
+    cleanmast.infrastructure
+forbidden_modules =
+    cleanmast.subdomains
+    cleanmast.application

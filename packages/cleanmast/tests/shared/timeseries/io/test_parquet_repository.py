@@ -8,14 +8,10 @@ from datetime import datetime
 from pathlib import Path
 
 import polars as pl
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.shared.timeseries.io import (
-    load_timeseries,
-    save_timeseries,
-)
-from cleanmast.shared.timeseries.io.file_repository import (
+from cleanmast.infrastructure.file_repository import (
     FileTimeSeriesRepository,
 )
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 
 
 def _make_test_data() -> TimeSeriesData:
@@ -137,45 +133,38 @@ class TestFileTimeSeriesRepositoryConvenienceFunctions:
     """Module-level convenience functions from shared.timeseries.io."""
 
     def test_convenience_parquet_roundtrip(self, tmp_path: Path):
-        """load_timeseries/save_timeseries for parquet."""
+        """FileTimeSeriesRepository for parquet."""
         original = _make_test_data()
         source = TimeSeriesSource(data="./conv.parquet", sensors="")
 
-        save_timeseries(source, str(tmp_path), original)
-        loaded = load_timeseries(source, str(tmp_path))
+        repo = FileTimeSeriesRepository()
+        repo.save(source, str(tmp_path), original)
+        loaded = repo.load(source, str(tmp_path))
 
         for col in original.df.columns:
             assert original.df[col].to_list() == loaded.df[col].to_list(), f"col {col}"
         _assert_sensors_equal(original.sensors, loaded.sensors)
 
     def test_convenience_csv_roundtrip(self, tmp_path: Path):
-        """load_timeseries/save_timeseries for CSV."""
+        """FileTimeSeriesRepository for CSV."""
         original = _make_test_data()
         source = TimeSeriesSource(data="./conv.csv", sensors="./conv_sensors.yaml")
 
-        save_timeseries(source, str(tmp_path), original)
-        loaded = load_timeseries(source, str(tmp_path))
+        repo = FileTimeSeriesRepository()
+        repo.save(source, str(tmp_path), original)
+        loaded = repo.load(source, str(tmp_path))
 
         for col in original.df.columns:
             assert original.df[col].to_list() == loaded.df[col].to_list(), f"col {col}"
         _assert_sensors_equal(original.sensors, loaded.sensors)
 
     def test_convenience_is_same_as_file_repository(self, tmp_path: Path):
-        """Verify io convenience functions are the same as file_repository exports."""
-        from cleanmast.shared.timeseries.io.file_repository import (
-            load_timeseries as file_repo_load,
-        )
-        from cleanmast.shared.timeseries.io.file_repository import (
-            save_timeseries as file_repo_save,
-        )
-
-        # Both paths refer to the same function objects
-        assert load_timeseries is file_repo_load
-        assert save_timeseries is file_repo_save
-
-        # And they work correctly
+        """Verify FileTimeSeriesRepository works correctly."""
+        # The convenience functions load_timeseries/save_timeseries were removed;
+        # FileTimeSeriesRepository is the canonical way to load/save.
+        repo = FileTimeSeriesRepository()
         original = _make_test_data()
         source = TimeSeriesSource(data="./distinct.csv", sensors="./distinct.yaml")
-        file_repo_save(source, str(tmp_path), original)
-        loaded = file_repo_load(source, str(tmp_path))
+        repo.save(source, str(tmp_path), original)
+        loaded = repo.load(source, str(tmp_path))
         _assert_sensors_equal(original.sensors, loaded.sensors)

@@ -1,6 +1,6 @@
 # ADR: Composition Root + Dependency Injection for CLI Isolation
 
-**Status**: PROPOSED (handoff — not yet accepted)
+**Status**: ACCEPTED (implemented — see `bootstrap.py` and `application/spec.md`)
 **Date**: 2026-07-19
 **Completes**: archived `ddd-s-002-context-maps` (protocol + DI in bootstrap.py — prescribed, never built)
 **Blocks**: `cli-isolation` contract going KEPT; package `.importlinter` joining `verify_baseline.py`

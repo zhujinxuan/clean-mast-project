@@ -4,11 +4,9 @@ from pathlib import Path
 
 import click
 
-from cleanmast.application.usecases.execute_fill_heights import (
-    execute_fill_heights as execute_fill_heights_usecase,
-)
-from cleanmast.application.usecases.generate_wt_timeseries import (
-    generate_wt_timeseries as generate_wt_timeseries_usecase,
+from cleanmast.bootstrap import (
+    build_execute_fill_heights,
+    build_generate_wt_timeseries,
 )
 
 
@@ -26,7 +24,7 @@ def execute_fill_heights(config_path: str):
     click.echo(f"Loading config: {config_path}")
 
     try:
-        execute_fill_heights_usecase(config_path)
+        build_execute_fill_heights(config_path)
         click.echo("\nFill-heights complete!")
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
@@ -43,7 +41,7 @@ def execute_wt_timeseries_cli(config_path):
     click.echo(f"Processing wt-timeseries from: {config_path}")
 
     try:
-        generate_wt_timeseries_usecase(config_path_obj)
+        build_generate_wt_timeseries(config_path)
         click.echo("\n✓ Processing complete!")
         click.echo(f"Output directory: {config_path_obj.parent / 'wt-timeseries'}")
     except FileNotFoundError as e:

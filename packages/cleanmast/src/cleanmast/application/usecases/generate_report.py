@@ -14,7 +14,7 @@ import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.shared.timeseries import TimeSeriesData
-from cleanmast.shared.timeseries.io import load_timeseries
+from cleanmast.shared.timeseries.io import TimeSeriesRepository
 from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
@@ -71,7 +71,7 @@ class LoadedDataset:
     analysis_windows: dict[str, TimeRange] = field(default_factory=dict)
 
 
-def generate_report(config_path: str) -> BuildResult:
+def generate_report(config_path: str, repo: TimeSeriesRepository) -> BuildResult:
     """Generate representative timeseries report from config.
 
     This use case:
@@ -86,6 +86,7 @@ def generate_report(config_path: str) -> BuildResult:
 
     Args:
         config_path: Path to the TOML config file (e.g., rep-ts-report.toml)
+        repo: TimeSeriesRepository used to load dataset timeseries
 
     Returns:
         Dict with report generation results including paths
@@ -107,7 +108,7 @@ def generate_report(config_path: str) -> BuildResult:
     tree = build_section_tree(config.subsections)
     report_title = (tree[0].title or "风资源评估报告") if tree else "风资源评估报告"
     builder = ReportBuilder(report_title, output_dir)
-    loaded = load_datasets(config, base_dir, service)
+    loaded = load_datasets(config, base_dir, service, repo)
     return _generate_from_flat_config(config, loaded, service, builder)
 
 
@@ -115,16 +116,18 @@ def load_datasets(
     config: FlatReportConfig,
     base_dir: Path,
     service: ReportGenerationService,
+    repo: TimeSeriesRepository,
 ) -> dict[str, LoadedDataset]:
     """Resolve paths, load timeseries, build mast inputs — once, at the boundary.
 
     All dataset I/O happens here. Downstream functions receive
-    :class:`LoadedDataset` objects — no path resolution, no ``load_timeseries``.
+    :class:`LoadedDataset` objects — no path resolution, no repository access.
 
     Args:
         config: Flat report config with dataset definitions.
         base_dir: Directory containing the config file.
         service: Report generation service (for ``_create_analysis_input``).
+        repo: TimeSeriesRepository used to load dataset timeseries.
 
     Returns:
         Mapping of dataset name → LoadedDataset.
@@ -144,7 +147,7 @@ def load_datasets(
                     f"Dataset file not found for mast '{mast_ref.name}': {resolved}"
                 )
             source = TimeSeriesSource(data=str(resolved))
-            timeseries = load_timeseries(source, ".")
+            timeseries = repo.load(source, ".")
             # Map config ExtremeWindGustFactor → reporting ExtremeWindGustFactor
             # at the composition boundary, mirroring the turbulence_heights handoff.
             reporting_gust_factors = [
@@ -177,7 +180,7 @@ def load_datasets(
                         f"Meso dataset file not found for '{meso_ref.meso_name}': {resolved}"
                     )
                 source = TimeSeriesSource(data=str(resolved))
-                meso_data[meso_ref.meso_name] = load_timeseries(source, ".")
+                meso_data[meso_ref.meso_name] = repo.load(source, ".")
             for i, input_data in enumerate(mast_data):
                 for meso_ref in ds.mesos:
                     if input_data.mast_name in meso_ref.target_masts:

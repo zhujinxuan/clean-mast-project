@@ -13,12 +13,19 @@ from .helpers import (
     get_existing_sensors,
     get_top_sensors,
 )
-from .planner import fit_all_masts, generate_dual_configs
+from .planner import (
+    FitResult,
+    build_one_mast_config,
+    fit_one_mast,
+    generate_dual_configs,
+)
 from .validation import build_sensor_column_map, validate_references
 
 __all__ = [
     "generate_dual_configs",
-    "fit_all_masts",
+    "FitResult",
+    "fit_one_mast",
+    "build_one_mast_config",
     "validate_references",
     "build_sensor_column_map",
     "fit_shear_top3",

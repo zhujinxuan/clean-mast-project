@@ -1,12 +1,9 @@
-"""IO layer for shared timeseries — repository protocol + file-based realization."""
+"""IO layer for shared timeseries — repository protocol + validation helpers.
 
-from cleanmast.shared.timeseries.io.file_repository import (
-    FileTimeSeriesRepository,
-    load_timeseries,
-    load_timeseries_parquet,
-    save_timeseries,
-    save_timeseries_parquet,
-)
+The file-based realization lives in ``cleanmast.infrastructure.file_repository``
+(moved out of shared so the domain layer owns zero I/O).
+"""
+
 from cleanmast.shared.timeseries.io.repository import TimeSeriesRepository
 from cleanmast.shared.timeseries.io.validation import (
     create_wind_schema,
@@ -15,11 +12,6 @@ from cleanmast.shared.timeseries.io.validation import (
 
 __all__ = [
     "TimeSeriesRepository",
-    "FileTimeSeriesRepository",
-    "load_timeseries",
-    "save_timeseries",
-    "load_timeseries_parquet",
-    "save_timeseries_parquet",
     "validate_timeseries",
     "create_wind_schema",
 ]

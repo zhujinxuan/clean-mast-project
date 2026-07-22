@@ -1,17 +1,12 @@
 """CLI adapter for the fill-heights training command."""
 
-from pathlib import Path
-
 import click
 
-from cleanmast.application.usecases.recommend_fill_heights import (
+from cleanmast.bootstrap import (
     DEFAULT_DEG_DIFF_PER_M_LIMIT,
     DEFAULT_FILL_HEIGHTS,
+    build_train_fill_heights,
 )
-from cleanmast.application.usecases.train_fill_heights import (
-    train_fill_heights as train_fill_heights_usecase,
-)
-from cleanmast.subdomains.configuration import ProjectConfig
 
 
 @click.command("fill-heights")
@@ -36,11 +31,9 @@ def train_fill_heights(project_dir: str, heights: str, deg_diff_limit: float):
     reconstruct-meso data and persists one model TOML per mast x strategy x
     variable under fill-models/{mast}/{strategy}/{variable}-fit.toml.
     """
-    project_config = ProjectConfig(Path(project_dir))
-
     try:
-        train_fill_heights_usecase(
-            project_config=project_config,
+        build_train_fill_heights(
+            project_dir=project_dir,
             heights=heights,
             deg_diff_limit=deg_diff_limit,
         )

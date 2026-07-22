@@ -1,61 +1,13 @@
 # Anti-Patterns — Reporting Subdomain
 
-Audit date: 2026-06-26. Updated: 2026-07-01. Checked against `reporting/spec.md` and `subdomains/spec.md`.
+Audit date: 2026-06-26. Updated: 2026-07-21. Checked against `reporting/spec.md` and `subdomains/spec.md`.
+
+> Resolved entries (V1–V6, S2, S11, D1) removed 2026-07-21. IDs of the
+> remaining entries are stable — do not renumber.
 
 ---
 
 ## VIOLATIONS
-
-### V1. `get_height_display_name` DRY violation (RESOLVED)
-
-**Resolution**: Consolidated into `reporting/model/height_label.py` (`consolidate-height-display` plan). All 7 duplicates removed (6 deleted, 1 converted to thin wrapper `_height_label` in wind_frequency). Canonical function now uses unified parentheses format: `"120m(外推)"`. ~50 callers updated.
-
-**Status**: ✅ Done.
-
-### V2. `ExtremeWindSection.from_computed_results` accepts pre-computed DataFrames (RESOLVED)
-
-**File**: `subdomains/extreme_wind/section.py:100`  
-**Rule**: Spec Rule 9 — "pre-computed DataFrame inputs are forbidden"
-
-`from_computed_results` is a public classmethod accepting raw `pl.DataFrame` params. Only called internally by `from_inputs` today, but nothing prevents external bypass.
-
-**Status**: ✅ Done. Method renamed to `_from_computed_results` (privatized).
-
-### V3. `import tomli` / `import tomli_w` in model layer
-
-**File**: `model/report_config.py:13-14`  
-**Rule**: Spec Rule 11 — "Never `import tomli` or `import tomli_w` directly in reporting, application, or any subdomain."
-
-`FlatReportConfig.from_toml` directly calls `tomli.load()` (line 221). `FlatReportConfig.to_toml` directly calls `tomli_w.dumps()` (line 232). TOML I/O must route through `cleanmast.subdomains.configuration.value_objects` Pydantic models.
-
-**Status**: ⛔ OPEN.
-
-### V4. Broken `__all__` in `extreme_wind/model/__init__.py`
-
-**File**: `subdomains/extreme_wind/model/__init__.py:19`  
-**Rule**: `__init__.py` exports only model types and api functions.
-
-`get_height_display_name` listed in `__all__` but never imported in module namespace. Would raise `ImportError` at runtime on `from extreme_wind.model import get_height_display_name`.
-
-**Status**: ⛔ OPEN.
-
-### V5. Cross-layer import: model → compute in `extreme_wind`
-
-**File**: `subdomains/extreme_wind/model/method2_atom.py:25-27`  
-**Rule**: Pipeline direction — model ← protocols ← compute (model must not import compute).
-
-`Method2QQSustainedAtom` and `Method2QQExtremeAtom` imported `generate_gumbel_qq_subgrid` from `compute/gumbel_qq.py`. Model layer depending on compute breaks the pipeline architecture.
-
-**Status**: ✅ RESOLVED (2026-07-19) — `gumbel_qq.py` moved to `extreme_wind/model/`; the atoms' import is now legal model→model.
-
-### V6. IO inside compute layer — `extreme_wind/compute/gumbel_qq.py`
-
-**File**: `subdomains/extreme_wind/compute/gumbel_qq.py:157,160,228,231`  
-**Rule**: Spec anti-pattern — "IO inside compute/; keep calculations pure."
-
-`output_dir.mkdir()` + `image_path.write_bytes()` — wrote PNG files from the compute layer.
-
-**Status**: ✅ RESOLVED (2026-07-19) — module relocated to `extreme_wind/model/gumbel_qq.py`; Q-Q chart generation is render logic and lives with the atoms that consume it. `compute/` no longer performs image IO.
 
 ### V7. Dead code in `wind_rose/compute.py`
 
@@ -79,15 +31,6 @@ Audit date: 2026-06-26. Updated: 2026-07-01. Checked against `reporting/spec.md`
 
 ## SMELLS
 
-
-### S2. Two `SingleMastAnalysisInput` classes in different subdomains (RESOLVED)
-
-**Files**:
-- `assessment/shared/value_objects/analysis_input.py` — basic (no `representative_year_calibration_payload`)
-- `reporting/model/analysis_input.py` — extended (has `representative_year_calibration_payload`)
-
-**Resolution**: Merged into `cleanmast.subdomains.reporting.model.analysis_input` (canonical). Assessment keeps a re-export shim for backward compat.
-
 ### S3. `Any` type usage / bare container types
 
 **Files**:
@@ -107,17 +50,9 @@ Unconsolidated duplicates (V1 DRY fix addressed `get_height_display_name` but no
 |---|---|
 | `SECTOR_COUNT` / `SECTOR_WIDTH` | `wind_rose` — 3 model files + compute.py |
 | `_IEC_CATEGORIES`, `_compute_iec_ti` | `turbulence` — 3 model atoms |
-| ~~`_SECTOR_NAMES`~~ ✅ | `representative_year` — consolidated into `model/sectors.py` as public `SECTOR_NAMES` / `find_sector` (2026-07-19) |
 | `_MONTH_NAMES` | `wind_temporal` — monthly_daily_power + monthly_daily_wind atoms |
-| Gas constants (`GAS_CONSTANT_DRY_AIR`, etc.) | `air_density` — compute.py + air_density_atom.py |
 
 **Future fix**: Consolidate into the capability's compute layer or shared constants. Apply the same pattern used for V1.
-
-### S5. IO inside model definitions
-
-**File**: `model/report_config.py:218-233`
-
-`FlatReportConfig.from_toml` opens and reads a TOML file via `open(path, 'rb')` + `tomli.load()`. `FlatReportConfig.to_toml` writes to disk via `path.write_text()`. Models should not perform file IO. This is the same root cause as V3 — once TOML routing goes through `configuration.value_objects`, the IO moves out of the model.
 
 ### S6. `# noqa` lint suppressions
 
@@ -133,10 +68,9 @@ Height thresholds scattered as bare floats across capabilities:
 | Capability | Values | Files |
 |---|---|---|
 | `wind_frequency` | 120.0, 160.0, 3.0, 25.0 | 5 files |
-| `wind_temporal` | 100.0 | 6 files, 10 occurrences |
 | `weibull` | 120.0, 160.0 | weibull_atom.py |
-| `representative_year` | 120.0, 160.0, 2.0, 30 | compute.py |
-| `air_density` | 125.0, 140.0, 160.0 | air_density_atom.py |
+| `representative_year` | 120.0, 160.0 | compute.py:360 |
+| `air_density` | 125.0, 140.0, 160.0 | model/air_density_atom.py |
 
 **Future fix**: Extract into named constants in `compute/` or `model/` per capability.
 
@@ -158,17 +92,6 @@ Preamble logic duplicated between `renderer.py` and `report_builder.py`. Font na
 
 `SECTION_REGISTRY` maps 15 hardcoded string keys to `Section` classes. Not validated against `VALID_SUBSECTION_TYPES` from `report_config.py`. Multiple keys (`fifty_year_method1/2/3`, `fifty_year_summary`, `iec_standards`) all map to `ExtremeWindSection` with no guard against drift. A missing or mismatched key would fail silently at runtime.
 
-
-### S11. Lazy import in method body (RESOLVED)
-
-**File**: `protocols/report_atom.py:187`
-
-`from typst_ir import TypstFigure` was imported inside `renderImageTypst()` method body. Not a circular import — `typst_ir` is an external package with no reverse dependency. The `TYPE_CHECKING` guard at the top already provided the type; the runtime import simply needed to be at the top level.
-
-**Resolution**: Moved `from typst_ir import TypstFigure` to top-level alongside `polars`. `TypstParagraph` and `TypstTable` remain under `if TYPE_CHECKING:` (type-only).
-
-**Status**: ✅ Done.
-
 ### S12. `object.__setattr__` bypass for frozen dataclass
 
 **File**: `protocols/report_atom.py:92`
@@ -182,11 +105,3 @@ Preamble logic duplicated between `renderer.py` and `report_builder.py`. Font na
 - `subdomains/vertical_profile/model/__init__.py` — re-exports `get_height_display_name`
 
 Child capability `__init__.py` re-exports a symbol from the parent `reporting/model/`. Consumers should import directly from `reporting.model.height_label` rather than through capability model layers.
-
----
-
-## KNOWN DEVIATIONS
-
-### D1. `representative_year` accepts `MesoSectionInput` instead of `SingleMastAnalysisInput` (RESOLVED)
-
-**Status**: ✅ Done. Standardized to `SingleMastAnalysisInput` with `RepresentativeYearCalibrationPayload`. `MesoSectionInput` removed. 16-sector analysis with Altair scatter grids added.

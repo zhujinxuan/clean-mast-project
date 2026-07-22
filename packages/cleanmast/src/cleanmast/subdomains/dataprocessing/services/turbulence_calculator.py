@@ -20,9 +20,9 @@ import polars as pl
 
 from cleanmast.shared.timeseries import (
     SensorColumn,
+    TimeSeriesData,
     WtTimeSeriesMast,
 )
-from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
 
 logger = logging.getLogger(__name__)
 
@@ -610,6 +610,7 @@ def process_turbulence_for_height(
 
 def process_turbulence_for_mast(
     mast: WtTimeSeriesMast,
+    ts_data: TimeSeriesData,
     project_dir: Path,
 ) -> None:
     """Process all turbulence heights for a mast.
@@ -620,7 +621,8 @@ def process_turbulence_for_mast(
 
     Args:
         mast: WtTimeSeriesMast configuration
-        project_dir: Project directory for input/output path resolution
+        ts_data: Pre-loaded timeseries for this mast (loaded by the caller)
+        project_dir: Project directory for output path resolution
 
     Example:
         >>> mast = WtTimeSeriesMast(
@@ -629,13 +631,10 @@ def process_turbulence_for_mast(
         ...     csv_heights=[100.0, 120.0],
         ...     turbulence_heights=[80.0, 100.0],
         ... )
-        >>> process_turbulence_for_mast(mast, Path("./my-project"))
+        >>> process_turbulence_for_mast(mast, ts_data, Path("./my-project"))
     """
-    # Load data
-    repo = FileTimeSeriesRepository()
-    ts_data_result = repo.load(mast.input, str(project_dir))
-    df = ts_data_result.df
-    sensors = ts_data_result.sensors
+    df = ts_data.df
+    sensors = ts_data.sensors
 
     # Create output directory
     output_dir = project_dir / "wt-timeseries" / f"turbulence-{mast.name}"

@@ -9,8 +9,8 @@ import logging
 from pathlib import Path
 
 import polars as pl
+from cleanmast.infrastructure.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries import SensorColumn
-from cleanmast.shared.timeseries.io import load_timeseries
 
 from .config import WtTimeSeriesConfiguration, WtTimeSeriesMast
 
@@ -136,7 +136,7 @@ def process_single_mast_csv(mast: WtTimeSeriesMast, project_dir: Path) -> None:
         >>> process_single_mast_csv(mast, Path("./my-project"))
     """
     # 1. Load parquet with sensor metadata
-    ts_data = load_timeseries(mast.input, str(project_dir))
+    ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
     df = ts_data.df
     sensors = ts_data.sensors
 

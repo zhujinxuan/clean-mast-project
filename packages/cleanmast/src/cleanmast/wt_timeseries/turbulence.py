@@ -16,8 +16,8 @@ from pathlib import Path
 
 import dataframely as dy
 import polars as pl
+from cleanmast.infrastructure.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries import SensorColumn
-from cleanmast.shared.timeseries.io import load_timeseries
 
 from .config import WtTimeSeriesMast
 
@@ -629,7 +629,7 @@ def process_turbulence_for_mast(
         >>> process_turbulence_for_mast(mast, Path("./my-project"))
     """
     # Load data
-    ts_data_result = load_timeseries(mast.input, str(project_dir))
+    ts_data_result = FileTimeSeriesRepository().load(mast.input, str(project_dir))
     df = ts_data_result.df
     sensors = ts_data_result.sensors
 

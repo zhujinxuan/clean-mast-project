@@ -1,10 +1,12 @@
-"""File-based time series repository — realization of TimeSeriesRepository.
+"""File-based time series repository — infrastructure realization of TimeSeriesRepository.
+
+Lives in ``cleanmast.infrastructure``: this is the only module that knows how
+TimeSeriesSource paths map to files on disk. Constructed once by
+``cleanmast.bootstrap`` (the composition root) and injected into application
+usecases as the ``TimeSeriesRepository`` protocol.
 
 Dispatches on TimeSeriesSource.data suffix: .parquet → embedded metadata;
 .csv → sidecar metadata file.
-
-Module-level load_timeseries / save_timeseries convenience functions are
-the public API for most consumers.
 """
 
 from __future__ import annotations
@@ -356,28 +358,3 @@ class FileTimeSeriesRepository:
 
         _save_sensors_to_file(sensors_path, data.sensors)
 
-
-# ---------------------------------------------------------------------------
-# Module-level convenience functions — the public API most consumers use
-# ---------------------------------------------------------------------------
-
-def load_timeseries(
-    source: TimeSeriesSource, base_dir: str
-) -> TimeSeriesData:
-    """Load time series data from CSV or Parquet with sensor metadata.
-
-    Convenience function using FileTimeSeriesRepository.
-    """
-    repo = FileTimeSeriesRepository()
-    return repo.load(source, base_dir)
-
-
-def save_timeseries(
-    source: TimeSeriesSource, base_dir: str, data: TimeSeriesData
-) -> None:
-    """Save time series data to CSV or Parquet with sensor metadata.
-
-    Convenience function using FileTimeSeriesRepository.
-    """
-    repo = FileTimeSeriesRepository()
-    return repo.save(source, base_dir, data)

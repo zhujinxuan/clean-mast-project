@@ -13,30 +13,11 @@ import polars as pl
 
 from cleanmast.shared.timeseries import (
     SensorColumn,
-    WtTimeSeriesConfiguration,
+    TimeSeriesData,
     WtTimeSeriesMast,
 )
-from cleanmast.shared.timeseries.io.file_repository import FileTimeSeriesRepository
 
 logger = logging.getLogger(__name__)
-
-
-def process_wt_timeseries(config: WtTimeSeriesConfiguration, project_dir: Path) -> None:
-    """Process all masts in the configuration.
-
-    Iterates through each mast configuration and generates a CSV file with
-    wind speed and direction data at the specified heights.
-
-    Args:
-        config: WtTimeSeriesConfiguration with mast configurations
-        project_dir: Project directory for resolving relative paths
-
-    Example:
-        >>> config = load_config(WtTimeSeriesConfiguration, "config.toml")
-        >>> process_wt_timeseries(config, Path("./my-project"))
-    """
-    for mast in config.masts:
-        process_single_mast_csv(mast, project_dir)
 
 
 def _find_nearest_sensor(
@@ -115,19 +96,23 @@ def _filter_sensors_by_height(
     return valid_heights
 
 
-def process_single_mast_csv(mast: WtTimeSeriesMast, project_dir: Path) -> None:
+def process_single_mast_csv(
+    mast: WtTimeSeriesMast,
+    ts_data: TimeSeriesData,
+    project_dir: Path,
+) -> None:
     """Generate single CSV file for a mast with all heights.
 
-    Loads the input parquet file, finds WindSpeed and WindDirection sensors
+    Uses the pre-loaded timeseries to find WindSpeed and WindDirection sensors
     for each configured height, and writes a CSV file with timestamp and
     all sensor columns. Uses original parquet column names.
 
     Args:
         mast: WtTimeSeriesMast configuration
+        ts_data: Pre-loaded timeseries for this mast (loaded by the caller)
         project_dir: Project directory for output path resolution
 
     Raises:
-        FileNotFoundError: If input parquet file doesn't exist
         ValueError: If no valid heights found for the mast
 
     Example:
@@ -137,11 +122,8 @@ def process_single_mast_csv(mast: WtTimeSeriesMast, project_dir: Path) -> None:
         ...     csv_heights=[100.0, 120.0],
         ...     turbulence_heights=[80.0, 100.0],
         ... )
-        >>> process_single_mast_csv(mast, Path("./my-project"))
+        >>> process_single_mast_csv(mast, ts_data, Path("./my-project"))
     """
-    # 1. Load parquet with sensor metadata
-    repo = FileTimeSeriesRepository()
-    ts_data = repo.load(mast.input, str(project_dir))
     df = ts_data.df
     sensors = ts_data.sensors
 

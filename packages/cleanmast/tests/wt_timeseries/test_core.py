@@ -7,17 +7,18 @@ import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 import pytest
+from cleanmast.infrastructure.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import WtTimeSeriesMast
 from cleanmast.subdomains.dataprocessing.services import (
     process_single_mast_csv,
-    process_wt_timeseries,
 )
 from cleanmast.subdomains.dataprocessing.services.wt_timeseries_generator import (
     _filter_sensors_by_height,
     _find_nearest_sensor,
 )
+from cleanmast.wt_timeseries.core import process_wt_timeseries
 
 
 class TestFindNearestSensor:
@@ -303,7 +304,8 @@ class TestProcessSingleMastCsv:
             turbulence_heights=[],
         )
 
-        process_single_mast_csv(mast, project_dir)
+        ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
+        process_single_mast_csv(mast, ts_data, project_dir)
 
         # Check CSV was created
         output_csv = project_dir / "wt-timeseries" / "TGL1.csv"
@@ -354,8 +356,8 @@ class TestProcessSingleMastCsv:
             csv_heights=[100.0],
             turbulence_heights=[],
         )
-
-        process_single_mast_csv(mast, project_dir)
+        ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
+        process_single_mast_csv(mast, ts_data, project_dir)
 
         output_csv = project_dir / "wt-timeseries" / "TGL1.csv"
         content = output_csv.read_text()
@@ -402,7 +404,8 @@ class TestProcessSingleMastCsv:
             turbulence_heights=[],
         )
 
-        process_single_mast_csv(mast, project_dir)
+        ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
+        process_single_mast_csv(mast, ts_data, project_dir)
 
         output_csv = project_dir / "wt-timeseries" / "TGL1.csv"
         df = pl.read_csv(output_csv)
@@ -474,7 +477,8 @@ class TestProcessSingleMastCsv:
             turbulence_heights=[],
         )
 
-        process_single_mast_csv(mast, project_dir)
+        ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
+        process_single_mast_csv(mast, ts_data, project_dir)
 
         output_csv = project_dir / "wt-timeseries" / "TGL1.csv"
         df = pl.read_csv(output_csv)
@@ -524,8 +528,9 @@ class TestProcessSingleMastCsv:
             turbulence_heights=[],
         )
 
+        ts_data = FileTimeSeriesRepository().load(mast.input, str(project_dir))
         with caplog.at_level(logging.WARNING):
-            process_single_mast_csv(mast, project_dir)
+            process_single_mast_csv(mast, ts_data, project_dir)
 
         # No CSV should be generated
         output_csv = project_dir / "wt-timeseries" / "TGL1.csv"

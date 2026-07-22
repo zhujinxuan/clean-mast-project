@@ -12,10 +12,7 @@ from collections.abc import Collection, Sequence
 from pathlib import Path
 from typing import Any, cast
 
-from cleanmast.shared.timeseries.io import (
-    load_timeseries,
-    load_timeseries_parquet,
-)
+from cleanmast.shared.timeseries.io import TimeSeriesRepository
 from cleanmast.shared.timeseries.sensor_column import (
     SensorColumn,
 )
@@ -151,6 +148,7 @@ def _build_dataset_for_timeseries(
     report_data_subdir: str,
     dataset_name: str,
     analysis_windows: list[AnalysisWindow],
+    repo: TimeSeriesRepository,
     fallback_air_density: float | None = None,
 ) -> DatasetConfig | None:
     """Build a dataset configuration from a discovered fill-heights config.
@@ -187,7 +185,7 @@ def _build_dataset_for_timeseries(
             )
 
         source = TimeSeriesSource(data=data_path, sensors=None)
-        time_series_data = load_timeseries_parquet(source, str(project_path))
+        time_series_data = repo.load(source, str(project_path))
         try:
             air_density = calculate_air_density(time_series_data)
         except Exception as e:
@@ -339,6 +337,7 @@ def _windows_for_mast_names(
 def _build_meso_filled_heights_dataset(
     project_config: ProjectConfig,
     rep_year_masts: Sequence[RepresentativeYearMast],
+    repo: TimeSeriesRepository,
 ) -> DatasetConfig | None:
     """Build reconstruct_meso_filled_heights dataset from fill-heights config."""
     fill_heights_meso_dc = project_config.discover_fill_heights_meso_config()
@@ -352,12 +351,14 @@ def _build_meso_filled_heights_dataset(
         "reconstruct_meso_filled_heights",
         fallback_air_density=STANDARD_AIR_DENSITY,
         analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
+        repo=repo,
     )
 
 
 def _build_meso_original_heights_dataset(
     project_config: ProjectConfig,
     rep_year_masts: Sequence[RepresentativeYearMast],
+    repo: TimeSeriesRepository,
 ) -> DatasetConfig | None:
     """Build dataset from original reconstruct-meso output (pre-fill-heights).
 
@@ -383,7 +384,7 @@ def _build_meso_original_heights_dataset(
             )
 
         source = TimeSeriesSource(data=data_path, sensors=None)
-        time_series_data = load_timeseries(source, str(project_path))
+        time_series_data = repo.load(source, str(project_path))
 
         try:
             air_density = calculate_air_density(time_series_data)
@@ -426,6 +427,7 @@ def _build_meso_original_heights_dataset(
 def _build_repyear_dataset(
     project_config: ProjectConfig,
     rep_year_masts: Sequence[RepresentativeYearMast],
+    repo: TimeSeriesRepository,
 ) -> DatasetConfig | None:
     """Build repyear dataset from fill-heights config enriched with representative-year.toml."""
     fill_heights_rep_year_dc = project_config.discover_fill_heights_rep_year_config()
@@ -442,6 +444,7 @@ def _build_repyear_dataset(
         "repyear",
         fallback_air_density=STANDARD_AIR_DENSITY,
         analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
+        repo=repo,
     )
 
     if repyear_dataset is not None:
@@ -489,7 +492,10 @@ def _build_calibration_dataset(
     )
 
 
-def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatReportConfig]:
+def recommend_report(
+    project_config: ProjectConfig,
+    repo: TimeSeriesRepository,
+) -> DiscoveredConfig[FlatReportConfig]:
     """Generate configuration for representative timeseries report.
 
     This use case:
@@ -507,6 +513,7 @@ def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatRepo
 
     Args:
         project_config: ProjectConfig for the project directory.
+        repo: TimeSeriesRepository used to load mast timeseries.
 
     Returns:
         DiscoveredConfig wrapping the FlatReportConfig.
@@ -525,9 +532,9 @@ def recommend_report(project_config: ProjectConfig) -> DiscoveredConfig[FlatRepo
         )
     rep_year_masts = rep_year_dc.config.masts
 
-    filled_meso_dataset = _build_meso_filled_heights_dataset(project_config, rep_year_masts)
-    repyear_dataset = _build_repyear_dataset(project_config, rep_year_masts)
-    original_meso_dataset = _build_meso_original_heights_dataset(project_config, rep_year_masts)
+    filled_meso_dataset = _build_meso_filled_heights_dataset(project_config, rep_year_masts, repo)
+    repyear_dataset = _build_repyear_dataset(project_config, rep_year_masts, repo)
+    original_meso_dataset = _build_meso_original_heights_dataset(project_config, rep_year_masts, repo)
     calibration_dataset = _build_calibration_dataset(filled_meso_dataset, repyear_dataset, rep_year_masts)
 
     if not filled_meso_dataset and not repyear_dataset:

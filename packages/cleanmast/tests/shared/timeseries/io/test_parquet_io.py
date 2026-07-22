@@ -6,14 +6,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 import yaml
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.shared.timeseries.io import (
-    load_timeseries,
-    save_timeseries,
-)
-from cleanmast.shared.timeseries.io.file_repository import (
+from cleanmast.infrastructure.file_repository import (
+    FileTimeSeriesRepository,
     _write_parquet_with_metadata,
 )
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 
 
 class TestLoadTimeseriesParquet:
@@ -56,10 +53,10 @@ class TestLoadTimeseriesParquet:
         # Save as Parquet
         parquet_path = tmp_path / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Load back
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify
         assert loaded.df.shape == (3, 3)
@@ -112,10 +109,10 @@ class TestLoadTimeseriesParquet:
         # Save as Parquet
         parquet_path = tmp_path / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Load back - metadata should be extracted from embedded content
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert len(loaded.sensors) == 3
         assert loaded.sensors[0].height == 80.0
@@ -166,7 +163,7 @@ class TestLoadTimeseriesParquet:
 
         # Load and verify
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert len(result.sensors) == 2
         ws_sensor = next(s for s in result.sensors if s.sensor_type == "WindSpeed" and s.stat_type == "avg")
@@ -215,7 +212,7 @@ class TestLoadTimeseriesParquet:
 
         # Load and verify ALL fields
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert len(result.sensors) == 1
         sensor = result.sensors[0]
@@ -265,7 +262,7 @@ class TestLoadTimeseriesParquet:
             sensors=str(sensors_path),
         )
         with pytest.raises(ValueError, match="No sensor metadata in Parquet file"):
-            load_timeseries(source, str(tmp_path))
+            FileTimeSeriesRepository().load(source, str(tmp_path))
 
     def test_load_parquet_nonexistent_file_raises_error(self, tmp_path: Path):
         """Test that loading nonexistent Parquet file raises error."""
@@ -275,7 +272,7 @@ class TestLoadTimeseriesParquet:
         )
 
         with pytest.raises(FileNotFoundError):
-            load_timeseries(source, str(tmp_path))
+            FileTimeSeriesRepository().load(source, str(tmp_path))
 
 
 class TestSaveTimeseriesParquet:
@@ -307,7 +304,7 @@ class TestSaveTimeseriesParquet:
         # Save as Parquet
         parquet_path = tmp_path / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify file exists
         assert parquet_path.exists()
@@ -339,7 +336,7 @@ class TestSaveTimeseriesParquet:
         # Save to nested directory
         parquet_path = tmp_path / "deep" / "nested" / "dir" / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         assert parquet_path.exists()
 
@@ -370,7 +367,7 @@ class TestSaveTimeseriesParquet:
             data=str(parquet_path),
             sensors=str(sensors_path),
         )
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify both files exist
         assert parquet_path.exists()
@@ -430,7 +427,7 @@ class TestMetadataRoundTrip:
             parquet_path,
             original.sensors,
         )
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify metadata preserved
         assert len(loaded.sensors) == len(original.sensors)
@@ -500,7 +497,7 @@ class TestMetadataRoundTrip:
             parquet_path,
             original.sensors,
         )
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify all sensor types preserved
         assert len(loaded.sensors) == 4
@@ -545,7 +542,7 @@ class TestFormatAutoDetection:
             data=str(csv_path),
             sensors=str(sensors_path),
         )
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert loaded.df.shape == (2, 2)
         assert len(loaded.sensors) == 1
@@ -573,10 +570,10 @@ class TestFormatAutoDetection:
 
         parquet_path = tmp_path / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Load - should detect Parquet format
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert loaded.df.shape == (1, 2)
         assert len(loaded.sensors) == 1
@@ -608,7 +605,7 @@ class TestFormatAutoDetection:
             data=str(csv_path),
             sensors=str(sensors_path),
         )
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify CSV file created
         assert csv_path.exists()
@@ -637,7 +634,7 @@ class TestFormatAutoDetection:
         # Save to Parquet
         parquet_path = tmp_path / "data.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify Parquet file created
         assert parquet_path.exists()
@@ -652,7 +649,7 @@ class TestFormatAutoDetection:
         source = TimeSeriesSource(data=str(json_path), sensors="")
 
         with pytest.raises(ValueError, match="Unsupported data file format"):
-            load_timeseries(source, str(tmp_path))
+            FileTimeSeriesRepository().load(source, str(tmp_path))
 
 
 class TestBackwardCompatibility:
@@ -698,7 +695,7 @@ class TestBackwardCompatibility:
             data=str(csv_path),
             sensors=str(sensors_path),
         )
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify
         assert loaded.df.shape == (3, 3)
@@ -744,16 +741,16 @@ class TestBackwardCompatibility:
             sensors=str(csv_sensors_path),
         )
         csv_data = TimeSeriesData(df=df, sensors=sensors)
-        save_timeseries(csv_source, str(tmp_path), csv_data)
+        FileTimeSeriesRepository().save(csv_source, str(tmp_path), csv_data)
 
         # Save as Parquet
         parquet_path = tmp_path / "data.parquet"
         parquet_source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(parquet_source, str(tmp_path), csv_data)
+        FileTimeSeriesRepository().save(parquet_source, str(tmp_path), csv_data)
 
         # Load both
-        csv_loaded = load_timeseries(csv_source, str(tmp_path))
-        parquet_loaded = load_timeseries(parquet_source, str(tmp_path))
+        csv_loaded = FileTimeSeriesRepository().load(csv_source, str(tmp_path))
+        parquet_loaded = FileTimeSeriesRepository().load(parquet_source, str(tmp_path))
 
         # Verify data values match
         csv_ws = csv_loaded.df["WindSpeed_100m_avg [m/s]"].to_list()

@@ -6,11 +6,10 @@ from pathlib import Path
 import polars as pl
 import pytest
 import yaml
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.shared.timeseries.io import (
-    load_timeseries,
-    save_timeseries,
+from cleanmast.infrastructure.file_repository import (
+    FileTimeSeriesRepository,
 )
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 
 
 class TestLoadTimeseries:
@@ -57,7 +56,7 @@ class TestLoadTimeseries:
             data=str(csv_path),
             sensors=str(sensors_path),
         )
-        ts_data = load_timeseries(source, str(tmp_path))
+        ts_data = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify
         assert ts_data.df.shape == (3, 3)
@@ -95,7 +94,7 @@ class TestLoadTimeseries:
             data="./reconstruct-meso/M01.csv",
             sensors="./reconstruct-meso/M01.sensors.yaml",
         )
-        ts_data = load_timeseries(source, str(tmp_path))
+        ts_data = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert ts_data.df.shape == (1, 2)
         assert ts_data.sensors[0].height == 80.0
@@ -124,7 +123,7 @@ unit = "C"
             data=str(csv_path),
             sensors=str(sensors_path),
         )
-        ts_data = load_timeseries(source, str(tmp_path))
+        ts_data = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert len(ts_data.sensors) == 1
         assert ts_data.sensors[0].sensor_type == "Temperature" and ts_data.sensors[0].stat_type == "avg"
@@ -156,7 +155,7 @@ unit = "C"
             yaml.dump(sensors_data, f)
 
         source = TimeSeriesSource(data=str(csv_path), sensors=str(sensors_path))
-        ts_data = load_timeseries(source, str(tmp_path))
+        ts_data = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Check that missing value is preserved
         values = ts_data.df["WindSpeed_100m_avg [m/s]"].to_list()
@@ -172,7 +171,7 @@ unit = "C"
         )
 
         with pytest.raises(FileNotFoundError):
-            load_timeseries(source, str(tmp_path))
+            FileTimeSeriesRepository().load(source, str(tmp_path))
 
 
 class TestSaveTimeseries:
@@ -209,7 +208,7 @@ class TestSaveTimeseries:
             data="./output/data.csv",
             sensors="./output/sensors.yaml",
         )
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify files exist
         assert (tmp_path / "output" / "data.csv").exists()
@@ -250,7 +249,7 @@ class TestSaveTimeseries:
             data="./deep/nested/dir/data.csv",
             sensors="./deep/nested/dir/sensors.yaml",
         )
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         assert (tmp_path / "deep" / "nested" / "dir" / "data.csv").exists()
         assert (tmp_path / "deep" / "nested" / "dir" / "sensors.yaml").exists()
@@ -291,10 +290,10 @@ class TestSaveTimeseries:
 
         # Save
         source = TimeSeriesSource(data="./data.csv", sensors="./sensors.yaml")
-        save_timeseries(source, str(tmp_path), original)
+        FileTimeSeriesRepository().save(source, str(tmp_path), original)
 
         # Load back
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify data matches
         assert loaded.df.shape == original.df.shape
@@ -354,10 +353,10 @@ class TestCsvSensorColumnFullFidelity:
 
         # Save
         source = TimeSeriesSource(data="./fidelity.csv", sensors="./fidelity.yaml")
-        save_timeseries(source, str(tmp_path), original)
+        FileTimeSeriesRepository().save(source, str(tmp_path), original)
 
         # Load back
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Assert all 6 fields for every sensor
         assert len(loaded.sensors) == 3
@@ -397,8 +396,8 @@ class TestPathVsStrArgs:
         source = TimeSeriesSource(data="./str_test.csv", sensors="./str_test.yaml")
 
         base_dir_str = str(tmp_path)
-        save_timeseries(source, base_dir_str, ts_data)
-        loaded = load_timeseries(source, base_dir_str)
+        FileTimeSeriesRepository().save(source, base_dir_str, ts_data)
+        loaded = FileTimeSeriesRepository().load(source, base_dir_str)
 
         assert loaded.sensors[0].height == 100.0
         assert loaded.df.shape == (1, 2)
@@ -421,10 +420,9 @@ class TestPathVsStrArgs:
         ]
         ts_data = TimeSeriesData(df=df, sensors=sensors)
         source = TimeSeriesSource(data="./path_test.csv", sensors="./path_test.yaml")
-
-        # Pass Path instead of str
-        save_timeseries(source, tmp_path, ts_data)
-        loaded = load_timeseries(source, tmp_path)
+        # Pass Path converted to str for base_dir
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert loaded.sensors[0].height == 100.0
         assert loaded.df.shape == (1, 2)
@@ -457,8 +455,8 @@ class TestAbsolutePathResolution:
         source = TimeSeriesSource(data=abs_data, sensors=abs_sensors)
 
         # base_dir is irrelevant for absolute paths, pass anything
-        save_timeseries(source, "/unused", ts_data)
-        loaded = load_timeseries(source, "/unused")
+        FileTimeSeriesRepository().save(source, "/unused", ts_data)
+        loaded = FileTimeSeriesRepository().load(source, "/unused")
 
         assert loaded.sensors[0].height == 100.0
         assert loaded.df.shape == (1, 2)
@@ -481,7 +479,7 @@ class TestCsvMissingSensorsError:
         )
 
         with pytest.raises(FileNotFoundError, match="Sensors file not found"):
-            load_timeseries(source, str(tmp_path))
+            FileTimeSeriesRepository().load(source, str(tmp_path))
 
 
 class TestTomlSaveRoundtrip:
@@ -519,14 +517,14 @@ class TestTomlSaveRoundtrip:
 
         # Save with .toml sensors path
         source = TimeSeriesSource(data="./toml_data.csv", sensors="./toml_sensors.toml")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify the TOML file exists
         toml_path = tmp_path / "toml_sensors.toml"
         assert toml_path.exists()
 
         # Reload
-        loaded = load_timeseries(source, str(tmp_path))
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Full fidelity
         assert len(loaded.sensors) == 2

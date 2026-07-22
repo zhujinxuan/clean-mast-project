@@ -23,18 +23,21 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
 12. All section `render_ir` methods must use `render_subsection_content` 
     from `render/subsection_renderer.py`. Manual atom iteration in 
     `render_ir` is forbidden.
-13. Timeseries loading (``load_timeseries``, ``TimeSeriesRepository``, and
-    validation) lives in ``cleanmast.shared.timeseries.io`` — subdomains
-    import timeseries data through this shared I/O layer.
+13. Timeseries loading protocol (``TimeSeriesRepository``) and validation
+    live in ``cleanmast.shared.timeseries.io``; the file-backed realization
+    lives in ``cleanmast.infrastructure`` and is injected by
+    ``cleanmast.bootstrap``. Subdomains receive ``TimeSeriesData`` — they
+    never load.
 14. Cross-subdomain workflows live in ``cleanmast.application.usecases``.
     A usecase may import ``configuration`` and ``dataprocessing`` in the same
     function; a subdomain never imports a sibling (enforced by the
     ``subdomain-isolation`` and ``repository-access`` import-linter
     contracts).
 15. Train workflows follow one pattern: the usecase discovers input configs
-    via ``ProjectConfig.discover_*_config()``, calls a dataprocessing fit
-    service (e.g. ``planner.fit_all_masts``), and persists results via
-    ``ProjectConfig.save_*_model()``. Fitting code never touches TOML I/O.
+    via ``ProjectConfig.discover_*_config()``, loads each mast's timeseries
+    via the injected ``TimeSeriesRepository``, calls a dataprocessing fit
+    service (e.g. ``planner.fit_one_mast``), and persists results via
+    ``ProjectConfig.save_*_model()``. Fitting code never touches I/O.
 
 ## Anti-patterns
 

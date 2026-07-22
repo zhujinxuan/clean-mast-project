@@ -4,19 +4,12 @@ from pathlib import Path
 
 import click
 
-from cleanmast.application.usecases.recommend_fill_heights import (
+from cleanmast.bootstrap import (
     DEFAULT_DEG_DIFF_PER_M_LIMIT,
     DEFAULT_FILL_HEIGHTS,
-)
-from cleanmast.application.usecases.recommend_fill_heights import (
-    recommend_fill_heights as recommend_fill_heights_usecase,
-)
-from cleanmast.subdomains.configuration import ProjectConfig
-from cleanmast.subdomains.configuration.services.recommend_report import (
-    recommend_report as recommend_report_usecase,
-)
-from cleanmast.subdomains.configuration.services.recommend_wt_timeseries import (
-    recommend_wt_timeseries as recommend_wt_timeseries_usecase,
+    build_recommend_fill_heights,
+    build_recommend_report,
+    build_recommend_wt_timeseries,
 )
 
 
@@ -47,11 +40,9 @@ def recommend_fill_heights(project_dir: str, heights: str, deg_diff_limit: float
     """
     click.echo(f"Target fill heights: {heights.split(',')} m")
 
-    project_config = ProjectConfig(Path(project_dir))
-
     try:
-        meso_dc, rep_dc = recommend_fill_heights_usecase(
-            project_config=project_config,
+        meso_dc, rep_dc = build_recommend_fill_heights(
+            project_dir=project_dir,
             heights=heights,
             deg_diff_limit=deg_diff_limit,
         )
@@ -60,11 +51,12 @@ def recommend_fill_heights(project_dir: str, heights: str, deg_diff_limit: float
     except ValueError as e:
         raise click.ClickException(str(e))
 
-    meso_dc.write_to(project_config.project_dir)
+    project_path = Path(project_dir)
+    meso_dc.write_to(project_path)
     click.echo(f"\nGenerated: {meso_dc.filename}")
 
     if rep_dc:
-        rep_dc.write_to(project_config.project_dir)
+        rep_dc.write_to(project_path)
         click.echo(f"Generated: {rep_dc.filename}")
 
     click.echo("\nNext steps:")
@@ -77,18 +69,16 @@ def recommend_fill_heights(project_dir: str, heights: str, deg_diff_limit: float
 @click.argument("project_dir", type=click.Path(exists=True))
 def recommend_wt_timeseries_cli(project_dir: str):
     """Generate wt-timeseries.toml configuration file."""
-    project_config = ProjectConfig(Path(project_dir))
-
     click.echo("Discovering masts from fill-heights config...")
 
     try:
-        dc = recommend_wt_timeseries_usecase(project_config)
+        dc = build_recommend_wt_timeseries(project_dir)
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:
         raise click.ClickException(str(e))
 
-    dc.write_to(project_config.project_dir)
+    dc.write_to(Path(project_dir))
 
     click.echo(f"\nGenerated: {dc.filename}")
     click.echo("\nNext steps:")
@@ -101,16 +91,14 @@ def recommend_timeseries_report(project_dir: str):
     """Generate configuration for representative timeseries report."""
     click.echo("Generating rep-ts-report configuration...")
 
-    project_config = ProjectConfig(Path(project_dir))
-
     try:
-        dc = recommend_report_usecase(project_config)
+        dc = build_recommend_report(project_dir)
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:
         raise click.ClickException(str(e))
 
-    dc.write_to(project_config.project_dir)
+    dc.write_to(Path(project_dir))
 
     click.echo(f"\nGenerated: {dc.filename}")
     click.echo("\nNext steps:")

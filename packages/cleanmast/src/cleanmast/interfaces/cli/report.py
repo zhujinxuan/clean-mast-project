@@ -3,9 +3,7 @@
 
 import click
 
-from cleanmast.application.usecases.generate_report import (
-    generate_report as generate_report_usecase,
-)
+from cleanmast.bootstrap import build_generate_report
 
 
 @click.command("timeseries")
@@ -15,7 +13,7 @@ def report_timeseries(config_path: str):
     click.echo(f"Generating report for: {config_path}")
 
     try:
-        results = generate_report_usecase(config_path=config_path)
+        results = build_generate_report(config_path)
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:

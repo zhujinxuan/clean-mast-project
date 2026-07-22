@@ -12,6 +12,7 @@ from cleanmast.application.usecases.generate_report import (
     _generate_from_flat_config,
     generate_report,
 )
+from cleanmast.infrastructure.file_repository import FileTimeSeriesRepository
 from cleanmast.shared.timeseries import TimeRange, TimeSeriesData, TimeSeriesSource
 from cleanmast.subdomains.configuration import (
     AnalysisWindow,
@@ -96,8 +97,7 @@ class TestGenerateReport:
 
     @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
     @patch("cleanmast.application.usecases.generate_report.ReportGenerationService")
-    @patch("cleanmast.application.usecases.generate_report.load_timeseries")
-    def test_non_timeseries_at_section_level_produces_placeholder(self, mock_load_ts, mock_service_cls, mock_builder_cls, tmp_path):
+    def test_non_timeseries_at_section_level_produces_placeholder(self, mock_service_cls, mock_builder_cls, tmp_path):
         # Every tree node produces a HeadingSection, including top-level leaf nodes
         config = {
             "datasets": [
@@ -123,7 +123,8 @@ class TestGenerateReport:
 
         mock_ts = MagicMock()
         mock_ts.sensors = []
-        mock_load_ts.return_value = mock_ts
+        mock_repo = MagicMock()
+        mock_repo.load.return_value = mock_ts
         mock_service = MagicMock()
         mock_service.generate_wind_rose_section.return_value = "wind_rose_section"
         mock_service._create_analysis_input.return_value = "analysis_input"
@@ -132,7 +133,7 @@ class TestGenerateReport:
         mock_builder.build.return_value = {"typ": Path("report.typ"), "pdf": Path("report.pdf"), "docx": Path("report.docx")}
         mock_builder_cls.return_value = mock_builder
 
-        result = generate_report(str(path))
+        result = generate_report(str(path), repo=mock_repo)
         assert result["pdf"] == Path("report.pdf")
         # Top-level leaf produces HeadingSection("Placeholder")
         assert mock_service.generate_wind_rose_section.call_count == 0
@@ -145,7 +146,7 @@ class TestGenerateReport:
     def test_config_not_found_raises_error(self, tmp_path):
         missing_path = tmp_path / "nonexistent.toml"
         with pytest.raises(FileNotFoundError):
-            generate_report(str(missing_path))
+            generate_report(str(missing_path), repo=FileTimeSeriesRepository())
 
 
 class TestFlatConfigOrchestration:

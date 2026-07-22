@@ -8,11 +8,10 @@ import pandas as pd
 import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
-from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
-from cleanmast.shared.timeseries.io import (
-    load_timeseries,
-    save_timeseries,
+from cleanmast.infrastructure.file_repository import (
+    FileTimeSeriesRepository,
 )
+from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData, TimeSeriesSource
 
 
 class TestJuliaInterop:
@@ -59,7 +58,7 @@ class TestJuliaInterop:
 
         # Python reads the file
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify data was read correctly
         assert result.df.shape == (2, 3)
@@ -113,7 +112,7 @@ class TestPythonInterop:
         # Save as Parquet (should use file-level metadata for Julia interop)
         parquet_path = tmp_path / "python_write.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_data)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_data)
 
         # Verify file exists
         assert parquet_path.exists()
@@ -125,8 +124,8 @@ class TestPythonInterop:
         # The metadata should contain cleanmast_sensors
         assert parquet_path.exists()
 
-        # Load using our load_timeseries to verify roundtrip works
-        loaded = load_timeseries(source, str(tmp_path))
+        # Load using FileTimeSeriesRepository to verify roundtrip works
+        loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert loaded.df.shape == (2, 3)
         assert len(loaded.sensors) == 2
@@ -156,7 +155,7 @@ class TestEdgeCases:
 
         # Load should work but return no sensors
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert result.df.shape == (1, 2)
         assert len(result.sensors) == 0
@@ -192,7 +191,7 @@ class TestEdgeCases:
 
         # Load and verify all 120 sensors
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert result.df.shape == (1, 121)  # timestamp + 120 data columns
         assert len(result.sensors) == 120
@@ -229,7 +228,7 @@ class TestEdgeCases:
 
         # Load and verify
         source = TimeSeriesSource(data=str(parquet_path), sensors=None)
-        result = load_timeseries(source, str(tmp_path))
+        result = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         assert len(result.sensors) == 4
         column_names = [s.column_name for s in result.sensors]
@@ -295,10 +294,10 @@ class TestRoundTrip:
         # Write to Parquet
         parquet_path = tmp_path / "roundtrip.parquet"
         source = TimeSeriesSource(data=str(parquet_path), sensors="")
-        save_timeseries(source, str(tmp_path), ts_original)
+        FileTimeSeriesRepository().save(source, str(tmp_path), ts_original)
 
         # Read back
-        ts_loaded = load_timeseries(source, str(tmp_path))
+        ts_loaded = FileTimeSeriesRepository().load(source, str(tmp_path))
 
         # Verify data values match
         for col in df_original.columns:

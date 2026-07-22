@@ -9,7 +9,6 @@ from cleanmast.subdomains.dataprocessing.services import (
     calculate_ti_series,
     process_single_mast_csv,
     process_turbulence_for_mast,
-    process_wt_timeseries,
 )
 
 __all__ = [
@@ -22,5 +21,4 @@ __all__ = [
     "calculate_ti_series",
     "process_turbulence_for_mast",
     "process_single_mast_csv",
-    "process_wt_timeseries",
 ]

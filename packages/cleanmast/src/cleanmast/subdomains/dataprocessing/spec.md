@@ -2,12 +2,14 @@
 
 ### Purpose
 Data processing domain services: reconstruction, height filling, turbulence
-calculation, WT timeseries generation. All computation; no TOML I/O.
+calculation, WT timeseries generation. All computation; no I/O of any kind.
 
 ### Rules
 - Inherits all rules from `subdomains/spec.md`.
-- No TOML I/O — `import tomli` or `import tomli_w` is forbidden;
-  configuration discovery and persistence are `configuration`'s domain.
+- **No I/O of any kind.** Never import `TimeSeriesSource`, `TimeSeriesRepository`,
+  or any I/O symbol. Input: `TimeSeriesData` or `numpy` arrays only.
+  (Constructing config IR that carries `TimeSeriesSource` paths — e.g.
+  `MastFillConfig.input` / `.output` — is allowed; loading through them is not.)
 - Strategy objects (`strategies/`) conform to a structural protocol:
   no base class coupling.
 - Fitting functions (`fitting.py`) are pure numpy math over
