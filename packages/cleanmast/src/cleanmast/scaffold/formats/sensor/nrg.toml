@@ -73,3 +73,22 @@ unit = "kPa"
 sensorType = "Pressure"
 unit = "Pa"
 multiplier = 1000.0 
+
+# Case variants seen in real logger exports (e.g. NRG exports uppercase KPA).
+# The mapping engine matches units case-sensitively, so each variant needs
+# an explicit stanza converging to the same canonical Pressure [Pa].
+[[mappings]]
+[mappings.match]
+unit = "KPA"
+[mappings.rule]
+sensorType = "Pressure"
+unit = "Pa"
+multiplier = 1000.0 
+
+[[mappings]]
+[mappings.match]
+unit = "kpa"
+[mappings.rule]
+sensorType = "Pressure"
+unit = "Pa"
+multiplier = 1000.0 
