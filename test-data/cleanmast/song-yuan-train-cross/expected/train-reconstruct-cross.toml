@@ -1,0 +1,26 @@
+[[masts]]
+name = "M1664"
+
+    [masts.input]
+    data = "./reconstruct-single/M1664.parquet"
+[[masts]]
+name = "M3142"
+
+    [masts.input]
+    data = "./reconstruct-single/M3142.parquet"
+[[masts]]
+name = "M5057"
+
+    [masts.input]
+    data = "./reconstruct-single/M5057.parquet"
+[[masts]]
+name = "M5972"
+
+    [masts.input]
+    data = "./reconstruct-single/M5972.parquet"
+
+[train]
+min_overlap_days = 90.0
+min_data_points = 200
+output_dir = "./train-reconstruct-cross"
+exclude_nan_results = true

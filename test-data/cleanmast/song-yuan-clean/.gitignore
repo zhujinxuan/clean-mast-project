@@ -1,0 +1,4 @@
+# Generated outputs (not DVC-tracked, safe to delete)
+/clean/
+/process-stats/
+/process-clean.toml

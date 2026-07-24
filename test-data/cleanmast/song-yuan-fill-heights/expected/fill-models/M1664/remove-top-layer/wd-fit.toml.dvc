@@ -1,0 +1,5 @@
+outs:
+- md5: 2adc443ed803f947f9851ff472b3a843
+  size: 179
+  hash: md5
+  path: wd-fit.toml

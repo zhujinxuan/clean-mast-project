@@ -1,0 +1,167 @@
+# Cross-Mast Reconstruction Configuration
+# Generated from training results: projects/2026-07-02-松原/train-reconstruct-cross\train-results.toml
+# Generated on: 2026-07-02T14:02:56.202
+
+[training_metadata]
+qualified_direction_pairs = 12
+total_mast_pairs = 12
+train_results_file = "projects/2026-07-02-松原/train-reconstruct-cross\\train-results.toml"
+qualified_speed_pairs = 12
+training_date = "2026-07-02T14:02:56.201"
+
+[[masts]]
+name = "M1664"
+
+    [masts.output]
+    data = "./reconstruct-cross/M1664_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/M1664.parquet"
+[[masts]]
+name = "M3142"
+
+    [masts.output]
+    data = "./reconstruct-cross/M3142_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/M3142.parquet"
+[[masts]]
+name = "M5057"
+
+    [masts.output]
+    data = "./reconstruct-cross/M5057_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/M5057.parquet"
+[[masts]]
+name = "M5972"
+
+    [masts.output]
+    data = "./reconstruct-cross/M5972_reconstructed.parquet"
+
+    [masts.input]
+    data = "./reconstruct-single/M5972.parquet"
+
+[settings]
+min_confidence = 0.7
+max_direction_uncertainty = 45.0
+output_dir = "./reconstruct-cross"
+
+[[reconstruction_priorities]]
+priority_level = 1
+min_correlation = 0.7
+max_direction_std = 15.0
+
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5057\\M5972"
+    priority = 1
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 163.54861111111111
+    target_mast = "M5057"
+    speed_correlation = 0.9395347967534065
+    source_mast = "M5972"
+    direction_std = 22.963446143977112
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5057\\M3142"
+    priority = 2
+    variables = ["windspeed"]
+    data_coverage_days = 164.11111111111111
+    target_mast = "M5057"
+    speed_correlation = 0.9061151335770561
+    source_mast = "M3142"
+    direction_std = 29.74567613400912
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5972\\M3142"
+    priority = 4
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 415.47222222222223
+    target_mast = "M5972"
+    speed_correlation = 0.9342554474479
+    source_mast = "M3142"
+    direction_std = 22.57092817451897
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5972\\M5057"
+    priority = 5
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 163.54861111111111
+    target_mast = "M5972"
+    speed_correlation = 0.9395347967534065
+    source_mast = "M5057"
+    direction_std = 22.963446143977112
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5972\\M1664"
+    priority = 6
+    variables = ["windspeed"]
+    data_coverage_days = 215.86805555555554
+    target_mast = "M5972"
+    speed_correlation = 0.798115666081957
+    source_mast = "M1664"
+    direction_std = 45.40485743510894
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M1664\\M5972"
+    priority = 8
+    variables = ["windspeed"]
+    data_coverage_days = 215.86805555555554
+    target_mast = "M1664"
+    speed_correlation = 0.798115666081957
+    source_mast = "M5972"
+    direction_std = 45.40485743510894
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M1664\\M3142"
+    priority = 9
+    variables = ["windspeed"]
+    data_coverage_days = 216.43055555555554
+    target_mast = "M1664"
+    speed_correlation = 0.7918486827558537
+    source_mast = "M3142"
+    direction_std = 47.58601344204182
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M3142\\M5972"
+    priority = 10
+    variables = ["windspeed", "winddirection"]
+    data_coverage_days = 415.47222222222223
+    target_mast = "M3142"
+    speed_correlation = 0.9342554474479
+    source_mast = "M5972"
+    direction_std = 22.57092817451897
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M3142\\M5057"
+    priority = 11
+    variables = ["windspeed"]
+    data_coverage_days = 164.11111111111111
+    target_mast = "M3142"
+    speed_correlation = 0.9061151335770561
+    source_mast = "M5057"
+    direction_std = 29.74567613400912
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M3142\\M1664"
+    priority = 12
+    variables = ["windspeed"]
+    data_coverage_days = 216.43055555555554
+    target_mast = "M3142"
+    speed_correlation = 0.7918486827558537
+    source_mast = "M1664"
+    direction_std = 47.58601344204182
+[[reconstruction_priorities]]
+priority_level = 2
+min_correlation = 0.5
+max_direction_std = 20.0
+
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M5057\\M1664"
+    priority = 3
+    variables = ["windspeed"]
+    data_coverage_days = 943.8125
+    target_mast = "M5057"
+    speed_correlation = 0.6786859404173997
+    source_mast = "M1664"
+    direction_std = 50.90581406995923
+    [[reconstruction_priorities.jobs]]
+    model_dir = "train-reconstruct-cross\\cross-mast-models\\M1664\\M5057"
+    priority = 7
+    variables = ["windspeed"]
+    data_coverage_days = 943.8125
+    target_mast = "M1664"
+    speed_correlation = 0.6786859404173997
+    source_mast = "M5057"
+    direction_std = 50.905970950899814

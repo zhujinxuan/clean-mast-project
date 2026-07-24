@@ -1,0 +1,282 @@
+[[mesos]]
+name = "ERA5M1664"
+
+    [mesos.input]
+    data = "./raw/ERA5M1664.parquet"
+[[mesos]]
+name = "ERA5M3142"
+
+    [mesos.input]
+    data = "./raw/ERA5M3142.parquet"
+[[mesos]]
+name = "ERA5M5057"
+
+    [mesos.input]
+    data = "./raw/ERA5M5057.parquet"
+[[mesos]]
+name = "ERA5M5972"
+
+    [mesos.input]
+    data = "./raw/ERA5M5972.parquet"
+
+[[masts]]
+name = "M1664"
+
+    [masts.input]
+    data = "./tower-shading/M1664.parquet"
+[[masts]]
+name = "M3142"
+
+    [masts.input]
+    data = "./tower-shading/M3142.parquet"
+[[masts]]
+name = "M5057"
+
+    [masts.input]
+    data = "./tower-shading/M5057.parquet"
+[[masts]]
+name = "M5972"
+
+    [masts.input]
+    data = "./tower-shading/M5972.parquet"
+
+[[models]]
+method = "16-sector"
+output = "./meso-models/M1664/ERA5M1664/windspeed/16-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M1664"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M1664/ERA5M1664/windspeed/1-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M1664"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M1664/ERA5M1664/winddirection/constant-offset.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M1664"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M3142/ERA5M1664/windspeed/16-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M1664"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M3142/ERA5M1664/windspeed/1-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M1664"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M3142/ERA5M1664/winddirection/constant-offset.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M1664"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5057/ERA5M1664/windspeed/16-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M1664"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5057/ERA5M1664/windspeed/1-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M1664"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5057/ERA5M1664/winddirection/constant-offset.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M1664"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5972/ERA5M1664/windspeed/16-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M1664"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5972/ERA5M1664/windspeed/1-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M1664"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5972/ERA5M1664/winddirection/constant-offset.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M1664"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M1664/ERA5M3142/windspeed/16-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M3142"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M1664/ERA5M3142/windspeed/1-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M3142"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M1664/ERA5M3142/winddirection/constant-offset.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M3142"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M3142/ERA5M3142/windspeed/16-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M3142"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M3142/ERA5M3142/windspeed/1-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M3142"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M3142/ERA5M3142/winddirection/constant-offset.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M3142"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5057/ERA5M3142/windspeed/16-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M3142"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5057/ERA5M3142/windspeed/1-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M3142"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5057/ERA5M3142/winddirection/constant-offset.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M3142"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5972/ERA5M3142/windspeed/16-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M3142"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5972/ERA5M3142/windspeed/1-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M3142"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5972/ERA5M3142/winddirection/constant-offset.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M3142"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M1664/ERA5M5057/windspeed/16-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5057"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M1664/ERA5M5057/windspeed/1-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5057"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M1664/ERA5M5057/winddirection/constant-offset.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5057"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M3142/ERA5M5057/windspeed/16-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5057"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M3142/ERA5M5057/windspeed/1-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5057"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M3142/ERA5M5057/winddirection/constant-offset.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5057"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5057/ERA5M5057/windspeed/16-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5057"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5057/ERA5M5057/windspeed/1-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5057"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5057/ERA5M5057/winddirection/constant-offset.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5057"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5972/ERA5M5057/windspeed/16-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5057"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5972/ERA5M5057/windspeed/1-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5057"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5972/ERA5M5057/winddirection/constant-offset.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5057"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M1664/ERA5M5972/windspeed/16-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5972"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M1664/ERA5M5972/windspeed/1-sector.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5972"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M1664/ERA5M5972/winddirection/constant-offset.jld2"
+mast_name = "M1664"
+meso_name = "ERA5M5972"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M3142/ERA5M5972/windspeed/16-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5972"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M3142/ERA5M5972/windspeed/1-sector.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5972"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M3142/ERA5M5972/winddirection/constant-offset.jld2"
+mast_name = "M3142"
+meso_name = "ERA5M5972"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5057/ERA5M5972/windspeed/16-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5972"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5057/ERA5M5972/windspeed/1-sector.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5972"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5057/ERA5M5972/winddirection/constant-offset.jld2"
+mast_name = "M5057"
+meso_name = "ERA5M5972"
+[[models]]
+method = "16-sector"
+output = "./meso-models/M5972/ERA5M5972/windspeed/16-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5972"
+[[models]]
+method = "1-sector"
+output = "./meso-models/M5972/ERA5M5972/windspeed/1-sector.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5972"
+[[models]]
+method = "constant-offset"
+output = "./meso-models/M5972/ERA5M5972/winddirection/constant-offset.jld2"
+mast_name = "M5972"
+meso_name = "ERA5M5972"

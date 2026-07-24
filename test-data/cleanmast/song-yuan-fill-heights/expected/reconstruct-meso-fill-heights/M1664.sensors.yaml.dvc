@@ -1,0 +1,5 @@
+outs:
+- md5: 9c248b8181e24a5bbccc1ebd8f952f00
+  size: 8616
+  hash: md5
+  path: M1664.sensors.yaml

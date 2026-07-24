@@ -1,0 +1,5 @@
+outs:
+- md5: cb73ecba4075f6d21926bfb51e0451e9
+  size: 7080194
+  hash: md5
+  path: ERA5M5972.parquet

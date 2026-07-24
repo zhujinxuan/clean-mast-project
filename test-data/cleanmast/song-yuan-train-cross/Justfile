@@ -1,0 +1,45 @@
+# Justfile for DVC test dataset: song-yuan-train-cross
+# Step: train-cross (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-train-cross/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-train-cross"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates train-reconstruct-cross.toml from reconstruct-single/
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend train-reconstruct-cross '{{PROJECT}}'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/train-reconstruct-cross.toml' '{{PROJECT}}/train-reconstruct-cross.toml'
+
+# Phase 2: process — trains cross-mast models using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/train-reconstruct-cross.toml' '{{PROJECT}}/train-reconstruct-cross.toml'; julia bin/CleanMast.jl process train-cross '{{PROJECT}}/train-reconstruct-cross.toml'
+
+# Check process outputs exist (no parquet outputs — models are .jld2)
+check-outputs:
+    cd '{{ROOT}}'; if (Test-Path '{{PROJECT}}/train-reconstruct-cross/train-results.toml') { echo '✓ train-reconstruct-cross/train-results.toml exists' } else { echo '✗ missing train-results.toml'; exit 1 }
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process check-outputs
+    @echo "✓ song-yuan-train-cross verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['train-reconstruct-cross/train-results.toml'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-train-cross', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/train-reconstruct-cross' '{{PROJECT}}/train-reconstruct-cross.toml'

@@ -1,0 +1,45 @@
+# Justfile for DVC test dataset: song-yuan-reconstruct-single
+# Step: reconstruct-single (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-reconstruct-single/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-reconstruct-single"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates reconstruct-single.toml from tower-shading/
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend reconstruct-single '{{PROJECT}}'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/reconstruct-single.toml' '{{PROJECT}}/reconstruct-single.toml'
+
+# Phase 2: process — reconstructs single mast gaps using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/reconstruct-single.toml' '{{PROJECT}}/reconstruct-single.toml'; julia bin/CleanMast.jl process reconstruct-single '{{PROJECT}}/reconstruct-single.toml'
+
+# Compare generated reconstruct-single/*.parquet against truth expected/reconstruct-single/
+compare-outputs:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' parquets '{{PROJECT}}/expected/reconstruct-single' '{{PROJECT}}/reconstruct-single'
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "✓ song-yuan-reconstruct-single verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['reconstruct-single/M1664.parquet', 'reconstruct-single/M3142.parquet', 'reconstruct-single/M5057.parquet', 'reconstruct-single/M5972.parquet'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-reconstruct-single', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/reconstruct-single' '{{PROJECT}}/reconstruct-single.toml'

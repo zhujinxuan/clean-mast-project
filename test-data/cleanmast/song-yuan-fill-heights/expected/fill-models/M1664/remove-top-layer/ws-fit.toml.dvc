@@ -1,0 +1,5 @@
+outs:
+- md5: de41a1548605bac186b9f4c9c37301ac
+  size: 162
+  hash: md5
+  path: ws-fit.toml

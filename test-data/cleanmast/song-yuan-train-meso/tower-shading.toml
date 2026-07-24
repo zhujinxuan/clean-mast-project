@@ -1,0 +1,35 @@
+# Tower Shading Configuration
+# Merges wind speed sensors at nearby heights (within 2m) to handle tower shading effects
+
+[[masts]]
+name = "M1664"
+
+    [masts.output]
+    data = "./tower-shading/M1664.parquet"
+
+    [masts.input]
+    data = "./clean\\M1664.parquet"
+[[masts]]
+name = "M3142"
+
+    [masts.output]
+    data = "./tower-shading/M3142.parquet"
+
+    [masts.input]
+    data = "./clean\\M3142.parquet"
+[[masts]]
+name = "M5057"
+
+    [masts.output]
+    data = "./tower-shading/M5057.parquet"
+
+    [masts.input]
+    data = "./clean\\M5057.parquet"
+[[masts]]
+name = "M5972"
+
+    [masts.output]
+    data = "./tower-shading/M5972.parquet"
+
+    [masts.input]
+    data = "./clean\\M5972.parquet"

@@ -1,0 +1,61 @@
+# Parse Sensors Configuration
+# This file defines which data files to process and their sensor formats
+# Output data is stored as Parquet files in the raw/ directory
+
+[[mesos]]
+name = "ERA5M1664"
+sensor = "formats/sensor/freemeso-meso.toml"
+input = "mesos\\ERA5M1664.txt"
+
+    [mesos.output]
+    data = "./raw/ERA5M1664.parquet"
+[[mesos]]
+name = "ERA5M3142"
+sensor = "formats/sensor/freemeso-meso.toml"
+input = "mesos\\ERA5M3142.txt"
+
+    [mesos.output]
+    data = "./raw/ERA5M3142.parquet"
+[[mesos]]
+name = "ERA5M5057"
+sensor = "formats/sensor/freemeso-meso.toml"
+input = "mesos\\ERA5M5057.txt"
+
+    [mesos.output]
+    data = "./raw/ERA5M5057.parquet"
+[[mesos]]
+name = "ERA5M5972"
+sensor = "formats/sensor/freemeso-meso.toml"
+input = "mesos\\ERA5M5972.txt"
+
+    [mesos.output]
+    data = "./raw/ERA5M5972.parquet"
+
+[[masts]]
+name = "M1664"
+sensor = "formats/sensor/nrg.toml"
+input = "masts\\M1664.csv"
+
+    [masts.output]
+    data = "./raw/M1664.parquet"
+[[masts]]
+name = "M3142"
+sensor = "formats/sensor/nrg.toml"
+input = "masts\\M3142.csv"
+
+    [masts.output]
+    data = "./raw/M3142.parquet"
+[[masts]]
+name = "M5057"
+sensor = "formats/sensor/nrg.toml"
+input = "masts\\M5057.csv"
+
+    [masts.output]
+    data = "./raw/M5057.parquet"
+[[masts]]
+name = "M5972"
+sensor = "formats/sensor/nrg.toml"
+input = "masts\\M5972.csv"
+
+    [masts.output]
+    data = "./raw/M5972.parquet"

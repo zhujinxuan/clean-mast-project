@@ -1,0 +1,78 @@
+"""
+Patch representative-year.toml to use per-mast time ranges.
+
+Window choice principles:
+  1. Coverage first: month-start alignment preferred, allow up to 4% difference
+  2. Prefer later window when coverage is comparable
+
+Chosen windows (unchanged — coverage is provided by the reconstruct-meso
+override, see override-reconstruct-meso.md):
+  M3142: 2022-08-01 → 2023-07-31  (clean 2022-06-26 → 2023-08-17)
+  M5972: 2022-08-01 → 2023-07-31  (clean 2022-06-11 → 2023-08-16)
+  M1664: 2024-09-01 → 2025-08-31  (98.9%, data range 2023-01-12 → 2025-12-14)
+  M5057: 2024-09-01 → 2025-08-31  (98.4%, data range 2022-12-29 → 2025-10-22)
+
+NOTE: representative-year.toml reads ./reconstruct-meso/*.parquet, NOT clean/.
+These windows are only valid because override_reconstruct_meso.py extends the
+reconstruct-meso grid for M3142/M5972 back to 2022-08-01. Without that override
+the rep-year output is silently clipped to 11 months (2022-09 → 2023-07);
+see investigation/ws150m-avg-crosscheck/report.md §4.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+# Per-mast time ranges (month-start to month-end, best coverage + latest window)
+MAST_RANGES = {
+    "M3142": ("2022-08-01", "2023-07-31"),
+    "M5972": ("2022-08-01", "2023-07-31"),
+    "M1664": ("2024-09-01", "2025-08-31"),
+    "M5057": ("2024-09-01", "2025-08-31"),
+}
+
+
+def patch_representative_year(toml_path: Path) -> dict:
+    """Patch each mast's time_range in representative-year.toml."""
+    text = toml_path.read_text(encoding="utf-8")
+    patched = {}
+
+    for mast, (start, end) in MAST_RANGES.items():
+        pattern = rf'(\[\[masts\]\]\nname = "{mast}".*?\[masts\.time_range\]\n    max = )\S+(.*?min = )\S+'
+
+        def replace_range(m):
+            return f"{m.group(1)}{end}T23:59:59.000Z{m.group(2)}{start}T00:00:00.000Z"
+
+        new_text, count = re.subn(pattern, replace_range, text, flags=re.DOTALL)
+        if count > 0:
+            text = new_text
+            patched[mast] = f"{start} → {end}"
+        else:
+            print(f"  Warning: Could not patch {mast} -- pattern not found")
+
+    toml_path.write_text(text, encoding="utf-8")
+    return patched
+
+
+def main():
+    base = Path(__file__).parent
+    toml_path = base.parent / "representative-year.toml"
+
+    if not toml_path.exists():
+        print(f"Error: {toml_path} not found")
+        sys.exit(1)
+
+    print(f"Patching: {toml_path}")
+    patched = patch_representative_year(toml_path)
+
+    print(f"\nPatched {len(patched)}/{len(MAST_RANGES)} masts:")
+    for mast, rng in patched.items():
+        print(f"  {mast}: {rng}")
+
+    for mast in MAST_RANGES:
+        if mast not in patched:
+            print(f"  {mast}: NOT patched")
+
+
+if __name__ == "__main__":
+    main()

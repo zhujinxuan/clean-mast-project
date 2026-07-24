@@ -1,0 +1,256 @@
+[[pairs]]
+    [pairs.mast]
+    name = "M3142"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M3142.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8767420748363036
+
+    [pairs.meso]
+    name = "ERA5M3142"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M3142.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M1664"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M1664.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8032118061988869
+
+    [pairs.meso]
+    name = "ERA5M3142"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M3142.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M1664"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M1664.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8229053520417267
+
+    [pairs.meso]
+    name = "ERA5M5972"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5972.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5057"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5057.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.6952600434766555
+
+    [pairs.meso]
+    name = "ERA5M1664"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M1664.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5972"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5972.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8665220868329383
+
+    [pairs.meso]
+    name = "ERA5M3142"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M3142.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5972"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5972.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8709822559507835
+
+    [pairs.meso]
+    name = "ERA5M5057"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5057.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M3142"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M3142.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8726739548691289
+
+    [pairs.meso]
+    name = "ERA5M5972"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5972.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M3142"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M3142.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8665174848177875
+
+    [pairs.meso]
+    name = "ERA5M5057"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5057.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M1664"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M1664.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8198811573137899
+
+    [pairs.meso]
+    name = "ERA5M5057"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5057.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5057"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5057.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.7525484600789163
+
+    [pairs.meso]
+    name = "ERA5M5057"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5057.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5057"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5057.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.7446732496327403
+
+    [pairs.meso]
+    name = "ERA5M5972"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5972.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5972"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5972.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8131961475809374
+
+    [pairs.meso]
+    name = "ERA5M1664"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M1664.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5057"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5057.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.7317290886488276
+
+    [pairs.meso]
+    name = "ERA5M3142"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M3142.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M1664"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M1664.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8651332995800908
+
+    [pairs.meso]
+    name = "ERA5M1664"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M1664.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M3142"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M3142.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8033289461425286
+
+    [pairs.meso]
+    name = "ERA5M1664"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M1664.parquet"
+[[pairs]]
+    [pairs.mast]
+    name = "M5972"
+
+        [pairs.mast.input]
+        data = "./tower-shading/M5972.parquet"
+
+    [[pairs.models]]
+    method = "1-sector"
+    correlation = 0.8721347684493452
+
+    [pairs.meso]
+    name = "ERA5M5972"
+
+        [pairs.meso.input]
+        data = "./raw/ERA5M5972.parquet"

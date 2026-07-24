@@ -1,0 +1,6 @@
+outs:
+- md5: 8d836af9940e00bb006c5fe1cb7edd3e.dir
+  size: 1140360
+  nfiles: 49
+  hash: md5
+  path: meso-models

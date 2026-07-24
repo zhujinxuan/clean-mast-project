@@ -1,0 +1,710 @@
+[[datasets]]
+name = "reconstruct_meso_filled_heights"
+
+[[datasets.masts]]
+name = "M5057"
+air_density = 1.223
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M5057.parquet"
+
+[[datasets.masts]]
+name = "M5972"
+air_density = 1.231
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M5972.parquet"
+
+[[datasets.masts]]
+name = "M1664"
+air_density = 1.234
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M1664.parquet"
+
+[[datasets.masts]]
+name = "M3142"
+air_density = 1.232
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M3142.parquet"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5057",
+    "M1664",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2024-09-01T00:00:00Z"
+max = "2025-08-31T23:59:59Z"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5972",
+    "M3142",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2022-08-01T00:00:00Z"
+max = "2023-07-31T23:59:59Z"
+
+[[datasets]]
+name = "repyear"
+
+[[datasets.masts]]
+name = "M5057"
+air_density = 1.231
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./representative-year-fill-heights/M5057.parquet"
+
+[[datasets.masts]]
+name = "M5972"
+air_density = 1.234
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./representative-year-fill-heights/M5972.parquet"
+
+[[datasets.masts]]
+name = "M1664"
+air_density = 1.237
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./representative-year-fill-heights/M1664.parquet"
+
+[[datasets.masts]]
+name = "M3142"
+air_density = 1.235
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./representative-year-fill-heights/M3142.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M1664",
+]
+meso_name = "ERA5M1664"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M1664.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M3142",
+]
+meso_name = "ERA5M3142"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M3142.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M5057",
+]
+meso_name = "ERA5M5057"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M5057.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M5972",
+]
+meso_name = "ERA5M5972"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M5972.parquet"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5057",
+    "M1664",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2024-09-01T00:00:00Z"
+max = "2025-08-31T23:59:59Z"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5972",
+    "M3142",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2022-08-01T00:00:00Z"
+max = "2023-07-31T23:59:59Z"
+
+[[datasets]]
+name = "reconstruct_meso_original_heights"
+
+[[datasets.masts]]
+name = "M5057"
+air_density = 1.223
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    150.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 150.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso/M5057.parquet"
+
+[[datasets.masts]]
+name = "M5972"
+air_density = 1.231
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso/M5972.parquet"
+
+[[datasets.masts]]
+name = "M1664"
+air_density = 1.234
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    150.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 150.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso/M1664.parquet"
+
+[[datasets.masts]]
+name = "M3142"
+air_density = 1.232
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso/M3142.parquet"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5057",
+    "M1664",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2024-09-01T00:00:00Z"
+max = "2025-08-31T23:59:59Z"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5972",
+    "M3142",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2022-08-01T00:00:00Z"
+max = "2023-07-31T23:59:59Z"
+
+[[datasets]]
+name = "receive_repyear_calibration_input"
+
+[[datasets.masts]]
+name = "M5057"
+air_density = 1.223
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M5057.parquet"
+
+[[datasets.masts]]
+name = "M5972"
+air_density = 1.231
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M5972.parquet"
+
+[[datasets.masts]]
+name = "M1664"
+air_density = 1.234
+turbulence_heights = [
+    150.0,
+]
+extreme_wind_10min_heights = [
+    125.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 125.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M1664.parquet"
+
+[[datasets.masts]]
+name = "M3142"
+air_density = 1.232
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_10min_heights = [
+    120.0,
+    140.0,
+    150.0,
+    160.0,
+]
+extreme_wind_3s_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+extreme_wind_gust_factors = [
+    { height = 120.0, gust_factor = 1.4 },
+    { height = 140.0, gust_factor = 1.4 },
+    { height = 150.0, gust_factor = 1.4 },
+    { height = 160.0, gust_factor = 1.4 },
+]
+
+[datasets.masts.input]
+data = "./reconstruct-meso-fill-heights/M3142.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M1664",
+]
+meso_name = "ERA5M1664"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M1664.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M3142",
+]
+meso_name = "ERA5M3142"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M3142.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M5057",
+]
+meso_name = "ERA5M5057"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M5057.parquet"
+
+[[datasets.mesos]]
+target_masts = [
+    "M5972",
+]
+meso_name = "ERA5M5972"
+
+[datasets.mesos.input]
+data = "./raw/ERA5M5972.parquet"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5057",
+    "M1664",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2024-09-01T00:00:00Z"
+max = "2025-08-31T23:59:59Z"
+
+[[datasets.analysis_windows]]
+target_masts = [
+    "M5972",
+    "M3142",
+]
+
+[datasets.analysis_windows.time_range]
+min = "2022-08-01T00:00:00Z"
+max = "2023-07-31T23:59:59Z"
+
+[[subsections]]
+index = "2.4"
+type = "timeseries"
+title = "测风年风资源分析"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.1"
+type = "air_density"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.2"
+type = "temporal"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.3"
+type = "wind_rose"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.4"
+type = "vertical_profile"
+datasets = [
+    "reconstruct_meso_original_heights",
+]
+
+[[subsections]]
+index = "2.4.5"
+type = "wind_frequency"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.6"
+type = "weibull"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.4.7"
+type = "turbulence"
+datasets = [
+    "reconstruct_meso_original_heights",
+]
+
+[[subsections]]
+index = "2.5"
+type = "timeseries"
+title = "代表年风资源分析"
+datasets = [
+    "repyear",
+]
+
+[[subsections]]
+index = "2.5.1"
+type = "representative_year_calibration"
+datasets = [
+    "receive_repyear_calibration_input",
+]
+
+[[subsections]]
+index = "2.5.2"
+type = "temporal"
+datasets = [
+    "repyear",
+]
+
+[[subsections]]
+index = "2.5.3"
+type = "wind_rose"
+datasets = [
+    "repyear",
+]
+
+[[subsections]]
+index = "2.5.4"
+type = "wind_frequency"
+datasets = [
+    "repyear",
+]
+
+[[subsections]]
+index = "2.5.5"
+type = "weibull"
+datasets = [
+    "repyear",
+]
+
+[[subsections]]
+index = "2.6"
+type = "fifty_year_max_wind"
+title = "五十年一遇最大风速"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.6.1"
+type = "iec_standards"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.6.2"
+type = "fifty_year_method1"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.6.3"
+type = "fifty_year_method2"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.6.4"
+type = "fifty_year_method3"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]
+
+[[subsections]]
+index = "2.6.5"
+type = "fifty_year_summary"
+datasets = [
+    "reconstruct_meso_filled_heights",
+]

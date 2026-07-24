@@ -1,0 +1,46 @@
+# Justfile for DVC test dataset: song-yuan-representative-year
+# Step: representative-year (recommend + override + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-representative-year/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-representative-year"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates representative-year.toml from inputs, then applies override
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend representative-year '{{PROJECT}}'
+    cd '{{ROOT}}'; uv run python '{{PROJECT}}/just-override/override_representative_year.py'
+
+# Compare recommend+override-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/representative-year.toml' '{{PROJECT}}/representative-year.toml'
+
+# Phase 2: process — calibrates representative year using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/representative-year.toml' '{{PROJECT}}/representative-year.toml'; julia bin/CleanMast.jl process representative-year '{{PROJECT}}/representative-year.toml'
+
+# Compare generated representative-year/*.parquet against truth expected/representative-year/
+compare-outputs:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' parquets '{{PROJECT}}/expected/representative-year' '{{PROJECT}}/representative-year'
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "✓ song-yuan-representative-year verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['representative-year/M1664.parquet', 'representative-year/M3142.parquet', 'representative-year/M5057.parquet', 'representative-year/M5972.parquet'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-representative-year', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/representative-year' '{{PROJECT}}/representative-year.toml'

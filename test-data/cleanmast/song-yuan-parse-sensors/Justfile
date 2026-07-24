@@ -1,0 +1,45 @@
+# Justfile for DVC test dataset: song-yuan-parse-sensors
+# Step: parse-sensors (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-parse-sensors/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-parse-sensors"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates parse-sensors.toml from masts/ + mesos/
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend parse-sensors '{{PROJECT}}'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/parse-sensors.toml' '{{PROJECT}}/parse-sensors.toml'
+
+# Phase 2: process — parses sources into raw/*.parquet using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/parse-sensors.toml' '{{PROJECT}}/parse-sensors.toml'; julia bin/CleanMast.jl project parse-sensors '{{PROJECT}}/parse-sensors.toml'
+
+# Compare generated raw/*.parquet against truth expected/raw/
+compare-outputs:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' parquets '{{PROJECT}}/expected/raw' '{{PROJECT}}/raw'
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "✓ song-yuan-parse-sensors verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['raw/M1664.parquet', 'raw/M3142.parquet', 'raw/M5057.parquet', 'raw/M5972.parquet', 'raw/ERA5M1664.parquet', 'raw/ERA5M3142.parquet', 'raw/ERA5M5057.parquet', 'raw/ERA5M5972.parquet'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-parse-sensors', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/raw' '{{PROJECT}}/parse-sensors.toml'

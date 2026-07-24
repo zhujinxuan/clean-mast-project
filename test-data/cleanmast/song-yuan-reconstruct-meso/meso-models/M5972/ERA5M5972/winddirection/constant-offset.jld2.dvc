@@ -1,0 +1,5 @@
+outs:
+- md5: a8f5577854c9da28066c55fee8d1d9b2
+  size: 7677
+  hash: md5
+  path: constant-offset.jld2

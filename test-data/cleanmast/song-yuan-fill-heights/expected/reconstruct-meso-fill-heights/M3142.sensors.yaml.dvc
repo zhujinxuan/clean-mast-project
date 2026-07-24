@@ -1,0 +1,5 @@
+outs:
+- md5: fea7a2d40702ccc6a917dcc7c0967cbf
+  size: 7929
+  hash: md5
+  path: M3142.sensors.yaml

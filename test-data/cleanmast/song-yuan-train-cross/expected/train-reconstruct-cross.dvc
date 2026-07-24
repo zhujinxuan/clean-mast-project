@@ -1,0 +1,6 @@
+outs:
+- md5: c2b66cd79d0ab3508055ea3ae7500590.dir
+  size: 1060959
+  nfiles: 25
+  hash: md5
+  path: train-reconstruct-cross

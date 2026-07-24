@@ -1,0 +1,5 @@
+outs:
+- md5: 9aadfc2f436e4c7fc2dce5f7ac4a5513
+  size: 18125467
+  hash: md5
+  path: ERA5M5057.txt

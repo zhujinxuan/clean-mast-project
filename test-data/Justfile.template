@@ -1,48 +1,54 @@
-# Justfile template for DVC experiments
-# Copy this file to test-data/{package}/{dataset}/ and customize
+# Justfile template for DVC step-dataset verification
+# Copy this to test-data/{package}/{dataset}/ and customize the step name + commands.
+# Template mirrors: test-data/cleanmast/song-yuan-parse-sensors/Justfile
+#
+# Nushell is required for string interpolation. Install: scoop install nu
 
-# Default recipe - show available commands
+set shell := ["nu", "-c"]
+
+DATASET := "{{ dataset-name }}"
+PROJECT := "test-data/{{ package }}/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
 default:
     @just --list
 
-# Run verification (dvc pull + run experiment + check outputs)
-verify:
-    @echo "Running DVC experiment verification..."
-    cd '{{justfile_directory()}}' && dvc pull
-    @echo "Running experiment..."
-    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
-    @echo "Checking outputs..."
-    @echo "✓ Verification complete"
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
 
-# Run verification and output JSON result
-# Note: verify.toml is optional/legacy. Justfile is the primary manifest.
+# Phase 1: recommend — generates the step config from input data
+# Replace "STEP-NAME" with the actual step name (e.g. parse-sensors, clean, tower-shading, ...)
+# Replace "julia bin/CleanMast.jl" with "uv run cleanmast" for Python steps
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend STEP-NAME '{{PROJECT}}'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/STEP-NAME.toml' '{{PROJECT}}/STEP-NAME.toml'
+
+# Phase 2: process — runs the step using the TRUTH config
+# Replace "STEP-NAME" with the actual step name, "project" with "process" or project command
+# Replace "julia bin/CleanMast.jl" with "uv run cleanmast" for Python steps
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/STEP-NAME.toml' '{{PROJECT}}/STEP-NAME.toml'; julia bin/CleanMast.jl project STEP-NAME '{{PROJECT}}/STEP-NAME.toml'
+
+# Compare generated outputs against truth expected/ dir
+# Replace "OUTPUT-DIR" with the actual output directory (e.g. raw, clean, filled, ...)
+compare-outputs:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' parquets '{{PROJECT}}/expected/OUTPUT-DIR' '{{PROJECT}}/OUTPUT-DIR'
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "✓ {{ dataset-name }} verification complete"
+
+# JSON result for cleanmast verify runner — produces a single JSON line
+# Replace "OUTPUT-FILES" with the list of generated output files
 verify-json:
-    @cd '{{justfile_directory()}}' && uv run python -c "import json, time, subprocess, sys; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else r.stderr[:500]; outputs = ['rep-ts/report.pdf'] if r.returncode == 0 else []; print(json.dumps({'name': '{{"{{"}}dataset-name{{"}}"}}', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['OUTPUT-FILES'] if r.returncode == 0 else []; print(json.dumps({'name': '{{ dataset-name }}', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
 
-# Clean generated outputs (keep DVC-tracked files)
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+# Replace "OUTPUT-DIR" with the actual output directory, "STEP-NAME.toml" with the generated config
 clean:
-    @echo "Cleaning generated files..."
-    cd '{{justfile_directory()}}' && rm -rf rep-ts/
-    @echo "✓ Cleaned rep-ts/ directory"
-
-# Full reset (clean outputs + DVC cache cleanup)
-reset: clean
-    @echo "Running DVC garbage collection..."
-    cd '{{justfile_directory()}}' && dvc gc -f
-    @echo "✓ Reset complete"
-
-# Run the report generation manually
-run:
-    @echo "Running report generation..."
-    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
-
-# Run with PDF generation (slower)
-run-full:
-    @echo "Running report generation with PDF..."
-    cd '{{justfile_directory()}}' && uv run cleanmast report timeseries rep-ts-report.toml
-
-# Show experiment configuration
-# Note: verify.toml is optional when using Justfile-based verification
-config:
-    @echo "Experiment configuration:"
-    @cat verify.toml 2>/dev/null || echo "No verify.toml (optional for Justfile-only manifests)"
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/OUTPUT-DIR' '{{PROJECT}}/STEP-NAME.toml'

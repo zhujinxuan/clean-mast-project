@@ -1,0 +1,6 @@
+outs:
+- md5: d939506d6ffad09adc65027d3ff49a26.dir
+  size: 568958
+  nfiles: 24
+  hash: md5
+  path: cross-mast-models

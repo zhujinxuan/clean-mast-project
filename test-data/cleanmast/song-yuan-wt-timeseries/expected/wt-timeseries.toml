@@ -1,0 +1,67 @@
+[[masts]]
+name = "M5057"
+csv_heights = [
+    100.0,
+    125.0,
+    140.0,
+    150.0,
+    160.0,
+]
+turbulence_heights = [
+    150.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/M5057.parquet"
+
+[[masts]]
+name = "M5972"
+csv_heights = [
+    100.0,
+    125.0,
+    140.0,
+    150.0,
+    160.0,
+]
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/M5972.parquet"
+
+[[masts]]
+name = "M1664"
+csv_heights = [
+    100.0,
+    125.0,
+    140.0,
+    150.0,
+    160.0,
+]
+turbulence_heights = [
+    150.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/M1664.parquet"
+
+[[masts]]
+name = "M3142"
+csv_heights = [
+    100.0,
+    125.0,
+    140.0,
+    150.0,
+    160.0,
+]
+turbulence_heights = [
+    120.0,
+    140.0,
+    150.0,
+]
+
+[masts.input]
+data = "./representative-year-fill-heights/M3142.parquet"

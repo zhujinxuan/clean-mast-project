@@ -1,0 +1,4 @@
+# Generated outputs (not DVC-tracked, safe to delete)
+/train-meso.toml
+/meso-models/
+/logs/

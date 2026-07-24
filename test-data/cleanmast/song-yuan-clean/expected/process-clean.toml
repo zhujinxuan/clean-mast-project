@@ -1,0 +1,36 @@
+[[masts]]
+name = "M1664"
+rules = "formats/clean/default.toml"
+
+    [masts.output]
+    data = "./clean\\M1664.parquet"
+
+    [masts.input]
+    data = "./raw/M1664.parquet"
+[[masts]]
+name = "M3142"
+rules = "formats/clean/default.toml"
+
+    [masts.output]
+    data = "./clean\\M3142.parquet"
+
+    [masts.input]
+    data = "./raw/M3142.parquet"
+[[masts]]
+name = "M5057"
+rules = "formats/clean/default.toml"
+
+    [masts.output]
+    data = "./clean\\M5057.parquet"
+
+    [masts.input]
+    data = "./raw/M5057.parquet"
+[[masts]]
+name = "M5972"
+rules = "formats/clean/default.toml"
+
+    [masts.output]
+    data = "./clean\\M5972.parquet"
+
+    [masts.input]
+    data = "./raw/M5972.parquet"

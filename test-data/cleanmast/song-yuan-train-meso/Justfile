@@ -1,0 +1,45 @@
+# Justfile for DVC test dataset: song-yuan-train-meso
+# Step: train-meso (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-train-meso/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-train-meso"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates train-meso.toml from raw/ + tower-shading/
+recommend:
+    cd '{{ROOT}}'; julia bin/CleanMast.jl recommend train-meso '{{PROJECT}}'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/train-meso.toml' '{{PROJECT}}/train-meso.toml'
+
+# Phase 2: process — trains meso models using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/train-meso.toml' '{{PROJECT}}/train-meso.toml'; julia bin/CleanMast.jl process train-meso '{{PROJECT}}/train-meso.toml'
+
+# Existence check for meso-models/ outputs (jld2 files, not parquet-comparable)
+compare-outputs:
+    cd '{{ROOT}}'; test -f '{{PROJECT}}/meso-models/train-meso-results.toml' && echo "✓ meso-models/train-meso-results.toml exists" || (echo "✗ meso-models/train-meso-results.toml missing" && exit 1)
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "✓ song-yuan-train-meso verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['meso-models/train-meso-results.toml'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-train-meso', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/train-meso.toml' '{{PROJECT}}/meso-models' '{{PROJECT}}/logs'

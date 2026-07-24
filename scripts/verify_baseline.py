@@ -333,8 +333,8 @@ def run_pytest_check(package: str) -> CheckResult:
 
 def run_dvc_verify_check(package: str) -> CheckResult:
     """Run cleanmast verify --json for a package."""
-    cmd = ["uv", "run", "cleanmast", "verify", "--json", "-p", package]
-    result = run_check("dvc-verify", cmd, timeout=600)
+    cmd = ["uv", "run", "cleanmast", "verify", "--json", "-p", package, "--jobs", "4"]
+    result = run_check("dvc-verify", cmd, timeout=3600)
     return parse_dvc_verify_output(result)
 
 

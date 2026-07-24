@@ -1,5 +1,6 @@
 """CLI adapter for verify command - runs test datasets."""
 
+import concurrent.futures
 import json
 import subprocess
 import sys
@@ -280,28 +281,38 @@ def _check_outputs(dataset_dir: Path, expected_outputs: list[str]) -> tuple[bool
     help="Show discovered datasets without running them",
 )
 @click.option(
-    "--json", "-j",
+    "--json", "-J",
     "json_output",
     is_flag=True,
     help="Output results as JSON instead of Rich table",
+)
+@click.option(
+    "--jobs", "-j",
+    type=int,
+    default=1,
+    help="Number of parallel workers for just-mode verification",
 )
 @click.argument(
     "dataset",
     required=False,
 )
-def verify(package: str | None, dry_run: bool, json_output: bool, dataset: str | None):
+def verify(package: str | None, dry_run: bool, json_output: bool, dataset: str | None, jobs: int):
     """Discover and run test datasets under test-data/.
     
     Scans test-data/{package}/{dataset}/ for verify.toml manifests,
     runs dvc pull, executes the declared cleanmast command,
     and verifies expected outputs exist.
     
+    In just-mode (--json with just available), when --jobs > 1,
+    verification runs concurrently via ThreadPoolExecutor.
+    
     Examples:
         
-        cleanmast verify                  # Run all datasets
-        cleanmast verify --dry-run        # List datasets only
-        cleanmast verify -p cleanmast     # Filter by package
-        cleanmast verify kp-202603-report # Run specific dataset
+        cleanmast verify                     # Run all datasets
+        cleanmast verify --dry-run           # List datasets only
+        cleanmast verify -p cleanmast        # Filter by package
+        cleanmast verify kp-202603-report    # Run specific dataset
+        cleanmast verify -p cleanmast -j 4   # Run with 4 parallel workers
     """
     test_data_root = _find_test_data_root()
     
@@ -337,10 +348,9 @@ def verify(package: str | None, dry_run: bool, json_output: bool, dataset: str |
     results = []
     
     if use_just_mode:
-        for jf in justfiles:
-            label = f"{jf['package']}/{jf['name']}"
-            
-            if dry_run:
+        if dry_run:
+            for jf in justfiles:
+                label = f"{jf['package']}/{jf['name']}"
                 results.append({
                     "name": jf["name"],
                     "label": label,
@@ -351,19 +361,54 @@ def verify(package: str | None, dry_run: bool, json_output: bool, dataset: str |
                     "outputs": [],
                     "error": None,
                 })
-                continue
-            
-            _, result_dict, _ = _run_just_verify(jf["dir"])
-            results.append({
-                "name": result_dict["name"],
-                "label": label,
-                "status": result_dict["status"],
-                "pull_status": result_dict.get("pull_status", "success"),
-                "pull_duration_sec": result_dict.get("pull_duration_sec", 0.0),
-                "duration_sec": result_dict.get("duration_sec", 0.0),
-                "outputs": result_dict.get("outputs", []),
-                "error": result_dict.get("error"),
-            })
+        elif jobs > 1:
+            _results: list[dict | None] = [None] * len(justfiles)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as executor:
+                future_to_idx: dict[concurrent.futures.Future, int] = {
+                    executor.submit(_run_just_verify, jf["dir"]): idx
+                    for idx, jf in enumerate(justfiles)
+                }
+                for future in concurrent.futures.as_completed(future_to_idx):
+                    idx = future_to_idx[future]
+                    jf = justfiles[idx]
+                    label = f"{jf['package']}/{jf['name']}"
+                    try:
+                        _, result_dict, _ = future.result()
+                    except Exception as exc:
+                        result_dict = {
+                            "name": jf["name"],
+                            "status": "fail",
+                            "duration_sec": 0.0,
+                            "pull_status": "failed",
+                            "pull_duration_sec": 0.0,
+                            "outputs": [],
+                            "error": f"Worker exception: {exc}",
+                        }
+                    _results[idx] = {
+                        "name": result_dict["name"],
+                        "label": label,
+                        "status": result_dict["status"],
+                        "pull_status": result_dict.get("pull_status", "success"),
+                        "pull_duration_sec": result_dict.get("pull_duration_sec", 0.0),
+                        "duration_sec": result_dict.get("duration_sec", 0.0),
+                        "outputs": result_dict.get("outputs", []),
+                        "error": result_dict.get("error"),
+                    }
+            results = [r for r in _results if r is not None]
+        else:
+            for jf in justfiles:
+                label = f"{jf['package']}/{jf['name']}"
+                _, result_dict, _ = _run_just_verify(jf["dir"])
+                results.append({
+                    "name": result_dict["name"],
+                    "label": label,
+                    "status": result_dict["status"],
+                    "pull_status": result_dict.get("pull_status", "success"),
+                    "pull_duration_sec": result_dict.get("pull_duration_sec", 0.0),
+                    "duration_sec": result_dict.get("duration_sec", 0.0),
+                    "outputs": result_dict.get("outputs", []),
+                    "error": result_dict.get("error"),
+                })
     else:
         for ds in datasets:
             label = f"{ds['package']}/{ds['name']}"

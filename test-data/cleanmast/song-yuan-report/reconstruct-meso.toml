@@ -1,0 +1,112 @@
+# Mesoscale Reconstruction Configuration
+# Uses trained models to fill remaining gaps with mesoscale data
+
+[[mesos]]
+name = "ERA5M1664"
+
+    [mesos.input]
+    data = "./raw/ERA5M1664.parquet"
+[[mesos]]
+name = "ERA5M3142"
+
+    [mesos.input]
+    data = "./raw/ERA5M3142.parquet"
+[[mesos]]
+name = "ERA5M5057"
+
+    [mesos.input]
+    data = "./raw/ERA5M5057.parquet"
+[[mesos]]
+name = "ERA5M5972"
+
+    [mesos.input]
+    data = "./raw/ERA5M5972.parquet"
+
+[[masts]]
+name = "M5057"
+
+    [masts.output]
+    data = "./reconstruct-meso/M5057.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/M5057/ERA5M5057/windspeed/1-sector.jld2"
+    meso_name = "ERA5M5057"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/M5057/ERA5M5057/winddirection/constant-offset.jld2"
+    meso_name = "ERA5M5057"
+
+    [masts.input]
+    data = "./reconstruct-cross/M5057_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2022-09-01T00:00:00.000Z
+[[masts]]
+name = "M5972"
+
+    [masts.output]
+    data = "./reconstruct-meso/M5972.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/M5972/ERA5M5972/windspeed/1-sector.jld2"
+    meso_name = "ERA5M5972"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/M5972/ERA5M5972/winddirection/constant-offset.jld2"
+    meso_name = "ERA5M5972"
+
+    [masts.input]
+    data = "./reconstruct-cross/M5972_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2022-08-01T00:00:00.000Z
+[[masts]]
+name = "M1664"
+
+    [masts.output]
+    data = "./reconstruct-meso/M1664.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/M1664/ERA5M1664/windspeed/1-sector.jld2"
+    meso_name = "ERA5M1664"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/M1664/ERA5M1664/winddirection/constant-offset.jld2"
+    meso_name = "ERA5M1664"
+
+    [masts.input]
+    data = "./reconstruct-cross/M1664_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2022-09-01T00:00:00.000Z
+[[masts]]
+name = "M3142"
+
+    [masts.output]
+    data = "./reconstruct-meso/M3142.parquet"
+
+    [masts.models.windspeed]
+    method = "1-sector"
+    model_file = "./meso-models/M3142/ERA5M3142/windspeed/1-sector.jld2"
+    meso_name = "ERA5M3142"
+
+    [masts.models.winddirection]
+    method = "constant-offset"
+    model_file = "./meso-models/M3142/ERA5M3142/winddirection/constant-offset.jld2"
+    meso_name = "ERA5M3142"
+
+    [masts.input]
+    data = "./reconstruct-cross/M3142_reconstructed.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2022-08-01T00:00:00.000Z

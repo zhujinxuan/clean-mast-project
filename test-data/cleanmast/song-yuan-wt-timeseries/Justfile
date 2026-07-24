@@ -1,0 +1,44 @@
+# Justfile for DVC test dataset: song-yuan-wt-timeseries
+# Step: wt-timeseries (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-wt-timeseries/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-wt-timeseries"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates wt-timeseries.toml from project inputs
+recommend:
+    cd '{{ROOT}}'; uv run cleanmast recommend wt-timeseries '{{PROJECT}}/'
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/wt-timeseries.toml' '{{PROJECT}}/wt-timeseries.toml'
+
+# Phase 2: process — generates wt-timeseries/*.csv + turbulence dirs using TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/wt-timeseries.toml' '{{PROJECT}}/wt-timeseries.toml'; uv run cleanmast wt-timeseries '{{PROJECT}}/wt-timeseries.toml'
+
+# Compare generated CSVs + turbulence dirs against truth (existence + row counts)
+compare-outputs:
+    cd '{{ROOT}}'; uv run python -c "import sys; from pathlib import Path; b=Path('{{PROJECT}}'); exp=b/'expected'/'wt-timeseries'; gen=b/'wt-timeseries'; ok=True; import itertools; _=[(ok:=False,print(f'MISSING truth: {exp/c}')) for c in ['M1664.csv','M3142.csv','M5057.csv','M5972.csv'] if not (exp/c).exists()]; _=[(ok:=False,print(f'MISSING gen: {gen/c}')) for c in ['M1664.csv','M3142.csv','M5057.csv','M5972.csv'] if not (gen/c).exists()]; _=[(ok:=False,print(f'ROW MISMATCH {c}: {len((exp/c).read_text().splitlines())} vs {len((gen/c).read_text().splitlines())}')) for c in ['M1664.csv','M3142.csv','M5057.csv','M5972.csv'] if (exp/c).exists() and (gen/c).exists() and len((exp/c).read_text().splitlines())!=len((gen/c).read_text().splitlines())]; _=[(ok:=False,print(f'MISSING truth dir: {exp/t}')) for t in ['turbulence-M1664','turbulence-M3142','turbulence-M5057','turbulence-M5972'] if not (exp/t).is_dir()]; _=[(ok:=False,print(f'MISSING gen dir: {gen/t}')) for t in ['turbulence-M1664','turbulence-M3142','turbulence-M5057','turbulence-M5972'] if not (gen/t).is_dir()]; _=[(ok:=False,print(f'CONTENT MISMATCH {t}/{f}')) for t in ['turbulence-M1664','turbulence-M3142','turbulence-M5057','turbulence-M5972'] for f in set([f.name for f in (exp/t).iterdir()] if (exp/t).is_dir() else []) & set([f.name for f in (gen/t).iterdir()] if (gen/t).is_dir() else []) if ((exp/t)/f).read_text()!=((gen/t)/f).read_text()]; print('All outputs match' if ok else (print('OUTPUT MISMATCH'),sys.exit(1))[0])"
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process compare-outputs
+    @echo "[OK] song-yuan-wt-timeseries verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['wt-timeseries/M1664.csv', 'wt-timeseries/M3142.csv', 'wt-timeseries/M5057.csv', 'wt-timeseries/M5972.csv'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-wt-timeseries', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/wt-timeseries' '{{PROJECT}}/wt-timeseries.toml'

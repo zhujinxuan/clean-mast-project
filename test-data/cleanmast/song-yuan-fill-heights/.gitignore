@@ -1,0 +1,6 @@
+# Generated outputs (not DVC-tracked, safe to delete)
+/fill-heights-reconstruct-meso.toml
+/fill-heights-representative-year.toml
+/reconstruct-meso-fill-heights/
+/representative-year-fill-heights/
+/fill-models/

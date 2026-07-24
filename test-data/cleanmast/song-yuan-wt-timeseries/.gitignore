@@ -1,0 +1,3 @@
+# Generated outputs (not DVC-tracked, safe to delete)
+/wt-timeseries/
+/wt-timeseries.toml

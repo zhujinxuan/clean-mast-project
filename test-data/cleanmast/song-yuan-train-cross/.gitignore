@@ -1,0 +1,3 @@
+# Generated outputs (not DVC-tracked, safe to delete)
+/train-reconstruct-cross/
+/train-reconstruct-cross.toml

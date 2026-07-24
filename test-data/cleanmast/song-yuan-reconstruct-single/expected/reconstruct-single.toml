@@ -1,0 +1,35 @@
+# Single Mast Reconstruction Configuration
+# Fills gaps using correlations between sensors on the same mast
+
+[[masts]]
+name = "M1664"
+
+    [masts.output]
+    data = "./reconstruct-single/M1664.parquet"
+
+    [masts.input]
+    data = "./tower-shading/M1664.parquet"
+[[masts]]
+name = "M3142"
+
+    [masts.output]
+    data = "./reconstruct-single/M3142.parquet"
+
+    [masts.input]
+    data = "./tower-shading/M3142.parquet"
+[[masts]]
+name = "M5057"
+
+    [masts.output]
+    data = "./reconstruct-single/M5057.parquet"
+
+    [masts.input]
+    data = "./tower-shading/M5057.parquet"
+[[masts]]
+name = "M5972"
+
+    [masts.output]
+    data = "./reconstruct-single/M5972.parquet"
+
+    [masts.input]
+    data = "./tower-shading/M5972.parquet"

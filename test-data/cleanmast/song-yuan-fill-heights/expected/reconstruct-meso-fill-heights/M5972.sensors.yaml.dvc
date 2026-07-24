@@ -1,0 +1,5 @@
+outs:
+- md5: 9a2de904529363d5a4745d934532fbcd
+  size: 7929
+  hash: md5
+  path: M5972.sensors.yaml

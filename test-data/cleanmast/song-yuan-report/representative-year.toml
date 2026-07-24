@@ -1,0 +1,93 @@
+# Representative Year Calibration Configuration
+# Calibrates data to a representative year using mesoscale patterns
+# Note: Prefers 16-sector windspeed model for directional calibration
+
+[[mesos]]
+name = "ERA5M1664"
+
+    [mesos.input]
+    data = "./raw/ERA5M1664.parquet"
+[[mesos]]
+name = "ERA5M3142"
+
+    [mesos.input]
+    data = "./raw/ERA5M3142.parquet"
+[[mesos]]
+name = "ERA5M5057"
+
+    [mesos.input]
+    data = "./raw/ERA5M5057.parquet"
+[[mesos]]
+name = "ERA5M5972"
+
+    [mesos.input]
+    data = "./raw/ERA5M5972.parquet"
+
+[[masts]]
+name = "M5057"
+
+    [masts.output]
+    data = "./representative-year/M5057.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/M5057/ERA5M5057/windspeed/16-sector.jld2"
+    meso_name = "ERA5M5057"
+
+    [masts.input]
+    data = "./reconstruct-meso/M5057.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2024-09-01T00:00:00.000Z
+[[masts]]
+name = "M5972"
+
+    [masts.output]
+    data = "./representative-year/M5972.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/M5972/ERA5M5972/windspeed/16-sector.jld2"
+    meso_name = "ERA5M5972"
+
+    [masts.input]
+    data = "./reconstruct-meso/M5972.parquet"
+
+    [masts.time_range]
+    max = 2023-07-31T23:59:59.000Z
+    min = 2022-08-01T00:00:00.000Z
+[[masts]]
+name = "M1664"
+
+    [masts.output]
+    data = "./representative-year/M1664.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/M1664/ERA5M1664/windspeed/16-sector.jld2"
+    meso_name = "ERA5M1664"
+
+    [masts.input]
+    data = "./reconstruct-meso/M1664.parquet"
+
+    [masts.time_range]
+    max = 2025-08-31T23:59:59.000Z
+    min = 2024-09-01T00:00:00.000Z
+[[masts]]
+name = "M3142"
+
+    [masts.output]
+    data = "./representative-year/M3142.parquet"
+
+    [masts.meso_model]
+    method = "16-sector"
+    model_file = "./meso-models/M3142/ERA5M3142/windspeed/16-sector.jld2"
+    meso_name = "ERA5M3142"
+
+    [masts.input]
+    data = "./reconstruct-meso/M3142.parquet"
+
+    [masts.time_range]
+    max = 2023-07-31T23:59:59.000Z
+    min = 2022-08-01T00:00:00.000Z

@@ -1,0 +1,5 @@
+outs:
+- md5: c5b58b10990cf27197e13210fa3727f3
+  size: 18125810
+  hash: md5
+  path: ERA5M5972.txt

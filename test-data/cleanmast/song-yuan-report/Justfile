@@ -1,0 +1,43 @@
+# Justfile for DVC test dataset: song-yuan-report
+# Step: report-timeseries (recommend + process), source: projects/2026-07-02-松原-gate
+# Run from repo root: just -f test-data/cleanmast/song-yuan-report/Justfile verify
+
+set shell := ["nu", "-c"]
+
+DATASET := "song-yuan-report"
+PROJECT := "test-data/cleanmast/" + DATASET
+ROOT := clean(justfile_directory() / "../../..")
+COMPARE := "test-data/cleanmast/lib/compare_step.py"
+
+default:
+    @just --list
+
+# Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
+pull:
+    cd '{{justfile_directory()}}'; dvc pull
+
+# Phase 1: recommend — generates rep-ts-report.toml from inputs
+recommend:
+    cd '{{justfile_directory()}}'; uv run cleanmast recommend report-configs timeseries .
+
+# Compare recommend-generated config against truth config
+compare-config:
+    cd '{{ROOT}}'; uv run python '{{COMPARE}}' config '{{PROJECT}}/expected/rep-ts-report.toml' '{{PROJECT}}/rep-ts-report.toml'
+
+# Phase 2: process — generates rep-ts/ outputs using the TRUTH config
+process:
+    cd '{{ROOT}}'; cp '{{PROJECT}}/expected/rep-ts-report.toml' '{{PROJECT}}/rep-ts-report.toml'
+    cd '{{justfile_directory()}}'; uv run cleanmast report timeseries rep-ts-report.toml
+
+# Full verification: pull -> recommend -> config check -> process -> output check
+verify: pull recommend compare-config process
+    @test -f '{{justfile_directory()}}/rep-ts/report.pdf' && echo "✓ Output exists: rep-ts/report.pdf" || (echo "✗ Missing output: rep-ts/report.pdf" && exit 1)
+    @echo "✓ song-yuan-report verification complete"
+
+# JSON result for cleanmast verify runner
+verify-json:
+    @cd '{{ROOT}}'; uv run python -c "import json, time, subprocess; start = time.perf_counter(); r = subprocess.run(['just', '-f', '{{PROJECT}}/Justfile', 'verify'], capture_output=True, text=True, encoding='utf-8', errors='replace'); elapsed = time.perf_counter() - start; status = 'pass' if r.returncode == 0 else 'fail'; error = None if r.returncode == 0 else (r.stdout + r.stderr)[-500:]; outputs = ['rep-ts/report.pdf'] if r.returncode == 0 else []; print(json.dumps({'name': 'song-yuan-report', 'status': status, 'duration_sec': round(elapsed, 1), 'pull_status': 'success', 'pull_duration_sec': 0.0, 'outputs': outputs, 'error': error}))"
+
+# Remove generated outputs (keep DVC-tracked inputs + truth)
+clean:
+    cd '{{ROOT}}'; rm -rf '{{PROJECT}}/rep-ts/' '{{PROJECT}}/rep-ts-report.toml'
