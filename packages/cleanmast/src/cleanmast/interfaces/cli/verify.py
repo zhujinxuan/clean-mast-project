@@ -142,7 +142,7 @@ def _can_use_just() -> bool:
     return _can_use_just_cache
 
 
-def _run_just_verify(justfile_dir: Path, timeout: float = 600.0) -> tuple[bool, dict, float]:
+def _run_just_verify(justfile_dir: Path, timeout: float = 1800.0) -> tuple[bool, dict, float]:
     """Run `just verify-json` in the justfile directory.
     
     Returns: (success, result_dict, elapsed_time)
