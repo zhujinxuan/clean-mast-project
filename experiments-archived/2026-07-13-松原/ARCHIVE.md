@@ -2,6 +2,15 @@
 
 - **Source experiment**: `projects/2026-07-02-松原/`
 - **Archive date**: 2026-07-13
+- **Amended**: 2026-07-24 — backported the M5972 pressure-unit fix
+  (`KPA` → `kPa`) from `projects/2026-07-02-松原-gate/`. Affected:
+  `masts.tar.zst` (M5972.csv headers), `pre-masts/preprocessed/M5972.tar.zst`
+  (normalized/final/cleaned.csv), `pre-masts/preprocessed/M5972/`
+  {02_col_normalize.toml, 03_type_normalize.toml, evidence.md}, and
+  `raw/M5972.parquet` (now `Pressure_8m_N_* [Pa]` instead of unmapped
+  `Analog_8m_N_* [KPA]`). Data values unchanged; only unit casing and the
+  resulting Pressure mapping. See M5972 `evidence.md` for the root cause
+  (nrg.toml unit match is case-sensitive).
 - **Archive policy**: DVC plaintext files compressed into `.tar.zst` per
   directory. Parquet files tracked individually. Git-tracked files (.toml,
   .json, .yaml, .yml, .md, .py, justfile.archive) committed directly.

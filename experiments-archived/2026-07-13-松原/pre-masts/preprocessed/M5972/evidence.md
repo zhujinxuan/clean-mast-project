@@ -62,10 +62,10 @@
 | Ch16 | Ch16_Analog_10.00m_N_SD_C | Ch16_Analog_10.00m_N_SD_C (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
 | Ch16 | Ch16_Analog_10.00m_N_Min_C | Ch16_Analog_10.00m_N_Min_C (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
 | Ch16 | Ch16_Analog_10.00m_N_Max_C | Ch16_Analog_10.00m_N_Max_C (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
-| Ch17 | Ch17_Analog_8.00m_N_Avg_KPA | Ch17_Analog_8.00m_N_Avg_KPA (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
-| Ch17 | Ch17_Analog_8.00m_N_SD_KPA | Ch17_Analog_8.00m_N_SD_KPA (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
-| Ch17 | Ch17_Analog_8.00m_N_Min_KPA | Ch17_Analog_8.00m_N_Min_KPA (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
-| Ch17 | Ch17_Analog_8.00m_N_Max_KPA | Ch17_Analog_8.00m_N_Max_KPA (identity) | Column name | Already in standard NRG format; identity mapping, keep_unmapped=false drops non-meteo extras |
+| Ch17 | Ch17_Analog_8.00m_N_Avg_KPA | Ch17_Analog_8.00m_N_Avg_kPa (unit case fix) | Column name | Unit suffix case-fixed KPA→kPa so nrg.toml rule matches (match is case-sensitive); keep_unmapped=false drops non-meteo extras |
+| Ch17 | Ch17_Analog_8.00m_N_SD_KPA | Ch17_Analog_8.00m_N_SD_kPa (unit case fix) | Column name | Unit suffix case-fixed KPA→kPa so nrg.toml rule matches (match is case-sensitive); keep_unmapped=false drops non-meteo extras |
+| Ch17 | Ch17_Analog_8.00m_N_Min_KPA | Ch17_Analog_8.00m_N_Min_kPa (unit case fix) | Column name | Unit suffix case-fixed KPA→kPa so nrg.toml rule matches (match is case-sensitive); keep_unmapped=false drops non-meteo extras |
+| Ch17 | Ch17_Analog_8.00m_N_Max_KPA | Ch17_Analog_8.00m_N_Max_kPa (unit case fix) | Column name | Unit suffix case-fixed KPA→kPa so nrg.toml rule matches (match is case-sensitive); keep_unmapped=false drops non-meteo extras |
 
 ## Column Summary
 - **Total raw columns**: 53 (Timestamp + 52 sensor columns)
@@ -76,7 +76,7 @@
 
 | Column | Issue | User Decision | Rationale |
 |---|---|---|---|
-| Pressure columns | Unit = KPA | Keep; nrg.toml mapping converts to Pa | Pressure kPa→Pa conversion handled by sensor format TOML |
+| Pressure columns | Unit suffix was uppercase `KPA`; nrg.toml unit match is case-sensitive, so Ch17 stayed sensorType=Analog and was invisible to the air-density report atom (showed "-" in report §2.4.1) | Renamed to `kPa` in 02_col_normalize.toml (2026-07-20) | nrg.toml rule now fires: sensorType=Pressure, unit=Pa, multiplier=1000 |
 | Gust/GustDir columns | Non-standard stat type | Drop via keep_unmapped=false | Only Avg, SD, Min, Max retained for analysis |
 
 ## Pipeline
