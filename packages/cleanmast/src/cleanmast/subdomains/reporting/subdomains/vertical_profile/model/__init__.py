@@ -1,6 +1,5 @@
 """Vertical profile model types."""
 
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.report_meta import (
     VerticalProfileAtomMeta,
 )
@@ -15,7 +14,6 @@ from cleanmast.subdomains.reporting.subdomains.vertical_profile.model.wind_shear
 
 __all__ = [
     "VerticalProfileAtomMeta",
-    "get_height_display_name",
     "VerticalProfileSchema",
     "WindShearAggregateProfileSchema",
     "SingleMastWindShearExponentAtom",

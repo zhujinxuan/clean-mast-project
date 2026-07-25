@@ -136,7 +136,7 @@ def _extract_mean_temp(data: TimeSeriesData) -> float | None:
     if temp_sensor is None or temp_sensor.column_name not in df.columns:
         return None
     val = df[temp_sensor.column_name].mean()
-    if val is None or (isinstance(val, float) and math.isnan(val)):  # noqa: F821
+    if val is None or (isinstance(val, float) and math.isnan(val)):
         return None
     return float(val)
 
@@ -152,6 +152,6 @@ def _extract_mean_pressure(data: TimeSeriesData) -> float | None:
     if pressure_sensor is None or pressure_sensor.column_name not in df.columns:
         return None
     val = df[pressure_sensor.column_name].mean()
-    if val is None or (isinstance(val, float) and math.isnan(val)):  # noqa: F821
+    if val is None or (isinstance(val, float) and math.isnan(val)):
         return None
     return float(val)

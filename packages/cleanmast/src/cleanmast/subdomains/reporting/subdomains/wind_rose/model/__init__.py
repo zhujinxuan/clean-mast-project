@@ -1,6 +1,5 @@
 """Wind rose model types."""
 
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.report_meta import (
     WindRoseAtomMeta,
 )
@@ -25,7 +24,6 @@ from cleanmast.subdomains.reporting.subdomains.wind_rose.model.wind_rose_power_g
 __all__ = [
     "WindRoseSchema",
     "WindRoseAtomMeta",
-    "get_height_display_name",
     "SingleMastMonthlyWindFrequencyRoseAtom",
     "SingleMastWindPowerRoseAtom",
     "SingleMastMonthlyWindRoseGridAtom",

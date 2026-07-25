@@ -1,6 +1,5 @@
 """Turbulence intensity model types for the reporting domain."""
 
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
 )
@@ -19,7 +18,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.turbulence_summa
 
 __all__ = [
     "TurbulenceAtomMeta",
-    "get_height_display_name",
     "TurbulenceSchema",
     "SingleMastTurbulenceMultiHeightAtom",
     "SingleMastTurbulencePerHeightAtom",

@@ -1,6 +1,5 @@
 """Wind temporal model types."""
 
-from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.daily_pattern_atom import (
     SingleMastDailyPatternAtom,
 )
@@ -35,5 +34,4 @@ __all__ = [
     "SingleMastMonthlyPowerPatternAtom",
     "WindTemporalAtomMeta",
     "TemporalPatternSchema",
-    "get_height_display_name",
 ]

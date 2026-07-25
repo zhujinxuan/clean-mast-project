@@ -23,26 +23,6 @@ SECTOR_NAMES = [
     "W", "WNW", "NW", "NNW",
 ]
 
-# Interpolation marker regex pattern (matches *_fill:type suffix)
-_FILL_TYPE_PATTERN = r"_fill:(\w+)$"
-
-_FILL_TYPE_LABELS: dict[str, str] = {
-    "extrapolated": "外推",
-    "interpolated": "内插",
-}
-
-
-def _detect_interpolation_marker(column_name: str) -> str:
-    """Detect fill type marker from column name.
-
-    Returns Chinese label ("外推"/"内插") or empty string if no marker.
-    """
-    import re
-    if match := re.search(_FILL_TYPE_PATTERN, column_name, re.IGNORECASE):
-        fill_type = match.group(1).lower()
-        return _FILL_TYPE_LABELS.get(fill_type, "")
-    return ""
-
 
 def _process_sensor_data(
     df: pl.DataFrame,

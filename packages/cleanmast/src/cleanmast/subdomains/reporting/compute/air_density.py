@@ -6,7 +6,6 @@ Pure functions only — no IO, no side effects.
 """
 
 import math
-import re
 
 from cleanmast.shared.timeseries import TimeSeriesData
 
@@ -15,14 +14,6 @@ GAS_CONSTANT_DRY_AIR = 287.05  # J/(kg·K), specific gas constant for dry air
 STANDARD_AIR_DENSITY = 1.225  # kg/m³ at 15°C and 1013.25 hPa
 KELVIN_OFFSET = 273.15  # Conversion from Celsius to Kelvin
 HPA_TO_PA = 100  # Conversion from hectopascals to pascals
-
-FILL_TYPE_PATTERN = r"_fill:(\w+)$"
-
-# Chinese display labels for fill types
-FILL_TYPE_LABELS: dict[str, str] = {
-    "extrapolated": "外推",
-    "interpolated": "内插",
-}
 
 
 def _is_valid_mean(value: object) -> bool:
@@ -52,22 +43,6 @@ def _normalize_pressure(pressure_value: float) -> float:
     if pressure_value < 10000:
         return pressure_value * HPA_TO_PA
     return pressure_value
-
-
-def detect_interpolation_marker(column_name: str) -> str:
-    """Detect fill type marker from column name.
-
-    Returns Chinese label:
-    - "外推" for extrapolated
-    - "内插" for interpolated
-    - Empty string if no fill marker found (original measured data)
-
-    Pattern: *_fill:{type} at end of column name
-    """
-    if match := re.search(FILL_TYPE_PATTERN, column_name, re.IGNORECASE):
-        fill_type = match.group(1).lower()
-        return FILL_TYPE_LABELS.get(fill_type, "")
-    return ""
 
 
 def calculate_air_density(data: TimeSeriesData) -> float:
