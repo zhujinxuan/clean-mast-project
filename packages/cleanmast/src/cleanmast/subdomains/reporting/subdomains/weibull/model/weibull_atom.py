@@ -91,14 +91,11 @@ class WeibullSubgridAtom(ReportAtom[WeibullSchema, WeibullAtomMeta]):
         return f"{self.meta.mast_name} Weibull参数表"
 
     def _get_interested_heights_df(self) -> pl.DataFrame:
-        """Filter to interested heights: >120m and <=160m."""
-        unique_heights = (
+        """Return unique heights present in the (pre-filtered) DataFrame."""
+        return (
             self.df.select(["height", "interpolation_marker", "shape_k", "scale_c"])
             .unique()
             .sort("height")
-        )
-        return unique_heights.filter(
-            (pl.col("height") > 120.0) & (pl.col("height") <= 160.0)
         )
 
     @override
@@ -136,15 +133,12 @@ class WeibullSubgridAtom(ReportAtom[WeibullSchema, WeibullAtomMeta]):
         if not force and image_path.exists():
             return image_path
 
-        interested_heights = self.df.filter(
-            (pl.col("height") > 120.0) & (pl.col("height") <= 160.0)
-        )
-
-        if interested_heights.is_empty():
+        # Heights are pre-filtered by the section — use all data
+        if self.df.is_empty():
             return Path()
 
         plot_df = (
-            interested_heights.select(
+            self.df.select(
                 [
                     "height",
                     "interpolation_marker",

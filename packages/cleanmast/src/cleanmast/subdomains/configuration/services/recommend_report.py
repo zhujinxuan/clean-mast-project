@@ -81,6 +81,26 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
     return sorted(h for h in candidate if 120.0 <= h <= 160.0)
 
 
+def _discover_analysis_heights(sensors: list[SensorColumn]) -> list[float]:
+    """WindSpeed avg sensor heights within the turbine range (120–160m)."""
+    return sorted(
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed"
+        and s.stat_type == "avg"
+        and 120.0 <= s.height <= 160.0
+    )
+
+
+def _discover_temporal_heights(sensors: list[SensorColumn]) -> list[float]:
+    """All WindSpeed avg sensor heights (no height-band filter)."""
+    return sorted(
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
+    )
+
+
 def _discover_extreme_wind_heights(
     sensors: list[SensorColumn],
 ) -> tuple[list[float], list[float], list[ExtremeWindGustFactor]]:
@@ -207,6 +227,12 @@ def _build_dataset_for_timeseries(
         turbulence_heights = _discover_turbulence_heights(
             time_series_data.sensors
         )
+        analysis_heights = _discover_analysis_heights(
+            time_series_data.sensors
+        )
+        temporal_heights = _discover_temporal_heights(
+            time_series_data.sensors
+        )
         ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
             time_series_data.sensors
         )
@@ -216,6 +242,8 @@ def _build_dataset_for_timeseries(
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=rel_data_path),
             turbulence_heights=turbulence_heights,
+            analysis_heights=analysis_heights,
+            temporal_heights=temporal_heights,
             extreme_wind_10min_heights=ew_10min,
             extreme_wind_3s_heights=ew_3s,
             extreme_wind_gust_factors=ew_gust,
@@ -399,6 +427,12 @@ def _build_meso_original_heights_dataset(
         turbulence_heights = _discover_turbulence_heights(
             time_series_data.sensors
         )
+        analysis_heights = _discover_analysis_heights(
+            time_series_data.sensors
+        )
+        temporal_heights = _discover_temporal_heights(
+            time_series_data.sensors
+        )
         ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
             time_series_data.sensors
         )
@@ -408,6 +442,8 @@ def _build_meso_original_heights_dataset(
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=data_path),
             turbulence_heights=turbulence_heights,
+            analysis_heights=analysis_heights,
+            temporal_heights=temporal_heights,
             extreme_wind_10min_heights=ew_10min,
             extreme_wind_3s_heights=ew_3s,
             extreme_wind_gust_factors=ew_gust,

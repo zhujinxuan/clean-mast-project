@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, Sequence
 
+import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.shared.timeseries import TimeSeriesData
@@ -60,8 +61,16 @@ class WindTemporalSection:
     @classmethod
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WindTemporalSection":
         """Build section from standard mast input."""
+        for item in items:
+            heights = item.parameters.temporal_heights
+            if not heights:
+                raise ValueError(
+                    f"{cls.__name__} requires temporal_heights for mast "
+                    f"'{item.mast_name}' but it is empty; regenerate the config "
+                    f"with `cleanmast recommend`"
+                )
         mast_data = [
-            (item.time_series, item.mast_name, item.parameters.air_density)
+            (item.time_series, item.mast_name, item.parameters.air_density, item.parameters.temporal_heights)
             for item in items
         ]
         return cls.from_time_series(mast_data)
@@ -69,12 +78,12 @@ class WindTemporalSection:
     @classmethod
     def from_time_series(
         cls,
-        mast_data: list[tuple[TimeSeriesData, str, float]],
+        mast_data: list[tuple[TimeSeriesData, str, float, list[float]]],
     ) -> "WindTemporalSection":
         """Build wind temporal section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name, air_density) tuples.
+            mast_data: List of (time_series_data, mast_name, air_density, temporal_heights) tuples.
 
         Returns:
             WindTemporalSection with computed atoms.
@@ -82,12 +91,15 @@ class WindTemporalSection:
         all_atoms: list[ReportAtom] = []
         mast_names: list[str] = []
 
-        for ts_data, mast_name, air_density in mast_data:
+        for ts_data, mast_name, air_density, heights in mast_data:
             daily_df = analyze_daily_pattern(ts_data.df, ts_data.sensors, air_density)
+            daily_df = daily_df.filter(pl.col("height").is_in(heights))
             monthly_df = analyze_monthly_pattern(ts_data.df, ts_data.sensors, air_density)
+            monthly_df = monthly_df.filter(pl.col("height").is_in(heights))
             monthly_daily_df = analyze_monthly_daily_pattern(
                 ts_data.df, ts_data.sensors, air_density
             )
+            monthly_daily_df = monthly_daily_df.filter(pl.col("height").is_in(heights))
 
             atoms = build_wind_temporal_atoms(
                 mast_name=mast_name,

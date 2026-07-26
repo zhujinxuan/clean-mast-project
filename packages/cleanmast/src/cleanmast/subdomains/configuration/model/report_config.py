@@ -149,6 +149,12 @@ class MastRef(BaseModel):
         extreme_wind_gust_factors: Gust-factor table keyed by height, used to derive
             3s extremes from 10min data when a height lacks a max sensor. Required;
             empty list means no gust factors configured.
+        analysis_heights: Heights (120–160m) with WindSpeed avg sensors, used by the
+            wind_frequency / weibull / representative_year subsections. Optional;
+            must be non-empty when one of those subsections is generated.
+        temporal_heights: Heights with WindSpeed avg sensors (no height-band filter),
+            used by the temporal subsection. Optional; must be non-empty when the
+            temporal subsection is generated.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -157,6 +163,8 @@ class MastRef(BaseModel):
     air_density: float = Field(gt=0)
     input: TimeSeriesSource
     turbulence_heights: list[float] = Field(default_factory=list)
+    analysis_heights: list[float] = Field(default_factory=list)
+    temporal_heights: list[float] = Field(default_factory=list)
     extreme_wind_10min_heights: list[float]
     extreme_wind_3s_heights: list[float]
     extreme_wind_gust_factors: list[ExtremeWindGustFactor]

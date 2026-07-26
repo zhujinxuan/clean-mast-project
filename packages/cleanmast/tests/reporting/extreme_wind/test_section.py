@@ -260,3 +260,21 @@ class TestMaxSensorExtreme:
         assert m1_ext[120.0] / m1_sus[120.0] == pytest.approx(1.4, rel=0.01), (
             "Expected default gust factor 1.4 at 120m"
         )
+
+
+class TestEmptyHeightsGuard:
+    """Guard: empty extreme_wind_10min_heights raises ValueError."""
+
+    def test_empty_heights_raises(self) -> None:
+        """from_inputs raises ValueError when extreme_wind_10min_heights is empty."""
+        sensors = [
+            _make_sensor(height=120.0),
+            _make_sensor(height=140.0),
+        ]
+        item = _make_input(
+            sensors,
+            extreme_wind_10min_heights=[],
+            n_hours=2000,
+        )
+        with pytest.raises(ValueError, match="extreme_wind_10min_heights"):
+            ExtremeWindSection.from_inputs([item])

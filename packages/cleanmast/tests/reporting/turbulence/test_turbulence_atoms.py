@@ -13,6 +13,8 @@ import numpy as np
 import polars as pl
 import pytest
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
+from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
 )
@@ -416,3 +418,39 @@ class TestTurbulenceSectionMultiMast:
         """Passing no masts should produce an empty atom list."""
         section = TurbulenceSection.from_time_series([], mast_turbulence_heights={})
         assert list(section.atoms) == []
+
+    def test_from_inputs_raises_on_empty_turbulence_heights(self) -> None:
+        """from_inputs must raise ValueError when turbulence_heights is empty."""
+        mast = _make_turbulence_time_series("Mast1", [100.0], seed=1)
+        parameters = AnalysisParameters(
+            air_density=1.225,
+            extreme_wind_10min_heights=[],
+            extreme_wind_3s_heights=[],
+            extreme_wind_gust_factors=[],
+            turbulence_heights=[],
+        )
+        item = SingleMastAnalysisInput(
+            time_series=mast,
+            parameters=parameters,
+            mast_name="Mast1",
+        )
+        with pytest.raises(ValueError, match="turbulence_heights"):
+            TurbulenceSection.from_inputs([item])
+
+    def test_from_inputs_accepts_nonempty_turbulence_heights(self) -> None:
+        """from_inputs must not raise when turbulence_heights is non-empty."""
+        mast = _make_turbulence_time_series("Mast1", [100.0], seed=1)
+        parameters = AnalysisParameters(
+            air_density=1.225,
+            extreme_wind_10min_heights=[],
+            extreme_wind_3s_heights=[],
+            extreme_wind_gust_factors=[],
+            turbulence_heights=[100.0, 140.0],
+        )
+        item = SingleMastAnalysisInput(
+            time_series=mast,
+            parameters=parameters,
+            mast_name="Mast1",
+        )
+        section = TurbulenceSection.from_inputs([item])
+        assert section._mast_names == ["Mast1"]

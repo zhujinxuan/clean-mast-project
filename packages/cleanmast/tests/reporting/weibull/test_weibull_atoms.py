@@ -31,18 +31,6 @@ def sample_weibull_subgrid_df() -> pl.DataFrame:
     for bc in [0.5, 1.5, 2.5]:
         rows.append(
             {
-                "height": 100.0,
-                "bin_center": bc,
-                "observed_density": 0.02,
-                "fitted_density": 0.025,
-                "shape_k": 1.8,
-                "scale_c": 7.0,
-                "interpolation_marker": None,
-            }
-        )
-    for bc in [0.5, 1.5, 2.5]:
-        rows.append(
-            {
                 "height": 130.0,
                 "bin_center": bc,
                 "observed_density": 0.03,
@@ -64,18 +52,6 @@ def sample_weibull_subgrid_df() -> pl.DataFrame:
                 "interpolation_marker": None,
             }
         )
-    for bc in [0.5, 1.5, 2.5]:
-        rows.append(
-            {
-                "height": 170.0,
-                "bin_center": bc,
-                "observed_density": 0.015,
-                "fitted_density": 0.018,
-                "shape_k": 2.0,
-                "scale_c": 8.0,
-                "interpolation_marker": "外推",
-            }
-        )
     return pl.DataFrame(rows)
 
 
@@ -92,7 +68,7 @@ def weibull_subgrid_atom(
 
 
 class TestWeibullSubgridAtom:
-    def test_render_table_filters_heights(
+    def test_render_table_includes_all_heights(
         self, weibull_subgrid_atom: WeibullSubgridAtom
     ) -> None:
         table = weibull_subgrid_atom.renderTable()
@@ -101,8 +77,6 @@ class TestWeibullSubgridAtom:
         table_text = str(table.data)
         assert "130" in table_text
         assert "150" in table_text
-        assert "100" not in table_text
-        assert "170" not in table_text
 
     def test_render_table_columns(
         self, weibull_subgrid_atom: WeibullSubgridAtom
@@ -169,3 +143,107 @@ class TestWeibullSubgridAtom:
         assert "M01" in weibull_subgrid_atom.default_image_caption
         assert weibull_subgrid_atom.default_table_caption is not None
         assert "M01" in weibull_subgrid_atom.default_table_caption
+
+
+class TestWeibullSectionGuard:
+    """Tests for the from_inputs guard on empty analysis_heights."""
+
+    def test_from_inputs_raises_on_empty_analysis_heights(self) -> None:
+        """WeibullSection.from_inputs raises ValueError when analysis_heights is empty."""
+        from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
+        from cleanmast.subdomains.reporting.model.analysis_parameters import (
+            AnalysisParameters,
+        )
+        from cleanmast.subdomains.reporting.subdomains.weibull.section import (
+            WeibullSection,
+        )
+
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_100m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(
+            df=pl.DataFrame({"WindSpeed_100m_avg [m/s]": [5.0]}),
+            sensors=sensors,
+        )
+
+        item = SingleMastAnalysisInput(
+            time_series=ts_data,
+            parameters=AnalysisParameters(
+                air_density=1.225,
+                extreme_wind_10min_heights=[],
+                extreme_wind_3s_heights=[],
+                extreme_wind_gust_factors=[],
+                analysis_heights=[],  # empty — should trigger guard
+            ),
+            mast_name="M01",
+        )
+
+        with pytest.raises(ValueError, match="analysis_heights"):
+            WeibullSection.from_inputs([item])
+
+    def test_from_inputs_succeeds_with_nonempty_analysis_heights(self) -> None:
+        """WeibullSection.from_inputs succeeds when analysis_heights is populated."""
+        from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
+        from cleanmast.subdomains.reporting.model.analysis_parameters import (
+            AnalysisParameters,
+        )
+        from cleanmast.subdomains.reporting.subdomains.weibull.section import (
+            WeibullSection,
+        )
+
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_130m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=130.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WindSpeed_150m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=150.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(
+            df=pl.DataFrame(
+                {
+                    "WindSpeed_130m_avg [m/s]": [5.0, 6.0, 7.0, 8.0, 9.0, 5.5, 6.5, 7.5, 8.5, 6.0, 7.0],
+                    "WindSpeed_150m_avg [m/s]": [5.5, 6.5, 7.5, 8.5, 9.5, 6.0, 7.0, 8.0, 9.0, 6.5, 7.5],
+                }
+            ),
+            sensors=sensors,
+        )
+
+        item = SingleMastAnalysisInput(
+            time_series=ts_data,
+            parameters=AnalysisParameters(
+                air_density=1.225,
+                extreme_wind_10min_heights=[],
+                extreme_wind_3s_heights=[],
+                extreme_wind_gust_factors=[],
+                analysis_heights=[130.0, 150.0],
+            ),
+            mast_name="M01",
+        )
+
+        section = WeibullSection.from_inputs([item])
+        assert section is not None
+        assert len(section.atoms) >= 1

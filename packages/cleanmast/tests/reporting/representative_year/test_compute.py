@@ -152,6 +152,7 @@ class TestComputeCalibrationSummary:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
+                analysis_heights=[100.0],
             ),
             mast_name="M01",
             representative_year_calibration_payload=payload,
@@ -180,3 +181,70 @@ class TestComputeCalibrationSummary:
         # anomaly = (7.05 - 7.0046)/7.0046*100 ≈ 0.65
         assert summary.anomaly_percent == pytest.approx(0.65, abs=0.02)
         assert summary.needs_correction is False
+
+
+class TestRepresentativeYearSectionGuard:
+    """Tests for the from_inputs guard on empty analysis_heights."""
+
+    def test_from_inputs_raises_on_empty_analysis_heights(self):
+        """RepresentativeYearSection.from_inputs raises ValueError when
+        analysis_heights is empty for a SingleMastAnalysisInput."""
+        from datetime import datetime
+
+        from cleanmast.subdomains.reporting.subdomains.representative_year.section import (
+            RepresentativeYearSection,
+        )
+
+        item = SingleMastAnalysisInput(
+            time_series=TestComputeCalibrationSummary._build_meso_ts(7.0),
+            parameters=AnalysisParameters(
+                air_density=1.225,
+                extreme_wind_10min_heights=[],
+                extreme_wind_3s_heights=[],
+                extreme_wind_gust_factors=[],
+                analysis_heights=[],  # empty — should trigger guard
+            ),
+            mast_name="M01",
+            representative_year_calibration_payload=RepresentativeYearCalibrationPayload(
+                meso_time_series=TestComputeCalibrationSummary._build_meso_ts(7.0),
+                meso_name="era5",
+                sampling_period="1d",
+                rep_year_start=datetime(2020, 1, 1),
+                rep_year_end=datetime(2020, 12, 31),
+            ),
+        )
+
+        with pytest.raises(ValueError, match="analysis_heights"):
+            RepresentativeYearSection.from_inputs([item])
+
+    def test_from_inputs_succeeds_with_non_empty_analysis_heights(self):
+        """from_inputs succeeds when analysis_heights is populated."""
+        from datetime import datetime
+
+        from cleanmast.subdomains.reporting.subdomains.representative_year.section import (
+            RepresentativeYearSection,
+        )
+
+        meso_ts = TestComputeCalibrationSummary._build_meso_ts(7.0)
+        item = SingleMastAnalysisInput(
+            time_series=meso_ts,
+            parameters=AnalysisParameters(
+                air_density=1.225,
+                extreme_wind_10min_heights=[],
+                extreme_wind_3s_heights=[],
+                extreme_wind_gust_factors=[],
+                analysis_heights=[100.0],
+            ),
+            mast_name="M01",
+            representative_year_calibration_payload=RepresentativeYearCalibrationPayload(
+                meso_time_series=meso_ts,
+                meso_name="era5",
+                sampling_period="10min",
+                rep_year_start=datetime(2020, 1, 1),
+                rep_year_end=datetime(2020, 12, 31),
+            ),
+        )
+
+        section = RepresentativeYearSection.from_inputs([item])
+        assert section is not None
+        assert len(section.atoms) >= 0

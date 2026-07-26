@@ -258,6 +258,15 @@ class ExtremeWindSection:
         all_m3_atoms: list[ReportAtom] = []
         all_summary_atoms: list[ReportAtom] = []
 
+        # ── Pre-validation: every mast MUST have extreme_wind_10min_heights ──
+        for item in items:
+            if not item.parameters.extreme_wind_10min_heights:
+                raise ValueError(
+                    f"{cls.__name__} requires extreme_wind_10min_heights "
+                    f"for mast '{item.mast_name}' but it is empty; "
+                    f"regenerate the config with `cleanmast recommend`"
+                )
+
         for item in items:
             ts = item.time_series
             mast_name = item.mast_name

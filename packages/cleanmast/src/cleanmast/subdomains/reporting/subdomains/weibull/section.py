@@ -48,25 +48,37 @@ class WeibullSection:
     @classmethod
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WeibullSection":
         """Build section from standard mast input."""
-        mast_data = [(item.time_series, item.mast_name) for item in items]
+        # Guard: analysis_heights must be non-empty for each item
+        for item in items:
+            if not item.parameters.analysis_heights:
+                raise ValueError(
+                    f"{cls.__name__} requires analysis_heights for mast "
+                    f"'{item.mast_name}' but it is empty; regenerate the config "
+                    f"with `cleanmast recommend`"
+                )
+
+        mast_data = [
+            (item.time_series, item.mast_name, item.parameters.analysis_heights)
+            for item in items
+        ]
         return cls.from_time_series(mast_data)
 
     @classmethod
     def from_time_series(
         cls,
-        mast_data: list[tuple[TimeSeriesData, str]],
+        mast_data: list[tuple[TimeSeriesData, str, list[float]]],
     ) -> "WeibullSection":
         """Build Weibull section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name) tuples.
+            mast_data: List of (time_series_data, mast_name, analysis_heights) tuples.
 
         Returns:
             WeibullSection with computed atoms.
         """
         all_atoms: list[ReportAtom] = []
 
-        for ts_data, mast_name in mast_data:
+        for ts_data, mast_name, heights in mast_data:
             ws_sensors = [
                 s
                 for s in ts_data.sensors
@@ -82,6 +94,10 @@ class WeibullSection:
                 result = fit_weibull(wind_speeds, sensor.height)
                 if result is not None:
                     fit_results.append(result)
+
+            # Filter to configured analysis heights
+            heights_set = set(heights)
+            fit_results = [r for r in fit_results if r.height in heights_set]
 
             if fit_results:
                 atoms = build_weibull_atoms(mast_name, fit_results)

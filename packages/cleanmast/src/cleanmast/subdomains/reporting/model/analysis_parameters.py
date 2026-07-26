@@ -20,3 +20,5 @@ class AnalysisParameters:
     include_max_min: bool = True
     include_power: bool = True
     turbulence_heights: list[float] = field(default_factory=list)
+    analysis_heights: list[float] = field(default_factory=list)
+    temporal_heights: list[float] = field(default_factory=list)

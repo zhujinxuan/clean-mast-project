@@ -54,8 +54,14 @@ class WindFrequencySection:
     @classmethod
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WindFrequencySection":
         """Build section from standard mast input."""
+        for item in items:
+            if not item.parameters.analysis_heights:
+                raise ValueError(
+                    f"{cls.__name__} requires analysis_heights for mast '{item.mast_name}' "
+                    "but it is empty; regenerate the config with `cleanmast recommend`"
+                )
         mast_data = [
-            (item.time_series, item.mast_name, item.parameters.air_density)
+            (item.time_series, item.mast_name, item.parameters.air_density, item.parameters.analysis_heights)
             for item in items
         ]
         return cls.from_time_series(mast_data)
@@ -63,20 +69,23 @@ class WindFrequencySection:
     @classmethod
     def from_time_series(
         cls,
-        mast_data: list[tuple[TimeSeriesData, str, float]],
+        mast_data: list[tuple[TimeSeriesData, str, float, list[float]]],
     ) -> "WindFrequencySection":
         """Build wind frequency section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name, air_density) tuples;
-                air_density is the mast ground density from config.
+            mast_data: List of (time_series_data, mast_name, air_density, analysis_heights)
+                tuples; air_density is the mast ground density from config,
+                analysis_heights restricts output to configured heights.
 
         Returns:
             WindFrequencySection with computed atoms.
         """
         computed: list[tuple[str, pl.DataFrame]] = [
-            (mast_name, compute_wind_frequency(ts_data, air_density))
-            for ts_data, mast_name, air_density in mast_data
+            (mast_name, compute_wind_frequency(ts_data, air_density).filter(
+                pl.col("height").is_in(heights)
+            ))
+            for ts_data, mast_name, air_density, heights in mast_data
         ]
         atoms = build_wind_frequency_atoms(computed)
         return cls(_atoms=atoms)

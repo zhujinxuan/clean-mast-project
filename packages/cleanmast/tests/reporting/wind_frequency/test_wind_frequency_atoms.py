@@ -32,14 +32,12 @@ def sample_mast_meta() -> WindFrequencyAtomMeta:
 
 @pytest.fixture
 def sample_wind_frequency_df_with_interested_heights() -> pl.DataFrame:
-    """Create sample wind frequency data with interested and non-interested heights.
+    """Create sample wind frequency data with analysis heights.
 
-    Interested heights are >120m and ≤160m.
-    Includes 100m (not interested), 130m (interested), 140m (interested), 150m (interested).
+    Analysis heights (from section pre-filter): 130m, 140m, 150m.
     """
     rows = []
-
-    for height in [100.0, 130.0, 140.0, 150.0]:
+    for height in [130.0, 140.0, 150.0]:
         marker = "外推" if height > 140 else None
         speed_shift = (height - 100) * 0.02
 
@@ -412,3 +410,38 @@ class TestAllWindFrequencyAtoms:
             assert isinstance(summary, list)
             if len(summary) > 0:
                 assert isinstance(summary[0], TypstParagraph)
+
+
+class TestWindFrequencySectionGuard:
+    """Tests for WindFrequencySection factory method guards."""
+
+    def test_from_inputs_raises_on_empty_analysis_heights(self) -> None:
+        """from_inputs raises ValueError when analysis_heights is empty."""
+        from cleanmast.shared.timeseries import TimeSeriesData
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
+        from cleanmast.subdomains.reporting.model.analysis_parameters import (
+            AnalysisParameters,
+        )
+        from cleanmast.subdomains.reporting.subdomains.wind_frequency.section import (
+            WindFrequencySection,
+        )
+
+        ts = TimeSeriesData(
+            df=pl.DataFrame({"timestamp": []}),
+            sensors=[],
+        )
+        params = AnalysisParameters(
+            air_density=1.225,
+            extreme_wind_10min_heights=[],
+            extreme_wind_3s_heights=[],
+            extreme_wind_gust_factors=[],
+            analysis_heights=[],  # empty => should raise
+        )
+        item = SingleMastAnalysisInput(
+            time_series=ts, parameters=params, mast_name="M01"
+        )
+
+        with pytest.raises(ValueError, match="analysis_heights"):
+            WindFrequencySection.from_inputs([item])

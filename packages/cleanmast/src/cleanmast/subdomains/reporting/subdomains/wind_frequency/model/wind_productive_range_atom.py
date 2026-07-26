@@ -44,8 +44,6 @@ class SingleMastWindProductiveRangeAtom(ReportAtom[WindFrequencySchema, WindFreq
         productive_df = self.df.filter(
             (pl.col("bin_start") >= PRODUCTIVE_RANGE[0])
             & (pl.col("bin_end") <= PRODUCTIVE_RANGE[1])
-            & (pl.col("height") > 120.0)
-            & (pl.col("height") <= 160.0)
         )
 
         summary_df = productive_df.group_by(["height", "interpolation_marker"]).agg(

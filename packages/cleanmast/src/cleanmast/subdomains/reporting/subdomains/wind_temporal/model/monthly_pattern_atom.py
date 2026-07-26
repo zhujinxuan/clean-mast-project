@@ -84,7 +84,7 @@ class SingleMastMonthlyPatternAtom(ReportAtom[TemporalPatternSchema, WindTempora
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate 12-month monthly pattern grouped bar chart with >=100m heights only."""
+        """Generate 12-month monthly pattern grouped bar chart."""
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"monthly_pattern_{self.meta.mast_name}_{cache_key}.png"
 
@@ -97,9 +97,7 @@ class SingleMastMonthlyPatternAtom(ReportAtom[TemporalPatternSchema, WindTempora
             .sort(["month", "height"])
         )
 
-        plot_df = monthly_df.filter(
-            (pl.col("height") >= 100) & (pl.col("avg_speed").is_not_null())
-        )
+        plot_df = monthly_df.filter(pl.col("avg_speed").is_not_null())
 
         plot_df = plot_df.with_columns(
             pl.struct(["height", "interpolation_marker"])
@@ -170,9 +168,7 @@ class SingleMastMonthlyPatternAtom(ReportAtom[TemporalPatternSchema, WindTempora
             .sort(["month", "height"])
         )
 
-        high_df = monthly_df.filter(
-            (pl.col("height") >= 100) & (pl.col("avg_speed").is_not_null())
-        )
+        high_df = monthly_df.filter(pl.col("avg_speed").is_not_null())
 
         if high_df.height == 0:
             return []

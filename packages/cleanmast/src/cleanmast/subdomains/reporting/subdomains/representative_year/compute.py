@@ -353,11 +353,12 @@ def _compute_sector_regression(
     mast_ts = item.time_series
     meso_ts = payload.meso_time_series
 
-    # Qualifying mast WS sensors
+    # Qualifying mast WS sensors — filtered to configured analysis_heights
+    analysis_heights_set = set(item.parameters.analysis_heights)
     mast_ws_sensors = [
         s for s in mast_ts.sensors
         if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
-        and 120.0 <= s.height <= 160.0
+        and s.height in analysis_heights_set
         and s.detect_interpolation_marker() == ""
     ]
     if not mast_ws_sensors:

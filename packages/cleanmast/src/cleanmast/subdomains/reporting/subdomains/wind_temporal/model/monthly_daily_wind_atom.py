@@ -45,7 +45,7 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
 
     def _prepare_hourly_avg(self) -> pl.DataFrame:
         """Prepare hourly-averaged DataFrame for chart rendering."""
-        plot_df = self.df.filter(pl.col("height") >= 100)
+        plot_df = self.df
 
         plot_df = plot_df.with_columns(
             pl.col("month").map_elements(

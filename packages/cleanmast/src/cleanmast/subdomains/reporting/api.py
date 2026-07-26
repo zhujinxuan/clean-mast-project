@@ -50,10 +50,14 @@ class ReportGenerationService:
         extreme_wind_3s_heights: list[float],
         extreme_wind_gust_factors: list[ExtremeWindGustFactor],
         turbulence_heights: list[float] | None = None,
+        analysis_heights: list[float] | None = None,
+        temporal_heights: list[float] | None = None,
     ) -> SingleMastAnalysisInput:
         return _build_analysis_input(
             time_series, mast_name, air_density,
             turbulence_heights=turbulence_heights,
+            analysis_heights=analysis_heights,
+            temporal_heights=temporal_heights,
             extreme_wind_10min_heights=extreme_wind_10min_heights,
             extreme_wind_3s_heights=extreme_wind_3s_heights,
             extreme_wind_gust_factors=extreme_wind_gust_factors,
@@ -124,11 +128,15 @@ def _build_analysis_input(
     extreme_wind_3s_heights: list[float],
     extreme_wind_gust_factors: list[ExtremeWindGustFactor],
     turbulence_heights: list[float] | None = None,
+    analysis_heights: list[float] | None = None,
+    temporal_heights: list[float] | None = None,
 ) -> SingleMastAnalysisInput:
     """Build SingleMastAnalysisInput from time_series sensors."""
     params = AnalysisParameters(
         air_density=air_density,
         turbulence_heights=turbulence_heights or [],
+        analysis_heights=analysis_heights or [],
+        temporal_heights=temporal_heights or [],
         extreme_wind_10min_heights=extreme_wind_10min_heights,
         extreme_wind_3s_heights=extreme_wind_3s_heights,
         extreme_wind_gust_factors=extreme_wind_gust_factors,

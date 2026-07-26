@@ -59,9 +59,7 @@ class SingleMastWindDistributionSubgridAtom(ReportAtom[WindFrequencySchema, Wind
             return image_path
 
         interested_df = self.df.filter(
-            (pl.col("height") > 120.0)
-            & (pl.col("height") <= 160.0)
-            & (pl.col("bin_center") <= PRODUCTIVE_RANGE[1])
+            pl.col("bin_center") <= PRODUCTIVE_RANGE[1]
         ).with_columns(
             pl.when(
                 pl.col("interpolation_marker").is_null()

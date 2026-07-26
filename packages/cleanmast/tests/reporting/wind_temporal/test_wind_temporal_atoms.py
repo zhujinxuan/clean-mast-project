@@ -905,3 +905,81 @@ class TestAllAtoms:
 
             assert path1 == path2
             assert path2.exists()
+
+
+class TestWindTemporalSectionGuard:
+    """Tests for the from_inputs guard on empty temporal_heights."""
+
+    @staticmethod
+    def _build_input(mast_name: str, temporal_heights: list[float]):
+        from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
+        from cleanmast.subdomains.reporting.model.analysis_parameters import (
+            AnalysisParameters,
+        )
+
+        timestamps = [datetime(2023, 1, 1) + timedelta(hours=i) for i in range(100)]
+        df = pl.DataFrame({
+            "timestamp": timestamps,
+            "WS_100m_avg": [5.0 + i * 0.01 for i in range(100)],
+            "WS_120m_avg": [6.0 + i * 0.01 for i in range(100)],
+        })
+        sensors = [
+            SensorColumn(
+                column_name="WS_100m_avg",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WS_120m_avg",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=120.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts = TimeSeriesData(df=df, sensors=sensors)
+        params = AnalysisParameters(
+            air_density=1.225,
+            extreme_wind_10min_heights=[],
+            extreme_wind_3s_heights=[],
+            extreme_wind_gust_factors=[],
+            temporal_heights=temporal_heights,
+        )
+        return SingleMastAnalysisInput(
+            time_series=ts,
+            parameters=params,
+            mast_name=mast_name,
+        )
+
+    def test_from_inputs_raises_on_empty_temporal_heights(self) -> None:
+        """WindTemporalSection.from_inputs raises ValueError when
+        temporal_heights is empty."""
+        from cleanmast.subdomains.reporting.subdomains.wind_temporal.section import (
+            WindTemporalSection,
+        )
+
+        item = self._build_input("M01", temporal_heights=[])
+
+        with pytest.raises(ValueError, match="temporal_heights"):
+            WindTemporalSection.from_inputs([item])
+
+    def test_from_inputs_succeeds_with_valid_temporal_heights(self) -> None:
+        """WindTemporalSection.from_inputs succeeds when temporal_heights
+        is non-empty."""
+        from cleanmast.subdomains.reporting.subdomains.wind_temporal.section import (
+            WindTemporalSection,
+        )
+
+        item = self._build_input("M01", temporal_heights=[100.0, 120.0])
+        section = WindTemporalSection.from_inputs([item])
+
+        # verify atoms were built — we expect 6 atoms per mast
+        assert len(section.atoms) == 6
+        assert section._mast_names == ["M01"]

@@ -58,8 +58,13 @@ class TurbulenceSection:
         mast_data = [(item.time_series, item.mast_name) for item in items]
         mast_turbulence_heights: dict[str, list[float]] = {}
         for item in items:
-            if item.parameters.turbulence_heights:
-                mast_turbulence_heights[item.mast_name] = item.parameters.turbulence_heights
+            if not item.parameters.turbulence_heights:
+                raise ValueError(
+                    f"TurbulenceSection requires turbulence_heights for mast "
+                    f"'{item.mast_name}' but it is empty; regenerate the config "
+                    f"with `cleanmast recommend`"
+                )
+            mast_turbulence_heights[item.mast_name] = item.parameters.turbulence_heights
         return cls.from_time_series(mast_data, mast_turbulence_heights=mast_turbulence_heights)
 
     @classmethod

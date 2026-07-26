@@ -71,7 +71,7 @@ class SingleMastDailyPowerPatternAtom(ReportAtom[TemporalPatternSchema, WindTemp
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate 24-hour daily power pattern line chart with >=100m heights only."""
+        """Generate 24-hour daily power pattern line chart."""
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"daily_power_pattern_{self.meta.mast_name}_{cache_key}.png"
 
@@ -84,9 +84,7 @@ class SingleMastDailyPowerPatternAtom(ReportAtom[TemporalPatternSchema, WindTemp
             .sort(["hour", "height"])
         )
 
-        plot_df = hourly_df.filter(
-            (pl.col("height") >= 100) & (pl.col("avg_power").is_not_null())
-        )
+        plot_df = hourly_df.filter(pl.col("avg_power").is_not_null())
 
         plot_df = plot_df.with_columns(
             pl.struct(["height", "interpolation_marker"])
@@ -139,9 +137,7 @@ class SingleMastDailyPowerPatternAtom(ReportAtom[TemporalPatternSchema, WindTemp
             .sort(["hour", "height"])
         )
 
-        high_df = hourly_df.filter(
-            (pl.col("height") >= 100) & (pl.col("avg_power").is_not_null())
-        )
+        high_df = hourly_df.filter(pl.col("avg_power").is_not_null())
 
         if high_df.height == 0:
             return []

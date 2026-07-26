@@ -39,12 +39,9 @@ class SingleMastWindPowerHoursAtom(ReportAtom[WindFrequencySchema, WindFrequency
         return f"{self.meta.mast_name} 各风速区间风能频率和出现小时数"
 
     def _interested_heights(self) -> list[dict[str, object]]:
-        """Return unique interested heights (>120m and ≤160m) sorted ascending."""
-        filtered = self.df.filter(
-            (pl.col("height") > 120.0) & (pl.col("height") <= 160.0)
-        )
+        """Return unique heights present in the pre-filtered DataFrame, sorted ascending."""
         return list(
-            filtered.select(["height", "interpolation_marker"])
+            self.df.select(["height", "interpolation_marker"])
             .unique()
             .sort("height")
             .iter_rows(named=True)
@@ -66,9 +63,7 @@ class SingleMastWindPowerHoursAtom(ReportAtom[WindFrequencySchema, WindFrequency
             height_cols.append(height)
 
         interested_df = self.df.filter(
-            (pl.col("height") > 120.0)
-            & (pl.col("height") <= 160.0)
-            & (pl.col("bin_end") <= PRODUCTIVE_RANGE[1])
+            pl.col("bin_end") <= PRODUCTIVE_RANGE[1]
         ).sort("bin_start")
 
         data: list[list[str]] = []

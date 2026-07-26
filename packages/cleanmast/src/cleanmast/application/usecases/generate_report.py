@@ -163,10 +163,12 @@ def load_datasets(
                 timeseries,
                 mast_ref.name,
                 mast_ref.air_density,
-                turbulence_heights=mast_ref.turbulence_heights,
-                extreme_wind_10min_heights=mast_ref.extreme_wind_10min_heights,
-                extreme_wind_3s_heights=mast_ref.extreme_wind_3s_heights,
-                extreme_wind_gust_factors=reporting_gust_factors,
+            turbulence_heights=mast_ref.turbulence_heights,
+            analysis_heights=mast_ref.analysis_heights,
+            temporal_heights=mast_ref.temporal_heights,
+            extreme_wind_10min_heights=mast_ref.extreme_wind_10min_heights,
+            extreme_wind_3s_heights=mast_ref.extreme_wind_3s_heights,
+            extreme_wind_gust_factors=reporting_gust_factors,
             )
             mast_data.append(input_data)
         mast_analysis_windows: dict[str, TimeRange] = {}
