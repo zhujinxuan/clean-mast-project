@@ -6,8 +6,11 @@ Takes computed results and wraps them in atom instances.
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 import polars as pl
 
+from cleanmast.shared.timeseries import SensorColumn
 from cleanmast.subdomains.reporting.subdomains.representative_year.compute import (
     RepYearMastResult,
     RepYearMastSummary,
@@ -31,11 +34,37 @@ from cleanmast.subdomains.reporting.subdomains.representative_year.model.schemas
 )
 
 
+class _RepYearSummaryRow(TypedDict):
+    """Row type mirroring RepYearSummarySchema for DataFrame construction."""
+
+    year_range: str
+    mast_name: str
+    meso_name: str
+    climatology_mean_ws: float
+    rep_year_mean_ws: float
+    anomaly_percent: float
+    needs_correction: bool
+
+
+class _RepYearSectorRow(TypedDict):
+    """Row type mirroring RepYearSectorSchema for DataFrame construction."""
+
+    sector: str
+    sector_index: int
+    climatology_mean: float | None
+    rep_year_mean: float | None
+    meso_difference: float | None
+    slope: float | None
+    intercept: float | None
+    adjustment: float | None
+    data_points: int | None
+
+
 def build_rep_year_summary_atom(
     summaries: list[RepYearMastSummary],
 ) -> RepYearSummaryAtom:
     """Build the all-mast summary table atom."""
-    rows: list[dict] = []
+    rows: list[_RepYearSummaryRow] = []
     for s in summaries:
         rows.append({
             "year_range": s.year_range,
@@ -55,7 +84,7 @@ def build_rep_year_summary_atom(
 
 
 def _find_sensor(
-    sensors: list,
+    sensors: list[SensorColumn],
     sensor_type: str,
     stat_type: str = "avg",
 ) -> str:
@@ -73,8 +102,8 @@ def build_rep_year_sector_atoms(
     results: list[RepYearMastResult],
     mast_data: dict[str, pl.DataFrame],  # mast_name → raw timeseries DataFrame
     meso_data: dict[str, pl.DataFrame],  # mast_name → raw meso timeseries DataFrame
-    mast_sensors: dict[str, list],  # mast_name → list of SensorColumn
-    meso_sensors: dict[str, list],  # mast_name → list of SensorColumn
+    mast_sensors: dict[str, list[SensorColumn]],  # mast_name → list of SensorColumn
+    meso_sensors: dict[str, list[SensorColumn]],  # mast_name → list of SensorColumn
 ) -> tuple[list[RepYearSectorTableAtom], list[RepYearSectorFigureAtom]]:
     """Build per-mast sector table and figure atoms.
 
@@ -95,7 +124,7 @@ def build_rep_year_sector_atoms(
         summary = result.summary
 
         # Build sector DataFrame
-        rows: list[dict] = []
+        rows: list[_RepYearSectorRow] = []
         for sector in result.sectors:
             rows.append({
                 "sector": sector.sector,

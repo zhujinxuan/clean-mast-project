@@ -5,7 +5,7 @@ All algorithms, constants, and formulas preserved exactly.
 """
 
 import math
-from typing import Any
+from typing import NotRequired, TypedDict
 
 import numpy as np
 import polars as pl
@@ -20,7 +20,117 @@ STD_TEMP_SEA_LEVEL = 288.15
 LAPSE_RATE = 0.0065
 
 
+# ── TypedDicts for accumulator row shapes ──
+
+class Method2Result(TypedDict):
+    """Return shape of :func:`calculate_method2`.
+
+    Mirrors :class:`FiftyYearMaxWindResultSchema` + Gumbel fit fields.
+    Gumbel fields are ``NotRequired`` — callers guard with ``"mu" in result``.
+    """
+
+    height: float
+    interpolation_marker: str | None
+    wind_speed_type: str
+    method: str
+    max_wind_speed: float
+    standard_density_wind_speed: float
+    observed_max: float | None
+    mu: NotRequired[float]
+    beta: NotRequired[float]
+    sample_count: NotRequired[int]
+    sample_mean: NotRequired[float]
+    sample_std: NotRequired[float]
+    sample_data: NotRequired[list[float]]
+
+
+class Method3Result(TypedDict):
+    """Return shape of :func:`calculate_method3`.
+
+    Mirrors :class:`FiftyYearMaxWindResultSchema` (observed_max is required).
+    """
+
+    height: float
+    interpolation_marker: str | None
+    wind_speed_type: str
+    method: str
+    max_wind_speed: float
+    standard_density_wind_speed: float
+    observed_max: float
+
+
+class Method2WindRow(TypedDict):
+    """Row shape for Method 2 wind result tables — mirrors
+    :class:`FiftyYearMaxWindResultSchema`.
+    """
+
+    height: float
+    interpolation_marker: str | None
+    wind_speed_type: str
+    method: str
+    max_wind_speed: float
+    standard_density_wind_speed: float
+    observed_max: float | None
+
+
+class Method1Row(TypedDict):
+    """Row shape for Method 1 detail tables — mirrors
+    :class:`FiftyYearMaxWindMethod1DetailSchema`.
+    """
+
+    height: float
+    interpolation_marker: str | None
+    wind_speed_type: str
+    method: str
+    max_wind_speed: float
+    standard_density_wind_speed: float
+    average_wind_speed: float
+    air_density: float
+
+
+class GumbelParamRow(TypedDict):
+    """Row shape for Gumbel parameter tables — mirrors
+    :class:`GumbelParameterSchema`.
+    """
+
+    height: float
+    wind_speed_type: str
+    mu: float
+    beta: float
+    sample_count: int
+    sample_mean: float
+    sample_std: float
+    sample_data: list[float] | None
+
+
+class SummaryComparisonRow(TypedDict):
+    """Row shape for multi-method comparison tables — mirrors
+    :class:`FiftyYearMaxWindComparisonSchema` + ``interpolation_marker``.
+    """
+
+    height: float
+    method1: float
+    method2: float
+    method3: float
+    conservative_max: float
+    wind_speed_type: str
+    interpolation_marker: str
+
+
+class IECClassRow(TypedDict):
+    """Row shape for IEC wind-class reference tables — mirrors
+    :class:`IECWindClassSchema`.
+    """
+
+    wind_class: str
+    height: float | None
+    sustained_threshold: float
+    extreme_threshold: float
+    conservative_sustained: float | None
+    conservative_extreme: float | None
+
 # ---- Method 2: 五日最大法 ----
+
 
 def extract_five_day_maxima(
     wind_speeds: pl.Series,
@@ -107,7 +217,7 @@ def calculate_method2(
     reference_height: float,
     wind_speed_type: str,
     interpolation_marker: str = "",
-) -> dict[str, Any] | None:
+) -> Method2Result | None:
     """Calculate Method 2 (Gumbel fit to 5-day maxima) for one height."""
     fit = fit_gumbel_distribution(five_day_maxima)
     if fit is None:
@@ -149,7 +259,7 @@ def calculate_method3(
     reference_height: float,
     wind_speed_type: str,
     interpolation_marker: str = "",
-) -> dict[str, Any]:
+) -> Method3Result:
     """Calculate Method 3 (EWM: 1.25 * observed_max) for one height."""
     v50 = 1.25 * observed_max
     rho_h = _compute_density_at_height(height, air_density, reference_height)
@@ -181,7 +291,7 @@ def build_summary_comparison(
 
     all_heights = set(m1_map.keys()) | set(m2_map.keys()) | set(m3_map.keys())
 
-    rows: list[dict[str, Any]] = []
+    rows: list[SummaryComparisonRow] = []
     for height in sorted(all_heights):
         m1_value, m1_marker = m1_map.get(height, (0.0, ""))
         m2_value, m2_marker = m2_map.get(height, (0.0, ""))
@@ -215,7 +325,7 @@ def build_iec_class_table(
     extreme_comp: pl.DataFrame,
 ) -> pl.DataFrame:
     """Build IEC wind class reference table."""
-    rows: list[dict[str, Any]] = [
+    rows: list[IECClassRow] = [
         {"wind_class": "I", "height": None, "sustained_threshold": 50.0,
          "extreme_threshold": 70.0, "conservative_sustained": None, "conservative_extreme": None},
         {"wind_class": "II", "height": None, "sustained_threshold": 42.5,
@@ -316,7 +426,7 @@ def compute_method2_extreme_fallback(
     reference_height: float,
     gust_factor: float,
     interpolation_marker: str = "",
-) -> dict[str, Any]:
+) -> Method2WindRow:
     """Compute extreme wind from sustained using a per-height gust factor.
 
     Args:

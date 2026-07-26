@@ -16,6 +16,10 @@ from scipy import stats as scipy_stats
 
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.shared.timeseries.alignment import align_to_interval
+from cleanmast.subdomains.reporting.model.analysis_input import (
+    RepresentativeYearCalibrationPayload,
+    SingleMastAnalysisInput,
+)
 from cleanmast.subdomains.reporting.subdomains.representative_year.model.sectors import (
     SECTOR_NAMES,
     find_sector,
@@ -137,15 +141,12 @@ def _find_climatology_timerange(
 
 
 def _compute_calibration_summary(
-    item,
+    item: SingleMastAnalysisInput,
 ) -> RepYearMastSummary:
     """Compute summary from ORIGINAL (unaligned) meso data + rep-year window.
 
     Does NOT use aligned data — alignment is for regression only.
     """
-    from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
-
-    assert isinstance(item, SingleMastAnalysisInput)
     payload = item.representative_year_calibration_payload
     assert payload is not None
 
@@ -195,7 +196,7 @@ def _compute_calibration_summary(
 
 
 def _compute_meso_sector_stats(
-    payload,
+    payload: RepresentativeYearCalibrationPayload,
     summary: RepYearMastSummary,
 ) -> Sequence[_SectorMesoStats]:
     """Compute per-sector meso means from ORIGINAL (unaligned) meso data.
@@ -337,16 +338,13 @@ def _combine_sector_rows(
 
 
 def _compute_sector_regression(
-    item,
+    item: SingleMastAnalysisInput,
     summary: RepYearMastSummary,
 ) -> list[RepYearMastResult]:
     """Orchestrate per-sector regression for one mast-meso pair.
 
     Alignment happens HERE — only for regression, NOT for summary stats.
     """
-    from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
-
-    assert isinstance(item, SingleMastAnalysisInput)
     payload = item.representative_year_calibration_payload
     assert payload is not None
 
@@ -395,7 +393,7 @@ def _compute_sector_regression(
 
 
 def analyze_representative_year_calibration(
-    inputs: list,
+    inputs: list[SingleMastAnalysisInput],
 ) -> tuple[list[RepYearMastSummary], list[RepYearMastResult]]:
     """Analyze representative year calibration for all provided masts.
 

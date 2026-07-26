@@ -11,12 +11,26 @@ Resolves anti-pattern V6: IO-in-compute (gumbel_qq writes PNGs).
 import hashlib
 import math
 from pathlib import Path
+from typing import TypedDict
 
 import altair as alt
 import numpy as np
 import polars as pl
 import scipy.stats
 import vl_convert as vlc
+
+
+class QQPoint(TypedDict):
+    """A single Q-Q plot data point — consumed by Gumbel Q-Q subgrid rendering.
+
+    Built from :class:`GumbelParameterSchema` rows in :class:`Method2QQSustainedAtom`
+    / :class:`Method2QQExtremeAtom`.
+    """
+
+    height: float
+    wind_data: list[float]
+    mu: float
+    beta: float
 
 
 def generate_qq_monte_carlo_bands(
@@ -200,7 +214,7 @@ def _arrange_charts_in_subgrid(
 
 
 def generate_gumbel_qq_subgrid(
-    data_list: list[dict],
+    data_list: list[QQPoint],
     mast_name: str,
     output_dir: Path,
     wind_speed_type: str,

@@ -6,6 +6,8 @@ Key change: stateful TurbulenceCalculator class → pure functions.
 No IO, no side effects, no mutable global state.
 """
 
+from typing import TypedDict
+
 import numpy as np
 import polars as pl
 
@@ -146,6 +148,22 @@ def _find_matching_sd_sensor(
 # ── Wind Speed Bin Analysis ──────────────────────────────────────────────────
 
 
+class TurbulenceRow(TypedDict):
+    """A single row in the turbulence intensity analysis result.
+
+    Mirrors TurbulenceSchema columns from model/schemas.py.
+    """
+
+    wind_speed_bin: int
+    height: float
+    interpolation_marker: str | None
+    mean_ti: float
+    std_ti: float
+    representative_ti: float
+    iec_category: str
+    count: int
+
+
 def _create_empty_turbulence_dataframe() -> pl.DataFrame:
     """Create an empty DataFrame with TurbulenceSchema columns."""
     return pl.DataFrame({
@@ -194,7 +212,7 @@ def _process_wind_speed_analysis(
     all_sensors: list[SensorColumn],
 ) -> pl.DataFrame:
     """Process data into TI by wind speed bins (long format)."""
-    rows: list[dict] = []
+    rows: list[TurbulenceRow] = []
 
     for sensor in avg_sensors:
         height = sensor.height

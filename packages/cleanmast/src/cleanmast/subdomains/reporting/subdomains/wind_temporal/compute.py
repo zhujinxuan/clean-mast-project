@@ -5,9 +5,26 @@ All formulas and aggregation logic preserved exactly.
 Pure functions only — no IO, no side effects.
 """
 
+from datetime import datetime
+from typing import TypedDict
+
 import polars as pl
 
 from cleanmast.shared.timeseries import SensorColumn
+
+
+class TemporalRow(TypedDict):
+    """Row mirroring TemporalPatternSchema for accumulator typing."""
+
+    timestamp: datetime
+    hour: int
+    month: int
+    wind_speed: float | None
+    wind_power: float | None
+    height: float
+    mean_speed: float | None
+    mean_power: float | None
+    interpolation_marker: str | None
 
 
 def analyze_daily_pattern(
@@ -94,7 +111,7 @@ def _process_daily_pattern(
     """Process data into daily 24-hour pattern (long format)."""
     df_with_hour = df.with_columns(pl.col("timestamp").dt.hour().alias("hour"))
 
-    rows: list[dict] = []
+    rows: list[TemporalRow] = []
 
     for sensor in sensors:
         height = sensor.height
@@ -144,7 +161,7 @@ def _process_monthly_pattern(
     """Process data into monthly pattern (long format)."""
     df_with_month = df.with_columns(pl.col("timestamp").dt.month().alias("month"))
 
-    rows: list[dict] = []
+    rows: list[TemporalRow] = []
 
     for sensor in sensors:
         height = sensor.height
@@ -197,7 +214,7 @@ def _process_monthly_daily_pattern(
         pl.col("timestamp").dt.month().alias("month"),
     ])
 
-    rows: list[dict] = []
+    rows: list[TemporalRow] = []
 
     for sensor in sensors:
         height = sensor.height

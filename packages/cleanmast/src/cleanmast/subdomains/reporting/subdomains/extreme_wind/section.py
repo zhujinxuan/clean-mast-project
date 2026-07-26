@@ -5,11 +5,12 @@ Orchestrates: receive input → call compute → call assemble → return result
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Sequence, cast
+from typing import ClassVar, Sequence, cast
 
 import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.render.subsection_renderer import (
@@ -23,6 +24,10 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
     build_summary_atoms,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
+    GumbelParamRow,
+    Method1Row,
+    Method2WindRow,
+    Method3Result,
     _compute_density_at_height,
     _convert_to_standard,
     calculate_method2,
@@ -284,7 +289,7 @@ class ExtremeWindSection:
                 and s.height in ten_min_heights
             ]
             # WindSpeed/max sensors keyed by height
-            max_sensor_by_height: dict[float, Any] = {}
+            max_sensor_by_height: dict[float, SensorColumn] = {}
             for s in ts.sensors:
                 if s.sensor_type == "WindSpeed" and s.stat_type == "max":
                     max_sensor_by_height[s.height] = s
@@ -305,7 +310,7 @@ class ExtremeWindSection:
 
             # ── Method 1 ──
             # Config-driven: per-height compute so max sensors can be used
-            m1_rows: list[dict[str, Any]] = []
+            m1_rows: list[Method1Row] = []
             for sensor in ws_sensors:
                 h = sensor.height
                 avg_speed = cast(float, ts.df[sensor.column_name].mean())
@@ -352,8 +357,8 @@ class ExtremeWindSection:
 
             # ── Method 2 (per height, sustained via Gumbel; extreme from
             #    max sensor or gust-factor fallback) ──
-            m2_wind_rows: list[dict[str, Any]] = []
-            m2_param_rows: list[dict[str, Any]] = []
+            m2_wind_rows: list[Method2WindRow] = []
+            m2_param_rows: list[GumbelParamRow] = []
             for sensor in ws_sensors:
                 col = sensor.column_name
                 ws_series = ts.df[col]
@@ -427,7 +432,7 @@ class ExtremeWindSection:
                 else:
                     # Fallback: sustained → extreme via per-height gust factor
                     extreme_result = compute_method2_extreme_fallback(
-                        cast(float, result["max_wind_speed"]),
+                        result["max_wind_speed"],
                         h,
                         air_density,
                         reference_height,
@@ -453,8 +458,8 @@ class ExtremeWindSection:
             # otherwise same formula on avg sensor (no gust factor —
             # Method 3's ×1.25 is the EWM core factor, not a 10min→3s
             # conversion).
-            m3_sustained_rows: list[dict[str, Any]] = []
-            m3_extreme_rows: list[dict[str, Any]] = []
+            m3_sustained_rows: list[Method3Result] = []
+            m3_extreme_rows: list[Method3Result] = []
             for sensor in ws_sensors:
                 col = sensor.column_name
                 obs_max = ts.df[col].max()

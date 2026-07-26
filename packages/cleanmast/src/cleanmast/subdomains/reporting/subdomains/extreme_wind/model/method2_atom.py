@@ -15,6 +15,7 @@ from typst_ir import TypstParagraph, TypstTable
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.gumbel_qq import (
+    QQPoint,
     generate_gumbel_qq_subgrid,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
@@ -181,7 +182,7 @@ class Method2QQSustainedAtom(ReportAtom[GumbelParameterSchema, ExtremeWindAtomMe
             return Path()
 
         data_df = self.df.filter(pl.col("wind_speed_type") == "sustained")
-        data_list = []
+        data_list: list[QQPoint] = []
         for row in data_df.iter_rows(named=True):
             data_list.append({
                 "height": row["height"],
@@ -229,7 +230,7 @@ class Method2QQExtremeAtom(ReportAtom[GumbelParameterSchema, ExtremeWindAtomMeta
             return Path()
 
         data_df = self.df.filter(pl.col("wind_speed_type") == "extreme")
-        data_list = []
+        data_list: list[QQPoint] = []
         for row in data_df.iter_rows(named=True):
             data_list.append({
                 "height": row["height"],
