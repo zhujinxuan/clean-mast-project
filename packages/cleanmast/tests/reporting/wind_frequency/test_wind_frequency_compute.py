@@ -285,7 +285,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test frequency analysis for single height."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         assert result is not None
         expected_columns = {
             "height", "interpolation_marker", "bin_start", "bin_end",
@@ -299,7 +299,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test that frequency sums to 1.0 for each height."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         if len(result) > 0:
             total_frequency = result["frequency"].sum()
             assert total_frequency == pytest.approx(1.0, abs=0.01)
@@ -308,7 +308,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test that power frequency sums to 1.0 for each height."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         if len(result) > 0:
             total_power_frequency = result["power_frequency"].sum()
             assert total_power_frequency == pytest.approx(1.0, abs=0.01)
@@ -317,7 +317,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test that occurrence_hours = int(round(frequency * 8760))."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         if len(result) > 0:
             for row in result.iter_rows(named=True):
                 expected_hours = int(round(row["frequency"] * 8760.0))
@@ -327,7 +327,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test that power_hours = int(round(power_frequency * 8760))."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         if len(result) > 0:
             for row in result.iter_rows(named=True):
                 expected_hours = int(round(row["power_frequency"] * 8760.0))
@@ -337,7 +337,7 @@ class TestWindFrequencyAnalysis:
         self, sample_time_series_multiple_heights: TimeSeriesData
     ) -> None:
         """Test analysis with multiple heights."""
-        result = compute_wind_frequency(sample_time_series_multiple_heights)
+        result = compute_wind_frequency(sample_time_series_multiple_heights, AIR_DENSITY)
         assert result is not None
         assert len(result) > 0
         heights = result["height"].unique().to_list()
@@ -349,7 +349,7 @@ class TestWindFrequencyAnalysis:
         self, time_series_no_wind_speed: TimeSeriesData
     ) -> None:
         """Test analysis with no wind speed sensors."""
-        result = compute_wind_frequency(time_series_no_wind_speed)
+        result = compute_wind_frequency(time_series_no_wind_speed, AIR_DENSITY)
         assert result is not None
         assert len(result) == 0
 
@@ -357,7 +357,7 @@ class TestWindFrequencyAnalysis:
         self, insufficient_data_time_series: TimeSeriesData
     ) -> None:
         """Test analysis with insufficient data."""
-        result = compute_wind_frequency(insufficient_data_time_series)
+        result = compute_wind_frequency(insufficient_data_time_series, AIR_DENSITY)
         assert result is not None
         assert len(result) == 0
 
@@ -387,7 +387,7 @@ class TestFrequencyConstraints:
         self, sample_time_series_single_height: TimeSeriesData
     ) -> None:
         """Test that frequency values are in valid range [0, 1]."""
-        result = compute_wind_frequency(sample_time_series_single_height)
+        result = compute_wind_frequency(sample_time_series_single_height, AIR_DENSITY)
         if len(result) > 0:
             for row in result.iter_rows(named=True):
                 assert 0.0 <= row["frequency"] <= 1.0
@@ -414,7 +414,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        result = compute_wind_frequency(time_series)
+        result = compute_wind_frequency(time_series, AIR_DENSITY)
         assert result is not None
         assert len(result) == 0
 
@@ -435,7 +435,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        result = compute_wind_frequency(time_series)
+        result = compute_wind_frequency(time_series, AIR_DENSITY)
         assert result is not None
         assert len(result) == 0
 
@@ -456,7 +456,7 @@ class TestEdgeCases:
             ),
         ]
         time_series = TimeSeriesData(df=df, sensors=sensors)
-        result = compute_wind_frequency(time_series)
+        result = compute_wind_frequency(time_series, AIR_DENSITY)
         assert result is not None
         assert len(result) == 0
 

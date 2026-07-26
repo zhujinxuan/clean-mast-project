@@ -10,34 +10,16 @@ from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.iec import (
+    IEC_CATEGORIES,
+    compute_iec_ti,
+)
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
     TurbulenceSchema,
 )
-
-# ── IEC reference constants/helpers (duplicated to avoid model→compute import) ─
-
-_IEC_CATEGORIES: dict[str, float] = {
-    "A+": 0.18,
-    "A": 0.16,
-    "B": 0.14,
-    "C": 0.12,
-}
-
-
-def _compute_iec_ti(wind_speed: float, i_ref: float) -> float | None:
-    """Compute IEC reference turbulence intensity.
-
-    TI_IEC = I_ref * (0.75 + 5.6/V)
-    Returns None for wind_speed ≤ 0.
-    """
-    if wind_speed <= 0:
-        return None
-
-    return i_ref * (0.75 + 5.6 / wind_speed)
-
 
 # ── SingleMastTurbulenceMultiHeightAtom ──────────────────────────────────────
 
@@ -100,10 +82,10 @@ class SingleMastTurbulenceMultiHeightAtom(ReportAtom[TurbulenceSchema, Turbulenc
 
         iec_data = []
         for ws in wind_speeds:
-            ti_a_plus = _compute_iec_ti(float(ws), _IEC_CATEGORIES["A+"])
-            ti_a = _compute_iec_ti(float(ws), _IEC_CATEGORIES["A"])
-            ti_b = _compute_iec_ti(float(ws), _IEC_CATEGORIES["B"])
-            ti_c = _compute_iec_ti(float(ws), _IEC_CATEGORIES["C"])
+            ti_a_plus = compute_iec_ti(float(ws), IEC_CATEGORIES["A+"])
+            ti_a = compute_iec_ti(float(ws), IEC_CATEGORIES["A"])
+            ti_b = compute_iec_ti(float(ws), IEC_CATEGORIES["B"])
+            ti_c = compute_iec_ti(float(ws), IEC_CATEGORIES["C"])
 
             iec_data.extend([
                 {"wind_speed": ws, "lower": ti_a, "upper": ti_a_plus, "category": "A+"},

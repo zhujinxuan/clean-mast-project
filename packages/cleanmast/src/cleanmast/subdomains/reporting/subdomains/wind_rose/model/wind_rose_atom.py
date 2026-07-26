@@ -10,10 +10,6 @@ from __future__ import annotations
 import typing
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 import polars as pl
 from matplotlib.figure import Figure
@@ -23,36 +19,18 @@ from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.wind_rose.model.constants import (
+    SECTOR_COUNT,
+    SECTOR_LABELS,
+    WIND_ROSE_COLORS,
+)
+from cleanmast.subdomains.reporting.subdomains.wind_rose.model.pyplot import plt
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.report_meta import (
     WindRoseAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.schemas import (
     WindRoseSchema,
 )
-
-plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
-plt.rcParams["axes.unicode_minus"] = False
-
-SECTOR_COUNT = 16
-SECTOR_WIDTH = 360.0 / SECTOR_COUNT  # 22.5 degrees per sector
-
-WIND_ROSE_COLORS = [
-    "#1f77b4",
-    "#d62728",
-    "#2ca02c",
-    "#ff7f0e",
-    "#9467bd",
-    "#17becf",
-    "#8c564b",
-    "#e377c2",
-]
-
-SECTOR_LABELS = [
-    "N", "NNE", "NE", "ENE",
-    "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW",
-    "W", "WNW", "NW", "NNW",
-]
 
 
 class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):

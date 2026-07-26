@@ -9,27 +9,15 @@ from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.constants import (
+    MONTH_NAMES,
+)
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.report_meta import (
     WindTemporalAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.wind_temporal.model.schemas import (
     TemporalPatternSchema,
 )
-
-_MONTH_NAMES = {
-    1: "1月",
-    2: "2月",
-    3: "3月",
-    4: "4月",
-    5: "5月",
-    6: "6月",
-    7: "7月",
-    8: "8月",
-    9: "9月",
-    10: "10月",
-    11: "11月",
-    12: "12月",
-}
 
 
 class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTemporalAtomMeta]):
@@ -61,7 +49,7 @@ class SingleMastMonthlyDailyWindAtom(ReportAtom[TemporalPatternSchema, WindTempo
 
         plot_df = plot_df.with_columns(
             pl.col("month").map_elements(
-                lambda m: _MONTH_NAMES.get(m, f"{m}月"),
+                lambda m: MONTH_NAMES.get(m, f"{m}月"),
                 return_dtype=pl.String,
             ).alias("month_name")
         )

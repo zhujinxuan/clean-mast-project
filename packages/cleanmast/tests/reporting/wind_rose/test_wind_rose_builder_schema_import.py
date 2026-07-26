@@ -40,8 +40,8 @@ class TestWindRoseBuilderSchemaImport:
             source_code = f.read()
 
         # compute.py is pure functions, no schema import needed
-        # Just verify it uses SECTOR_NAMES constant
-        assert "SECTOR_NAMES" in source_code
+        # Just verify it uses SECTOR_LABELS constant
+        assert "SECTOR_LABELS" in source_code
         assert "SECTOR_COUNT" in source_code
 
     def test_correct_schema_has_9_columns(self) -> None:

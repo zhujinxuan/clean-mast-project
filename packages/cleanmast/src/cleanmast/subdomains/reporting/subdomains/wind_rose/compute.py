@@ -11,17 +11,11 @@ DataFrames per sensor and concatenating, instead of accumulating untyped dicts.
 import polars as pl
 
 from cleanmast.shared.timeseries import TimeSeriesData
-
-# Sector constants (named, not hardcoded 22.5/16)
-SECTOR_COUNT = 16
-SECTOR_WIDTH = 360.0 / SECTOR_COUNT  # degrees per sector
-
-SECTOR_NAMES = [
-    "N", "NNE", "NE", "ENE",
-    "E", "ESE", "SE", "SSE",
-    "S", "SSW", "SW", "WSW",
-    "W", "WNW", "NW", "NNW",
-]
+from cleanmast.subdomains.reporting.subdomains.wind_rose.model.constants import (
+    SECTOR_COUNT,
+    SECTOR_LABELS,
+    SECTOR_WIDTH,
+)
 
 
 def _process_sensor_data(
@@ -78,7 +72,7 @@ def _process_sensor_data(
         (pl.col("count") / pl.col("month_total")).alias("frequency"),
         (pl.col("month").cast(pl.Utf8) + pl.lit("月")).alias("month_name"),
         pl.col("sector").map_elements(
-            lambda s: SECTOR_NAMES[int(s)], return_dtype=pl.Utf8
+            lambda s: SECTOR_LABELS[int(s)], return_dtype=pl.Utf8
         ).alias("sector_name"),
     ]).select([
         "month", "month_name", "sector", "sector_name",

@@ -54,25 +54,29 @@ class WindFrequencySection:
     @classmethod
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WindFrequencySection":
         """Build section from standard mast input."""
-        mast_data = [(item.time_series, item.mast_name) for item in items]
+        mast_data = [
+            (item.time_series, item.mast_name, item.parameters.air_density)
+            for item in items
+        ]
         return cls.from_time_series(mast_data)
 
     @classmethod
     def from_time_series(
         cls,
-        mast_data: list[tuple[TimeSeriesData, str]],
+        mast_data: list[tuple[TimeSeriesData, str, float]],
     ) -> "WindFrequencySection":
         """Build wind frequency section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name) tuples.
+            mast_data: List of (time_series_data, mast_name, air_density) tuples;
+                air_density is the mast ground density from config.
 
         Returns:
             WindFrequencySection with computed atoms.
         """
         computed: list[tuple[str, pl.DataFrame]] = [
-            (mast_name, compute_wind_frequency(ts_data))
-            for ts_data, mast_name in mast_data
+            (mast_name, compute_wind_frequency(ts_data, air_density))
+            for ts_data, mast_name, air_density in mast_data
         ]
         atoms = build_wind_frequency_atoms(computed)
         return cls(_atoms=atoms)

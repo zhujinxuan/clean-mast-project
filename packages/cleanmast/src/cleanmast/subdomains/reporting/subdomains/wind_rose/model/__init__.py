@@ -1,5 +1,11 @@
 """Wind rose model types."""
 
+from cleanmast.subdomains.reporting.subdomains.wind_rose.model.constants import (
+    SECTOR_COUNT,
+    SECTOR_LABELS,
+    SECTOR_WIDTH,
+    WIND_ROSE_COLORS,
+)
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.report_meta import (
     WindRoseAtomMeta,
 )
@@ -7,10 +13,6 @@ from cleanmast.subdomains.reporting.subdomains.wind_rose.model.schemas import (
     WindRoseSchema,
 )
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.wind_rose_atom import (
-    SECTOR_COUNT,
-    SECTOR_LABELS,
-    SECTOR_WIDTH,
-    WIND_ROSE_COLORS,
     SingleMastMonthlyWindFrequencyRoseAtom,
     SingleMastWindPowerRoseAtom,
 )

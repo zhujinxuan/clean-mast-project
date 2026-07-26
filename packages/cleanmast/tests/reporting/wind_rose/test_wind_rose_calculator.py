@@ -11,7 +11,7 @@ import pytest
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
 from cleanmast.subdomains.reporting.subdomains.wind_rose.compute import (
     SECTOR_COUNT,
-    SECTOR_NAMES,
+    SECTOR_LABELS,
     calculate_wind_rose,
 )
 
@@ -56,12 +56,12 @@ class TestWindRoseCalculator:
 
         return TimeSeriesData(df=df, sensors=sensors)
 
-    def test_sector_names_constant(self) -> None:
-        assert len(SECTOR_NAMES) == SECTOR_COUNT
-        assert SECTOR_NAMES[0] == "N"
-        assert SECTOR_NAMES[4] == "E"
-        assert SECTOR_NAMES[8] == "S"
-        assert SECTOR_NAMES[12] == "W"
+    def test_sector_labels_constant(self) -> None:
+        assert len(SECTOR_LABELS) == SECTOR_COUNT
+        assert SECTOR_LABELS[0] == "N"
+        assert SECTOR_LABELS[4] == "E"
+        assert SECTOR_LABELS[8] == "S"
+        assert SECTOR_LABELS[12] == "W"
 
     def test_calculate_basic(self) -> None:
         wind_speeds = [5.0] * 16
@@ -98,7 +98,7 @@ class TestWindRoseCalculator:
         assert sectors == list(range(SECTOR_COUNT))
 
         sector_names = result.sort("sector")["sector_name"].to_list()
-        assert sector_names == SECTOR_NAMES
+        assert sector_names == SECTOR_LABELS
 
     def test_frequency_calculation(self) -> None:
         wind_speeds = [5.0] * 4

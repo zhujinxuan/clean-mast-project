@@ -115,6 +115,7 @@ def calculate_range_summary(
     wind_speeds: Sequence[float],
     min_speed: float | None = None,
     max_speed: float | None = None,
+    air_density: float = AIR_DENSITY,
 ) -> dict[str, float]:
     """Calculate summary statistics for a wind speed range.
 
@@ -124,6 +125,8 @@ def calculate_range_summary(
         wind_speeds: Wind speed measurements in m/s
         min_speed: Minimum speed for range (default: PRODUCTIVE_RANGE[0])
         max_speed: Maximum speed for range (default: PRODUCTIVE_RANGE[1])
+        air_density: Air density in kg/m³ for mean power density (default:
+            standard sea-level density)
 
     Returns:
         Dictionary with count, frequency, mean_speed, mean_power, occurrence_hours.
@@ -154,7 +157,7 @@ def calculate_range_summary(
 
     frequency = range_count / total_count
     mean_speed = float(np.mean(range_ws))
-    mean_power = float(0.5 * AIR_DENSITY * np.mean(range_ws**3))
+    mean_power = float(0.5 * air_density * np.mean(range_ws**3))
     occurrence_hours = frequency * HOURS_PER_YEAR
 
     return {
@@ -184,6 +187,7 @@ def _empty_wind_frequency_dataframe() -> pl.DataFrame:
 def _process_sensor_data(
     df: pl.DataFrame,
     sensor: SensorColumn,
+    ground_air_density: float,
 ) -> pl.DataFrame | None:
     """Process a single wind speed sensor into wind frequency bins.
 
@@ -193,6 +197,8 @@ def _process_sensor_data(
     Args:
         df: Full time series DataFrame
         sensor: Wind speed sensor metadata
+        ground_air_density: Mast ground air density (kg/m³) from config;
+            extrapolated to the sensor height via the barometric formula.
 
     Returns:
         Polars DataFrame with WindFrequencySchema columns, or None if the sensor
@@ -213,7 +219,7 @@ def _process_sensor_data(
 
     histogram = ws_df.group_by("bin_idx").agg(pl.len().alias("count"))
 
-    rho = calculate_air_density_at_height(sensor.height)
+    rho = calculate_air_density_at_height(sensor.height, ground_density=ground_air_density)
     ws_df = ws_df.with_columns((0.5 * rho * pl.col("ws").pow(3)).alias("power"))
     total_power = ws_df["power"].sum()
 
@@ -267,7 +273,7 @@ def _process_sensor_data(
     return result
 
 
-def compute_wind_frequency(data: TimeSeriesData) -> pl.DataFrame:
+def compute_wind_frequency(data: TimeSeriesData, ground_air_density: float) -> pl.DataFrame:
     """Compute wind frequency distribution for all wind speed sensors.
 
     Pure function — no IO, no side effects. Replaces the stateful
@@ -275,6 +281,9 @@ def compute_wind_frequency(data: TimeSeriesData) -> pl.DataFrame:
 
     Args:
         data: TimeSeriesData containing DataFrame and sensor metadata
+        ground_air_density: Mast ground air density (kg/m³) from config
+            (written by the recommend phase); extrapolated per sensor height
+            for power calculations.
 
     Returns:
         Polars DataFrame with WindFrequencySchema columns.
@@ -288,7 +297,7 @@ def compute_wind_frequency(data: TimeSeriesData) -> pl.DataFrame:
 
     sensor_dfs: list[pl.DataFrame] = []
     for sensor in ws_avg_sensors:
-        sensor_df = _process_sensor_data(df, sensor)
+        sensor_df = _process_sensor_data(df, sensor, ground_air_density)
         if sensor_df is not None:
             sensor_dfs.append(sensor_df)
 

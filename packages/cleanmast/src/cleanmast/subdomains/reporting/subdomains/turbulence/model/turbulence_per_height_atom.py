@@ -14,28 +14,6 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.model.schemas import (
     TurbulenceSchema,
 )
 
-# ── IEC reference constants/helpers (duplicated to avoid model→compute import) ─
-
-_IEC_CATEGORIES: dict[str, float] = {
-    "A+": 0.18,
-    "A": 0.16,
-    "B": 0.14,
-    "C": 0.12,
-}
-
-
-def _compute_iec_ti(wind_speed: float, i_ref: float) -> float | None:
-    """Compute IEC reference turbulence intensity.
-
-    TI_IEC = I_ref * (0.75 + 5.6/V)
-    Returns None for wind_speed ≤ 0.
-    """
-    if wind_speed <= 0:
-        return None
-
-    return i_ref * (0.75 + 5.6 / wind_speed)
-
-
 # ── SingleMastTurbulencePerHeightAtom ────────────────────────────────────────
 
 
