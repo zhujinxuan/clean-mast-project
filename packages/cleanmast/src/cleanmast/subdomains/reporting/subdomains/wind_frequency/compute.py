@@ -14,12 +14,14 @@ import numpy as np
 import polars as pl
 
 from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.constants import (
+    PRODUCTIVE_RANGE,
+)
 
 # Wind frequency constants
 BIN_SIZE: float = 1.0
 MAX_BIN: float = 28.0
 HOURS_PER_YEAR: float = 8760.0
-PRODUCTIVE_RANGE: tuple[float, float] = (3.0, 25.0)
 MIN_SAMPLES: int = 10
 AIR_DENSITY: float = 1.225
 

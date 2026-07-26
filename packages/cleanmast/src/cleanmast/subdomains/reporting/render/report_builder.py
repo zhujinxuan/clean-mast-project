@@ -24,6 +24,7 @@ from cleanmast.subdomains.reporting.protocols.report_builder import (
     BuildResult,
 )
 from cleanmast.subdomains.reporting.protocols.section import Section
+from cleanmast.subdomains.reporting.render.renderer import TypstRenderer
 
 
 class ReportBuilderService:
@@ -90,11 +91,7 @@ class ReportBuilderService:
         # Serialize to Typst markup
         typst_markup = serialize(doc)
 
-        preamble = '''// Chinese text support
-#set text(font: ("Linux Libertine", "Source Han Serif SC"))
-#set heading(numbering: "1.")
-
-'''
+        preamble = TypstRenderer.render_document_setup()
         full_markup = preamble + typst_markup
 
         # Write document to file
@@ -126,7 +123,8 @@ class ReportBuilderService:
         docx_path = self.output_dir / "report.docx"
         try:
             polish_docx(draft_path, json_path, docx_path)
-        except Exception as e:
+        # OSError: file IO failures; ValueError: pydantic ValidationError on IR JSON
+        except (OSError, ValueError) as e:
             raise RuntimeError(f"DOCX polish failed: {e}") from e
 
         results["docx"] = docx_path

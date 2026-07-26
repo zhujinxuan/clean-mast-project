@@ -3,9 +3,9 @@
 Audit date: 2026-06-26. Updated: 2026-07-26. Checked against `reporting/spec.md` and `subdomains/spec.md`.
 
 > Resolved entries (V1–V6, S2, S11, D1) removed 2026-07-21. Wave 1 (V7, V8,
-> S13, S6-F821) resolved 2026-07-26 — baseline gate green (ty, ruff, pytest,
-> dvc-verify, lint-imports, ast-grep). IDs of remaining entries are stable —
-> do not renumber.
+> S13, S6-F821) and Wave 2 (S8, S9, S12, S7-productive-range) resolved
+> 2026-07-26 — baseline gate green after each wave. IDs of remaining entries
+> are stable — do not renumber.
 
 ---
 
@@ -54,26 +54,16 @@ Height thresholds scattered as bare floats across capabilities:
 
 | Capability | Values | Files |
 |---|---|---|
-| `wind_frequency` | 120.0, 160.0, 25.0 (4 model atoms); 3.0 (1 atom) | `wind_distribution_subgrid_atom.py:59-61`, `wind_frequency_hours_atom.py:42,67-69`, `wind_power_hours_atom.py:41,66-68`, `wind_productive_range_atom.py:42-45` |
+| `wind_frequency` | 120.0, 160.0 | 4 model atoms (`wind_distribution_subgrid_atom.py`, `wind_frequency_hours_atom.py`, `wind_power_hours_atom.py`, `wind_productive_range_atom.py`) |
 | `weibull` | 120.0, 160.0 | `weibull_atom.py:101, 140` |
 | `representative_year` | 120.0, 160.0 | `compute.py:360` |
 | `air_density` | 125.0, 140.0, 160.0 | `model/air_density_atom.py:75-77` |
 
-**Note**: `wind_frequency/compute.py:22` now defines `PRODUCTIVE_RANGE = (3.0, 25.0)` as a named constant, but the model atoms above still hardcode the same values instead of importing it.
+**Resolved 2026-07-26**: the productive-range half — `PRODUCTIVE_RANGE` moved to
+`wind_frequency/model/constants.py` (model layer, so atoms may import it);
+all 4 atoms now consume it instead of hardcoding 3.0/25.0.
 
-**Future fix**: Extract into named constants in `compute/` or `model/` per capability; make the atoms consume them.
-
-### S8. Hardcoded Typst template strings in render/
-
-**Files**: `render/renderer.py` (font names, heading numbering, figure templates, default width `"80%"`), `render/report_builder.py:93-98`
-
-Preamble logic duplicated between `renderer.py` and `report_builder.py`. `report_builder.py:93-98` reconstructs the preamble inline (fonts `'Linux Libertine'`, `'Source Han Serif SC'`, heading numbering `'1.'`) instead of calling `TypstRenderer.render_preamble(self.title)`, which already exists at `renderer.py:27`.
-
-### S9. Overly broad exception handling
-
-**File**: `render/report_builder.py:129`
-
-`except Exception` catches everything during `polish_docx` call, re-raises as `RuntimeError` — masks the original exception type. Should catch the specific docx processing exception class, or at minimum log the full traceback.
+**Future fix**: Extract a named `HUB_HEIGHT_RANGE` per capability in `compute/` or `model/`; make the atoms consume them. Note `air_density`'s 125/140/160 are display heights, a different concept from the 120–160 hub range.
 
 ### S10. Stringly-typed section registry
 
@@ -81,13 +71,9 @@ Preamble logic duplicated between `renderer.py` and `report_builder.py`. `report
 
 `SECTION_REGISTRY` maps 15 hardcoded string keys to `Section` classes. Keys are plain `str`, not validated against the `SubsectionType` Literal in `configuration/model/report_config.py:19-35`.
 
-**Concrete drift confirmed 2026-07-26**: the registry contains `"extreme_wind"`, which is **not** a valid `SubsectionType` (dead key, unreachable from config), while `"timeseries"` **is** a valid `SubsectionType` but has **no** registry entry (would fail silently to a placeholder at runtime). Multiple keys (`fifty_year_method1/2/3`, `fifty_year_summary`, `iec_standards`) all map to `ExtremeWindSection` with no guard against further drift.
+**Drift status (corrected 2026-07-26)**: the registry contains `"extreme_wind"`, which is **not** a valid `SubsectionType` (dead key, unreachable from config). The `"timeseries"` Literal member is **not** drift — it is the container-node type: emitted by `recommend_report.py` for grouping subsections (2.4/2.5), handled explicitly at `generate_report.py:316` (`_process_flat_timeseries_node`), and reused by `tree_builder.py` for auto placeholders. It intentionally has no `SECTION_REGISTRY` entry.
 
-### S12. `object.__setattr__` bypass for frozen dataclass
-
-**File**: `protocols/report_atom.py:88`
-
-`object.__setattr__(self, '_df_hashkey', hashkey)` in `__post_init__` bypasses the frozen constraint to set a content hash. Intentional but fragile — consider `cached_property` or computing via `__init_subclass__` if class-level is sufficient.
+**Bigger finding**: `SECTION_REGISTRY` has **no runtime consumer** — only its own module, the `assemble/__init__.py` re-export, and `tests/reporting/assemble/test_assemble.py` reference it. The live dispatch is `subsection_method_map` in `application/usecases/generate_report.py:286`, which is equally stringly-typed. Fix direction: delete the fossil registry, type the live map against `SubsectionType` with a completeness assertion.
 
 ### S14. `wind_frequency` ignores config air density
 

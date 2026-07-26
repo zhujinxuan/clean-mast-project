@@ -8,6 +8,9 @@ from typing_extensions import override
 from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.constants import (
+    PRODUCTIVE_RANGE,
+)
 from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.report_meta import (
     WindFrequencyAtomMeta,
     _height_label,
@@ -65,7 +68,7 @@ class SingleMastWindPowerHoursAtom(ReportAtom[WindFrequencySchema, WindFrequency
         interested_df = self.df.filter(
             (pl.col("height") > 120.0)
             & (pl.col("height") <= 160.0)
-            & (pl.col("bin_end") <= 25.0)
+            & (pl.col("bin_end") <= PRODUCTIVE_RANGE[1])
         ).sort("bin_start")
 
         data: list[list[str]] = []

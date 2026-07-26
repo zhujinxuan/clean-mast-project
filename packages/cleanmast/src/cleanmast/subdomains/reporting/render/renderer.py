@@ -24,6 +24,22 @@ class TypstRenderer:
     """
 
     @staticmethod
+    def render_document_setup() -> str:
+        """Render Typst document setup (fonts, heading numbering) without a title.
+
+        Single source for document-level Typst configuration. Use this when the
+        document has no top-level title heading (e.g. ReportBuilderService);
+        use render_preamble when a title heading is wanted.
+
+        Returns:
+            Typst markup string with document setup.
+        """
+        return '''#set text(font: ("Linux Libertine", "Source Han Serif SC"))
+#set heading(numbering: "1.")
+
+'''
+
+    @staticmethod
     def render_preamble(title: str) -> str:
         """Render Typst document preamble with Chinese font support.
 
@@ -43,12 +59,7 @@ class TypstRenderer:
             #set heading(numbering: "1.")
             ...
         """
-        return f'''#set text(font: ("Linux Libertine", "Source Han Serif SC"))
-#set heading(numbering: "1.")
-
-= {title}
-
-'''
+        return TypstRenderer.render_document_setup() + f"= {title}\n\n"
 
     @staticmethod
     def render_section_header(title: str) -> str:

@@ -8,6 +8,9 @@ from typing_extensions import override
 from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.constants import (
+    PRODUCTIVE_RANGE,
+)
 from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.report_meta import (
     WindFrequencyAtomMeta,
     _height_label,
@@ -39,8 +42,8 @@ class SingleMastWindProductiveRangeAtom(ReportAtom[WindFrequencySchema, WindFreq
     def renderTable(self) -> TypstTable | None:
         """Render as Typst table with 3~25 m/s productive range summary."""
         productive_df = self.df.filter(
-            (pl.col("bin_start") >= 3.0)
-            & (pl.col("bin_end") <= 25.0)
+            (pl.col("bin_start") >= PRODUCTIVE_RANGE[0])
+            & (pl.col("bin_end") <= PRODUCTIVE_RANGE[1])
             & (pl.col("height") > 120.0)
             & (pl.col("height") <= 160.0)
         )

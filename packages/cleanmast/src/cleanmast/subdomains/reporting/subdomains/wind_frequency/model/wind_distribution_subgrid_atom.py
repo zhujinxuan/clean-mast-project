@@ -9,6 +9,9 @@ from typing_extensions import override
 from typst_ir import TypstParagraph, TypstTable
 
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
+from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.constants import (
+    PRODUCTIVE_RANGE,
+)
 from cleanmast.subdomains.reporting.subdomains.wind_frequency.model.report_meta import (
     WindFrequencyAtomMeta,
 )
@@ -58,7 +61,7 @@ class SingleMastWindDistributionSubgridAtom(ReportAtom[WindFrequencySchema, Wind
         interested_df = self.df.filter(
             (pl.col("height") > 120.0)
             & (pl.col("height") <= 160.0)
-            & (pl.col("bin_center") <= 25.0)
+            & (pl.col("bin_center") <= PRODUCTIVE_RANGE[1])
         ).with_columns(
             pl.when(
                 pl.col("interpolation_marker").is_null()

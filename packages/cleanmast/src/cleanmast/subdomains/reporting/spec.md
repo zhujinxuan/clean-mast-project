@@ -23,6 +23,9 @@ Produces wind resource assessment reports from time-series data.
 11. All TOML I/O MUST go through `cleanmast.subdomains.configuration.value_objects` Pydantic models.
     Never `import tomli` or `import tomli_w` directly in reporting, application, or any subdomain.
     Configuration files are loaded via Pydantic's `model_validate` in a `from_toml` classmethod.
+12. Derived fields on frozen dataclasses MAY be set via `object.__setattr__` in
+    `__post_init__` (see `protocols/report_atom.py`). This is the sanctioned
+    pattern, not a smell — `cached_property` does not work on frozen dataclasses.
 
 ## Anti-patterns
 

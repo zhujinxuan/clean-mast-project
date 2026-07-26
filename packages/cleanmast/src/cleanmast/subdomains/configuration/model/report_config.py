@@ -30,6 +30,10 @@ SubsectionType = Literal[
     "fifty_year_method2",
     "fifty_year_method3",
     "fifty_year_summary",
+    # Container-node type: groups capability children under one heading
+    # (e.g. 2.4 测风年, 2.5 代表年). Emitted by recommend_report.py, handled
+    # by _process_flat_timeseries_node in generate_report.py. Not a
+    # renderable capability — intentionally absent from section dispatch maps.
     "timeseries",
     "fifty_year_max_wind",
 ]
