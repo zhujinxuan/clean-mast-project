@@ -8,7 +8,7 @@ from processed mast data.
 
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast, get_args
 
 import polars as pl
 from typst_ir import TypstHeading, TypstSection
@@ -17,7 +17,10 @@ from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.shared.timeseries.io import TimeSeriesRepository
 from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
-from cleanmast.subdomains.configuration.model.report_config import FlatReportConfig
+from cleanmast.subdomains.configuration.model.report_config import (
+    FlatReportConfig,
+    SubsectionType,
+)
 from cleanmast.subdomains.reporting.api import ReportGenerationService
 from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
 from cleanmast.subdomains.reporting.model.analysis_input import (
@@ -283,7 +286,10 @@ def _generate_from_flat_config(
     """
     all_sections: list = []
 
-    subsection_method_map: dict[str, _SubsectionDispatch] = {
+    # Dispatch contract: every SubsectionType member is accounted for — either
+    # in this map or in one of the exclusion sets below. Drift fails loudly
+    # here instead of producing a silent placeholder section in the report.
+    subsection_method_map: dict[SubsectionType, _SubsectionDispatch] = {
         "air_density": service.generate_air_density_section,
         "representative_year_calibration": service.generate_representative_year_calibration_section,
         "wind_rose": service.generate_wind_rose_section,
@@ -294,6 +300,24 @@ def _generate_from_flat_config(
         "temporal": service.generate_temporal_section,
         "fifty_year_max_wind": service.generate_fifty_year_max_wind_section,
     }
+
+    # Container-node types: grouping headings handled by _walk_node directly,
+    # never dispatched (e.g. "timeseries" = analysis set from mast timeseries).
+    _CONTAINER_TYPES: frozenset[str] = frozenset({"timeseries"})
+    # Valid config types with no section implementation yet; fall through to a
+    # placeholder by design (see test_generate_report: "not in method map yet").
+    _UNIMPLEMENTED_TYPES: frozenset[str] = frozenset({
+        "iec_standards",
+        "fifty_year_method1",
+        "fifty_year_method2",
+        "fifty_year_method3",
+        "fifty_year_summary",
+    })
+    _renderable = set(get_args(SubsectionType)) - _CONTAINER_TYPES - _UNIMPLEMENTED_TYPES
+    assert set(subsection_method_map) == _renderable, (
+        f"Dispatch drift: missing={_renderable - set(subsection_method_map)}, "
+        f"extra={set(subsection_method_map) - _renderable}"
+    )
 
     def _walk_node(node: SectionNode, depth: int = 0) -> HeadingSection:
         """Recursively walk a section node and return a HeadingSection."""
@@ -353,7 +377,7 @@ def _generate_from_flat_config(
 def _process_flat_timeseries_node(
     node: SectionNode,
     service: ReportGenerationService,
-    subsection_method_map: dict[str, _SubsectionDispatch],
+    subsection_method_map: dict[SubsectionType, _SubsectionDispatch],
     loaded_datasets: dict[str, LoadedDataset],
 ) -> list[Any]:
     """Process a timeseries container node and return leaf sections.
@@ -421,7 +445,8 @@ def _process_flat_timeseries_node(
             leaf_sections.append(HeadingSection(title="Placeholder"))
             continue
 
-        method = subsection_method_map[subsection_type]
+        # Guarded by the `not in` check above — key is a valid map member.
+        method = subsection_method_map[cast(SubsectionType, subsection_type)]
         section_result = method(input_items)
 
         if section_result is not None:

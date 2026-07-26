@@ -1,7 +1,7 @@
 """Section assembly for the reporting pipeline.
 
 Pure functions only — NO IO, no side effects.
-Maps the nine reporting capability sections into the hierarchical report tree
+Assembles pre-built capability sections into the hierarchical report tree
 produced by tree_builder.
 """
 
@@ -13,41 +13,6 @@ from cleanmast.subdomains.configuration.model.report_config import FlatReportCon
 from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
 from cleanmast.subdomains.reporting.model.section_node import SectionNode
 from cleanmast.subdomains.reporting.protocols.section import Section
-from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
-from cleanmast.subdomains.reporting.subdomains.extreme_wind import ExtremeWindSection
-from cleanmast.subdomains.reporting.subdomains.representative_year import (
-    RepresentativeYearSection,
-)
-from cleanmast.subdomains.reporting.subdomains.turbulence import TurbulenceSection
-from cleanmast.subdomains.reporting.subdomains.vertical_profile import (
-    VerticalProfileSection,
-)
-from cleanmast.subdomains.reporting.subdomains.weibull import WeibullSection
-from cleanmast.subdomains.reporting.subdomains.wind_frequency import (
-    WindFrequencySection,
-)
-from cleanmast.subdomains.reporting.subdomains.wind_rose import WindRoseSection
-from cleanmast.subdomains.reporting.subdomains.wind_temporal import (
-    WindTemporalSection,
-)
-
-SECTION_REGISTRY: dict[str, type[Section]] = {
-    "air_density": AirDensitySection,
-    "extreme_wind": ExtremeWindSection,
-    "fifty_year_max_wind": ExtremeWindSection,
-    "fifty_year_method1": ExtremeWindSection,
-    "fifty_year_method2": ExtremeWindSection,
-    "fifty_year_method3": ExtremeWindSection,
-    "fifty_year_summary": ExtremeWindSection,
-    "iec_standards": ExtremeWindSection,
-    "representative_year_calibration": RepresentativeYearSection,
-    "temporal": WindTemporalSection,
-    "turbulence": TurbulenceSection,
-    "vertical_profile": VerticalProfileSection,
-    "weibull": WeibullSection,
-    "wind_frequency": WindFrequencySection,
-    "wind_rose": WindRoseSection,
-}
 
 
 @dataclass(frozen=True)

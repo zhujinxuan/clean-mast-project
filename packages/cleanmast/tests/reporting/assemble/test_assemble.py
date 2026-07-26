@@ -15,15 +15,12 @@ from cleanmast.subdomains.configuration import (
     MastRef,
 )
 from cleanmast.subdomains.reporting.assemble import (
-    SECTION_REGISTRY,
     AssembledSectionNode,
     SectionNode,
     assemble_section_tree,
     build_section_tree,
     flatten_tree,
 )
-from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
-from cleanmast.subdomains.reporting.subdomains.wind_rose import WindRoseSection
 from typst_ir import TypstHeading, TypstSection
 
 
@@ -105,31 +102,6 @@ class TestTreeBuilder:
 
 class TestSectionAssembler:
     """Tests for section_assembler."""
-
-    def test_registry_contains_nine_capabilities(self):
-        capability_types = {
-            "air_density",
-            "wind_rose",
-            "wind_frequency",
-            "weibull",
-            "turbulence",
-            "temporal",
-            "vertical_profile",
-            "representative_year_calibration",
-            "extreme_wind",
-        }
-        for stype in capability_types:
-            assert stype in SECTION_REGISTRY
-            section_cls = SECTION_REGISTRY[stype]
-            assert callable(getattr(section_cls, "from_time_series", None)) or callable(
-                getattr(section_cls, "from_inputs", None)
-            ) or callable(getattr(section_cls, "_from_computed_results", None)) or callable(
-                getattr(section_cls, "from_mast_data", None)
-            )
-
-    def test_registry_maps_wind_rose_and_air_density(self):
-        assert SECTION_REGISTRY["wind_rose"] is WindRoseSection
-        assert SECTION_REGISTRY["air_density"] is AirDensitySection
 
     def test_assemble_section_tree_with_placeholders(self):
         config = FlatReportConfig(
