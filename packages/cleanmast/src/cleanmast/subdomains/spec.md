@@ -23,11 +23,8 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
     function; a subdomain never imports a sibling (enforced by the
     ``subdomain-isolation`` and ``repository-access`` import-linter
     contracts).
-11. Train workflows follow one pattern: the usecase discovers input configs
-    via ``ProjectConfig.discover_*_config()``, loads each mast's timeseries
-    via the injected ``TimeSeriesRepository``, calls a dataprocessing fit
-    service (e.g. ``planner.fit_one_mast``), and persists results via
-    ``ProjectConfig.save_*_model()``. Fitting code never touches I/O.
+11. Train workflows follow the orchestration pattern in `application/spec.md`
+    (config discovery → per-mast load → fit service → persist).
 
 ## Anti-patterns
 
