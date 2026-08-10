@@ -4,15 +4,16 @@
 
 **Blocked by:** None — 02-hub-specs-fix done 2026-08-10 (commit 7b933e25)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No leaf restates pipeline order, compute purity, frozen=True, sibling-import ban, or the compute-vs-assemble when-in-doubt
-- [ ] The 9-way cloned lint line (`` `Any`, `# type: ignore`, `str(path)`, bare `except:` ``) appears in ZERO leaves (it now lives in reporting/spec.md per 02)
-- [ ] Capability-specific rules survive intact: SECTOR_COUNT (wind_rose), stateless fitter (weibull), IEC constants (turbulence), Polars vectorization (wind_frequency), renderImage sentinel → moved to reporting (extreme_wind), 4×4 grid (representative_year)
-- [ ] wind_temporal and air_density (zero capability-specific rules today) end as Purpose + 业务说明 — or gain real capability rules if the implementer identifies them
-- [ ] Each leaf keeps an explicit one-line inheritance note pointing at reporting/spec.md
-- [ ] `uv run python scripts/verify_baseline.py --package cleanmast` is green
+- [x] No leaf restates pipeline order, compute purity, frozen=True, sibling-import ban, or the compute-vs-assemble when-in-doubt
+- [x] The 9-way cloned lint line (`` `Any`, `# type: ignore`, `str(path)`, bare `except:` ``) appears in ZERO leaves (it now lives in reporting/spec.md per 02)
+- [x] Capability-specific rules survive intact: SECTOR_COUNT (wind_rose), stateless fitter (weibull), IEC constants (turbulence), Polars vectorization (wind_frequency), renderImage sentinel → moved to reporting (extreme_wind), 4×4 grid (representative_year)
+- [x] wind_temporal and air_density (zero capability-specific rules today) end as Purpose + 业务说明 — or gain real capability rules if the implementer identifies them
+- [x] Each leaf keeps an explicit one-line inheritance note pointing at reporting/spec.md
+- [x] `uv run python scripts/verify_baseline.py --package cleanmast` is green
 
 ## Comments
 
 - From the 2026-08-10 spec-docs review. The wind_frequency copy had already drifted from its siblings — direct evidence the copies cannot be maintained. Full quotes in `../findings.md`.
+- Resolved 2026-08-10: all 9 leaves rewritten to Purpose + inheritance note + capability-specific rules + 业务说明. Leaves with no capability-specific rules (wind_temporal, vertical_profile, air_density) are Purpose + inheritance + 业务说明. Content defects (ghost names, in-file duplications) intentionally preserved for ticket 04.
