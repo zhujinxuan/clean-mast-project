@@ -44,7 +44,7 @@ Each context and capability has a co-located `spec.md` documenting its conventio
 
 ### Issue tracker
 
-Local markdown under `.scratch/<feature>/` (git remote is Gitee; no CLI integration). Drift and known gaps are tickets, never drift-log files. See `docs/agents/issue-tracker.md`.
+Local markdown under `.scratch/<feature>/` (git remote is Gitee; no CLI integration). Drift and known gaps are tickets, never drift-log files. See `docs/agents/issue-tracker.md`. Ticket lint runs via a pre-commit hook — after a fresh clone, run `git config core.hooksPath .githooks` once.
 
 ### Triage labels
 
