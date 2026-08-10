@@ -9,7 +9,6 @@ Wind rose frequency distribution (16-sector polar) computation and chart renderi
 
 ## Anti-patterns
 
-- Hardcoded magic numbers (22.5, 16).
 - `rows: list[dict]` in assemble; use typed structures.
 
 ## 业务说明 (Business description)

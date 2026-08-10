@@ -5,7 +5,8 @@ Weibull distribution fitting and visualization for wind resource reports.
 ## Rules
 
 - Inherits all rules from `reporting/spec.md` (which inherits `subdomains/spec.md`).
-- WeibullFitter is STATELESS: module-level functions, no class with `__init__`.
+- Weibull fitting is module-level functions in `compute.py` (`fit_weibull`);
+  never introduce a stateful fitter class.
 
 ## Anti-patterns
 
@@ -19,7 +20,7 @@ Weibull distribution fitting and visualization for wind resource reports.
 
 ### Key concepts
 
-WeibullFitter 是无状态模块级函数; k < 2 表示风速变化大 (典型内陆), k > 2 表示风速集中 (典型沿海/海上)。
+k < 2 表示风速变化大 (典型内陆), k > 2 表示风速集中 (典型沿海/海上)。
 
 ### Business constraints
 
