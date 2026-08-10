@@ -554,13 +554,15 @@ def run_verification(
         if result.status != "PASS":
             all_passed = False
     
-    # 5. lint-imports (advisory / non-blocking)
+    # 5. lint-imports (blocking)
     if "lint-imports" not in skip_checks and package == "cleanmast":
         print("  [lint-imports] Running import contract checks...", end=" ")
         result = run_lint_imports_check()
         results.append(result)
         status = "✓" if result.status == "PASS" else "✗"
         print(f"{status} ({format_duration(result.duration)})")
+        if result.status != "PASS":
+            all_passed = False
     
     # 6. ast-grep custom rules (blocking)
     if "ast-grep" not in skip_checks:

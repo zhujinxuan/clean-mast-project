@@ -122,7 +122,7 @@ Run after every implementation task, before committing:
 uv run python scripts/verify_baseline.py --package cleanmast
 ```
 
-Six checks: **ty**, **ruff**, **pytest**, **dvc-verify**, **ast-grep** (blocking), and **import-linter** (advisory — reported, does not fail the run). Skill: `skill(name="verify")`. Every implementation ticket's acceptance criteria end with this command green.
+Six checks: **ty**, **ruff**, **pytest**, **dvc-verify**, **ast-grep**, **lint-imports** — all blocking. Skill: `skill(name="verify")`. Every implementation ticket's acceptance criteria end with this command green.
 
 **Output:** Per-package baseline files at `packages/cleanmast/baseline-{timestamp}.md`
 - Small errors (<500 chars): Inline in markdown

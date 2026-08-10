@@ -13,7 +13,7 @@ uv run python scripts/verify_baseline.py --package cleanmast
 
 Six checks, in order: **ty** (types), **ruff** (lint), **pytest**, **dvc-verify** (test data), **lint-imports** (import contracts), **ast-grep** (custom structural rules in `.ast-grep/rules/`).
 
-Blocking: ty, ruff, pytest, dvc-verify, ast-grep. Advisory: lint-imports — failures are reported but do not fail the run.
+All six checks are blocking.
 
 Output: `packages/cleanmast/baseline-{timestamp}.md`. Small errors inline; large ones in `packages/cleanmast/baseline-refs/{timestamp}-{tool}.json`.
 
