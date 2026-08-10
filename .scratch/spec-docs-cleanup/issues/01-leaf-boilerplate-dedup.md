@@ -2,7 +2,7 @@
 
 **What to build:** Each reporting capability leaf spec keeps only Purpose, capability-specific rules, leaf-specific anti-patterns, and 业务说明. The shared block (pipeline stages, compute/assemble purity, frozen=True, sibling-import ban, compute-vs-assemble when-in-doubt) is inherited from reporting/spec.md + subdomains/spec.md and must not be restated. Files: all 9 under `packages/cleanmast/src/cleanmast/subdomains/reporting/subdomains/*/spec.md`. Details in `.scratch/spec-docs-cleanup/findings.md`.
 
-**Blocked by:** 02-hub-specs-fix (reporting/spec.md must own the shared rules — including the hoisted lint anti-pattern — before leaves defer to it)
+**Blocked by:** None — 02-hub-specs-fix done 2026-08-10 (commit 7b933e25)
 
 **Status:** ready-for-agent
 

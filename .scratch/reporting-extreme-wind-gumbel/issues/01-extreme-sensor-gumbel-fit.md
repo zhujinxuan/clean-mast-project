@@ -6,8 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Gumbel fit is computed for max (extreme) sensors, not only avg sensors
-- [ ] Extreme-wind QQ plot renders with data
+- [ ] `GumbelParamRow` with `wind_speed_type='extreme'` (mu, beta, sample_count, sample_mean, sample_std, sample_data) is appended from the already-computed max-sensor fit in `extreme_wind/section.py`
+- [ ] `Method2QQExtremeAtom.renderImage` returns a real path (not the empty `Path()` sentinel) when max sensors are present
+- [ ] `TestMaxSensorExtreme` in `tests/reporting/extreme_wind/test_section.py` asserts the extreme param row has non-null `sample_data` and the QQ atom renders
 - [ ] `uv run python scripts/verify_baseline.py --package cleanmast` is green
 
 ## Comments

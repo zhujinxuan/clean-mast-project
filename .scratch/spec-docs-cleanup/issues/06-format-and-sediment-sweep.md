@@ -2,7 +2,7 @@
 
 **What to build:** Final pass after the content tickets: delete leftover sediment and verify the flat 5-section format (Purpose / Rules / Anti-patterns / When in doubt / 业务说明) holds across all 16 spec.md files — the format decision taken 2026-08-10.
 
-**Blocked by:** 01-leaf-boilerplate-dedup, 03-seam-specs-facts, 05-application-spec-deepen
+**Blocked by:** 01-leaf-boilerplate-dedup, 05-application-spec-deepen (03-seam-specs-facts done 2026-08-10)
 
 **Status:** ready-for-agent
 

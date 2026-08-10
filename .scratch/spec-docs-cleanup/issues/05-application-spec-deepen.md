@@ -2,11 +2,11 @@
 
 **What to build:** Make `application/spec.md` able to steer the usecase layer: 3 of 5 real usecases (recommend/train/execute fill-heights) are config-driven, yet the spec says nothing about ProjectConfig, config discovery, persistence, or repository injection. Also absorb the train-workflow orchestration pattern that currently lives (misplaced) in subdomains/spec.md. File: `packages/cleanmast/src/cleanmast/application/spec.md` (+ removal in subdomains/spec.md). Details in `.scratch/spec-docs-cleanup/findings.md`.
 
-**Blocked by:** 02-hub-specs-fix (touches subdomains/spec.md; must land after the hub restructure)
+**Blocked by:** None — 02-hub-specs-fix done 2026-08-10 (commit 7b933e25)
 
 **Status:** ready-for-agent
 
-- [ ] Move the train-workflow orchestration pattern from subdomains/spec.md (lines ~36–40) into application/spec.md; subdomains keeps a one-line pointer
+- [ ] Move the train-workflow orchestration pattern from subdomains/spec.md (rule 11) into application/spec.md; subdomains keeps a one-line pointer
 - [ ] Add config-driven usecase rules: ProjectConfig loading (`discover_*_config()` vs `load_config()`), model persistence (`save_*_model()`), repository injected by `cleanmast.bootstrap`
 - [ ] Reduce the TimeSeriesData-boundary restatement to a pointer (dataprocessing/spec.md owns the enforceable side)
 - [ ] Drop the `## Code rules` wrapper → flat 5-section format, and add a 业务说明 section (the only spec without one)
