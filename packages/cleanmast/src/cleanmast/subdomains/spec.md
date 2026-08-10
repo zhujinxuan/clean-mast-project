@@ -5,35 +5,25 @@ Bounded-context constitution for the pipeline-stage DDD structure inside `cleanm
 ## Rules
 
 1. Pipeline stages run left-to-right: model ← protocols ← compute ← assemble ← render ← api.
-2. Each stage imports from the LEFT only; never right, never sideways.
+2. Each stage imports from the LEFT only; never right, never sideways (sole
+   exception: reporting sections may import render helpers — see
+   `reporting/spec.md`).
 3. Contexts import from `cleanmast.shared.*` or external packages; never from a sibling context.
 4. Entities and value objects live together under `model/`; default Pydantic config is `frozen=True`.
 5. Mutability is allowed only with an inline comment: `# mutable: <reason>`.
 6. Keep contexts flat: no `domain/` or `application/` nesting.
 7. `api.py` is the sole public interface; `__init__.py` exports only model types and api functions.
-8. Use a single file (e.g. `compute.py`) when content fits one file; use a folder (e.g. `compute/`) otherwise.
-9. Each capability lives under `subdomains/{capability}/` with its own 
-   compute, assemble, and section files. The top-level compute/, assemble/, 
-   render/ directories hold shared helpers used across capabilities.
-10. Section classes in `subdomains/{capability}/section.py` may import from 
-    `compute/`, `assemble/`, and `render/` helpers. This is the only case 
-    where a "sideways" import (to render/) is permitted.
-11. Section input types are frozen dataclasses defined in `model/`. Sections 
-    with the same input kind share the same input type.
-12. All section `render_ir` methods must use `render_subsection_content` 
-    from `render/subsection_renderer.py`. Manual atom iteration in 
-    `render_ir` is forbidden.
-13. Timeseries loading protocol (``TimeSeriesRepository``) and validation
-    live in ``cleanmast.shared.timeseries.io``; the file-backed realization
-    lives in ``cleanmast.infrastructure`` and is injected by
-    ``cleanmast.bootstrap``. Subdomains receive ``TimeSeriesData`` — they
-    never load.
-14. Cross-subdomain workflows live in ``cleanmast.application.usecases``.
+8. Use a single file (e.g. `compute.py`) while it holds one cohesive concept;
+   split into a folder (e.g. `compute/`) when it grows several.
+9. Timeseries loading protocol (``TimeSeriesRepository``) and validation
+   live in ``cleanmast.shared.timeseries.io`` — see `shared/timeseries/spec.md`.
+   Subdomains receive ``TimeSeriesData`` — they never load.
+10. Cross-subdomain workflows live in ``cleanmast.application.usecases``.
     A usecase may import ``configuration`` and ``dataprocessing`` in the same
     function; a subdomain never imports a sibling (enforced by the
     ``subdomain-isolation`` and ``repository-access`` import-linter
     contracts).
-15. Train workflows follow one pattern: the usecase discovers input configs
+11. Train workflows follow one pattern: the usecase discovers input configs
     via ``ProjectConfig.discover_*_config()``, loads each mast's timeseries
     via the injected ``TimeSeriesRepository``, calls a dataprocessing fit
     service (e.g. ``planner.fit_one_mast``), and persists results via
@@ -78,4 +68,4 @@ Bounded context 对应管道阶段: `configuration` (定义处理什么)、
 ### Business constraints
 
 - 数据完整性是报告可信度的前提: 缺失时段必须重建，目标高度必须补全。
-- 风机轮毂高度典型值: 125 m, 140 m, 160 m — 因此 fill-heights 默认目标高度为这三个。
+- 风机轮毂高度典型值: 125 m, 140 m, 160 m — fill-heights 的目标高度通常取自这些档位。

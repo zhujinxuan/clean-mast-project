@@ -5,42 +5,48 @@ Produces wind resource assessment reports from time-series data.
 ## Rules
 
 1. Inherits all rules from `subdomains/spec.md`.
-2. Pipeline stages run left-to-right: model ← protocols ← compute ← assemble ← render ← api.
-3. Capabilities: `wind_rose`, `weibull`, `turbulence`, `wind_frequency`, `wind_temporal`, `vertical_profile`, `extreme_wind`, `representative_year`, `air_density`.
-4. Imports are allowed from `cleanmast.shared.*` only; no imports from sibling contexts.
-5. `api.py` is the sole public interface; `__init__.py` exports only model types and api functions.
-6. Models default to Pydantic `frozen=True`; mutability needs `# mutable: <reason>`.
-7. Each section defines a `from_inputs` classmethod accepting
-   `list[SingleMastAnalysisInput]`. Sections extract `time_series`, `mast_name`,
-   and `parameters.air_density` directly from the input object.
-8. All section `render_ir` methods must use `render_subsection_content` 
-   from `render/subsection_renderer.py`.
-9. Extreme wind section owns its compute→assemble pipeline like all other 
-    sections; pre-computed DataFrame inputs are forbidden.
-10. Known divergence from the assessment reference or this spec is tracked as a
-    ticket under `.scratch/` (see `docs/agents/issue-tracker.md`) — never in a
-    drift-log. File it when found; fix order is decided on the tracker.
-11. All TOML I/O MUST go through `cleanmast.subdomains.configuration.value_objects` Pydantic models.
+2. One directory per capability under `reporting/subdomains/`, each with its
+   own compute, assemble, and section files. The top-level compute/,
+   assemble/, render/ directories hold shared helpers used across
+   capabilities. (The 业务说明 lists the current capabilities.)
+3. Section classes in `reporting/subdomains/{capability}/section.py` may
+   import from `compute/`, `assemble/`, and `render/` helpers. This is the
+   only permitted "sideways" import (parent rule 2).
+4. Section input types are frozen dataclasses defined in `model/`. Sections
+   with the same input kind share the same input type.
+5. All section `render_ir` methods must use `render_subsection_content`
+   from `render/subsection_renderer.py`. Manual atom iteration in
+   `render_ir` is forbidden.
+6. Each section defines a `from_inputs` classmethod accepting
+   `list[SingleMastAnalysisInput]`. Sections extract what they need directly
+   from the input object (e.g. air_density reads `parameters.air_density`).
+7. `renderImage()` returns `Path()` for no-image, never `None` — this
+   sentinel convention applies to all atoms.
+8. Extreme wind section owns its compute→assemble pipeline like all other
+   sections; pre-computed DataFrame inputs are forbidden.
+9. Known divergence from the assessment reference or this spec is tracked
+   only as a ticket under `.scratch/` (see `docs/agents/issue-tracker.md`).
+   File it when found; fix order is decided on the tracker.
+10. All TOML I/O MUST go through `cleanmast.subdomains.configuration.value_objects` Pydantic models.
     Never `import tomli` or `import tomli_w` directly in reporting, application, or any subdomain.
     Configuration files are loaded via Pydantic's `model_validate` in a `from_toml` classmethod.
-12. Derived fields on frozen dataclasses MAY be set via `object.__setattr__` in
+11. Derived fields on frozen dataclasses MAY be set via `object.__setattr__` in
     `__post_init__` (see `protocols/report_atom.py`). This is the sanctioned
     pattern, not a smell — `cached_property` does not work on frozen dataclasses.
 
 ## Anti-patterns
 
 - Cross-capability imports; share through `reporting/model/` or `reporting/protocols/`.
-- IO inside `compute/`; keep calculations pure.
-- Infrastructure types exposed via `__init__.py`.
-- `import tomli` or `import tomli_w` outside `configuration/value_objects/`.
+- `import tomli` or `import tomli_w` outside the sanctioned gateways
+  (`configuration/services/config_io.py`, `infrastructure/file_repository.py`).
 - Raw dict access (`mc.get("time_range")`) from TOML — use typed model attributes.
-- Stateful calculators; prefer pure functions with explicit inputs.
+- Bare `Any`, `# type: ignore`, `str(path)`, bare `except:` — write precise
+  types, use `pathlib.Path`, catch specific exceptions.
 
 ## When in doubt
 
 - If a type is used by 2+ capabilities → `reporting/model/`.
 - If a calculation is used by 2+ capabilities → `reporting/compute/`.
-- If unsure between compute and assemble: produces DataFrame/number → compute; wraps atoms → assemble.
 
 ## 业务说明 (Business description)
 
