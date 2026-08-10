@@ -1,10 +1,8 @@
-## Code rules
-
-### Purpose
+## Purpose
 Data processing domain services: reconstruction, height filling, turbulence
 calculation, WT timeseries generation. All computation; no I/O of any kind.
 
-### Rules
+## Rules
 - Inherits all rules from `subdomains/spec.md`.
 - **No I/O of any kind.** Never import `TimeSeriesSource`, `TimeSeriesRepository`,
   or any I/O symbol. Input: `TimeSeriesData` or `numpy` arrays only.
@@ -16,16 +14,19 @@ calculation, WT timeseries generation. All computation; no I/O of any kind.
   extracted Series/arrays; no polars DataFrame manipulation inside fit
   functions.
 - Public API: services are callable module-level functions; the
-  `__init__.py` under `services/` exports all public symbols.
+  `__init__.py` under `services/` exports all public symbols. This context
+  has no `api.py` — the `services/__init__.py` pattern is the sanctioned
+  exception to parent rule 7.
 
-### Anti-patterns
+## Anti-patterns
 - Importing `cleanmast.subdomains.configuration` (enforced:
   `repository-access` contract).
 - Loading config files inside compute — all config I/O belongs in the
   application usecase.
-- Stateful calculators; prefer pure functions with explicit inputs.
+- Stateful calculators — all state arrives as explicit parameters; mutable
+  state needs an inline `# stateful: <reason>` justification.
 
-### When in doubt
+## When in doubt
 - If a function needs data + config → split: load in the usecase, compute
   in dataprocessing.
 - If two strategies share logic → extract to `helpers.py` or `fitting.py`.

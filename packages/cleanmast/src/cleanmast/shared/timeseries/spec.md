@@ -5,15 +5,17 @@ Foundational time-series types, I/O, and loaders.
 - ``TimeSeriesData``, ``SensorColumn``, ``TimeSeriesSource``, ``TimeRange`` defined
   in the top-level ``cleanmast.shared.timeseries`` module.
 - ``io/`` subpackage provides the repository protocol
-  (``TimeSeriesRepository``) and validation / schema helpers
-  (``create_wind_schema``, ``validate_timeseries``). The file-backed
+  (``TimeSeriesRepository``) and validation / schema helpers in
+  ``io/validation.py``. The file-backed
   realization (``FileTimeSeriesRepository``) lives in
   ``cleanmast.infrastructure.file_repository`` and is wired in by
   ``cleanmast.bootstrap`` — the protocol's ``load`` / ``save`` methods are
   the canonical entry points for reading/writing timeseries data.
-- Sensor-metadata TOML I/O (``tomli`` / ``tomli_w``) is gated to
-  ``infrastructure/file_repository.py`` — configuration services route
-  through the repository protocol, not raw TOML.
+- TOML I/O (``tomli`` / ``tomli_w``) has exactly two gateways:
+  ``infrastructure/file_repository.py`` (sensor metadata) and
+  ``configuration/services/config_io.py`` (project config). Both are
+  whitelisted by the ``tomli-configuration-gateway-only`` import-linter
+  contract.
 
 ## Anti-patterns
 - Context-specific types in shared

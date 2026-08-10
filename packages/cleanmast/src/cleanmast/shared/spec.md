@@ -2,31 +2,30 @@
 Root kernel for truly cross-cutting foundations
 
 ## Rules
-- Bar for entry: used by 2+ contexts
-- Timeseries types, path utils, atmospheric constants only
-- No domain logic
-- No context-specific types
+- Bar for entry: used by 2+ contexts.
+- Only cross-context contract types and constants belong here — timeseries
+  data/metadata types and the config IR models consumed by multiple contexts
+  (both live under `timeseries/`).
 
 ## Anti-patterns
 - Putting assessment-specific types here
 - Putting IO here
 
 ## When in doubt
-if only one context uses it, it belongs in that context's model/
+- Apply the 2+ contexts bar (Rules); otherwise the type belongs in the
+  consuming context's `model/`.
 
 ## 业务说明 (Business description)
 
 ### Domain context
 
 shared/ 提供跨 bounded context 共享的类型契约。所有领域代码通过这些类型通信。
-入口标准: 必须被 2 个以上 context 使用。
 
 ### Key concepts
 
-- **TimeSeriesData**: polars DataFrame + SensorColumn 列表 — 管道通用数据格式。
-- **SensorColumn**: 传感器元数据 (类型/高度/朝向/统计方式/单位) — 不解析原始列名字符串。
-- **TimeSeriesSource**: 数据 + 元数据文件路径对，指向 parquet 和 YAML 文件。
-- **TimeRange**: 分析的起止时间窗口。
+Timeseries 契约类型 (TimeSeriesData, SensorColumn, TimeSeriesSource, TimeRange)
+的定义见 `shared/timeseries/spec.md`。
+
 - 两种主要测量类型: `WindSpeed` (风速, m/s) 和 `WindDirection` (风向, deg)。
 
 ### Business constraints

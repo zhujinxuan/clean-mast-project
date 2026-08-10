@@ -19,10 +19,13 @@ Centralized configuration discovery and management for wind energy project direc
 
 ## Anti-patterns
 
-- **Never import `old_configuration` from outside the configuration subdomain**. The old module is deleted. All imports must target `cleanmast.subdomains.configuration`.
-- **`tomli` and `tomli_w` are imported ONLY in `services/config_io.py`.** `load_config` and `save_config` are the exclusive TOML I/O surface. Enforced by the `tomli-configuration-gateway-only` import-linter contract.
+- All imports must target `cleanmast.subdomains.configuration`.
+- **`tomli` and `tomli_w` are imported only in the two sanctioned gateways**:
+  `services/config_io.py` (project config) and
+  `infrastructure/file_repository.py` (sensor metadata). `load_config` and
+  `save_config` are the TOML I/O surface. Enforced by the
+  `tomli-configuration-gateway-only` import-linter contract.
 - **Never add `_filename` as a class attribute on Pydantic models**. Filename-to-model mapping belongs exclusively in `ProjectConfig._FILENAMES`.
-- **Never import `configuration` from `dataprocessing` to persist fit results**. Serialization lives in the application usecase; enforced by the `repository-access` contract.
 
 ## When in doubt
 
@@ -50,9 +53,7 @@ Centralized configuration discovery and management for wind energy project direc
   `train` 从数据学习参数 (如风切变指数 shear, 风向变化率 deg_diff_per_m)
   并持久化为模型文件。两者互补: train 产出模型，recommend 消费模型生成配置。
 - **fill-models/{mast}/{strategy}/*.toml**: 训练好的补全模型参数。
-  风切变指数和风向变化率是站点物理属性，与数据源无关 —
-  从中尺度重建数据拟合的参数可复用于代表年数据。
-- **meso-models/**: 未来存储中尺度训练模型结果，与 fill-models/ 并行。
+  风切变指数和风向变化率的站点物理属性依据见 dataprocessing/spec.md。
 
 ### Business constraints
 
