@@ -1,6 +1,7 @@
 """Tests for ExtremeWindSection.from_inputs with config-driven heights."""
 
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -10,6 +11,10 @@ from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalys
 from cleanmast.subdomains.reporting.model.analysis_parameters import AnalysisParameters
 from cleanmast.subdomains.reporting.model.extreme_wind_gust_factor import (
     ExtremeWindGustFactor,
+)
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method2_atom import (
+    Method2ParamsAtom,
+    Method2QQExtremeAtom,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.section import (
     ExtremeWindSection,
@@ -166,6 +171,39 @@ class TestConfigDrivenHeights:
 
 class TestMaxSensorExtreme:
     """Height with real max sensor → extreme computed from max series."""
+
+    def test_max_sensor_extreme_populates_gumbel_params(self, tmp_path: Path) -> None:
+        """Max-sensor height yields an extreme Gumbel param row and a real QQ image."""
+        sensors = [
+            _make_sensor(height=120.0),
+            _make_sensor(height=120.0, stat_type="max"),
+            _make_sensor(height=140.0),
+        ]
+        item = _make_input(
+            sensors,
+            extreme_wind_10min_heights=[120.0, 140.0],
+            extreme_wind_3s_heights=[120.0],
+            n_hours=2000,
+        )
+        section = ExtremeWindSection.from_inputs([item])
+
+        params = next(
+            a for a in section.method2_atoms if isinstance(a, Method2ParamsAtom)
+        )
+        extreme_rows = params.df.filter(
+            (pl.col("wind_speed_type") == "extreme") & (pl.col("height") == 120.0)
+        )
+        assert extreme_rows.height == 1
+        sample_data = extreme_rows["sample_data"][0]
+        assert sample_data is not None
+        assert len(sample_data) > 0
+
+        qq = next(
+            a for a in section.method2_atoms if isinstance(a, Method2QQExtremeAtom)
+        )
+        path = qq.renderImage(tmp_path)
+        assert path.exists()
+        assert path.suffix == ".png"
 
     def test_max_sensor_extreme_differs_from_gust_fallback(self) -> None:
         """Extreme from max sensor uses max-sensor data (not gust factor)."""

@@ -4,14 +4,15 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `GumbelParamRow` with `wind_speed_type='extreme'` (mu, beta, sample_count, sample_mean, sample_std, sample_data) is appended from the already-computed max-sensor fit in `extreme_wind/section.py`
-- [ ] `Method2QQExtremeAtom.renderImage` returns a real path (not the empty `Path()` sentinel) when max sensors are present
-- [ ] `TestMaxSensorExtreme` in `tests/reporting/extreme_wind/test_section.py` asserts the extreme param row has non-null `sample_data` and the QQ atom renders
-- [ ] `uv run python scripts/verify_baseline.py --package cleanmast` is green
+- [x] `GumbelParamRow` with `wind_speed_type='extreme'` (mu, beta, sample_count, sample_mean, sample_std, sample_data) is appended from the already-computed max-sensor fit in `extreme_wind/section.py`
+- [x] `Method2QQExtremeAtom.renderImage` returns a real path (not the empty `Path()` sentinel) when max sensors are present
+- [x] `TestMaxSensorExtreme` in `tests/reporting/extreme_wind/test_section.py` asserts the extreme param row has non-null `sample_data` and the QQ atom renders
+- [x] `uv run python scripts/verify_baseline.py --package cleanmast` is green
 
 ## Comments
 
 - Converted 2026-08-10 from reporting `drift-log.md` entry #8 (2026-06-26, nature CONTENT) during the drift-log → ticket migration. Original refs: `section.py:287`, `compute/__init__.py:371` — line numbers are from 2026-06, verify before trusting them.
 - Investigation 2026-08-10 (scout, verified against code): **not fixed, but the fit is already computed and discarded.** `extreme_wind/section.py` (~line 413) runs `calculate_method2` on max-sensor five-day maxima and appends the result only to `m2_wind_rows`; no param rows are added for the extreme variant (comment "No Q-Q params for extreme variant", ~line 433). `Method2QQExtremeAtom.renderImage` (model/method2_atom.py:210-252) filters `wind_speed_type=='extreme'`, finds zero rows, returns `Path()`. Max-sensor data is already in the inputs (`max_sensor_by_height`, section.py:303-307); `SensorColumn.stat_type` distinguishes avg/max; schemas already accept `wind_speed_type='extreme'`. Fix = one file + one test: (1) in the extreme branch, also append a `GumbelParamRow` with `wind_speed_type='extreme'` (mu, beta, sample_count, sample_mean, sample_std, sample_data) from the existing result, and remove the comment; (2) extend `TestMaxSensorExtreme` in `tests/reporting/extreme_wind/test_section.py` to assert the extreme param row has non-null `sample_data` and the QQ atom returns a real path. Atoms/assemble/schemas need no changes.
+- Resolved 2026-08-10 (TDD: red test `test_max_sensor_extreme_populates_gumbel_params` confirmed zero extreme param rows, then the section.py extreme branch now appends the `GumbelParamRow`; 48/48 extreme_wind tests pass, baseline 6/6 green).

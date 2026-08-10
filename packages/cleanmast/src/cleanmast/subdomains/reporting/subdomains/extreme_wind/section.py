@@ -428,7 +428,19 @@ class ExtremeWindSection:
                                 "standard_density_wind_speed": extreme_result["standard_density_wind_speed"],
                                 "observed_max": extreme_result.get("observed_max"),
                             })
-                            # No Q-Q params for extreme variant
+                            # Q-Q params for the extreme variant, mirroring
+                            # the sustained branch above
+                            if "mu" in extreme_result:
+                                m2_param_rows.append({
+                                    "height": extreme_result["height"],
+                                    "wind_speed_type": extreme_result["wind_speed_type"],
+                                    "mu": extreme_result["mu"],
+                                    "beta": extreme_result["beta"],
+                                    "sample_count": extreme_result["sample_count"],
+                                    "sample_mean": extreme_result["sample_mean"],
+                                    "sample_std": extreme_result["sample_std"],
+                                    "sample_data": extreme_result.get("sample_data"),
+                                })
                 else:
                     # Fallback: sustained → extreme via per-height gust factor
                     extreme_result = compute_method2_extreme_fallback(
