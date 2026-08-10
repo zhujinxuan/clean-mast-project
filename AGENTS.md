@@ -29,15 +29,30 @@ Unless otherwise specified, work refers to **`packages/cleanmast/`**. The Julia 
 | Run full baseline | `uv run python scripts/verify_baseline.py --package cleanmast` |
 | Load Polars skill | `skill(name="polars")` |
 
-## Spec-Driven Architecture
+## Standards Docs (spec.md)
 
-Each context and capability has a co-located `spec.md` with rules, anti-patterns, and guidance.
+Each context and capability has a co-located `spec.md` documenting its conventions and domain notes. These are **standards docs**, not enforced contracts: `/code-review`'s Standards axis reads them; mechanical enforcement lives in `.importlinter` and `.ast-grep/rules/` (run by the baseline).
 
 | When | Load |
 |------|------|
 | New code in a context | Read `subdomains/spec.md` + the context's `spec.md` |
 | Cross-context integration | Read `shared/spec.md` |
-| Verification | Use `skill(name="spec-guardrails")` |
+| Adding a code rule | Enforcement-first via `skill(name="verify")` — try import-linter/ast-grep before prose |
+| Reviewing changes | `/code-review` — Standards axis reads spec.md, skips tool-enforced rules |
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown under `.scratch/<feature>/` (git remote is Gitee; no CLI integration). Drift and known gaps are tickets, never drift-log files. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical labels, recorded as a `Status:` line in each ticket file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. `CONTEXT.md` is created lazily by `/grill-with-docs`; historical ADRs are archived read-only under `packages/cleanmast/adr/archived/`; current architecture standards live in the co-located `spec.md` files. See `docs/agents/domain.md`.
 
 ## Workspace Structure
 
@@ -107,33 +122,9 @@ Run after every implementation task, before committing:
 uv run python scripts/verify_baseline.py --package cleanmast
 ```
 
-This runs 5 checks sequentially: **ty**, **ruff**, **pytest**, **import-linter**, and **test-data check**. See **Quick Reference** for the individual commands.
+Six checks: **ty**, **ruff**, **pytest**, **dvc-verify**, **ast-grep** (blocking), and **import-linter** (advisory — reported, does not fail the run). Skill: `skill(name="verify")`. Every implementation ticket's acceptance criteria end with this command green.
 
 **Output:** Per-package baseline files at `packages/cleanmast/baseline-{timestamp}.md`
 - Small errors (<500 chars): Inline in markdown
 - Large errors (≥500 chars): Written to `baseline-refs/{timestamp}-{tool}.json`
 
-### Baseline-Driven Development Workflow
-
-**Skill available:** `skill(name="baseline-driven-dev")`
-
-Use this skill when:
-- Planning implementation with verification requirements
-- Setting up waves that must pass baseline checks  
-- Analyzing ty/ruff/pytest errors from baseline reports
-
-**Quick workflow:**
-1. **Prometheus** (planning): Generate baseline → Design waves → Set targets
-2. **Atlas** (orchestration): Run wave → Regenerate baseline → Verify improvement → Commit
-3. **Key principle:** *"If the baseline doesn't improve, the wave isn't done."*
-
-**Wave targets:**
-
-| Wave | ty | ruff | pytest |
-|------|-----|------|--------|
-| 1 (Cleanup) | Maintain | **PASS** | Maintain |
-| 2 (Types) | **Improved** | PASS | Maintain |
-| 3 (Tests) | Improved | PASS | **Improved** |
-| 4 (Polish) | **PASS** | PASS | Improved |
-
-For detailed workflow, load the skill with `skill(name="baseline-driven-dev")`

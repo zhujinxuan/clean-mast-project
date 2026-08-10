@@ -562,13 +562,15 @@ def run_verification(
         status = "✓" if result.status == "PASS" else "✗"
         print(f"{status} ({format_duration(result.duration)})")
     
-    # 6. ast-grep custom rules (advisory / non-blocking)
+    # 6. ast-grep custom rules (blocking)
     if "ast-grep" not in skip_checks:
         print("  [ast-grep] Running custom rule checks...", end=" ")
         result = run_ast_grep_check(package)
         results.append(result)
         status = "✓" if result.status == "PASS" else "✗"
         print(f"{status} ({format_duration(result.duration)})")
+        if result.status != "PASS":
+            all_passed = False
     
     data = BaselineData(
         package=package,

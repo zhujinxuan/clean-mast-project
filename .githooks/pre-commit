@@ -1,0 +1,5 @@
+#!/bin/sh
+# Lint staged .scratch tickets against docs/agents/issue-tracker.md conventions.
+if git diff --cached --name-only --diff-filter=ACM | grep -q '^\.scratch/'; then
+  uv run python scripts/lint_tickets.py || exit 1
+fi

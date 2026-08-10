@@ -17,9 +17,9 @@ Produces wind resource assessment reports from time-series data.
    from `render/subsection_renderer.py`.
 9. Extreme wind section owns its compute→assemble pipeline like all other 
     sections; pre-computed DataFrame inputs are forbidden.
-10. Drift-log.md tracks design decisions diverging from assessment reference.
-    Agent MUST ask user before appending. Max 30 items, ≤4 lines each.
-    See drift-references/ for detailed writeups.
+10. Known divergence from the assessment reference or this spec is tracked as a
+    ticket under `.scratch/` (see `docs/agents/issue-tracker.md`) — never in a
+    drift-log. File it when found; fix order is decided on the tracker.
 11. All TOML I/O MUST go through `cleanmast.subdomains.configuration.value_objects` Pydantic models.
     Never `import tomli` or `import tomli_w` directly in reporting, application, or any subdomain.
     Configuration files are loaded via Pydantic's `model_validate` in a `from_toml` classmethod.
