@@ -23,7 +23,7 @@ run-all: recommend-report-config generate-report
 # Run verification (clean + dvc pull + run experiment + check outputs)
 verify: clean
     @echo "Running DVC experiment verification..."
-    cd '{{justfile_directory()}}' && dvc pull
+    cd '{{justfile_directory()}}' && dvc pull -R .
     @echo "Generating report config..."
     just recommend-report-config
     @echo "Running report generation..."

@@ -14,7 +14,7 @@ default:
 
 # Pull this dataset's DVC-tracked inputs + truth (scoped to dataset dir)
 pull:
-    cd '{{justfile_directory()}}'; dvc pull
+    cd '{{justfile_directory()}}'; dvc pull -R .
 
 # Phase 1: recommend — generates fill-heights-reconstruct-meso.toml and fill-heights-representative-year.toml
 recommend:
