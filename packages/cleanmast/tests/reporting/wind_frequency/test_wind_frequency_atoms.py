@@ -415,8 +415,8 @@ class TestAllWindFrequencyAtoms:
 class TestWindFrequencySectionGuard:
     """Tests for WindFrequencySection factory method guards."""
 
-    def test_from_inputs_raises_on_empty_analysis_heights(self) -> None:
-        """from_inputs raises ValueError when analysis_heights is empty."""
+    def test_from_inputs_raises_on_empty_wind_frequency_heights(self) -> None:
+        """from_inputs raises ValueError when wind_frequency_heights is empty."""
         from cleanmast.shared.timeseries import TimeSeriesData
         from cleanmast.subdomains.reporting.model.analysis_input import (
             SingleMastAnalysisInput,
@@ -437,11 +437,11 @@ class TestWindFrequencySectionGuard:
             extreme_wind_10min_heights=[],
             extreme_wind_3s_heights=[],
             extreme_wind_gust_factors=[],
-            analysis_heights=[],  # empty => should raise
+            wind_frequency_heights=[],  # empty => should raise
         )
         item = SingleMastAnalysisInput(
             time_series=ts, parameters=params, mast_name="M01"
         )
 
-        with pytest.raises(ValueError, match="analysis_heights"):
+        with pytest.raises(ValueError, match="wind_frequency_heights"):
             WindFrequencySection.from_inputs([item])

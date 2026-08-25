@@ -55,13 +55,13 @@ class WindFrequencySection:
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WindFrequencySection":
         """Build section from standard mast input."""
         for item in items:
-            if not item.parameters.analysis_heights:
+            if not item.parameters.wind_frequency_heights:
                 raise ValueError(
-                    f"{cls.__name__} requires analysis_heights for mast '{item.mast_name}' "
+                    f"{cls.__name__} requires wind_frequency_heights for mast '{item.mast_name}' "
                     "but it is empty; regenerate the config with `cleanmast recommend`"
                 )
         mast_data = [
-            (item.time_series, item.mast_name, item.parameters.air_density, item.parameters.analysis_heights)
+            (item.time_series, item.mast_name, item.parameters.air_density, item.parameters.wind_frequency_heights)
             for item in items
         ]
         return cls.from_time_series(mast_data)
@@ -74,9 +74,9 @@ class WindFrequencySection:
         """Build wind frequency section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name, air_density, analysis_heights)
+            mast_data: List of (time_series_data, mast_name, air_density, wind_frequency_heights)
                 tuples; air_density is the mast ground density from config,
-                analysis_heights restricts output to configured heights.
+                wind_frequency_heights restricts output to configured heights.
 
         Returns:
             WindFrequencySection with computed atoms.

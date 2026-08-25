@@ -73,7 +73,7 @@ class TestRepresentativeYearCalibrationIntegration:
         )
         item = SingleMastAnalysisInput(
             time_series=meso_data,
-            parameters=AnalysisParameters(air_density=1.225, analysis_heights=[100.0], extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
+            parameters=AnalysisParameters(air_density=1.225, representative_year_heights=[100.0], extreme_wind_10min_heights=[], extreme_wind_3s_heights=[], extreme_wind_gust_factors=[]),
             mast_name="M01",
             representative_year_calibration_payload=payload,
         )

@@ -60,7 +60,12 @@ compute → assemble → render 流程。
 
 9 个评估维度 (capabilities):
 - **weibull**: 威布尔双参数分布拟合风速概率密度和风能密度。
-- **wind_rose**: 16 扇区风向频率和风速分布。
+- **wind_rose**: 16 扇区风向频率和风速分布。高度完全由配置 `wind_rose_heights` 驱动：
+  section 将 `calculate_wind_rose` 结果过滤到配置高度后才构建 atoms，atoms
+  （表/图/叙述）渲染过滤后帧中的全部高度，不做任何渲染期高度带过滤；未配对的
+  WS 高度在 compute 阶段跳过并记录 warning。推荐发现规则为同高度 WS avg +
+  WD avg 精确配对，band-when-available：120–160m 内有配对高度则取之，否则
+  回退到全部配对高度。
 - **turbulence**: 湍流强度 (TI) 分析，按 IEC 61400-1 分级。
 - **wind_frequency**: 风速频率直方图。
 - **wind_temporal**: 风速/风向日变化和月变化统计。

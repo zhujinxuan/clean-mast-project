@@ -8,6 +8,8 @@ Key improvement: eliminates `rows: list[dict]` pattern by building Polars
 DataFrames per sensor and concatenating, instead of accumulating untyped dicts.
 """
 
+import logging
+
 import polars as pl
 
 from cleanmast.shared.timeseries import TimeSeriesData
@@ -16,6 +18,8 @@ from cleanmast.subdomains.reporting.subdomains.wind_rose.model.constants import 
     SECTOR_LABELS,
     SECTOR_WIDTH,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _process_sensor_data(
@@ -142,6 +146,12 @@ def calculate_wind_rose(
 
         wd_col = wd_col_map.get(height)
         if wd_col is None:
+            logger.warning(
+                "Skipping WindSpeed avg sensor at %sm ('%s'): no WindDirection "
+                "avg sensor at the same height to pair with.",
+                height,
+                ws_col,
+            )
             continue
 
         marker = sensor.detect_interpolation_marker()

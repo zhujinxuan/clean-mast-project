@@ -42,7 +42,7 @@ class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, WindRoseAtomM
 
     @property
     def default_image_caption(self) -> str:
-        return f"{self.meta.mast_name} 各高度（100m 以上）各月风向玫瑰图"
+        return f"{self.meta.mast_name} 各高度各月风向玫瑰图"
 
     @property
     def default_table_caption(self) -> str:
@@ -109,9 +109,7 @@ class SingleMastMonthlyWindRoseGridAtom(ReportAtom[WindRoseSchema, WindRoseAtomM
         if not force and image_path.exists():
             return image_path
 
-        plot_df = self.df.filter(pl.col("height") >= 100)
-
-        plot_df = plot_df.with_columns(
+        plot_df = self.df.with_columns(
             pl.struct(["height", "interpolation_marker"])
             .map_elements(
                 lambda x: get_height_display_name(x["height"], x["interpolation_marker"])

@@ -75,6 +75,40 @@ class TestFlatReportConfig:
             config.datasets = []
 
 
+class TestMastRefSubsectionHeights:
+    """The per-subsection height fields parse and serialize independently."""
+
+    def test_fields_round_trip_through_toml(self):
+        import tomli
+        import tomli_w
+
+        mast = MastRef(
+            name="M1",
+            air_density=1.225,
+            input=TimeSeriesSource(data="/dev/null.parquet"),
+            wind_frequency_heights=[120.0, 140.0],
+            weibull_heights=[140.0],
+            representative_year_heights=[120.0, 140.0, 160.0],
+            wind_rose_heights=[130.0, 150.0],
+            extreme_wind_10min_heights=[140.0],
+            extreme_wind_3s_heights=[140.0],
+            extreme_wind_gust_factors=[],
+        )
+        parsed = tomli.loads(tomli_w.dumps(mast.model_dump(mode="json", exclude_none=True)))
+        restored = MastRef.model_validate(parsed)
+        assert restored.wind_frequency_heights == [120.0, 140.0]
+        assert restored.weibull_heights == [140.0]
+        assert restored.representative_year_heights == [120.0, 140.0, 160.0]
+        assert restored.wind_rose_heights == [130.0, 150.0]
+
+    def test_fields_default_to_empty(self):
+        mast = _mast_ref("M1")
+        assert mast.wind_frequency_heights == []
+        assert mast.weibull_heights == []
+        assert mast.representative_year_heights == []
+        assert mast.wind_rose_heights == []
+
+
 class TestAnalysisWindowCoverage:
     """Tests for validate_analysis_window_coverage on DatasetConfig."""
 

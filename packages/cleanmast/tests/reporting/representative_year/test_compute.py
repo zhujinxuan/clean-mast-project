@@ -152,7 +152,7 @@ class TestComputeCalibrationSummary:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
-                analysis_heights=[100.0],
+                representative_year_heights=[100.0],
             ),
             mast_name="M01",
             representative_year_calibration_payload=payload,
@@ -184,11 +184,11 @@ class TestComputeCalibrationSummary:
 
 
 class TestRepresentativeYearSectionGuard:
-    """Tests for the from_inputs guard on empty analysis_heights."""
+    """Tests for the from_inputs guard on empty representative_year_heights."""
 
-    def test_from_inputs_raises_on_empty_analysis_heights(self):
+    def test_from_inputs_raises_on_empty_representative_year_heights(self):
         """RepresentativeYearSection.from_inputs raises ValueError when
-        analysis_heights is empty for a SingleMastAnalysisInput."""
+        representative_year_heights is empty for a SingleMastAnalysisInput."""
         from datetime import datetime
 
         from cleanmast.subdomains.reporting.subdomains.representative_year.section import (
@@ -202,7 +202,7 @@ class TestRepresentativeYearSectionGuard:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
-                analysis_heights=[],  # empty — should trigger guard
+                representative_year_heights=[],  # empty — should trigger guard
             ),
             mast_name="M01",
             representative_year_calibration_payload=RepresentativeYearCalibrationPayload(
@@ -214,11 +214,11 @@ class TestRepresentativeYearSectionGuard:
             ),
         )
 
-        with pytest.raises(ValueError, match="analysis_heights"):
+        with pytest.raises(ValueError, match="representative_year_heights"):
             RepresentativeYearSection.from_inputs([item])
 
-    def test_from_inputs_succeeds_with_non_empty_analysis_heights(self):
-        """from_inputs succeeds when analysis_heights is populated."""
+    def test_from_inputs_succeeds_with_non_empty_representative_year_heights(self):
+        """from_inputs succeeds when representative_year_heights is populated."""
         from datetime import datetime
 
         from cleanmast.subdomains.reporting.subdomains.representative_year.section import (
@@ -233,7 +233,7 @@ class TestRepresentativeYearSectionGuard:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
-                analysis_heights=[100.0],
+                representative_year_heights=[100.0],
             ),
             mast_name="M01",
             representative_year_calibration_payload=RepresentativeYearCalibrationPayload(

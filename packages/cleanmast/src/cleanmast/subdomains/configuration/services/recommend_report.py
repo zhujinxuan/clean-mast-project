@@ -81,8 +81,12 @@ def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
     return sorted(h for h in candidate if 120.0 <= h <= 160.0)
 
 
-def _discover_analysis_heights(sensors: list[SensorColumn]) -> list[float]:
-    """WindSpeed avg sensor heights within the turbine range (120–160m)."""
+def _discover_hub_band_heights(sensors: list[SensorColumn]) -> list[float]:
+    """WindSpeed avg sensor heights within the turbine range (120–160m).
+
+    Populates the per-subsection height fields (wind_frequency_heights,
+    weibull_heights, representative_year_heights).
+    """
     return sorted(
         s.height
         for s in sensors
@@ -92,13 +96,43 @@ def _discover_analysis_heights(sensors: list[SensorColumn]) -> list[float]:
     )
 
 
-def _discover_temporal_heights(sensors: list[SensorColumn]) -> list[float]:
-    """All WindSpeed avg sensor heights (no height-band filter)."""
-    return sorted(
+def _discover_wind_rose_heights(sensors: list[SensorColumn]) -> list[float]:
+    """Heights with an exact WS avg + WD avg sensor pair, band-when-available.
+
+    Wind rose pairing is exact-height: a WS height without a WD pair at the
+    same height is skipped by calculate_wind_rose, so only paired heights are
+    recommended. Returns paired heights within 120–160m when any exist, else
+    all paired heights (the wind rose section hard-fails on an empty list).
+    """
+    ws_avg = {
         s.height
         for s in sensors
         if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
-    )
+    }
+    wd_avg = {
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindDirection" and s.stat_type == "avg"
+    }
+    paired = ws_avg & wd_avg
+    band = sorted(h for h in paired if 120.0 <= h <= 160.0)
+    return band if band else sorted(paired)
+
+
+def _discover_temporal_heights(sensors: list[SensorColumn]) -> list[float]:
+    """WindSpeed avg sensor heights within 120–160m, band-when-available.
+
+    Returns band heights when any exist, else all WS avg heights: a
+    band-only rule would yield an empty list on short masts, and
+    WindTemporalSection hard-fails on an empty temporal_heights list.
+    """
+    ws_avg = {
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
+    }
+    band = sorted(h for h in ws_avg if 120.0 <= h <= 160.0)
+    return band if band else sorted(ws_avg)
 
 
 def _discover_extreme_wind_heights(
@@ -227,10 +261,13 @@ def _build_dataset_for_timeseries(
         turbulence_heights = _discover_turbulence_heights(
             time_series_data.sensors
         )
-        analysis_heights = _discover_analysis_heights(
+        hub_band_heights = _discover_hub_band_heights(
             time_series_data.sensors
         )
         temporal_heights = _discover_temporal_heights(
+            time_series_data.sensors
+        )
+        wind_rose_heights = _discover_wind_rose_heights(
             time_series_data.sensors
         )
         ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
@@ -242,7 +279,10 @@ def _build_dataset_for_timeseries(
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=rel_data_path),
             turbulence_heights=turbulence_heights,
-            analysis_heights=analysis_heights,
+            wind_frequency_heights=hub_band_heights,
+            weibull_heights=hub_band_heights,
+            representative_year_heights=hub_band_heights,
+            wind_rose_heights=wind_rose_heights,
             temporal_heights=temporal_heights,
             extreme_wind_10min_heights=ew_10min,
             extreme_wind_3s_heights=ew_3s,
@@ -427,10 +467,13 @@ def _build_meso_original_heights_dataset(
         turbulence_heights = _discover_turbulence_heights(
             time_series_data.sensors
         )
-        analysis_heights = _discover_analysis_heights(
+        hub_band_heights = _discover_hub_band_heights(
             time_series_data.sensors
         )
         temporal_heights = _discover_temporal_heights(
+            time_series_data.sensors
+        )
+        wind_rose_heights = _discover_wind_rose_heights(
             time_series_data.sensors
         )
         ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
@@ -442,7 +485,10 @@ def _build_meso_original_heights_dataset(
             air_density=round(air_density, 3),
             input=TimeSeriesSource(data=data_path),
             turbulence_heights=turbulence_heights,
-            analysis_heights=analysis_heights,
+            wind_frequency_heights=hub_band_heights,
+            weibull_heights=hub_band_heights,
+            representative_year_heights=hub_band_heights,
+            wind_rose_heights=wind_rose_heights,
             temporal_heights=temporal_heights,
             extreme_wind_10min_heights=ew_10min,
             extreme_wind_3s_heights=ew_3s,

@@ -67,11 +67,11 @@ class RepresentativeYearSection:
             SingleMastAnalysisInput,
         )
 
-        # Guard: analysis_heights must be non-empty for each item
+        # Guard: representative_year_heights must be non-empty for each item
         for item in items:
-            if isinstance(item, SingleMastAnalysisInput) and not item.parameters.analysis_heights:
+            if isinstance(item, SingleMastAnalysisInput) and not item.parameters.representative_year_heights:
                 raise ValueError(
-                    f"{cls.__name__} requires analysis_heights for mast "
+                    f"{cls.__name__} requires representative_year_heights for mast "
                     f"'{item.mast_name}' but it is empty; regenerate the config "
                     f"with `cleanmast recommend`"
                 )

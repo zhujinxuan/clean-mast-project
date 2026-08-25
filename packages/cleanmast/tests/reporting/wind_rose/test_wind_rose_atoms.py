@@ -140,9 +140,9 @@ class TestSingleMastMonthlyWindFrequencyRoseAtom:
 
         assert isinstance(table, TypstTable)
         assert table.caption == "M01 风向频率分布表"
-        assert table.headers == ["风向", "100m", "120m(外推)", "125m(内插)"]
-        assert table.data[0] == ["N", "2.94", "2.92", "2.92"]
-        assert table.data[13] == ["WNW", "11.76", "11.77", "11.77"]
+        assert table.headers == ["风向", "50m", "100m", "120m(外推)", "125m(内插)"]
+        assert table.data[0] == ["N", "2.99", "2.94", "2.92", "2.92"]
+        assert table.data[13] == ["WNW", "11.76", "11.76", "11.77", "11.77"]
 
     def test_default_captions(self, wind_frequency_rose_atom: SingleMastMonthlyWindFrequencyRoseAtom) -> None:
         assert wind_frequency_rose_atom.default_image_caption == "M01 风向频率玫瑰图"
@@ -305,9 +305,9 @@ class TestSingleMastWindPowerRoseAtom:
 
         assert isinstance(table, TypstTable)
         assert table.caption == "M01 风能频率分布表"
-        assert table.headers == ["风向", "100m", "120m(外推)", "125m(内插)"]
-        assert table.data[0] == ["N", "2.74", "2.72", "2.72"]
-        assert table.data[13] == ["WNW", "11.51", "11.51", "11.51"]
+        assert table.headers == ["风向", "50m", "100m", "120m(外推)", "125m(内插)"]
+        assert table.data[0] == ["N", "2.79", "2.74", "2.72", "2.72"]
+        assert table.data[13] == ["WNW", "11.51", "11.51", "11.51", "11.51"]
 
     def test_default_captions(self, wind_power_rose_atom: SingleMastWindPowerRoseAtom) -> None:
         assert wind_power_rose_atom.default_image_caption == "M01 风能频率玫瑰图"
@@ -371,7 +371,7 @@ class TestSingleMastMonthlyWindRoseGridAtom:
         assert table is None
 
     def test_default_captions(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
-        assert wind_rose_grid_atom.default_image_caption == "M01 各高度（100m 以上）各月风向玫瑰图"
+        assert wind_rose_grid_atom.default_image_caption == "M01 各高度各月风向玫瑰图"
         assert wind_rose_grid_atom.default_table_caption == "M01 月风向频率分布表"
 
     def test_render_summary(self, wind_rose_grid_atom: SingleMastMonthlyWindRoseGridAtom) -> None:
@@ -394,7 +394,7 @@ class TestSingleMastMonthlyWindPowerRoseGridAtom:
         assert table is None
 
     def test_default_captions(self, wind_power_rose_grid_atom: SingleMastMonthlyWindPowerRoseGridAtom) -> None:
-        assert wind_power_rose_grid_atom.default_image_caption == "M01 各高度（100m 以上）各月风能玫瑰图"
+        assert wind_power_rose_grid_atom.default_image_caption == "M01 各高度各月风能玫瑰图"
         assert wind_power_rose_grid_atom.default_table_caption == "M01 月风能频率分布表"
 
     def test_render_summary(self, wind_power_rose_grid_atom: SingleMastMonthlyWindPowerRoseGridAtom) -> None:

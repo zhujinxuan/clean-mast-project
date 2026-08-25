@@ -149,9 +149,21 @@ class MastRef(BaseModel):
         extreme_wind_gust_factors: Gust-factor table keyed by height, used to derive
             3s extremes from 10min data when a height lacks a max sensor. Required;
             empty list means no gust factors configured.
-        analysis_heights: Heights (120–160m) with WindSpeed avg sensors, used by the
-            wind_frequency / weibull / representative_year subsections. Optional;
-            must be non-empty when one of those subsections is generated.
+        wind_frequency_heights: Heights (120–160m) with WindSpeed avg sensors,
+            used by the wind_frequency subsection. Discovered by the hub-band
+            rule (WS avg in 120–160m); must be non-empty when the subsection
+            is generated.
+        weibull_heights: Heights (120–160m) with WindSpeed avg sensors, used by
+            the weibull subsection. Discovered by the same hub-band rule; must
+            be non-empty when the subsection is generated.
+        representative_year_heights: Heights (120–160m) with WindSpeed avg
+            sensors, used by the representative_year subsection. Discovered by
+            the same hub-band rule; must be non-empty when the subsection is
+            generated.
+        wind_rose_heights: Heights with an exact WS avg + WD avg sensor pair,
+            used by the wind_rose subsection. Discovered band-when-available:
+            paired heights in 120–160m when any exist, else all paired
+            heights; must be non-empty when the subsection is generated.
         temporal_heights: Heights with WindSpeed avg sensors (no height-band filter),
             used by the temporal subsection. Optional; must be non-empty when the
             temporal subsection is generated.
@@ -163,7 +175,10 @@ class MastRef(BaseModel):
     air_density: float = Field(gt=0)
     input: TimeSeriesSource
     turbulence_heights: list[float] = Field(default_factory=list)
-    analysis_heights: list[float] = Field(default_factory=list)
+    wind_frequency_heights: list[float] = Field(default_factory=list)
+    weibull_heights: list[float] = Field(default_factory=list)
+    representative_year_heights: list[float] = Field(default_factory=list)
+    wind_rose_heights: list[float] = Field(default_factory=list)
     temporal_heights: list[float] = Field(default_factory=list)
     extreme_wind_10min_heights: list[float]
     extreme_wind_3s_heights: list[float]

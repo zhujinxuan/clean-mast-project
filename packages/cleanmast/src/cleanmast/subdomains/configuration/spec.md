@@ -16,6 +16,21 @@ Centralized configuration discovery and management for wind energy project direc
 - **Trained model types live in `model/` alongside config models** (e.g. `fill_height_fit_result.py`). They are loaded and persisted through the same `config_io` gateway as configs.
 - **`save_*_model()` methods own the model directory layout**. Consumers never construct `{domain}-models/` paths themselves; the save method returns the written path and updates the discovery cache.
 - **`ProjectConfig` discovers, caches, and persists — it never computes**. Model fitting lives in `dataprocessing`; the application usecase calls the fit service and hands results to `save_*_model()`.
+- **Report subsection height fields are per-consumer**. `MastRef` carries one
+  heights list per consuming subsection — `wind_frequency_heights`,
+  `weibull_heights`, `representative_year_heights`, `wind_rose_heights`
+  (alongside `turbulence_heights`, `temporal_heights`) — never a shared
+  generic field. `cleanmast recommend` populates the first three with the
+  hub-band discovery rule (`_discover_hub_band_heights`): WindSpeed avg
+  sensor heights within 120–160m. `wind_rose_heights` pairs exact-height
+  WS avg + WD avg sensors (`_discover_wind_rose_heights`), band-when-available:
+  paired heights within 120–160m when any exist, else all paired heights.
+  `temporal_heights` collects WindSpeed avg sensor heights
+  (`_discover_temporal_heights`), band-when-available: heights within
+  120–160m when any exist, else all WS avg heights — a band-only rule would
+  yield an empty list on short masts, and `WindTemporalSection` hard-fails
+  on empty.
+  Each section guard hard-fails on its own empty field.
 
 ## Anti-patterns
 

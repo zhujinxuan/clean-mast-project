@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import tomli
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_source import TimeSeriesSource
 from cleanmast.subdomains.configuration import (
@@ -18,6 +19,8 @@ from cleanmast.subdomains.configuration import (
 from cleanmast.subdomains.configuration.services.recommend_report import (
     _build_analysis_windows,
     _build_dataset_for_timeseries,
+    _discover_temporal_heights,
+    _discover_wind_rose_heights,
     recommend_report,
 )
 
@@ -68,6 +71,112 @@ class TestBuildAnalysisWindows:
 
     def test_empty(self):
         assert _build_analysis_windows([]) == []
+
+
+def _sensor_col(sensor_type: str, height: float, stat_type: str = "avg") -> SensorColumn:
+    return SensorColumn(
+        column_name=f"{sensor_type}_{height}m_{stat_type}",
+        sensor_type=sensor_type,
+        sensor_direction="",
+        height=height,
+        stat_type=stat_type,
+        unit="m/s" if sensor_type == "WindSpeed" else "deg",
+    )
+
+
+class TestDiscoverWindRoseHeights:
+    """Tests for the _discover_wind_rose_heights pairing + band rule."""
+
+    def test_band_case_returns_paired_heights_in_120_160(self):
+        """Paired heights inside 120–160m win when any exist."""
+        sensors = [
+            _sensor_col("WindSpeed", 50.0),
+            _sensor_col("WindDirection", 50.0),
+            _sensor_col("WindSpeed", 130.0),
+            _sensor_col("WindDirection", 130.0),
+            _sensor_col("WindSpeed", 160.0),
+            _sensor_col("WindDirection", 160.0),
+        ]
+        assert _discover_wind_rose_heights(sensors) == [130.0, 160.0]
+
+    def test_fallback_case_returns_all_paired_heights_when_no_band(self):
+        """Short masts fall back to every paired height, unfiltered."""
+        sensors = [
+            _sensor_col("WindSpeed", 50.0),
+            _sensor_col("WindDirection", 50.0),
+            _sensor_col("WindSpeed", 100.0),
+            _sensor_col("WindDirection", 100.0),
+        ]
+        assert _discover_wind_rose_heights(sensors) == [50.0, 100.0]
+
+    def test_unpaired_ws_height_is_excluded(self):
+        """WS avg without a WD avg pair at the same height is not recommended."""
+        sensors = [
+            _sensor_col("WindSpeed", 80.0),
+            _sensor_col("WindSpeed", 140.0),
+            _sensor_col("WindDirection", 140.0),
+        ]
+        assert _discover_wind_rose_heights(sensors) == [140.0]
+
+    def test_unpaired_ws_only_yields_empty(self):
+        """WS sensors with no WD pairs at all yield an empty list."""
+        sensors = [
+            _sensor_col("WindSpeed", 100.0),
+            _sensor_col("WindSpeed", 140.0),
+        ]
+        assert _discover_wind_rose_heights(sensors) == []
+
+    def test_wd_only_heights_are_ignored(self):
+        """WD sensors without WS pairs do not contribute heights."""
+        sensors = [
+            _sensor_col("WindDirection", 130.0),
+        ]
+        assert _discover_wind_rose_heights(sensors) == []
+
+    def test_empty_sensors(self):
+        assert _discover_wind_rose_heights([]) == []
+
+
+class TestDiscoverTemporalHeights:
+    """Tests for the _discover_temporal_heights band-when-available rule."""
+
+    def test_band_case_returns_band_heights_only(self):
+        """WS avg heights inside 120–160m win when any exist."""
+        sensors = [
+            _sensor_col("WindSpeed", 40.0),
+            _sensor_col("WindSpeed", 120.0),
+            _sensor_col("WindSpeed", 140.0),
+            _sensor_col("WindSpeed", 160.0),
+            _sensor_col("WindSpeed", 200.0),
+        ]
+        assert _discover_temporal_heights(sensors) == [120.0, 140.0, 160.0]
+
+    def test_fallback_case_returns_all_heights_when_no_band(self):
+        """Short masts fall back to every WS avg height, non-empty."""
+        sensors = [
+            _sensor_col("WindSpeed", 40.0),
+            _sensor_col("WindSpeed", 80.0),
+            _sensor_col("WindSpeed", 100.0),
+        ]
+        assert _discover_temporal_heights(sensors) == [40.0, 80.0, 100.0]
+
+    def test_non_avg_and_non_ws_sensors_are_ignored(self):
+        """Only WindSpeed avg sensors contribute temporal heights."""
+        sensors = [
+            _sensor_col("WindSpeed", 50.0),
+            _sensor_col("WindSpeed", 140.0, "sd"),
+            _sensor_col("WindSpeed", 150.0, "max"),
+            _sensor_col("WindDirection", 140.0),
+        ]
+        assert _discover_temporal_heights(sensors) == [50.0]
+
+    def test_no_ws_avg_sensors_yields_empty(self):
+        """No WS avg sensors at all yields an empty list."""
+        sensors = [_sensor_col("WindDirection", 130.0)]
+        assert _discover_temporal_heights(sensors) == []
+
+    def test_empty_sensors(self):
+        assert _discover_temporal_heights([]) == []
 
 
 def _sensor(col: str, height: float, stype: str, unit: str) -> dict:

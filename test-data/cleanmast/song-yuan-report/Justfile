@@ -31,7 +31,7 @@ process:
 
 # Full verification: pull -> recommend -> config check -> process -> output check
 verify: pull recommend compare-config process
-    @test -f '{{justfile_directory()}}/rep-ts/report.pdf' && echo "✓ Output exists: rep-ts/report.pdf" || (echo "✗ Missing output: rep-ts/report.pdf" && exit 1)
+    @if (('{{justfile_directory()}}/rep-ts/report.pdf' | path exists)) { echo "✓ Output exists: rep-ts/report.pdf" } else { echo "✗ Missing output: rep-ts/report.pdf"; exit 1 }
     @echo "✓ song-yuan-report verification complete"
 
 # JSON result for cleanmast verify runner

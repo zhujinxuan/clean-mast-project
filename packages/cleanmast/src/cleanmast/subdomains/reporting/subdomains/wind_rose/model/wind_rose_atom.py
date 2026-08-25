@@ -37,7 +37,7 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRose
     """Renders wind frequency rose for a single mast.
 
     - Table: All heights with sector frequencies
-    - Image: Polar chart showing >=100m heights only
+    - Image: Polar chart for all configured heights
     - Summary: Chinese description of wind direction patterns
     """
 
@@ -52,8 +52,7 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRose
     @override
     def renderTable(self) -> TypstTable | None:
         """Render as TypstTable IR node."""
-        table_df = self.df.filter(pl.col("height") >= 100)
-        table_df = table_df.group_by([
+        table_df = self.df.group_by([
             "sector",
             "sector_name",
             "height",
@@ -123,16 +122,14 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRose
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate wind frequency rose polar chart with >=100m heights only."""
+        """Generate wind frequency rose polar chart."""
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"windfreqrose_{self.meta.mast_name}_{cache_key}.png"
 
         if not force and image_path.exists():
             return image_path
 
-        plot_df = self.df.filter(pl.col("height") >= 100)
-
-        plot_df = plot_df.with_columns(
+        plot_df = self.df.with_columns(
             pl.struct(["height", "interpolation_marker"])
             .map_elements(
                 lambda x: get_height_display_name(x["height"], x["interpolation_marker"])
@@ -158,9 +155,7 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRose
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        summary_df = self.df.filter(
-            (pl.col("height") >= 125) & (pl.col("height") <= 160)
-        )
+        summary_df = self.df
 
         heights = (
             summary_df.select(["height", "interpolation_marker"])
@@ -202,7 +197,7 @@ class SingleMastMonthlyWindFrequencyRoseAtom(ReportAtom[WindRoseSchema, WindRose
                     f"次主风向为 {sector2}({pct2:.1f}%)。"
                 )
 
-        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无125m~160m高度风向频率数据。"
+        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无风向频率数据。"
         return [TypstParagraph(text=summary_text)]
 
 
@@ -210,7 +205,7 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):
     """Renders wind energy frequency rose for a single mast.
 
     - Table: All heights with sector energy frequencies
-    - Image: Polar chart showing >=100m heights only
+    - Image: Polar chart for all configured heights
     - Summary: Chinese description of wind energy patterns
     """
 
@@ -225,8 +220,7 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):
     @override
     def renderTable(self) -> TypstTable | None:
         """Render as TypstTable IR node with energy frequency values."""
-        table_df = self.df.filter(pl.col("height") >= 100)
-        table_df = table_df.group_by([
+        table_df = self.df.group_by([
             "sector",
             "sector_name",
             "height",
@@ -298,16 +292,14 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):
 
     @override
     def renderImage(self, output_dir: Path, force: bool = False) -> Path:
-        """Generate wind energy frequency rose polar chart with >=100m heights only."""
+        """Generate wind energy frequency rose polar chart."""
         cache_key = self.get_or_compute_df_hashkey()
         image_path = output_dir / f"windpowerrose_{self.meta.mast_name}_{cache_key}.png"
 
         if not force and image_path.exists():
             return image_path
 
-        plot_df = self.df.filter(pl.col("height") >= 100)
-
-        plot_df = plot_df.with_columns(
+        plot_df = self.df.with_columns(
             pl.struct(["height", "interpolation_marker"])
             .map_elements(
                 lambda x: get_height_display_name(x["height"], x["interpolation_marker"])
@@ -333,9 +325,7 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        summary_df = self.df.filter(
-            (pl.col("height") >= 125) & (pl.col("height") <= 160)
-        )
+        summary_df = self.df
 
         heights = (
             summary_df.select(["height", "interpolation_marker"])
@@ -377,5 +367,5 @@ class SingleMastWindPowerRoseAtom(ReportAtom[WindRoseSchema, WindRoseAtomMeta]):
                     f"次主导风能方向为 {sector2}({pct2:.1f}%)。"
                 )
 
-        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无125m~160m高度风能频率数据。"
+        summary_text = "".join(parts) if parts else f"{self.meta.mast_name}测风塔无风能频率数据。"
         return [TypstParagraph(text=summary_text)]

@@ -5,6 +5,8 @@ Uses pure function `calculate_wind_rose()` instead of the stateful WindRoseCalcu
 Test logic, inputs, expected values, assertions preserved exactly.
 """
 
+import logging
+
 import polars as pl
 import polars.exceptions
 import pytest
@@ -162,6 +164,58 @@ class TestWindRoseCalculator:
 
         result = calculate_wind_rose(time_series, air_density=1.225)
         assert len(result) == 0
+
+    def test_warns_on_unpaired_wind_speed_height(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Skipped WS heights must surface a warning naming height and column."""
+        wind_speeds = [5.0, 6.0, 7.0]
+        timestamps = [f"2024-01-{i:02d}T00:00:00" for i in range(1, 4)]
+
+        df = pl.DataFrame({
+            "timestamp": pl.Series(timestamps).str.to_datetime(),
+            "WS_100m_avg": wind_speeds,
+            "WS_80m_avg": [4.0, 5.0, 6.0],
+            "WD_100m_avg": [225.0, 225.0, 225.0],
+        })
+
+        sensors = [
+            SensorColumn(
+                column_name="WS_100m_avg",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WS_80m_avg",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=80.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WD_100m_avg",
+                sensor_type="WindDirection",
+                sensor_direction="",
+                height=100.0,
+                stat_type="avg",
+                unit="deg",
+            ),
+        ]
+
+        time_series = TimeSeriesData(df=df, sensors=sensors)
+
+        with caplog.at_level(
+            logging.WARNING,
+            logger="cleanmast.subdomains.reporting.subdomains.wind_rose.compute",
+        ):
+            result = calculate_wind_rose(time_series, air_density=1.225)
+
+        assert sorted(result["height"].unique().to_list()) == [100.0]
+        messages = [record.getMessage() for record in caplog.records]
+        assert any("80.0m" in m and "WS_80m_avg" in m for m in messages)
+        assert not any("WS_100m_avg" in m for m in messages)
 
     def test_ignores_null_wind_direction(self) -> None:
         wind_speeds = [5.0, 6.0, 7.0]

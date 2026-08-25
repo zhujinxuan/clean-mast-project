@@ -146,10 +146,10 @@ class TestWeibullSubgridAtom:
 
 
 class TestWeibullSectionGuard:
-    """Tests for the from_inputs guard on empty analysis_heights."""
+    """Tests for the from_inputs guard on empty weibull_heights."""
 
-    def test_from_inputs_raises_on_empty_analysis_heights(self) -> None:
-        """WeibullSection.from_inputs raises ValueError when analysis_heights is empty."""
+    def test_from_inputs_raises_on_empty_weibull_heights(self) -> None:
+        """WeibullSection.from_inputs raises ValueError when weibull_heights is empty."""
         from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
         from cleanmast.subdomains.reporting.model.analysis_input import (
             SingleMastAnalysisInput,
@@ -183,16 +183,16 @@ class TestWeibullSectionGuard:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
-                analysis_heights=[],  # empty — should trigger guard
+                weibull_heights=[],  # empty — should trigger guard
             ),
             mast_name="M01",
         )
 
-        with pytest.raises(ValueError, match="analysis_heights"):
+        with pytest.raises(ValueError, match="weibull_heights"):
             WeibullSection.from_inputs([item])
 
-    def test_from_inputs_succeeds_with_nonempty_analysis_heights(self) -> None:
-        """WeibullSection.from_inputs succeeds when analysis_heights is populated."""
+    def test_from_inputs_succeeds_with_nonempty_weibull_heights(self) -> None:
+        """WeibullSection.from_inputs succeeds when weibull_heights is populated."""
         from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
         from cleanmast.subdomains.reporting.model.analysis_input import (
             SingleMastAnalysisInput,
@@ -239,7 +239,7 @@ class TestWeibullSectionGuard:
                 extreme_wind_10min_heights=[],
                 extreme_wind_3s_heights=[],
                 extreme_wind_gust_factors=[],
-                analysis_heights=[130.0, 150.0],
+                weibull_heights=[130.0, 150.0],
             ),
             mast_name="M01",
         )

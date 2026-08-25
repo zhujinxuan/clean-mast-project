@@ -48,17 +48,17 @@ class WeibullSection:
     @classmethod
     def from_inputs(cls, items: list[SingleMastAnalysisInput]) -> "WeibullSection":
         """Build section from standard mast input."""
-        # Guard: analysis_heights must be non-empty for each item
+        # Guard: weibull_heights must be non-empty for each item
         for item in items:
-            if not item.parameters.analysis_heights:
+            if not item.parameters.weibull_heights:
                 raise ValueError(
-                    f"{cls.__name__} requires analysis_heights for mast "
+                    f"{cls.__name__} requires weibull_heights for mast "
                     f"'{item.mast_name}' but it is empty; regenerate the config "
                     f"with `cleanmast recommend`"
                 )
 
         mast_data = [
-            (item.time_series, item.mast_name, item.parameters.analysis_heights)
+            (item.time_series, item.mast_name, item.parameters.weibull_heights)
             for item in items
         ]
         return cls.from_time_series(mast_data)
@@ -71,7 +71,7 @@ class WeibullSection:
         """Build Weibull section from time series data.
 
         Args:
-            mast_data: List of (time_series_data, mast_name, analysis_heights) tuples.
+            mast_data: List of (time_series_data, mast_name, weibull_heights) tuples.
 
         Returns:
             WeibullSection with computed atoms.

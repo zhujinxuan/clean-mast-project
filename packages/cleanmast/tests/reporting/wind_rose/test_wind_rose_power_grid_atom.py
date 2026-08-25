@@ -20,6 +20,7 @@ from cleanmast.subdomains.reporting.subdomains.wind_rose.model.schemas import (
 from cleanmast.subdomains.reporting.subdomains.wind_rose.model.wind_rose_power_grid_atom import (
     SingleMastMonthlyWindPowerRoseGridAtom,
 )
+from matplotlib.figure import Figure
 from typst_ir import TypstParagraph, TypstTable
 
 
@@ -194,14 +195,33 @@ class TestSingleMastMonthlyWindPowerRoseGridAtom:
         assert image_path.exists()
         assert image_path.suffix == ".png"
 
-    def test_render_image_filters_below_100m(
-        self, sample_wind_rose_df_below_100m: pl.DataFrame, sample_mast_meta: WindRoseAtomMeta, tmp_path: Path
+    def test_render_image_renders_below_100m_heights(
+        self,
+        sample_wind_rose_df_below_100m: pl.DataFrame,
+        sample_mast_meta: WindRoseAtomMeta,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        """Atoms render whatever heights the frame contains — 50/80m included."""
+        captured: list[pl.DataFrame] = []
+
+        def mock_build(
+            atom_self: SingleMastMonthlyWindPowerRoseGridAtom, plot_df: pl.DataFrame
+        ) -> Figure:
+            captured.append(plot_df)
+            return Figure()
+
+        monkeypatch.setattr(
+            SingleMastMonthlyWindPowerRoseGridAtom, "_build_monthly_grid_chart", mock_build
+        )
         atom = SingleMastMonthlyWindPowerRoseGridAtom.create(
-            schema=WindRoseSchema, df=sample_wind_rose_df_below_100m, meta=sample_mast_meta,
+            schema=WindRoseSchema,
+            df=sample_wind_rose_df_below_100m,
+            meta=sample_mast_meta,
         )
         image_path = atom.renderImage(tmp_path)
         assert image_path.exists()
+        assert sorted(captured[0]["height"].unique().to_list()) == [50.0, 80.0]
 
     def test_monthly_grid_angle_mapping(
         self, wind_power_rose_grid_atom: SingleMastMonthlyWindPowerRoseGridAtom
@@ -250,19 +270,26 @@ class TestSingleMastMonthlyWindPowerRoseGridAtom:
         chart = wind_power_rose_grid_atom._build_monthly_grid_chart(plot_df)
         assert len(chart.axes) == 12
 
-    def test_monthly_grid_height_filter(
-        self, wind_power_rose_grid_atom_multi_height: SingleMastMonthlyWindPowerRoseGridAtom,
+    def test_render_image_passes_all_frame_heights_to_chart(
+        self,
+        wind_power_rose_grid_atom_multi_height: SingleMastMonthlyWindPowerRoseGridAtom,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        plot_df = wind_power_rose_grid_atom_multi_height.df.filter(pl.col("height") >= 100)
-        assert plot_df.filter(pl.col("height") < 100).is_empty()
-        plot_df = plot_df.with_columns(
-            pl.struct(["height", "interpolation_marker"])
-            .map_elements(lambda x: get_height_display_name(x["height"], x["interpolation_marker"]))
-            .alias("height_display")
+        """renderImage must not filter frame heights before charting."""
+        captured: list[pl.DataFrame] = []
+
+        def mock_build(
+            atom_self: SingleMastMonthlyWindPowerRoseGridAtom, plot_df: pl.DataFrame
+        ) -> Figure:
+            captured.append(plot_df)
+            return Figure()
+
+        monkeypatch.setattr(
+            SingleMastMonthlyWindPowerRoseGridAtom, "_build_monthly_grid_chart", mock_build
         )
-        chart = wind_power_rose_grid_atom_multi_height._build_monthly_grid_chart(plot_df)
-        assert chart is not None
-        assert plot_df.filter(pl.col("height") < 100).is_empty()
+        wind_power_rose_grid_atom_multi_height.renderImage(tmp_path)
+        assert sorted(captured[0]["height"].unique().to_list()) == [80.0, 100.0, 120.0]
 
 
 class TestImageCaching:
