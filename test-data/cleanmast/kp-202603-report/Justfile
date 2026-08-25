@@ -62,7 +62,6 @@ run-full:
 config:
     @echo "Experiment: kp-202603-report"
     @echo "Config file: rep-ts-report.toml"
-    @echo "Verify manifest: verify.toml"
     @echo ""
     @echo "Expected outputs:"
-    @grep "outputs" verify.toml
+    @echo "  rep-ts/report.pdf"

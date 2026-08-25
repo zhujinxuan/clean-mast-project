@@ -44,9 +44,9 @@ Extra keys are tolerated; missing keys are defaulted by the runner.
 
 Verify is **just-mode only**. The old `verify.toml` `[run]`/`[expect]`
 manifest mode was dropped during the migration to this package because every
-dataset had already converged on Justfiles. The one remaining
-`test-data/cleanmast/kp-202603-report/verify.toml` is kept as legacy
-documentation and is not consumed by anything.
+dataset had already converged on Justfiles. The last stray manifest
+(`test-data/cleanmast/kp-202603-report/verify.toml`) was deleted 2026-08-25;
+no `verify.toml` is consumed by anything.
 
 ## Exit-code contract
 
