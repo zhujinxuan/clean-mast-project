@@ -25,7 +25,7 @@ Unless otherwise specified, work refers to **`packages/cleanmast/`**. The Julia 
 | Run tests | `uv run pytest packages/cleanmast/tests -q --tb=short -n 4` |
 | Run tests (serial) | `uv run pytest packages/cleanmast/tests -q --tb=short` |
 | Import contracts | `uv run lint-imports` |
-| Test-data verification | `uv run cleanmast verify --json -p cleanmast` |
+| Test-data verification | `uv run cleanmast-dev verify --json -p cleanmast` |
 | Run full baseline | `uv run python scripts/verify_baseline.py --package cleanmast` |
 | Load Polars skill | `skill(name="polars")` |
 
@@ -94,6 +94,11 @@ clean-mast-project/
 - Read the relevant `spec.md` before coding in a context.
 - New code lives in the appropriate subdomain under `packages/cleanmast/src/cleanmast/subdomains/`.
 - Cross-context integration uses `packages/cleanmast/src/cleanmast/shared/`.
+
+### Dev-driven commands
+
+- Dev-driven commands never ship in the `cleanmast` package. A command belongs in `cleanmast` iff its inputs are user-project artifacts; commands consuming repo fixtures (`test-data/`, DVC remotes, Justfiles) live in `packages/cleanmast-dev-tools` (console script `cleanmast-dev`).
+- `cleanmast doctor` is reserved for a future user-facing diagnostics command in the main package (dataset/parquet existence, config-referenced sensors with required stat types, metadata sanity, common config problems). Do not squat on `doctor` or similar nouns in the dev-tools package.
 
 ## Consistency Gate
 

@@ -17,7 +17,6 @@ from .recommend import (
 )
 from .report import report_timeseries
 from .train import train_fill_heights
-from .verify import verify
 
 
 @click.group()
@@ -67,6 +66,5 @@ main.add_command(execute_fill_heights, "fill-heights")
 main.add_command(execute_wt_timeseries_cli, "wt-timeseries")
 train.add_command(train_fill_heights, "fill-heights")
 report.add_command(report_timeseries, "timeseries")
-main.add_command(verify, "verify")
 process.add_command(reconstruct_single)
 process.add_command(reconstruct_meso)

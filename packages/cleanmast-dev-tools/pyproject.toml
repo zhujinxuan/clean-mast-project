@@ -1,0 +1,22 @@
+[project]
+name = "cleanmast-dev-tools"
+version = "0.1.0"
+description = "Developer tools for the CleanMast workspace - repo-fixture-driven commands, never shipped to end users"
+requires-python = ">=3.11"
+authors = [
+    {name = "CleanMast Team"}
+]
+
+dependencies = [
+    "click>=8.0",
+]
+
+[project.scripts]
+cleanmast-dev = "cleanmast_dev_tools.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatchling.build.targets.wheel]
+packages = ["src/cleanmast_dev_tools"]

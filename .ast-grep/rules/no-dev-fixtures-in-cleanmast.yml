@@ -1,0 +1,17 @@
+id: no-dev-fixtures-in-cleanmast
+language: python
+severity: error
+message: >
+  Repo-fixture coupling (test-data/ DVC fixtures, dvc CLI) is dev-driven
+  code and must live in packages/cleanmast-dev-tools, not in the shipped
+  cleanmast package.
+files:
+  - packages/cleanmast/src/**
+rule:
+  any:
+    # Literal test-data/ path reference
+    - kind: string_content
+      regex: "test-data"
+    # Bare 'dvc' argv token (subprocess/git-style calls)
+    - kind: string_content
+      regex: "^dvc$"

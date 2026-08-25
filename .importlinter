@@ -71,3 +71,9 @@ ignore_imports =
     cleanmast.subdomains.configuration.services.config_io -> tomli_w
     cleanmast.infrastructure.file_repository -> tomli
     cleanmast.infrastructure.file_repository -> tomli_w
+
+[importlinter:contract:no-dev-tools-in-cleanmast]
+name = cleanmast must not depend on the dev-tools package
+type = forbidden
+source_modules = cleanmast
+forbidden_modules = cleanmast_dev_tools

@@ -16,7 +16,8 @@ dependencies = [
 members = [
     "packages/preprocess-tools",
     "packages/cleanmast",
-    "packages/typst_ir"
+    "packages/typst_ir",
+    "packages/cleanmast-dev-tools",
 ]
 
 [dependency-groups]
@@ -72,7 +73,8 @@ exclude = [
 [tool.pytest.ini_options]
 testpaths = [
     "packages/cleanmast/tests",
-    "packages/preprocess-tools/tests"
+    "packages/preprocess-tools/tests",
+    "packages/cleanmast-dev-tools/tests",
 ]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

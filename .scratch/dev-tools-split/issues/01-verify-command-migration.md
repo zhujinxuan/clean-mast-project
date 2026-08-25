@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Scope
 
@@ -43,17 +43,18 @@ The six-check baseline implementation moves from `scripts/verify_baseline.py` in
 
 ## Acceptance
 
-- [ ] `cleanmast verify` no longer exists; `cleanmast-dev verify` (or chosen name) runs the same discovery/execution
-- [ ] Baseline dvc-verify step green via the new entry point
-- [ ] No dev-fixture-consuming code remains in the cleanmast wheel surface
-- [ ] Baseline implementation lives in the dev package (`cleanmast-dev baseline`); `scripts/verify_baseline.py` is a thin wrapper and the old command string still works
-- [ ] Doc placement done per the table above (new package spec.md, AGENTS.md principle + quick-reference, doctor reservation)
-- [ ] Enforcement layers 1–3 in place: AGENTS.md rule, ast-grep rule banning test-data/DVC-fixture coupling in `packages/cleanmast/src`, import-linter forbidden contract cleanmast ↛ dev package
-- [ ] Two-mode divergence resolved and documented in the new package's spec.md
-- [ ] Tests moved/updated with the command
-- [ ] `uv run python scripts/verify_baseline.py --package cleanmast` is green
+- [x] `cleanmast verify` no longer exists; `cleanmast-dev verify` (or chosen name) runs the same discovery/execution
+- [x] Baseline dvc-verify step green via the new entry point
+- [x] No dev-fixture-consuming code remains in the cleanmast wheel surface
+- [x] Baseline implementation lives in the dev package (`cleanmast-dev baseline`); `scripts/verify_baseline.py` is a thin wrapper and the old command string still works
+- [x] Doc placement done per the table above (new package spec.md, AGENTS.md principle + quick-reference, doctor reservation)
+- [x] Enforcement layers 1–3 in place: AGENTS.md rule, ast-grep rule banning test-data/DVC-fixture coupling in `packages/cleanmast/src`, import-linter forbidden contract cleanmast ↛ dev package
+- [x] Two-mode divergence resolved and documented in the new package's spec.md
+- [x] Tests moved/updated with the command
+- [x] `uv run python scripts/verify_baseline.py --package cleanmast` is green
 
 ## Comments
 
 - Decided 2026-08-25: user sets the principle that dev-driven code stays out of the cleanmast package; `scripts/verify_baseline.py` already lives at repo root and stays.
 - Future `cleanmast doctor` checks (user-listed): sensors exist, metainformation, common problems, dataset exists or not.
+- Resolution 2026-08-25: **two-mode divergence resolved as just-mode only** (the recommended option) — every dataset under `test-data/` had already converged on a `Justfile` with a `verify-json` recipe, so the `verify.toml` `[run]`/`[expect]` manifest mode was dropped during the move; the one stray manifest (`test-data/cleanmast/kp-202603-report/verify.toml`) is kept as unconsumed legacy documentation. Chosen console script: `cleanmast-dev` with `verify` and `baseline` subcommands. Exit-code contract preserved from the old command (exit 1 on failure only in non-json, non-dry-run mode) and documented in `packages/cleanmast-dev-tools/spec.md`. Baseline green 2026-08-25 (6/6: ty, ruff, pytest, dvc-verify via `cleanmast-dev verify`, lint-imports incl. the new forbidden contract, ast-grep incl. the new no-dev-fixtures rule).
