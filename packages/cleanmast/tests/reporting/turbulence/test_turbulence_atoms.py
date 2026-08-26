@@ -203,7 +203,7 @@ class TestSingleMastTurbulenceSummaryAtom:
     def test_render_table(
         self, turbulence_summary_atom: SingleMastTurbulenceSummaryAtom
     ) -> None:
-        """Summary table should show three rows per interested height with correct headers."""
+        """Summary table shows one 14.5-15.5 m/s row per height with 数据点数."""
         table = turbulence_summary_atom.renderTable()
 
         assert isinstance(table, TypstTable)
@@ -213,24 +213,24 @@ class TestSingleMastTurbulenceSummaryAtom:
             "平均湍流强度",
             "代表湍流强度(P90)",
             "湍流强度标准差",
+            "数据点数",
         ]
         assert table.caption == "M01 湍流强度统计表"
 
-        # Both fixture heights are explicitly provided as interested heights.
-        assert len(table.data) == 6
+        # One row per interested height; band 14.5-15.5 = bins 14 and 15.
+        assert len(table.data) == 2
         assert table.data[0][0] == "100m"
-        assert table.data[0][1] == ">3 m/s"
-        assert table.data[1][1] == "14.5-16.5 m/s"
-        assert table.data[2][1] == "9.5-10.5 m/s"
-        assert table.data[3][0] == "140m(外推)"
-        assert table.data[3][1] == ">3 m/s"
-        assert table.data[4][1] == "14.5-16.5 m/s"
-        assert table.data[5][1] == "9.5-10.5 m/s"
+        assert table.data[1][0] == "140m(外推)"
+        for row in table.data:
+            assert row[1] == "14.5-15.5 m/s"
+        # 数据点数 sums the counts of bins 14 and 15.
+        assert table.data[0][5] == "84"
+        assert table.data[1][5] == "84"
 
     def test_render_table_no_data_range(
         self, sample_mast_meta: TurbulenceAtomMeta
     ) -> None:
-        """Missing data for a wind speed range should show '-'."""
+        """Missing data for the 14.5-15.5 band should show '-'."""
         df = pl.DataFrame({
             "wind_speed_bin": [3, 5],
             "height": [100.0, 100.0],
@@ -246,19 +246,16 @@ class TestSingleMastTurbulenceSummaryAtom:
         )
         table = atom.renderTable()
 
-        # >3 m/s has data (5 > 3), 14.5-16.5 and 9.5-10.5 have no data
-        assert table.data[0][2] != "-"
-        assert table.data[1][2] == "-"
-        assert table.data[1][3] == "-"
-        assert table.data[1][4] == "-"
-        assert table.data[2][2] == "-"
-        assert table.data[2][3] == "-"
-        assert table.data[2][4] == "-"
+        # One row per interested height; no bins 14/15 anywhere → all "-".
+        assert len(table.data) == 2
+        for row in table.data:
+            assert row[1] == "14.5-15.5 m/s"
+            assert row[2:] == ["-", "-", "-", "-"]
 
     def test_render_summary(
         self, turbulence_summary_atom: SingleMastTurbulenceSummaryAtom
     ) -> None:
-        """Summary should list per-height 15m/s rep TI and the closest IEC category."""
+        """Summary lists per-height 14.5-15.5 band rep TI and the IEC category."""
         summary = turbulence_summary_atom.renderSummary()
 
         assert len(summary) == 1
@@ -268,18 +265,47 @@ class TestSingleMastTurbulenceSummaryAtom:
         assert "100m" in text
         assert "140m(外推)" in text
 
-        # 100m 14.5-16.5 rep TI mean = (0.093 + 0.087 + 0.080) / 3 ≈ 0.087
-        # 140m 14.5-16.5 rep TI mean = (0.087 + 0.080 + 0.074) / 3 ≈ 0.080
-        assert "0.087" in text
-        assert "0.080" in text
+        # 100m 14.5-15.5 rep TI mean = (0.093 + 0.087) / 2 = 0.090
+        # 140m 14.5-15.5 rep TI mean = (0.087 + 0.080) / 2 ≈ 0.083
+        assert "0.090" in text
+        assert "0.083" in text
 
-        # Mean rep TI ≈ 0.0835; closest IEC category at 15 m/s is C
+        # Mean rep TI ≈ 0.0868; below the C reference curve at 15 m/s → C
         assert "IEC C 类" in text
+
+    def test_render_summary_band_membership_classification(
+        self, sample_mast_meta: TurbulenceAtomMeta
+    ) -> None:
+        """Regression: rep TI between C and B reference curves classifies B.
+
+        The pre-fix inline threshold chain required exceeding the B curve for
+        a B verdict, reporting C where per-bin tables reported B. The sentence
+        must use the shared band-membership classifier.
+        """
+        df = pl.DataFrame({
+            "wind_speed_bin": [14, 15],
+            "height": [100.0, 100.0],
+            "interpolation_marker": [None, None],
+            "mean_ti": [0.12, 0.12],
+            "std_ti": [0.02, 0.02],
+            # 0.150 is above the C curve (0.1348) but below the B curve
+            # (0.1573) at 15 m/s → band membership ⇒ B.
+            "representative_ti": [0.150, 0.150],
+            "iec_category": ["B", "B"],
+            "count": [100, 100],
+        })
+        atom = SingleMastTurbulenceSummaryAtom.create(
+            schema=TurbulenceSchema, df=df, meta=sample_mast_meta
+        )
+        summary = atom.renderSummary()
+
+        assert len(summary) == 1
+        assert "IEC B 类" in summary[0].text
 
     def test_render_summary_fallback(
         self, sample_mast_meta: TurbulenceAtomMeta
     ) -> None:
-        """Summary should fallback when no 14.5-16.5 m/s data exists."""
+        """Summary should fallback when no 14.5-15.5 m/s data exists."""
         df = pl.DataFrame({
             "wind_speed_bin": [3, 5, 7],
             "height": [100.0, 100.0, 100.0],

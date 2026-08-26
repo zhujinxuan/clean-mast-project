@@ -6,6 +6,18 @@ Single-mast turbulence intensity analysis for wind resource reports.
 
 - Inherits all rules from `reporting/spec.md` (which inherits `subdomains/spec.md`).
 - IEC categories are module-level constants (not mutable instance state).
+- IEC classification has exactly one implementation:
+  `classify_iec_category` in `model/iec.py`. Atoms and compute MUST NOT
+  inline their own threshold chains (a second chain in the summary atom
+  caused the 2026-08 C-vs-B misclassification, see
+  `.scratch/turbulence-iec-band/`).
+- Classification semantics are band membership: representative TI between
+  the C and B reference curves ⇒ B (consistent with the IEC band chart and
+  the per-bin tables).
+- Wind band labels follow bin-center membership: "X.5–Y.5 m/s" = integer
+  bins X..Y (14.5–15.5 m/s ⇒ bins 14,15). The summary table carries only
+  the 14.5–15.5 m/s classification band, with a 数据点数 column (sum of bin
+  counts).
 
 ## Anti-patterns
 

@@ -10,8 +10,7 @@ from typst_ir import TypstParagraph, TypstTable
 from cleanmast.subdomains.reporting.model import get_height_display_name
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.iec import (
-    IEC_CATEGORIES,
-    compute_iec_ti,
+    classify_iec_category,
 )
 from cleanmast.subdomains.reporting.subdomains.turbulence.model.report_meta import (
     TurbulenceAtomMeta,
@@ -45,8 +44,9 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
     def renderTable(self) -> TypstTable | None:
         """Render as Typst table with turbulence summary by height.
 
-        Columns: 高度(m) | 风速范围 | 平均湍流强度 | 代表湍流强度(P90) | 湍流强度标准差
-        Rows per interested height: >3 m/s, 14.5-16.5 m/s, 9.5-10.5 m/s
+        Columns: 高度(m) | 风速范围 | 平均湍流强度 | 代表湍流强度(P90) | 湍流强度标准差 | 数据点数
+        One row per interested height: the 14.5-15.5 m/s classification band
+        (bins 14 and 15, bin-center membership convention).
         """
         interested_heights = self.meta.interested_heights
         filtered_df = self.df.filter(pl.col("height").is_in(interested_heights))
@@ -57,45 +57,29 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
             marker = cast(str | None, height_df["interpolation_marker"].first())
             height_display = get_height_display_name(height, marker or "")
 
-            ranges = [
-                (
-                    ">3 m/s",
-                    height_df.filter(pl.col("wind_speed_bin") > 3),
-                ),
-                (
-                    "14.5-16.5 m/s",
-                    height_df.filter(
-                        (pl.col("wind_speed_bin") >= 14)
-                        & (pl.col("wind_speed_bin") <= 16)
-                    ),
-                ),
-                (
-                    "9.5-10.5 m/s",
-                    height_df.filter(
-                        (pl.col("wind_speed_bin") >= 9)
-                        & (pl.col("wind_speed_bin") <= 10)
-                    ),
-                ),
-            ]
-
-            for range_label, range_df in ranges:
-                if len(range_df) > 0:
-                    mean_ti = cast(float, range_df["mean_ti"].mean())
-                    rep_ti = cast(float, range_df["representative_ti"].mean())
-                    std_ti = cast(float, range_df["std_ti"].mean())
-                    rows.append(
-                        [
-                            height_display,
-                            range_label,
-                            f"{mean_ti:.3f}",
-                            f"{rep_ti:.3f}",
-                            f"{std_ti:.3f}",
-                        ]
-                    )
-                else:
-                    rows.append(
-                        [height_display, range_label, "-", "-", "-"]
-                    )
+            band_df = height_df.filter(
+                (pl.col("wind_speed_bin") >= 14)
+                & (pl.col("wind_speed_bin") <= 15)
+            )
+            if len(band_df) > 0:
+                mean_ti = cast(float, band_df["mean_ti"].mean())
+                rep_ti = cast(float, band_df["representative_ti"].mean())
+                std_ti = cast(float, band_df["std_ti"].mean())
+                count = cast(int, band_df["count"].sum())
+                rows.append(
+                    [
+                        height_display,
+                        "14.5-15.5 m/s",
+                        f"{mean_ti:.3f}",
+                        f"{rep_ti:.3f}",
+                        f"{std_ti:.3f}",
+                        str(count),
+                    ]
+                )
+            else:
+                rows.append(
+                    [height_display, "14.5-15.5 m/s", "-", "-", "-", "-"]
+                )
 
         return TypstTable(
             headers=[
@@ -104,6 +88,7 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
                 "平均湍流强度",
                 "代表湍流强度(P90)",
                 "湍流强度标准差",
+                "数据点数",
             ],
             data=rows,
             caption=self.default_table_caption,
@@ -136,7 +121,7 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
         for height in sorted(interested_heights):
             height_df = filtered_df.filter(pl.col("height") == height)
             range_df = height_df.filter(
-                (pl.col("wind_speed_bin") >= 14) & (pl.col("wind_speed_bin") <= 16)
+                (pl.col("wind_speed_bin") >= 14) & (pl.col("wind_speed_bin") <= 15)
             )
             if len(range_df) > 0:
                 marker = cast(str | None, height_df["interpolation_marker"].first())
@@ -154,19 +139,9 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
 
         mean_rep_ti = sum(rep_ti_vals) / len(rep_ti_vals)
 
-        # IEC reference TI at 15 m/s for each category
-        # compute_iec_ti(15.0, ...) always returns float (15.0 > 0)
-        ti_a_plus = compute_iec_ti(15.0, IEC_CATEGORIES["A+"]) or 0.0
-        ti_a = compute_iec_ti(15.0, IEC_CATEGORIES["A"]) or 0.0
-        ti_b = compute_iec_ti(15.0, IEC_CATEGORIES["B"]) or 0.0
-        if mean_rep_ti > ti_a_plus:
-            closest_cat = "A+"
-        elif mean_rep_ti > ti_a:
-            closest_cat = "A"
-        elif mean_rep_ti > ti_b:
-            closest_cat = "B"
-        else:
-            closest_cat = "C"
+        # Band-membership classification at 15 m/s via the shared classifier —
+        # consistent with the per-bin tables and the IEC band chart.
+        iec_category = classify_iec_category(mean_rep_ti, 15.0)
 
         height_part = ", ".join(height_strs)
         rep_ti_part = ", ".join(f"{v:.3f}" for v in rep_ti_vals)
@@ -174,6 +149,6 @@ class SingleMastTurbulenceSummaryAtom(ReportAtom[TurbulenceSchema, TurbulenceAto
         text = (
             f"分析 {self.meta.mast_name} 测风塔，在 {height_part} "
             f"15m/s 附近风速区间 P90 代表性湍流强度为 {rep_ti_part}；"
-            f"根据 15m/s 附近风速的代表湍流强度，暂定为 IEC {closest_cat} 类。"
+            f"根据 15m/s 附近风速的代表湍流强度，暂定为 IEC {iec_category} 类。"
         )
         return [TypstParagraph(text=text)]

@@ -20,6 +20,8 @@ from cleanmast.subdomains.reporting.subdomains.turbulence.compute import (
     analyze_by_wind_speed,
     calculate_representative_ti,
     calculate_ti_series,
+)
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.iec import (
     classify_iec_category,
     compute_iec_ti,
 )

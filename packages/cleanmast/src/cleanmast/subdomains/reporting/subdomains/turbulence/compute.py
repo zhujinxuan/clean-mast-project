@@ -12,6 +12,9 @@ import numpy as np
 import polars as pl
 
 from cleanmast.shared.timeseries import SensorColumn
+from cleanmast.subdomains.reporting.subdomains.turbulence.model.iec import (
+    classify_iec_category,
+)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,14 +26,6 @@ TI_REP_Z: float = 1.28
 
 # Minimum wind speed for TI calculation (avoid division by small numbers)
 MIN_WIND_SPEED: float = 1.0
-
-# IEC reference turbulence intensity categories
-IEC_CATEGORIES: dict[str, float] = {
-    "A+": 0.18,
-    "A": 0.16,
-    "B": 0.14,
-    "C": 0.12,
-}
 
 
 # ── Core TI Calculation ──────────────────────────────────────────────────────
@@ -83,43 +78,6 @@ def calculate_representative_ti(
         return None
 
     return float(np.mean(valid_ti) + TI_REP_Z * np.std(valid_ti, ddof=1))
-
-
-def compute_iec_ti(wind_speed: float, i_ref: float) -> float | None:
-    """Compute IEC reference turbulence intensity.
-
-    TI_IEC = I_ref * (0.75 + 5.6/V)
-    Returns None for wind_speed ≤ 0.
-    """
-    if wind_speed <= 0:
-        return None
-
-    return i_ref * (0.75 + 5.6 / wind_speed)
-
-
-def classify_iec_category(
-    representative_ti: float | None,
-    wind_speed: float,
-) -> str:
-    """Classify IEC turbulence category using strict > thresholds.
-
-    Compares representative TI against IEC reference TI for categories
-    A, B, C at the given wind speed. Defaults to "C" for None or zero wind.
-    """
-    if representative_ti is None or wind_speed <= 0:
-        return "C"
-
-    ti_a = compute_iec_ti(wind_speed, IEC_CATEGORIES["A"])
-    ti_b = compute_iec_ti(wind_speed, IEC_CATEGORIES["B"])
-    ti_c = compute_iec_ti(wind_speed, IEC_CATEGORIES["C"])
-
-    if ti_a is not None and representative_ti > ti_a:
-        return "A+"
-    if ti_b is not None and representative_ti > ti_b:
-        return "A"
-    if ti_c is not None and representative_ti > ti_c:
-        return "B"
-    return "C"
 
 
 # ── Sensor Matching ──────────────────────────────────────────────────────────
