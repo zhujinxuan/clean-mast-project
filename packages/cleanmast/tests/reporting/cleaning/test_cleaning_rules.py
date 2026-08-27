@@ -15,6 +15,9 @@ from cleanmast.subdomains.reporting.model.analysis_parameters import (
     AnalysisParameters,
 )
 from cleanmast.subdomains.reporting.subdomains.cleaning import CleaningRulesSection
+from cleanmast.subdomains.reporting.subdomains.cleaning.model.constants import (
+    format_sensor_label,
+)
 from cleanmast.subdomains.reporting.subdomains.cleaning.rules_io import (
     discover_enabled_rules,
     load_violation_stats,
@@ -111,8 +114,109 @@ VIOLATIONS_YAML = {
     ],
 }
 
+# Deliberately scrambled column order (气压 → 未知列 → 风向 → 高风速 →
+# 低风速 → 温度): the section must re-sort by 类型 → 高度 → 规则名.
+VIOLATIONS_YAML_M2 = {
+    "violation_summary": {"total_violations": 14, "violation_percentage": 0.1},
+    "violations_by_column": [
+        {
+            "column": "AirPressure_10m_avg [hPa]",
+            "total_violations": 2,
+            "rules": [
+                {"rule_name": "range_check", "count": 2, "timestamps": []},
+            ],
+        },
+        {
+            "column": "Unknown_99",
+            "total_violations": 1,
+            "rules": [
+                {"rule_name": "range_check", "count": 1, "timestamps": []},
+            ],
+        },
+        {
+            "column": "WD_120",
+            "total_violations": 4,
+            "rules": [
+                {"rule_name": "Wind Direction Range", "count": 4, "timestamps": []},
+            ],
+        },
+        {
+            "column": "WS_70",
+            "total_violations": 6,
+            "rules": [
+                {
+                    "rule_name": "Wind Speed Range",
+                    "count": 5,
+                    "timestamps": [],
+                },
+                {
+                    "rule_name": "High Wind Speed Layer Difference",
+                    "count": 1,
+                    "timestamps": [],
+                },
+            ],
+        },
+        {
+            "column": "WS_30",
+            "total_violations": 1,
+            "rules": [
+                {"rule_name": "range_check", "count": 1, "timestamps": []},
+            ],
+        },
+        {
+            "column": "AirTemp_5m_avg [C]",
+            "total_violations": 1,
+            "rules": [
+                {"rule_name": "range_check", "count": 1, "timestamps": []},
+            ],
+        },
+    ],
+}
 
-def _project(tmp_path: Path, *, with_config: bool = True, with_stats: bool = True) -> Path:
+
+def _sensor(
+    column: str,
+    sensor_type: str,
+    height: float,
+    *,
+    direction: str = "",
+    stat_type: str = "avg",
+    unit: str = "m/s",
+) -> SensorColumn:
+    """Sensor metadata row for stage-series fixtures."""
+    return SensorColumn(
+        column_name=column,
+        sensor_type=sensor_type,
+        sensor_direction=direction,
+        height=height,
+        stat_type=stat_type,
+        unit=unit,
+    )
+
+
+M1_SENSORS = [
+    _sensor("WS_140_N", "WindSpeed", 140.0, direction="N"),
+    _sensor("WD_140", "WindDirection", 140.0, unit="deg"),
+]
+
+
+M2_SENSORS = [
+    _sensor("WS_70", "WindSpeed", 70.0, direction="ESE"),
+    _sensor("WS_30", "WindSpeed", 30.0, direction="ESE"),
+    _sensor("WD_120", "WindDirection", 120.0, direction="N", unit="deg"),
+    _sensor("AirTemp_5m_avg [C]", "Temperature", 5.0, unit="C"),
+    _sensor("AirPressure_10m_avg [hPa]", "Pressure", 10.0, unit="hPa"),
+    # No entry for Unknown_99 — exercises the raw-name fallback.
+]
+
+
+def _project(
+    tmp_path: Path,
+    *,
+    with_config: bool = True,
+    with_stats: bool = True,
+    extra_stats: dict[str, dict] | None = None,
+) -> Path:
     """Synthetic project dir with process-clean.toml and/or stats YAML."""
     if with_config:
         (tmp_path / "process-clean.toml").write_text(
@@ -121,17 +225,28 @@ def _project(tmp_path: Path, *, with_config: bool = True, with_stats: bool = Tru
         (tmp_path / "clean-rules.toml").write_text(
             PRESET_RULES_TOML, encoding="utf-8"
         )
-    if with_stats:
+    if with_stats or extra_stats:
         stats_dir = tmp_path / "process-stats"
         stats_dir.mkdir()
+    if with_stats:
         with open(
             stats_dir / "process-clean-M1.yaml", "w", encoding="utf-8"
         ) as handle:
             yaml.safe_dump(VIOLATIONS_YAML, handle, allow_unicode=True)
+    for mast_name, document in (extra_stats or {}).items():
+        with open(
+            stats_dir / f"process-clean-{mast_name}.yaml", "w", encoding="utf-8"
+        ) as handle:
+            yaml.safe_dump(document, handle, allow_unicode=True)
     return tmp_path
 
 
-def _input(mast_name: str) -> SingleMastAnalysisInput:
+def _input(
+    mast_name: str,
+    sensors: list[SensorColumn] | None = None,
+) -> SingleMastAnalysisInput:
+    """One mast input; ``sensors`` attaches the clean-stage metadata."""
+    stage_sensors = M1_SENSORS if sensors is None else sensors
     ts = TimeSeriesData(
         df=pl.DataFrame({
             "timestamp": [datetime(2025, 1, 1)],
@@ -148,6 +263,10 @@ def _input(mast_name: str) -> SingleMastAnalysisInput:
             )
         ],
     )
+    clean_series = TimeSeriesData(
+        df=pl.DataFrame({"timestamp": [datetime(2025, 1, 1)]}),
+        sensors=stage_sensors,
+    )
     return SingleMastAnalysisInput(
         time_series=ts,
         parameters=AnalysisParameters(
@@ -158,13 +277,14 @@ def _input(mast_name: str) -> SingleMastAnalysisInput:
         ),
         mast_name=mast_name,
         cleaning_payload=CleaningAnalysisPayload(
-            raw_input=TimeSeriesSource(data="raw/M1.parquet"),
-            clean_input=TimeSeriesSource(data="clean/M1.parquet"),
+            raw_input=TimeSeriesSource(data=f"raw/{mast_name}.parquet"),
+            clean_input=TimeSeriesSource(data=f"clean/{mast_name}.parquet"),
             tower_shading_input=None,
             cleaning_heights=[140.0],
             analysis_window=TimeRange(
                 min=datetime(2025, 1, 1), max=datetime(2025, 12, 31)
             ),
+            clean_series=clean_series,
         ),
     )
 
@@ -242,10 +362,39 @@ class TestLoadViolationStats:
         assert load_violation_stats(None, "M1") is None
 
 
+class TestFormatSensorLabel:
+    def test_with_direction_and_avg_stat(self):
+        sensor = _sensor("WindSpeed_70m_ESE_avg [m/s]", "WindSpeed", 70.0, direction="ESE")
+        assert format_sensor_label(sensor) == "70m 风速(ESE, 均值)"
+
+    def test_merged_direction_omits_direction_slot(self):
+        sensor = _sensor("WindSpeed_140m_avg [m/s]", "WindSpeed", 140.0)
+        assert format_sensor_label(sensor) == "140m 风速(均值)"
+
+    def test_unknown_stat_falls_back_to_raw(self):
+        sensor = _sensor("WS_gust", "WindSpeed", 140.0, direction="ESE", stat_type="gust")
+        assert format_sensor_label(sensor) == "140m 风速(ESE, gust)"
+
+    def test_fractional_height_keeps_decimals(self):
+        sensor = _sensor("WD", "WindDirection", 87.5, direction="N", unit="deg")
+        assert format_sensor_label(sensor) == "87.5m 风向(N, 均值)"
+
+    def test_unknown_type_falls_back_to_raw(self):
+        sensor = _sensor("H_10", "Humidity", 10.0, direction="N", unit="%")
+        assert format_sensor_label(sensor) == "10m Humidity(N, 均值)"
+
+
 class TestCleaningRulesSection:
-    def test_renders_intro_rules_table_and_violations(self, tmp_path):
+    def test_renders_intro_rules_table_and_per_mast_violations(self, tmp_path):
+        project = _project(
+            tmp_path, extra_stats={"M2": VIOLATIONS_YAML_M2}
+        )
         section = CleaningRulesSection.from_inputs(
-            [_input("M1"), _input("M2")], project_dir=_project(tmp_path)
+            [
+                _input("M1"),
+                _input("M2", sensors=M2_SENSORS),
+            ],
+            project_dir=project,
         )
         assert section.title == "缺测与不合理数据处理"
         ir = section.render_ir(tmp_path)
@@ -255,17 +404,11 @@ class TestCleaningRulesSection:
             block.text for block in ir.body if isinstance(block, TypstParagraph)
         ]
         assert any("GB/T 37523-2019" in text for text in paragraphs)
-        assert any(
-            "M1：检验共剔除120点，占检验期总点数的0.23%。" in text
-            for text in paragraphs
-        )
-        assert any(
-            "M2：未找到 process-stats/process-clean-M2.yaml，剔除统计从略。" in text
-            for text in paragraphs
-        )
+        # Per-mast totals were subsumed by the per-mast tables.
+        assert not any("检验共剔除" in text for text in paragraphs)
 
         tables = [block for block in ir.body if isinstance(block, TypstTable)]
-        assert len(tables) == 2
+        assert len(tables) == 3  # rules + one violations table per mast
 
         rules_table = tables[0]
         assert rules_table.headers == ["规则名称", "传感器类型", "适用高度(m)", "判定条件"]
@@ -275,14 +418,79 @@ class TestCleaningRulesSection:
         assert rows["风速范围检查"][3] == "合理范围 [0, 30]"
         assert rows["高风速层差检查"][2] == "≥70m"
 
-        violations_table = tables[1]
-        assert violations_table.headers == [
-            "测风塔", "数据列", "剔除规则", "剔除点数",
+        m1_table = tables[1]
+        assert m1_table.caption == "M1 分规则剔除点数统计"
+        assert m1_table.data == [
+            ["140m 风速(N, 均值)", "风速结冰检测", "30"],
+            ["140m 风速(N, 均值)", "风速范围检查", "50"],
+            ["140m 风向(均值)", "风向范围检查", "40"],
         ]
-        assert ["M1", "WS_140_N", "风速范围检查", "50"] in violations_table.data
-        assert ["M1", "WS_140_N", "风速结冰检测", "30"] in violations_table.data
-        assert ["M1", "WD_140", "风向范围检查", "40"] in violations_table.data
-        assert all(row[0] == "M1" for row in violations_table.data)
+
+    def test_rows_sort_by_type_height_then_rule_name(self, tmp_path):
+        project = _project(
+            tmp_path,
+            with_stats=False,
+            extra_stats={"M2": VIOLATIONS_YAML_M2},
+        )
+        section = CleaningRulesSection.from_inputs(
+            [_input("M2", sensors=M2_SENSORS)], project_dir=project
+        )
+        ir = section.render_ir(tmp_path)
+        tables = [block for block in ir.body if isinstance(block, TypstTable)]
+        assert len(tables) == 2  # rules + M2 violations
+        assert tables[1].data == [
+            ["30m 风速(ESE, 均值)", "范围检查", "1"],
+            ["70m 风速(ESE, 均值)", "高风速层差检查", "1"],
+            ["70m 风速(ESE, 均值)", "风速范围检查", "5"],
+            ["120m 风向(N, 均值)", "风向范围检查", "4"],
+            ["5m 温度(均值)", "范围检查", "1"],
+            ["10m 气压(均值)", "范围检查", "2"],
+            ["Unknown_99", "范围检查", "1"],
+        ]
+
+    def test_missing_stats_yaml_renders_note_and_no_table(self, tmp_path):
+        section = CleaningRulesSection.from_inputs(
+            [_input("M1"), _input("M2", sensors=M2_SENSORS)],
+            project_dir=_project(tmp_path),
+        )
+        ir = section.render_ir(tmp_path)
+        paragraphs = [
+            block.text for block in ir.body if isinstance(block, TypstParagraph)
+        ]
+        assert any(
+            "M2：未找到 process-stats/process-clean-M2.yaml，剔除统计从略。"
+            in text
+            for text in paragraphs
+        )
+        tables = [block for block in ir.body if isinstance(block, TypstTable)]
+        assert len(tables) == 2  # rules + M1 only
+        assert tables[1].caption == "M1 分规则剔除点数统计"
+
+    def test_column_without_metadata_falls_back_to_raw_name(self, tmp_path):
+        section = CleaningRulesSection.from_inputs(
+            [_input("M1")], project_dir=_project(tmp_path)
+        )
+        ir = section.render_ir(tmp_path)
+        tables = [block for block in ir.body if isinstance(block, TypstTable)]
+        m1_table = tables[1]
+        assert [row[0] for row in m1_table.data] == [
+            "140m 风速(N, 均值)",
+            "140m 风速(N, 均值)",
+            "140m 风向(均值)",
+        ]
+
+    def test_without_stage_sensors_labels_fall_back_to_raw_names(self, tmp_path):
+        section = CleaningRulesSection.from_inputs(
+            [_input("M1", sensors=[])], project_dir=_project(tmp_path)
+        )
+        ir = section.render_ir(tmp_path)
+        tables = [block for block in ir.body if isinstance(block, TypstTable)]
+        # No metadata → 其他 bucket, ordered by column name then rule.
+        assert [row[0] for row in tables[1].data] == [
+            "WD_140",
+            "WS_140_N",
+            "WS_140_N",
+        ]
 
     def test_without_project_dir_renders_skip_notes(self, tmp_path):
         section = CleaningRulesSection.from_inputs([_input("M1")])

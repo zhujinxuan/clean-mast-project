@@ -517,6 +517,113 @@ class TestAtoms:
         assert image.name.startswith("M1_same_tower_")
 
 
+class TestScatterCompactPacking:
+    """Compact packing: one wrapped panel per actual pair, no empty cells."""
+
+    def _same_tower_atom(
+        self, heights: list[float], n: int = 30
+    ) -> ScatterRegressionAtom:
+        rng = np.random.default_rng(11)
+        base = rng.normal(8, 2, n).clip(0.5)
+        stage = _stage_series(
+            {
+                f"ws_{int(h)}": list(base + 0.1 * i)
+                for i, h in enumerate(heights)
+            },
+            _ten_minute_grid(n),
+            heights=heights,
+        )
+        section = ImputationSameTowerSection.from_inputs(
+            [_item("M1", stage, heights)]
+        )
+        return next(
+            a for a in section._atoms if isinstance(a, ScatterRegressionAtom)
+        )
+
+    def _spec(self, atom: ScatterRegressionAtom) -> dict:
+        points = atom.meta.pairs_df.drop_nulls(["x", "y"]).to_pandas()
+        return atom._build_chart(points).to_dict()
+
+    def _spec_rows(self, spec: dict) -> list[dict]:
+        return [r for ds in spec["datasets"].values() for r in ds]
+
+    def test_multi_x_wraps_three_per_row_in_pair_order(self):
+        spec = self._spec(self._same_tower_atom([120.0, 140.0, 160.0]))
+
+        assert spec["facet"]["field"] == "panel"
+        assert spec["columns"] == 3
+        # upper-triangle pairs in (y, x) height order — no empty cells
+        assert spec["facet"]["sort"] == [
+            "120m ← 140m",
+            "120m ← 160m",
+            "140m ← 160m",
+        ]
+
+    def test_five_heights_ten_panels(self):
+        spec = self._spec(
+            self._same_tower_atom([80.0, 100.0, 120.0, 140.0, 160.0])
+        )
+        sort = spec["facet"]["sort"]
+
+        assert len(sort) == 10  # C(5, 2) panels, wrapped 3+3+3+1
+        assert spec["columns"] == 3
+        assert sort[:3] == ["80m ← 100m", "80m ← 120m", "80m ← 140m"]
+
+    def test_data_holds_only_actual_pair_rows(self):
+        spec = self._spec(self._same_tower_atom([120.0, 140.0, 160.0]))
+        rows = self._spec_rows(spec)
+
+        panels = {(r["x_label"], r["y_label"]) for r in rows}
+        assert panels == {
+            ("140m", "120m"),
+            ("160m", "120m"),
+            ("160m", "140m"),
+        }
+        assert {r["kind"] for r in rows} == {"point", "line", "text"}
+
+    def test_single_x_keeps_bare_height_headers(self):
+        n = 30
+        rng = np.random.default_rng(11)
+        base = rng.normal(8, 2, n).clip(0.5)
+        heights = [120.0, 140.0, 160.0]
+        stage = _stage_series(
+            {
+                f"ws_{int(h)}": list(base + 0.1 * i)
+                for i, h in enumerate(heights)
+            },
+            _ten_minute_grid(n),
+            heights=heights,
+        )
+        section = ImputationMesoSection.from_inputs(
+            [
+                _item(
+                    "M1",
+                    stage,
+                    heights,
+                    meso_payload=_meso_payload(
+                        list(0.9 * base + 0.2), _ten_minute_grid(n)
+                    ),
+                )
+            ]
+        )
+        atom = next(
+            a for a in section._atoms if isinstance(a, ScatterRegressionAtom)
+        )
+        spec = self._spec(atom)
+
+        # 2.3.7 single-x layout unchanged: bare height headers, ≤4 per row
+        assert spec["facet"]["field"] == "panel"
+        assert spec["facet"]["sort"] == ["120m", "140m", "160m"]
+        assert spec["columns"] == 3
+
+    def test_sampling_respects_altair_budget(self):
+        atom = self._same_tower_atom([120.0, 140.0], n=6000)
+        rows = self._spec_rows(self._spec(atom))
+
+        # 5000-row Altair budget: 4996 sampled points + 4 overlay rows
+        assert len(rows) == 5000
+
+
 # ── Section rendering ───────────────────────────────────────────────────
 
 

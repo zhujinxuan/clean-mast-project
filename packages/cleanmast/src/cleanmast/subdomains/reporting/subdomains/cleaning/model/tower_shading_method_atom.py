@@ -22,13 +22,15 @@ TOWER_SHADING_METHOD_TEXT = (
     "修正前后分扇区风速对比见下表。"
 )
 
-#: Variant for projects whose masts have no dual-channel heights: the method
-#: is stated without referencing a comparison table that does not exist.
+#: Variant for projects where every mast is single-channel at every height
+#: (verified over the full WS-avg sensor list, not only cleaning heights):
+#: the method is stated for completeness and the verification outcome
+#: replaces the comparison-table reference — no channel was corrected.
 TOWER_SHADING_METHOD_TEXT_NO_TABLE = (
     "对同一高度设有两个风速传感器的通道，"
     "依据《风电场工程风能资源测量与评估技术规范》（NB/T 31147-2018）"
     "进行塔影修正，逐时刻取两通道较大值。"
-    "各测风塔主测风层均为单通道，无塔影修正前后对比。"
+    "经检验，各测风塔各高度层均为单通道风速传感器，不涉及塔影修正。"
 )
 
 

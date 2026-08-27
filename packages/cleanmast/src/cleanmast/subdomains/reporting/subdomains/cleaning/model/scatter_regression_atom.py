@@ -21,6 +21,7 @@ from cleanmast.subdomains.reporting.subdomains.cleaning.model.schemas import (
 )
 
 _MAX_SCATTER_POINTS = 5000  # Altair limit; sample beyond, keep regression exact
+_PANELS_PER_ROW = 3  # multi-x wrap width; panels never shrink to fit more
 
 
 def annotation_lines(
@@ -54,17 +55,46 @@ def _axis_cap(values: np.ndarray) -> float:
     return max(15.0, float(np.percentile(finite, 90)))
 
 
+def _panel_label(x_label: str, y_label: str, single_x: bool) -> str:
+    """Panel header: ``y ← x`` (y regressed on x); bare y when x is fixed."""
+    if single_x:
+        return y_label
+    return f"{y_label} ← {x_label}"
+
+
+def _panel_order(
+    data: pd.DataFrame,
+    x_labels: list[str],
+    y_labels: list[str],
+    single_x: bool,
+) -> list[str]:
+    """Facet sort order: actual pairs by (y, x) label order — reading order."""
+    y_rank = {label: i for i, label in enumerate(y_labels)}
+    x_rank = {label: i for i, label in enumerate(x_labels)}
+    pairs = sorted(
+        set(zip(data["x_label"], data["y_label"])),
+        key=lambda p: (
+            y_rank.get(p[1], len(y_rank)),
+            x_rank.get(p[0], len(x_rank)),
+            p[1],
+            p[0],
+        ),
+    )
+    return [_panel_label(x, y, single_x) for x, y in pairs]
+
+
 class ScatterRegressionAtom(
     ReportAtom[ScatterPanelSchema, ScatterRegressionAtomMeta]
 ):
     """Renders a scatter grid with per-panel OLS regression annotations.
 
-    - Image: panels laid out by ``meta.x_labels`` / ``meta.y_labels`` —
-      a matrix grid for multi-x sources (upper-triangle pairs leave the
-      lower/diagonal cells empty), a single row of height panels for a
-      single x source (2.3.7). Each panel: points, red OLS line drawn
-      from the fitted stats, and a two-line annotation (r, RMSE,
-      y = ax + b).
+    - Image: compact packing — one panel per actual (x, y) pair, wrapped
+      at ``_PANELS_PER_ROW`` per row in (y, x) label order (the matrix
+      geometry lives in the correlation-matrix table). Multi-x panels are
+      headed ``y ← x``; a single x source (2.3.7's ERA5) keeps bare
+      height headers, wrapped at up to 4. Each panel: points, red OLS
+      line drawn from the fitted stats, and a two-line annotation (r,
+      RMSE, y = ax + b).
     - Table: none
     - Summary: none
 
@@ -90,13 +120,19 @@ class ScatterRegressionAtom(
         if not force and image_path.exists():
             return image_path
 
-        meta = self.meta
-        points_pdf = (
-            meta.pairs_df.drop_nulls(["x", "y"]).to_pandas()
-        )
+        points_pdf = self.meta.pairs_df.drop_nulls(["x", "y"]).to_pandas()
         if points_pdf.empty:
             return Path()
 
+        chart = self._build_chart(points_pdf)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        png_bytes = vlc.vegalite_to_png(chart.to_dict(), scale=2.0)
+        image_path.write_bytes(png_bytes)
+        return image_path
+
+    def _build_chart(self, points_pdf: pd.DataFrame) -> alt.Chart:
+        """Wrapped-panel chart from the complete-pair rows."""
+        meta = self.meta
         cap = _axis_cap(
             np.concatenate(
                 [points_pdf["x"].to_numpy(), points_pdf["y"].to_numpy()]
@@ -140,26 +176,21 @@ class ScatterRegressionAtom(
                     }
                 )
             )
-        # Vega-Lite derives the facet domain from the data — pad the grid
-        # with empty combos so skipped panels (upper-triangle matrix,
-        # unregressable panels) keep their place as empty cells.
-        panel_labels = set(zip(points_pdf["x_label"], points_pdf["y_label"]))
-        panel_labels |= {(o["x_label"][0], o["y_label"][0]) for o in overlays}
-        pad_rows = [
-            {"x_label": x, "y_label": y, "kind": "pad", "x": None, "y": None, "label": None}
-            for x in meta.x_labels
-            for y in meta.y_labels
-            if (x, y) not in panel_labels
-        ]
         overlay_rows = sum(len(o) for o in overlays)
-        budget = _MAX_SCATTER_POINTS - overlay_rows - len(pad_rows)
+        budget = _MAX_SCATTER_POINTS - overlay_rows
         if len(points_pdf) > budget:
             points_pdf = points_pdf.sample(n=budget, random_state=42)
         data = pd.concat(
             [points_pdf.assign(kind="point"), *overlays], ignore_index=True
         )
-        if pad_rows:
-            data = pd.concat([data, pd.DataFrame(pad_rows)], ignore_index=True)
+
+        # ── Compact packing: one wrapped panel per actual pair ─────────
+        single_x = len(meta.x_labels) <= 1
+        data["panel"] = [
+            _panel_label(x, y, single_x)
+            for x, y in zip(data["x_label"], data["y_label"])
+        ]
+        panel_order = _panel_order(data, meta.x_labels, meta.y_labels, single_x)
 
         # ── Layers from one shared source ───────────────────────────────
         base = alt.Chart(data)
@@ -194,29 +225,20 @@ class ScatterRegressionAtom(
             width=120, height=110
         )
 
-        # ── Grid layout ─────────────────────────────────────────────────
-        if len(meta.x_labels) > 1:
-            chart = layered.facet(
-                row=alt.Row("y_label:N", sort=meta.y_labels, title=""),
-                column=alt.Column("x_label:N", sort=meta.x_labels, title=""),
-                title=meta.chart_title,
-            )
-        else:
-            chart = layered.facet(
-                column=alt.Column("y_label:N", sort=meta.y_labels, title=""),
-                columns=max(1, min(4, len(meta.y_labels))),
-                title=meta.chart_title,
-            )
-        chart = (
+        # ── Wrap layout ─────────────────────────────────────────────────
+        columns = (
+            max(1, min(4, len(meta.y_labels))) if single_x else _PANELS_PER_ROW
+        )
+        chart = layered.facet(
+            facet=alt.Facet("panel:N", sort=panel_order, title=""),
+            columns=columns,
+            title=meta.chart_title,
+        )
+        return (
             chart.configure_axis(labelFontSize=10, titleFontSize=12)
             .configure_header(labelFontSize=11)
             .configure_view(strokeWidth=0.5, stroke="#cccccc")
         )
-
-        output_dir.mkdir(parents=True, exist_ok=True)
-        png_bytes = vlc.vegalite_to_png(chart.to_dict(), scale=2.0)
-        image_path.write_bytes(png_bytes)
-        return image_path
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:

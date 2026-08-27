@@ -28,6 +28,7 @@ from cleanmast.subdomains.reporting.subdomains.cleaning.compute.tower_shading im
 from cleanmast.subdomains.reporting.subdomains.cleaning.model import (
     TOWER_SHADING_METHOD_TEXT,
     TOWER_SHADING_METHOD_TEXT_NO_TABLE,
+    TowerShadingMethodAtom,
     TowerShadingSectorTableAtom,
     TowerShadingSectorTableAtomMeta,
 )
@@ -401,6 +402,26 @@ class TestSectorTableAtom:
         assert row[8] == "-50.0"
 
 
+class TestMethodTexts:
+    def test_both_variants_keep_method_sentence_and_citation(self):
+        for text in (TOWER_SHADING_METHOD_TEXT, TOWER_SHADING_METHOD_TEXT_NO_TABLE):
+            assert (
+                "依据《风电场工程风能资源测量与评估技术规范》（NB/T 31147-2018）"
+                in text
+            )
+            assert "逐时刻取两通道较大值" in text
+
+    def test_no_table_variant_states_all_heights_single_channel(self):
+        # The no-table variant states the verified outcome (single channel
+        # at every height, nothing corrected) instead of referencing a
+        # comparison that does not exist.
+        assert TOWER_SHADING_METHOD_TEXT_NO_TABLE.endswith(
+            "经检验，各测风塔各高度层均为单通道风速传感器，不涉及塔影修正。"
+        )
+        assert "对比" not in TOWER_SHADING_METHOD_TEXT_NO_TABLE
+        assert TOWER_SHADING_METHOD_TEXT.endswith("修正前后分扇区风速对比见下表。")
+
+
 class TestTowerShadingSection:
     def test_renders_method_equation_and_table(self, tmp_path):
         section = TowerShadingSection.from_inputs([_input("M1")])
@@ -442,7 +463,8 @@ class TestTowerShadingSection:
         assert not [b for b in ir.body if isinstance(b, TypstTable)]
 
     def test_no_dual_channels_omits_table(self, tmp_path):
-        # Shading stage identical to clean → no merged column, no table.
+        # Shading stage identical to clean → no merged column, no table;
+        # the method text states the verified single-channel outcome.
         item = _input(
             "M1",
             shading_df=_clean_df(),
@@ -451,11 +473,20 @@ class TestTowerShadingSection:
         section = TowerShadingSection.from_inputs([item])
         ir = section.render_ir(Path(tmp_path))
         assert not [b for b in ir.body if isinstance(b, TypstTable)]
+        assert any(
+            b.text == TOWER_SHADING_METHOD_TEXT_NO_TABLE
+            for b in ir.body if hasattr(b, "text")
+        )
 
-    def test_height_outside_cleaning_heights_is_skipped(self):
+    def test_dual_outside_cleaning_heights_uses_full_scan_for_wording(self):
+        # The wording decision scans all WS-avg heights: a dual channel
+        # outside cleaning_heights suppresses the no-dual-channel sentence
+        # even though its sector table is filtered out.
         item = _input("M1", cleaning_heights=[100.0])
         atoms = build_tower_shading_atoms([item])
         assert not [a for a in atoms if isinstance(a, TowerShadingSectorTableAtom)]
+        method = next(a for a in atoms if isinstance(a, TowerShadingMethodAtom))
+        assert method.renderSummary()[0].text == TOWER_SHADING_METHOD_TEXT
 
     def test_multiple_masts_render_one_table_each(self, tmp_path):
         section = TowerShadingSection.from_inputs(

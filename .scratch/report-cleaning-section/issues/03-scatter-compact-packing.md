@@ -16,10 +16,15 @@ its pair (`y ← x` or `x vs y` per existing annotation convention).
 - Single-x grids (2.3.7 meso) already pack compactly — unchanged.
 - 2.3.6 cross-mast figures: same packing rule applies if they use the matrix
   path.
+- **Wrapping rule (approved):** fixed 3 panels per row, pairs in
+  lexicographic height order — 4 heights → 6 panels (3+3), 5 heights → 10
+  panels (3+3+3+1). Never shrink panels to fit more per row; the 120px width
+  is sized for the two-line annotation. Panel order stays deterministic
+  height order (reproducibility), not correlation-strength order.
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Scope
 

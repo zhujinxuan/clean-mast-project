@@ -66,10 +66,11 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
     """Renders the stage coverage stats sentence and point-count table.
 
     Summary: the stats sentence (``meta.text``, built by assemble from the
-    per-mast analysis windows). Table: one row per mast × cleaning height;
-    count cells show the valid-point count and its percentage of the
-    expected 10-minute grid points; a missing stage input renders as
-    an em-dash, not a crash.
+    per-mast analysis windows). Table: one row per mast × cleaning height
+    with the per-stage valid-point counts, the cleaning delta
+    (清洗剔除 in points and as a share of raw), and the post-cleaning
+    availability (share of the expected 10-minute grid); a missing stage
+    input renders as an em-dash, not a crash.
     """
 
     @property
@@ -86,21 +87,27 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
     def renderTable(self) -> TypstTable | None:
         """Render as Typst table: mast × cleaning height stage coverage.
 
-        Columns: 测风塔 | 高度(m) | 应有点数 | 原始点数 | 占比(%) |
-        清洗后点数 | 占比(%) | 插补后点数 | 占比(%). Percentages carry
-        one decimal; missing stages (null counts) render as —.
+        Columns: 测风塔 | 高度(m) | 应有点数 | 原始点数 | 清洗后点数 |
+        清洗剔除(点) | 清洗剔除(%) | 清洗后可用率(%) | 插补后点数 |
+        插补后占比(%). 清洗剔除(点) = 原始 − 清洗后; 清洗剔除(%) is its
+        share of 原始点数; 清洗后可用率 = 清洗后 ÷ 应有; 插补后占比 =
+        插补后 ÷ 应有. Percentages carry one decimal; missing stages
+        (null counts) render as —, as does 清洗剔除(%) when 原始 is 0.
         """
         rows: list[list[str]] = []
         for record in self.df.iter_rows(named=True):
             expected = int(record["expected_points"])
+            raw = record["raw_points"]
+            clean = record["clean_points"]
             rows.append([
                 record["mast_name"],
                 get_height_display_name(float(record["height"])),
                 str(expected),
-                _count_cell(record["raw_points"]),
-                _pct_cell(record["raw_points"], expected),
-                _count_cell(record["clean_points"]),
-                _pct_cell(record["clean_points"], expected),
+                _count_cell(raw),
+                _count_cell(clean),
+                _removed_cell(raw, clean),
+                _removed_pct_cell(raw, clean),
+                _pct_cell(clean, expected),
                 _count_cell(record["final_points"]),
                 _pct_cell(record["final_points"], expected),
             ])
@@ -110,11 +117,12 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
                 "高度(m)",
                 "应有点数",
                 "原始点数",
-                "占比(%)",
                 "清洗后点数",
-                "占比(%)",
+                "清洗剔除(点)",
+                "清洗剔除(%)",
+                "清洗后可用率(%)",
                 "插补后点数",
-                "占比(%)",
+                "插补后占比(%)",
             ],
             data=rows,
             caption=self.default_table_caption,
@@ -141,3 +149,17 @@ def _pct_cell(points: int | None, expected: int) -> str:
     if points is None or expected <= 0:
         return MISSING_CELL
     return f"{points / expected * 100:.1f}"
+
+
+def _removed_cell(raw: int | None, clean: int | None) -> str:
+    """Render raw − clean (points removed by cleaning); — if a stage is missing."""
+    if raw is None or clean is None:
+        return MISSING_CELL
+    return str(int(raw - clean))
+
+
+def _removed_pct_cell(raw: int | None, clean: int | None) -> str:
+    """Render (raw − clean) / raw with one decimal; — if a stage is missing or raw is 0."""
+    if raw is None or clean is None or raw == 0:
+        return MISSING_CELL
+    return f"{(raw - clean) / raw * 100:.1f}"

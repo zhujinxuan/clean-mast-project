@@ -25,6 +25,7 @@ from typst_ir import (
     TypstTable,
 )
 
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.subdomains.reporting.model.analysis_input import (
     SingleMastAnalysisInput,
 )
@@ -155,9 +156,27 @@ class CleaningRulesSection(_CleaningSectionBase):
             load_violation_stats(project_dir, mast_name)
             for mast_name in mast_names
         ]
+        mast_sensors = [_label_sensors(item) for item in items]
         return cls(
-            _atoms=build_cleaning_rules_atoms(mast_names, enabled, stats)
+            _atoms=build_cleaning_rules_atoms(
+                mast_names, enabled, stats, mast_sensors
+            )
         )
+
+
+def _label_sensors(item: SingleMastAnalysisInput) -> list[SensorColumn]:
+    """Sensor metadata backing the 2.3.3 数据列 labels of one mast.
+
+    Prefers the process-clean stage's sensors (the stage the violation
+    YAML columns belong to); falls back to the raw stage when the clean
+    stage is absent. No payload or stage series → no metadata (rows
+    fall back to raw column names).
+    """
+    payload = item.cleaning_payload
+    if payload is None:
+        return []
+    series = payload.clean_series if payload.clean_series is not None else payload.raw_series
+    return list(series.sensors) if series is not None else []
 
 
 @dataclass(frozen=True)

@@ -49,14 +49,14 @@ class CleaningRulesSchema(dy.Schema):
 
 
 class CleaningViolationsSchema(dy.Schema):
-    """One row per (mast, column, rule) violation count (2.3.3 table).
+    """One row per (column, rule) violation count of one mast (2.3.3 table).
 
-    rule_name keeps the process-clean.toml source value; translation
-    happens at render time. The mast-level violation_percentage lives in
-    the section summary, not in per-rule rows.
+    One atom (and table) per mast — the mast lives in the atom meta and
+    its caption. rule_name keeps the process-clean.toml source value;
+    translation happens at render time, as does the 数据列 label lookup
+    against the atom meta's sensor-label map.
     """
 
-    mast_name = dy.String(nullable=False)
     column_name = dy.String(nullable=False)
     rule_name = dy.String(nullable=False)
     violation_count = dy.Int64(nullable=False, min=0)

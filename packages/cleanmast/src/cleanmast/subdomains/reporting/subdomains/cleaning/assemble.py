@@ -11,6 +11,7 @@ from datetime import datetime
 
 import polars as pl
 
+from cleanmast.shared.timeseries.sensor_column import SensorColumn
 from cleanmast.shared.timeseries.time_range import TimeRange
 from cleanmast.shared.timeseries.time_series_data import TimeSeriesData
 from cleanmast.subdomains.reporting.model.analysis_input import (
@@ -62,6 +63,10 @@ from cleanmast.subdomains.reporting.subdomains.cleaning.model import (
     TowerShadingSectorSchema,
     TowerShadingSectorTableAtom,
     TowerShadingSectorTableAtomMeta,
+)
+from cleanmast.subdomains.reporting.subdomains.cleaning.model.constants import (
+    format_sensor_label,
+    sensor_row_sort_key,
 )
 
 
@@ -243,18 +248,26 @@ def build_cleaning_rules_atoms(
     mast_names: list[str],
     enabled: EnabledCleaningRules | None,
     stats: Sequence[MastViolationStats | None],
+    mast_sensors: Sequence[Sequence[SensorColumn]] | None = None,
 ) -> list[ReportAtom]:
-    """Build the 2.3.3 atoms: rules table + violations table.
+    """Build the 2.3.3 atoms: rules table + one violations table per mast.
 
     Args:
         mast_names: Mast names in input order (one entry per stats item).
         enabled: Deduplicated enabled rules; None when process-clean.toml
             is absent — a note atom replaces the rules table.
         stats: One parsed stats entry (or None per mast) in input order.
+        mast_sensors: Stage ``SensorColumn`` metadata per mast (input
+            order) for the Chinese 数据列 labels; defaults to no
+            metadata (rows fall back to raw column names).
 
     Returns:
-        Atoms in render order: rules (or note), then violations.
+        Atoms in render order: rules (or note), then one violations
+        atom per mast (input order).
     """
+    sensors_per_mast: list[Sequence[SensorColumn]] = (
+        list(mast_sensors) if mast_sensors is not None else []
+    )
     atoms: list[ReportAtom] = []
     if enabled is None:
         atoms.extend(
@@ -281,53 +294,64 @@ def build_cleaning_rules_atoms(
             )
         )
 
-    violation_rows: list[dict[str, object]] = []
-    summary_lines: list[str] = []
-    for mast_name, mast_stats in zip(mast_names, stats):
-        if mast_stats is None:
-            summary_lines.append(
-                f"{mast_name}：未找到 process-stats/process-clean-"
-                f"{mast_name}.yaml，剔除统计从略。"
-            )
-            continue
-        summary_lines.append(_violation_sentence(mast_name, mast_stats))
-        for column in mast_stats.columns:
-            for rule in column.rules:
-                violation_rows.append({
-                    "mast_name": mast_name,
-                    "column_name": column.column,
-                    "rule_name": rule.rule_name,
-                    "violation_count": rule.count,
-                })
-    atoms.append(
-        CleaningViolationsAtom.create(
-            schema=CleaningViolationsSchema,
-            df=pl.DataFrame(
-                violation_rows,
-                schema={
-                    "mast_name": pl.String,
-                    "column_name": pl.String,
-                    "rule_name": pl.String,
-                    "violation_count": pl.Int64,
-                },
-            ),
-            meta=CleaningViolationsAtomMeta(
-                mast_names=list(mast_names),
-                summary_lines=summary_lines,
-            ),
-        )
-    )
+    for mast_name, mast_stats, sensors in zip(
+        mast_names, stats, sensors_per_mast, strict=False
+    ):
+        atoms.append(_violation_atom(mast_name, mast_stats, sensors))
     return atoms
 
 
-def _violation_sentence(mast_name: str, mast_stats: MastViolationStats) -> str:
-    """Per-mast removal sentence with violation_percentage when present."""
-    if mast_stats.violation_percentage is not None:
-        return (
-            f"{mast_name}：检验共剔除{mast_stats.total_violations}点，"
-            f"占检验期总点数的{mast_stats.violation_percentage:g}%。"
+def _violation_atom(
+    mast_name: str,
+    mast_stats: MastViolationStats | None,
+    sensors: Sequence[SensorColumn],
+) -> CleaningViolationsAtom:
+    """One mast's violations atom: labeled sorted rows, or a skip note.
+
+    Rows sort by sensor type (风速 → 风向 → 温度 → 气压 → 其他), then
+    height ascending, then rule name. A missing stats file yields an
+    empty table atom carrying the 剔除统计从略 note as its summary.
+    """
+    labels = {s.column_name: format_sensor_label(s) for s in sensors}
+    note = ""
+    rows: list[tuple[SensorColumn | None, str, str, int]] = []
+    if mast_stats is None:
+        note = (
+            f"{mast_name}：未找到 process-stats/process-clean-"
+            f"{mast_name}.yaml，剔除统计从略。"
         )
-    return f"{mast_name}：检验共剔除{mast_stats.total_violations}点。"
+    else:
+        by_column = {s.column_name: s for s in sensors}
+        for column in mast_stats.columns:
+            sensor = by_column.get(column.column)
+            for rule in column.rules:
+                rows.append((sensor, column.column, rule.rule_name, rule.count))
+        rows.sort(
+            key=lambda r: sensor_row_sort_key(r[0], r[1], r[2]),
+        )
+    return CleaningViolationsAtom.create(
+        schema=CleaningViolationsSchema,
+        df=pl.DataFrame(
+            [
+                {
+                    "column_name": column_name,
+                    "rule_name": rule_name,
+                    "violation_count": count,
+                }
+                for _, column_name, rule_name, count in rows
+            ],
+            schema={
+                "column_name": pl.String,
+                "rule_name": pl.String,
+                "violation_count": pl.Int64,
+            },
+        ),
+        meta=CleaningViolationsAtomMeta(
+            mast_name=mast_name,
+            column_labels=labels,
+            note=note,
+        ),
+    )
 
 
 def _intro_atom(text: str, mast_names: list[str]) -> CleaningPlaceholderAtom:
@@ -453,9 +477,14 @@ def build_tower_shading_atoms(
 
     Masts without a tower-shading stage (``tower_shading_series is None``),
     without dual-channel heights, or without an avg wind-direction channel
-    contribute no table — the method paragraph always renders.
+    contribute no table — the method paragraph always renders. The method
+    text is chosen from the unfiltered dual-channel scan (all WS-avg
+    heights, not only ``cleaning_heights``): the no-table variant asserts
+    各高度层均为单通道, so it may only render when no dual channel exists
+    anywhere.
     """
     atoms: list[ReportAtom] = []
+    has_dual_channel = False
     for item in items:
         payload = item.cleaning_payload
         if payload is None or payload.tower_shading_series is None:
@@ -470,6 +499,8 @@ def build_tower_shading_atoms(
         duals = find_dual_channel_heights(
             clean.df, shading.df, clean.sensors, shading.sensors
         )
+        if duals:
+            has_dual_channel = True
         for dual in duals:
             if not any(abs(dual.height - h) < 0.01 for h in payload.cleaning_heights):
                 continue
@@ -498,7 +529,7 @@ def build_tower_shading_atoms(
             )
     text = (
         TOWER_SHADING_METHOD_TEXT
-        if atoms
+        if has_dual_channel
         else TOWER_SHADING_METHOD_TEXT_NO_TABLE
     )
     return [

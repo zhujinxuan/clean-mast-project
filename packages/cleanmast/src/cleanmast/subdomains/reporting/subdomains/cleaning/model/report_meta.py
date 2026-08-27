@@ -32,16 +32,20 @@ class CleaningRulesAtomMeta:
 
 @dataclass(frozen=True)
 class CleaningViolationsAtomMeta:
-    """Metadata for the violations table atom (2.3.3).
+    """Metadata for one mast's violations table atom (2.3.3).
 
     Attributes:
-        mast_names: Masts covered by the table (input order).
-        summary_lines: One sentence per mast — totals with
-            violation_percentage when present, or a missing-stats note.
+        mast_name: Mast the table belongs to (caption prefix).
+        column_labels: Chinese display label per raw column name,
+            built from the stage ``SensorColumn`` metadata; columns
+            missing from the map render as their raw name.
+        note: One-line placeholder paragraph replacing the table when
+            the mast's process-stats YAML is missing (剔除统计从略).
     """
 
-    mast_names: list[str] = field(default_factory=list)
-    summary_lines: list[str] = field(default_factory=list)
+    mast_name: str = ""
+    column_labels: dict[str, str] = field(default_factory=dict)
+    note: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,9 +71,9 @@ class ScatterRegressionAtomMeta:
         caption: Figure caption text.
         chart_title: In-image chart title.
         slug: Filename prefix for the rendered PNG (mast/pair names).
-        x_labels: Ordered x-panel labels (facet columns).
-        y_labels: Ordered y-panel labels (facet rows, or columns when the
-            grid has a single x label, e.g. 2.3.7's ERA5 source).
+        x_labels: Ordered x-panel labels (regressor side of each pair).
+        y_labels: Ordered y-panel labels (response side; wrapped panels
+            sort by (y, x) label order, single-x grids by y alone).
         pairs_df: Tidy scatter points [x_label, y_label, x, y] — raw
             timeseries data lives in meta, never in the schema (same
             convention as the representative-year figure atom).

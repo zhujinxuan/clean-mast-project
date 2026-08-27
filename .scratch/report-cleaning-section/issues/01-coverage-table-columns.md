@@ -17,7 +17,7 @@ Missing stage input keeps the em-dash convention for its downstream columns.
 
 **Blocked by:** None — can start immediately
 
-**Status:** needs-triage
+**Status:** done
 
 ## Scope
 

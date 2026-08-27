@@ -21,23 +21,21 @@ from cleanmast.subdomains.reporting.subdomains.cleaning.model.schemas import (
 class CleaningViolationsAtom(
     ReportAtom[CleaningViolationsSchema, CleaningViolationsAtomMeta]
 ):
-    """Renders per-rule removal counts as the 2.3.3 violations table.
+    """Renders one mast's per-rule removal counts as a 2.3.3 table.
 
-    Summary: one sentence per mast (removal total, violation percentage
-    when the stats file provides it, or a missing-file note). Table: one
-    row per mast × column × rule (测风塔 / 数据列 / 剔除规则 / 剔除点数).
-    Image: none.
+    Table: one row per column × rule, pre-sorted by assemble (sensor type
+    风速 → 风向 → 温度 → 气压 → 其他, then height ascending, then rule
+    name); the 数据列 cell shows the Chinese sensor label from
+    ``meta.column_labels``, falling back to the raw column name when no
+    sensor metadata matched. Caption: ``{mast} 分规则剔除点数统计``.
+    Summary: the missing-stats note (``meta.note``) only — no table in
+    that case. Image: none.
     """
 
     @property
     @override
-    def default_image_caption(self) -> str | None:
-        return None
-
-    @property
-    @override
     def default_table_caption(self) -> str | None:
-        return "各测风塔分规则剔除点数统计"
+        return f"{self.meta.mast_name} 分规则剔除点数统计"
 
     @override
     def renderTable(self) -> TypstTable | None:
@@ -45,14 +43,14 @@ class CleaningViolationsAtom(
             return None
         data: list[list[str]] = []
         for row in self.df.iter_rows(named=True):
+            column = cast(str, row["column_name"])
             data.append([
-                cast(str, row["mast_name"]),
-                cast(str, row["column_name"]),
+                self.meta.column_labels.get(column, column),
                 translate_rule_name(cast(str, row["rule_name"])),
                 str(cast(int, row["violation_count"])),
             ])
         return TypstTable(
-            headers=["测风塔", "数据列", "剔除规则", "剔除点数"],
+            headers=["数据列", "剔除规则", "剔除点数"],
             data=data,
             caption=self.default_table_caption,
         )
@@ -63,7 +61,6 @@ class CleaningViolationsAtom(
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        lines = [line for line in self.meta.summary_lines if line]
-        if not lines:
+        if not self.meta.note:
             return []
-        return [TypstParagraph(text="".join(lines))]
+        return [TypstParagraph(text=self.meta.note)]

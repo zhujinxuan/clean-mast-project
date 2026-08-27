@@ -31,15 +31,16 @@ WINDOW_END = datetime(2025, 6, 1, 1, 0)
 WINDOW = TimeRange(min=WINDOW_START, max=WINDOW_END)
 TIMESTAMPS = [WINDOW_START + timedelta(minutes=10 * i) for i in range(7)]
 
-# Column layout: idx 2 应有点数, 3 原始点数, 4 原始占比, 5 清洗后点数,
-# 6 清洗后占比, 7 插补后点数, 8 插补后占比.
+# Column layout: idx 2 应有点数, 3 原始点数, 4 清洗后点数, 5 清洗剔除(点),
+# 6 清洗剔除(%), 7 清洗后可用率(%), 8 插补后点数, 9 插补后占比(%).
 IDX_EXPECTED = 2
 IDX_RAW = 3
-IDX_RAW_PCT = 4
-IDX_CLEAN = 5
-IDX_CLEAN_PCT = 6
-IDX_FINAL = 7
-IDX_FINAL_PCT = 8
+IDX_CLEAN = 4
+IDX_REMOVED = 5
+IDX_REMOVED_PCT = 6
+IDX_CLEAN_PCT = 7
+IDX_FINAL = 8
+IDX_FINAL_PCT = 9
 
 
 def _sensor(column: str, height: float) -> SensorColumn:
@@ -112,12 +113,12 @@ def _item(
 
 
 def _m1_item() -> SingleMastAnalysisInput:
-    """M1 at 140m: raw 4/7 valid, clean 6/7, no shading, final 7/7."""
+    """M1 at 140m: raw 6/7 valid, clean 4/7, no shading, final 7/7."""
     return _item(
         "M1",
         heights=[140.0],
-        raw=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(4)}),
-        clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(6)}),
+        raw=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(6)}),
+        clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(4)}),
         shading=None,
     )
 
@@ -136,49 +137,56 @@ def _coverage_table(items: list[SingleMastAnalysisInput]) -> pl.DataFrame:
 
 class TestCoverageTable:
     def test_expected_points_and_stage_counts_in_table(self):
-        # 1h inclusive window → 7 expected; counts and one-decimal
-        # percentages flow from the stage series into the cells.
+        # 1h inclusive window → 7 expected; counts, cleaning delta, and
+        # one-decimal percentages flow from the stage series into the cells.
         table = _coverage_table([_m1_item()])
         assert table.headers == [
             "测风塔",
             "高度(m)",
             "应有点数",
             "原始点数",
-            "占比(%)",
             "清洗后点数",
-            "占比(%)",
+            "清洗剔除(点)",
+            "清洗剔除(%)",
+            "清洗后可用率(%)",
             "插补后点数",
-            "占比(%)",
+            "插补后占比(%)",
         ]
         assert len(table.data) == 1
         row = table.data[0]
         assert row[0] == "M1"
         assert row[1] == "140m"
         assert row[IDX_EXPECTED] == "7"
-        assert row[IDX_RAW] == "4"
-        assert row[IDX_RAW_PCT] == "57.1"
-        assert row[IDX_CLEAN] == "6"
-        assert row[IDX_CLEAN_PCT] == "85.7"
+        assert row[IDX_RAW] == "6"
+        assert row[IDX_CLEAN] == "4"
+        # 清洗剔除(点) = 6 − 4; 清洗剔除(%) = 2/6.
+        assert row[IDX_REMOVED] == "2"
+        assert row[IDX_REMOVED_PCT] == "33.3"
+        # 清洗后可用率 = 4/7; 插补后占比 = 7/7.
+        assert row[IDX_CLEAN_PCT] == "57.1"
         assert row[IDX_FINAL] == "7"
         assert row[IDX_FINAL_PCT] == "100.0"
 
     def test_percentage_rounding_one_decimal(self):
-        # 3/7 = 42.857…% → 42.9; 5/7 = 71.428…% → 71.4.
+        # raw 3, clean 1: 剔除(%) = 2/3 = 66.7; 可用率 = 1/7 = 14.3;
+        # 插补后占比 = 3/7 = 42.857…% → 42.9.
         item = _item(
             "M1",
             heights=[140.0],
             raw=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(3)}),
-            clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(5)}),
+            clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(1)}),
             shading=None,
             final=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(3)}),
         )
         row = _coverage_table([item]).data[0]
-        assert row[IDX_RAW_PCT] == "42.9"
-        assert row[IDX_CLEAN_PCT] == "71.4"
+        assert row[IDX_REMOVED] == "2"
+        assert row[IDX_REMOVED_PCT] == "66.7"
+        assert row[IDX_CLEAN_PCT] == "14.3"
         assert row[IDX_FINAL_PCT] == "42.9"
 
     def test_missing_stage_renders_em_dash(self):
-        # No raw series and neither clean nor shading → em-dash cells.
+        # No raw series and neither clean nor shading → em-dash cells for
+        # every column derived from the missing stages.
         item = _item(
             "M1",
             heights=[140.0],
@@ -188,12 +196,30 @@ class TestCoverageTable:
         )
         row = _coverage_table([item]).data[0]
         assert row[IDX_RAW] == "—"
-        assert row[IDX_RAW_PCT] == "—"
         assert row[IDX_CLEAN] == "—"
+        assert row[IDX_REMOVED] == "—"
+        assert row[IDX_REMOVED_PCT] == "—"
         assert row[IDX_CLEAN_PCT] == "—"
         # The final stage is always present (reconstruct-meso input).
         assert row[IDX_FINAL] == "7"
         assert row[IDX_FINAL_PCT] == "100.0"
+
+    def test_zero_raw_points_renders_em_dash_removed_pct(self):
+        # Stages present but the height has no data: 剔除(点) = 0 − 0
+        # renders, 剔除(%) is — (raw is 0), 可用率 renders 0.0.
+        item = _item(
+            "M1",
+            heights=[140.0],
+            raw=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(0)}),
+            clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(0)}),
+            shading=None,
+        )
+        row = _coverage_table([item]).data[0]
+        assert row[IDX_RAW] == "0"
+        assert row[IDX_CLEAN] == "0"
+        assert row[IDX_REMOVED] == "0"
+        assert row[IDX_REMOVED_PCT] == "—"
+        assert row[IDX_CLEAN_PCT] == "0.0"
 
     def test_clean_stage_prefers_tower_shading_output(self):
         # Shading present (5 valid) wins over the process-clean output
@@ -210,11 +236,14 @@ class TestCoverageTable:
         )
         row = _coverage_table([item]).data[0]
         assert row[IDX_CLEAN] == "5"
+        # 剔除 measured against the shading output: 7 − 5 of 7 raw.
+        assert row[IDX_REMOVED] == "2"
+        assert row[IDX_REMOVED_PCT] == "28.6"
         assert row[IDX_CLEAN_PCT] == "71.4"
 
     def test_dual_channel_height_counts_max(self):
         # Raw carries two channels at 140m (2 and 5 valid) → availability
-        # takes the better channel.
+        # takes the better channel; clean-derived cells are — (no stage).
         raw = _stage(
             [_sensor("ws_140_a", 140.0), _sensor("ws_140_b", 140.0)],
             {"ws_140_a": _values(2), "ws_140_b": _values(5)},
@@ -228,23 +257,29 @@ class TestCoverageTable:
         )
         row = _coverage_table([item]).data[0]
         assert row[IDX_RAW] == "5"
-        assert row[IDX_RAW_PCT] == "71.4"
+        assert row[IDX_REMOVED] == "—"
+        assert row[IDX_REMOVED_PCT] == "—"
+        assert row[IDX_CLEAN_PCT] == "—"
 
     def test_height_missing_in_stage_counts_zero(self):
         # Stage loaded but lacks the 120m channel → 0 valid points, not
         # em-dash (the stage exists; the height has no data).
         raw = _stage([_sensor("ws_140", 140.0)], {"ws_140": _values(7)})
+        clean = _stage([_sensor("ws_140", 140.0)], {"ws_140": _values(7)})
         item = _item(
             "M1",
             heights=[120.0, 140.0],
             raw=raw,
-            clean=None,
+            clean=clean,
             shading=None,
         )
         table = _coverage_table([item])
         assert table.data[0][1] == "120m"
         assert table.data[0][IDX_RAW] == "0"
-        assert table.data[0][IDX_RAW_PCT] == "0.0"
+        assert table.data[0][IDX_CLEAN] == "0"
+        assert table.data[0][IDX_REMOVED] == "0"
+        assert table.data[0][IDX_REMOVED_PCT] == "—"
+        assert table.data[0][IDX_CLEAN_PCT] == "0.0"
         assert table.data[1][1] == "140m"
         assert table.data[1][IDX_RAW] == "7"
 
@@ -270,7 +305,7 @@ class TestCoverageTable:
         # mast name repeated per height row.
         assert [r[0] for r in table.data] == ["M1", "M3"]
         assert [r[1] for r in table.data] == ["140m", "120m"]
-        assert all(len(r) == 9 for r in table.data)
+        assert all(len(r) == 10 for r in table.data)
 
     def test_table_caption(self):
         table = _coverage_table([_m1_item()])
