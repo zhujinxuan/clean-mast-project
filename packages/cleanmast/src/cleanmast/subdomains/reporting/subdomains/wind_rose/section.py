@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, Sequence
 
-import polars as pl
 from typst_ir import TypstHeading, TypstSection
 
 from cleanmast.shared.timeseries import TimeSeriesData
@@ -80,8 +79,8 @@ class WindRoseSection:
 
         Args:
             mast_data: List of (time_series_data, mast_name, air_density,
-                wind_rose_heights) tuples; wind_rose_heights restricts the
-                computed frame to configured heights.
+                wind_rose_heights) tuples; wind_rose_heights scopes compute
+                to the configured heights.
 
         Returns:
             WindRoseSection with computed atoms.
@@ -89,8 +88,7 @@ class WindRoseSection:
         all_atoms: list[ReportAtom] = []
         mast_name = mast_data[0][1] if mast_data else ""
         for ts_data, name, air_density, heights in mast_data:
-            df = calculate_wind_rose(ts_data, air_density)
-            df = df.filter(pl.col("height").is_in(heights))
+            df = calculate_wind_rose(ts_data, air_density, heights)
             all_atoms.extend(build_wind_rose_atoms(name, df))
         return cls(_atoms=all_atoms, _mast_name=mast_name)
 

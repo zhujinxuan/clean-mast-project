@@ -123,7 +123,7 @@ class TestWindRoseCalculatorMonthColumns:
             timestamps=timestamps,
         )
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         assert "month" in result.columns
 
@@ -144,7 +144,7 @@ class TestWindRoseCalculatorMonthColumns:
             timestamps=timestamps,
         )
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         assert "month_name" in result.columns
 
@@ -165,7 +165,7 @@ class TestWindRoseCalculatorMonthColumns:
             timestamps=timestamps,
         )
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         expected_columns = {
             "month",

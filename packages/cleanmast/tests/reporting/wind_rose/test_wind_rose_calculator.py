@@ -71,7 +71,7 @@ class TestWindRoseCalculator:
                           180.0, 202.5, 225.0, 247.5, 270.0, 292.5, 315.0, 337.5]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         assert len(result) == SECTOR_COUNT
 
@@ -94,7 +94,7 @@ class TestWindRoseCalculator:
                           180.0, 202.5, 225.0, 247.5, 270.0, 292.5, 315.0, 337.5]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         sectors = result.sort("sector")["sector"].to_list()
         assert sectors == list(range(SECTOR_COUNT))
@@ -107,7 +107,7 @@ class TestWindRoseCalculator:
         wind_directions = [0.0, 0.0, 90.0, 180.0]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         north_sector = result.filter(pl.col("sector") == 0)
         assert len(north_sector) == 1
@@ -124,7 +124,7 @@ class TestWindRoseCalculator:
         wind_directions = [0.0]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=air_density)
+        result = calculate_wind_rose(input_data, air_density=air_density, heights=[100.0])
 
         expected_power = 0.5 * air_density * (wind_speed ** 3)
         actual_power = result["wind_power_density"][0]
@@ -162,17 +162,16 @@ class TestWindRoseCalculator:
 
         time_series = TimeSeriesData(df=df, sensors=sensors)
 
-        result = calculate_wind_rose(time_series, air_density=1.225)
+        result = calculate_wind_rose(time_series, air_density=1.225, heights=[80.0, 100.0])
         assert len(result) == 0
 
-    def test_warns_on_unpaired_wind_speed_height(self, caplog: pytest.LogCaptureFixture) -> None:
-        """Skipped WS heights must surface a warning naming height and column."""
-        wind_speeds = [5.0, 6.0, 7.0]
+    def _unpaired_time_series(self) -> TimeSeriesData:
+        """WS avg pair at 100m plus an unpaired WS avg at 80m (no WD at 80m)."""
         timestamps = [f"2024-01-{i:02d}T00:00:00" for i in range(1, 4)]
 
         df = pl.DataFrame({
             "timestamp": pl.Series(timestamps).str.to_datetime(),
-            "WS_100m_avg": wind_speeds,
+            "WS_100m_avg": [5.0, 6.0, 7.0],
             "WS_80m_avg": [4.0, 5.0, 6.0],
             "WD_100m_avg": [225.0, 225.0, 225.0],
         })
@@ -204,18 +203,43 @@ class TestWindRoseCalculator:
             ),
         ]
 
-        time_series = TimeSeriesData(df=df, sensors=sensors)
+        return TimeSeriesData(df=df, sensors=sensors)
+
+    def test_warns_on_configured_height_missing_wd_pair(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A configured height without a WD pair must warn loudly and be skipped."""
+        time_series = self._unpaired_time_series()
 
         with caplog.at_level(
             logging.WARNING,
             logger="cleanmast.subdomains.reporting.subdomains.wind_rose.compute",
         ):
-            result = calculate_wind_rose(time_series, air_density=1.225)
+            result = calculate_wind_rose(
+                time_series, air_density=1.225, heights=[80.0, 100.0]
+            )
 
         assert sorted(result["height"].unique().to_list()) == [100.0]
         messages = [record.getMessage() for record in caplog.records]
         assert any("80.0m" in m and "WS_80m_avg" in m for m in messages)
         assert not any("WS_100m_avg" in m for m in messages)
+
+    def test_silent_on_unconfigured_unpaired_height(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Unconfigured unpaired WS heights are not iterated and never warn."""
+        time_series = self._unpaired_time_series()
+
+        with caplog.at_level(
+            logging.WARNING,
+            logger="cleanmast.subdomains.reporting.subdomains.wind_rose.compute",
+        ):
+            result = calculate_wind_rose(
+                time_series, air_density=1.225, heights=[100.0]
+            )
+
+        assert sorted(result["height"].unique().to_list()) == [100.0]
+        assert caplog.records == []
 
     def test_ignores_null_wind_direction(self) -> None:
         wind_speeds = [5.0, 6.0, 7.0]
@@ -249,7 +273,7 @@ class TestWindRoseCalculator:
 
         time_series = TimeSeriesData(df=df, sensors=sensors)
 
-        result = calculate_wind_rose(time_series, air_density=1.225)
+        result = calculate_wind_rose(time_series, air_density=1.225, heights=[100.0])
 
         assert len(result) == 2
 
@@ -288,7 +312,7 @@ class TestWindRoseCalculator:
 
         time_series = TimeSeriesData(df=df, sensors=sensors)
 
-        result = calculate_wind_rose(time_series, air_density=1.225)
+        result = calculate_wind_rose(time_series, air_density=1.225, heights=[100.0])
 
         markers = result["interpolation_marker"].to_list()
         assert all(m == "外推" for m in markers)
@@ -321,7 +345,7 @@ class TestWindRoseCalculator:
 
         time_series = TimeSeriesData(df=df, sensors=sensors)
 
-        result = calculate_wind_rose(time_series, air_density=1.225)
+        result = calculate_wind_rose(time_series, air_density=1.225, heights=[100.0])
         assert len(result) == 0
 
     def test_wind_direction_boundary_conditions(self) -> None:
@@ -329,7 +353,7 @@ class TestWindRoseCalculator:
         wind_directions = [0.0, 360.0, 720.0]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         sectors = result.sort("sector")["sector"].to_list()
         assert 0 in sectors
@@ -349,7 +373,7 @@ class TestWindRoseCalculator:
 
         input_data = self._create_test_input(wind_speeds, wind_directions, timestamps)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         for month in range(1, 13):
             month_data = result.filter(pl.col("month") == month)
@@ -364,7 +388,7 @@ class TestWindRoseCalculator:
                           180.0, 202.5, 225.0, 247.5, 270.0, 292.5, 315.0, 337.5]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         for month in result["month"].unique():
             for height in result["height"].unique():
@@ -378,7 +402,7 @@ class TestWindRoseCalculator:
         wind_directions = [0.0, 90.0, 180.0, 270.0]
         input_data = self._create_test_input(wind_speeds, wind_directions)
 
-        result = calculate_wind_rose(input_data, air_density=1.225)
+        result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
         assert len(result) == 4
         for value in result["energy_frequency"].to_list():

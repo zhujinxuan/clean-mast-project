@@ -9,6 +9,7 @@ DataFrames per sensor and concatenating, instead of accumulating untyped dicts.
 """
 
 import logging
+from collections.abc import Sequence
 
 import polars as pl
 
@@ -105,15 +106,24 @@ def _compute_energy_frequency(df: pl.DataFrame) -> pl.DataFrame:
 def calculate_wind_rose(
     time_series: TimeSeriesData,
     air_density: float,
+    heights: Sequence[float],
 ) -> pl.DataFrame:
     """Calculate wind rose statistics from time series data.
 
     Pure function — no IO, no side effects. Replaces the stateful
     WindRoseCalculator class from assessment.
 
+    Compute is scoped to ``heights`` (the configured ``wind_rose_heights``):
+    WS avg sensors at other heights are not iterated at all. An in-scope
+    WS avg sensor without a same-height WD avg sensor warns loudly — that is
+    config/data drift (a configured height must never vanish silently) —
+    and is skipped. Unconfigured unpaired sensors stay silent.
+
     Args:
         time_series: TimeSeriesData containing DataFrame and sensor metadata
         air_density: Air density in kg/m³ for power density calculation
+        heights: Heights to compute (configured wind_rose_heights); WS avg
+            sensors at other heights are ignored
 
     Returns:
         Polars DataFrame with WindRoseSchema columns: month, month_name,
@@ -138,17 +148,23 @@ def calculate_wind_rose(
         s.height: s.column_name for s in wd_avg_sensors
     }
 
-    # Process each wind speed sensor — collect Polars DataFrames, not list[dict]
+    # Process each in-scope wind speed sensor — collect Polars DataFrames, not list[dict]
+    scope = set(heights)
     sensor_dfs: list[pl.DataFrame] = []
     for sensor in ws_avg_sensors:
         height = sensor.height
         ws_col = sensor.column_name
 
+        if height not in scope:
+            # Unconfigured height: recommend never vetted it — stay silent.
+            continue
+
         wd_col = wd_col_map.get(height)
         if wd_col is None:
             logger.warning(
-                "Skipping WindSpeed avg sensor at %sm ('%s'): no WindDirection "
-                "avg sensor at the same height to pair with.",
+                "Skipping configured wind_rose height %sm ('%s'): no WindDirection "
+                "avg sensor at the same height to pair with — config/data drift; "
+                "regenerate the config with `cleanmast recommend`.",
                 height,
                 ws_col,
             )

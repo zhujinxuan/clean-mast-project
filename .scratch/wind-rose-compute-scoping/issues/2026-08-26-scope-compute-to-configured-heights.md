@@ -11,7 +11,7 @@ one sharpened warning: a **configured** height that lost its WD pair.
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Agreed semantics (user decision 2026-08-26)
 
@@ -44,13 +44,13 @@ the future `cleanmast doctor` diagnostics command, not report generation.
 
 ## Acceptance
 
-- [ ] Report generation emits no pairing warning for unconfigured heights
-- [ ] A configured height missing its WD pair still warns (test: hand-built
+- [x] Report generation emits no pairing warning for unconfigured heights
+- [x] A configured height missing its WD pair still warns (test: hand-built
       input with an unpairable configured height)
-- [ ] kp-202603-report regenerates byte-identical report.typ (modulo
+- [x] kp-202603-report regenerates byte-identical report.typ (modulo
       image-hash lines)
-- [ ] `reporting/spec.md` updated to the new semantics
-- [ ] `uv run python scripts/verify_baseline.py --package cleanmast` is green
+- [x] `reporting/spec.md` updated to the new semantics
+- [x] `uv run python scripts/verify_baseline.py --package cleanmast` is green
 
 ## Comments
 

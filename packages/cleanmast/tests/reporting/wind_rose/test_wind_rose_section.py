@@ -1,8 +1,11 @@
 """Tests for WindRoseSection config-driven heights — reporting domain.
 
-Covers the wind_rose_heights contract: empty list hard-fails, and the
-computed frame is filtered to the configured heights before atoms are built.
+Covers the wind_rose_heights contract: empty list hard-fails, compute is
+scoped to the configured heights, and only configured-height WD pair loss
+warns.
 """
+
+import logging
 
 import polars as pl
 import pytest
@@ -49,9 +52,49 @@ def _paired_time_series(heights: list[float]) -> TimeSeriesData:
     return TimeSeriesData(df=pl.DataFrame(data), sensors=sensors)
 
 
-def _input(heights: list[float], wind_rose_heights: list[float]) -> SingleMastAnalysisInput:
+def _time_series_with_unpaired_ws() -> TimeSeriesData:
+    """Paired 100m WS+WD plus an unpaired WS avg at 80m (no WD at 80m)."""
+    n = 8
+    data = {"timestamp": pl.Series(
+        [f"2024-01-{i:02d}T00:00:00" for i in range(1, n + 1)]
+    ).str.to_datetime()}
+    data["WS_100m_avg"] = [5.0 + 0.1 * i for i in range(n)]
+    data["WD_100m_avg"] = [225.0] * n
+    data["WS_80m_avg"] = [4.0 + 0.1 * i for i in range(n)]
+    sensors: list[SensorColumn] = [
+        SensorColumn(
+            column_name="WS_100m_avg",
+            sensor_type="WindSpeed",
+            sensor_direction="",
+            height=100.0,
+            stat_type="avg",
+            unit="m/s",
+        ),
+        SensorColumn(
+            column_name="WD_100m_avg",
+            sensor_type="WindDirection",
+            sensor_direction="",
+            height=100.0,
+            stat_type="avg",
+            unit="deg",
+        ),
+        SensorColumn(
+            column_name="WS_80m_avg",
+            sensor_type="WindSpeed",
+            sensor_direction="",
+            height=80.0,
+            stat_type="avg",
+            unit="m/s",
+        ),
+    ]
+    return TimeSeriesData(df=pl.DataFrame(data), sensors=sensors)
+
+
+def _input_from_ts(
+    time_series: TimeSeriesData, wind_rose_heights: list[float]
+) -> SingleMastAnalysisInput:
     return SingleMastAnalysisInput(
-        time_series=_paired_time_series(heights),
+        time_series=time_series,
         parameters=AnalysisParameters(
             air_density=1.225,
             extreme_wind_10min_heights=[],
@@ -63,9 +106,13 @@ def _input(heights: list[float], wind_rose_heights: list[float]) -> SingleMastAn
     )
 
 
+def _input(heights: list[float], wind_rose_heights: list[float]) -> SingleMastAnalysisInput:
+    return _input_from_ts(_paired_time_series(heights), wind_rose_heights)
+
+
 class TestWindRoseSectionHeights:
-    def test_from_inputs_filters_frame_to_configured_heights(self) -> None:
-        """Atoms must only see the configured subset of computed heights."""
+    def test_from_inputs_scopes_compute_to_configured_heights(self) -> None:
+        """Atoms must only see heights compute was scoped to (the configured set)."""
         item = _input([50.0, 100.0, 140.0], wind_rose_heights=[100.0])
         section = WindRoseSection.from_inputs([item])
 
@@ -95,8 +142,8 @@ class TestWindRoseSectionHeights:
             WindRoseSection.from_inputs([item])
         assert "cleanmast recommend" in str(exc_info.value)
 
-    def test_from_time_series_filters_to_heights(self) -> None:
-        """from_time_series applies the same configured-heights filter."""
+    def test_from_time_series_scopes_compute_to_heights(self) -> None:
+        """from_time_series passes the configured heights into compute."""
         ts = _paired_time_series([50.0, 100.0])
         section = WindRoseSection.from_time_series(
             [(ts, "M01", 1.225, [100.0])]
@@ -107,3 +154,36 @@ class TestWindRoseSectionHeights:
     def test_from_time_series_empty_input_returns_empty_section(self) -> None:
         section = WindRoseSection.from_time_series([])
         assert list(section.atoms) == []
+
+    def test_from_inputs_warns_on_configured_height_missing_wd_pair(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A configured height lacking its WD pair warns and yields no rows."""
+        item = _input_from_ts(_time_series_with_unpaired_ws(), [80.0, 100.0])
+
+        with caplog.at_level(
+            logging.WARNING,
+            logger="cleanmast.subdomains.reporting.subdomains.wind_rose.compute",
+        ):
+            section = WindRoseSection.from_inputs([item])
+
+        for atom in section.atoms:
+            assert sorted(atom.df["height"].unique().to_list()) == [100.0]
+        messages = [record.getMessage() for record in caplog.records]
+        assert any("80.0m" in m and "WS_80m_avg" in m for m in messages)
+
+    def test_from_inputs_silent_on_unconfigured_unpaired_height(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Unconfigured unpaired heights are neither computed nor warned about."""
+        item = _input_from_ts(_time_series_with_unpaired_ws(), [100.0])
+
+        with caplog.at_level(
+            logging.WARNING,
+            logger="cleanmast.subdomains.reporting.subdomains.wind_rose.compute",
+        ):
+            section = WindRoseSection.from_inputs([item])
+
+        for atom in section.atoms:
+            assert sorted(atom.df["height"].unique().to_list()) == [100.0]
+        assert caplog.records == []
