@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import polars as pl
 import pyarrow.parquet as pq
@@ -46,7 +46,9 @@ def _read_parquet_tolerant(data_path: Path) -> pl.DataFrame:
     except pl.exceptions.ComputeError as e:
         if "out of specification" not in str(e):
             raise
-        return pl.from_arrow(pq.read_table(data_path))
+        # pyarrow Table → polars DataFrame; from_arrow's union return type
+        # covers Series for non-Table inputs, which read_table never yields.
+        return cast(pl.DataFrame, pl.from_arrow(pq.read_table(data_path)))
 
 
 def _detect_format(path: Path) -> Literal["csv", "parquet"]:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import altair as alt
 import numpy as np
@@ -103,18 +104,20 @@ class ScatterRegressionAtom(
         )
 
         # ── Per-panel overlays derived from the fitted stats ────────────
-        stats_pdf = self.df.to_pandas()
+        stats_rows: list[dict[str, Any]] = self.df.to_pandas().to_dict(
+            orient="records"
+        )
         overlays: list[pd.DataFrame] = []
-        for row in stats_pdf.itertuples(index=False):
+        for row in stats_rows:
             for text_line, y_anchor in zip(
-                annotation_lines(row.slope, row.intercept, row.r, row.rmse),
+                annotation_lines(row["slope"], row["intercept"], row["r"], row["rmse"]),
                 (cap * 0.96, cap * 0.87),
             ):
                 overlays.append(
                     pd.DataFrame(
                         {
-                            "x_label": [row.x_label],
-                            "y_label": [row.y_label],
+                            "x_label": [row["x_label"]],
+                            "y_label": [row["y_label"]],
                             "kind": ["text"],
                             "x": [cap * 0.05],
                             "y": [y_anchor],
@@ -125,13 +128,13 @@ class ScatterRegressionAtom(
             overlays.append(
                 pd.DataFrame(
                     {
-                        "x_label": [row.x_label, row.x_label],
-                        "y_label": [row.y_label, row.y_label],
+                        "x_label": [row["x_label"], row["x_label"]],
+                        "y_label": [row["y_label"], row["y_label"]],
                         "kind": ["line", "line"],
                         "x": [0.0, cap],
                         "y": [
-                            float(row.intercept),
-                            float(row.slope) * cap + float(row.intercept),
+                            float(row["intercept"]),
+                            float(row["slope"]) * cap + float(row["intercept"]),
                         ],
                         "label": [None, None],
                     }
