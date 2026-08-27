@@ -20,7 +20,7 @@ from cleanmast.subdomains.reporting.model.analysis_input import (
     RepresentativeYearCalibrationPayload,
     SingleMastAnalysisInput,
 )
-from cleanmast.subdomains.reporting.subdomains.representative_year.model.sectors import (
+from cleanmast.subdomains.reporting.model.sectors import (
     SECTOR_NAMES,
     find_sector,
 )

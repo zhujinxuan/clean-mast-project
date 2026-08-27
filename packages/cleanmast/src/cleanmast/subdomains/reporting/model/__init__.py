@@ -16,6 +16,7 @@ from cleanmast.subdomains.reporting.model.height_label import (
     get_height_display_name,
 )
 from cleanmast.subdomains.reporting.model.section_node import SectionNode
+from cleanmast.subdomains.reporting.model.sectors import SECTOR_NAMES, find_sector
 
 __all__ = [
     "AnalysisMetadata",
@@ -27,7 +28,9 @@ __all__ = [
     "FlatSubsectionConfig",
     "MastRef",
     "MesoRef",
+    "SECTOR_NAMES",
     "SectionNode",
     "SingleMastAnalysisInput",
+    "find_sector",
     "get_height_display_name",
 ]

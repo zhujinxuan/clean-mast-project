@@ -1161,3 +1161,196 @@ class TestAnalysisWindowClipping:
 
         with pytest.raises(ValueError, match="M1.*ds1"):
             _clip_input_to_window(input_data, TR, "ds1")
+
+
+class TestCleaningSubsections:
+    """End-to-end render of the six cleaning placeholder sections (2.3.2–2.3.7)."""
+
+    def _create_parquet(self, tmp_path: Path) -> None:
+        """Write the four pipeline-stage parquets (raw → clean → shading → final)."""
+        from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+
+        sensors = [
+            SensorColumn(
+                column_name="WS_140m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=140.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        df = pl.DataFrame({
+            "timestamp": [
+                datetime(2020, 1, 1),
+                datetime(2020, 6, 1),
+                datetime(2020, 12, 31),
+                datetime(2021, 6, 1),  # outside the analysis window
+            ],
+            "WS_140m_avg [m/s]": [7.0, 8.0, 6.5, 9.9],
+        })
+        data = TimeSeriesData(df=df, sensors=sensors)
+        for rel in (
+            "./reconstruct-meso/M1.parquet",
+            "./raw/M1.parquet",
+            "./clean/M1.parquet",
+            "./tower-shading/M1.parquet",
+        ):
+            FileTimeSeriesRepository().save(
+                TimeSeriesSource(data=rel), str(tmp_path), data,
+            )
+
+    def _create_config(self, tmp_path: Path) -> Path:
+        config = {
+            "datasets": [
+                {
+                    "name": "cleaning_pipeline",
+                    "masts": [{
+                        "name": "M1",
+                        "air_density": 1.225,
+                        "input": {"data": "./reconstruct-meso/M1.parquet"},
+                        "cleaning_heights": [140.0],
+                        "raw_input": {"data": "./raw/M1.parquet"},
+                        "clean_input": {"data": "./clean/M1.parquet"},
+                        "tower_shading_input": {"data": "./tower-shading/M1.parquet"},
+                        "extreme_wind_10min_heights": [],
+                        "extreme_wind_3s_heights": [],
+                        "extreme_wind_gust_factors": [],
+                    }],
+                    "analysis_windows": [{
+                        "target_masts": ["M1"],
+                        "time_range": {
+                            "min": "2020-01-01T00:00:00",
+                            "max": "2020-12-31T23:50:00",
+                        },
+                    }],
+                },
+            ],
+            "subsections": [
+                {"index": "2.3", "type": "timeseries", "title": "数据清洗与插补", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.2", "type": "cleaning_overview", "title": "数据清洗与插补总体概况", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.3", "type": "cleaning_rules", "title": "缺测与不合理数据处理", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.4", "type": "tower_shading", "title": "塔影效应处理", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.5", "type": "imputation_same_tower", "title": "同塔插补", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.6", "type": "imputation_cross_mast", "title": "异塔插补", "datasets": ["cleaning_pipeline"]},
+                {"index": "2.3.7", "type": "imputation_meso", "title": "中尺度插补", "datasets": ["cleaning_pipeline"]},
+            ],
+        }
+        path = tmp_path / "rep-ts-report.toml"
+        with open(path, "wb") as f:
+            tomli_w.dump(config, f)
+        return path
+
+    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
+    def test_six_cleaning_sections_render(self, mock_builder_cls, tmp_path):
+        self._create_parquet(tmp_path)
+        config_path = self._create_config(tmp_path)
+
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+        mock_builder_cls.return_value = mock_builder
+
+        result = generate_report(str(config_path), repo=FileTimeSeriesRepository())
+
+        assert result == {"typ": Path("report.typ")}
+        sections = [call.args[0] for call in mock_builder.add_section.call_args_list]
+        # Root "2" (auto placeholder parent, with gap-filled 2.1/2.2 siblings)
+        # plus the auto gap-filler "1".
+        assert len(sections) == 2
+        containers = [
+            s
+            for s in sections[1].subsections
+            if s.title == "数据清洗与插补"
+        ]
+        assert len(containers) == 1
+        container = containers[0]
+        titles = [s.title for s in container.subsections]
+        assert titles == [
+            "Placeholder",  # auto-created 2.3.1 gap node
+            "数据清洗与插补总体概况",
+            "缺测与不合理数据处理",
+            "塔影效应处理",
+            "同塔插补",
+            "异塔插补",
+            "中尺度插补",
+        ]
+        from cleanmast.subdomains.reporting.subdomains.cleaning import (
+            CleaningOverviewSection,
+        )
+        leaf = container.subsections[1]
+        assert isinstance(leaf, CleaningOverviewSection)
+        ir = leaf.render_ir(tmp_path / "imgs")
+        assert ir.heading.text == "数据清洗与插补总体概况"
+        # Real 2.3.2 content: flow intro + stats sentence, then the
+        # stage coverage table.
+        paragraphs = [b for b in ir.body if hasattr(b, "text")]
+        tables = [b for b in ir.body if hasattr(b, "headers")]
+        assert len(paragraphs) == 2
+        assert paragraphs[0].text.startswith("数据处理按以下流程进行")
+        assert "应有数据点" in paragraphs[1].text
+        assert len(tables) == 1
+        assert tables[0].headers[0] == "测风塔"
+
+    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
+    def test_cleaning_payload_attached_to_items(self, mock_builder_cls, tmp_path):
+        """load_datasets attaches CleaningAnalysisPayload for cleaning-dataset masts."""
+        from cleanmast.subdomains.reporting.subdomains.cleaning import (
+            CleaningOverviewSection,
+        )
+
+        self._create_parquet(tmp_path)
+        config_path = self._create_config(tmp_path)
+
+        captured: list = []
+
+        real_from_inputs = CleaningOverviewSection.from_inputs.__func__
+
+        def spy(cls, items):
+            captured.extend(items)
+            return real_from_inputs(cls, items)
+
+        CleaningOverviewSection.from_inputs = classmethod(spy)
+        try:
+            mock_builder = MagicMock()
+            mock_builder.build.return_value = {"typ": Path("report.typ")}
+            mock_builder_cls.return_value = mock_builder
+            generate_report(str(config_path), repo=FileTimeSeriesRepository())
+        finally:
+            CleaningOverviewSection.from_inputs = classmethod(real_from_inputs)
+
+        assert captured, "cleaning_overview never dispatched"
+        payload = captured[0].cleaning_payload
+        assert payload is not None
+        assert payload.raw_input is not None
+        assert payload.raw_input.data == "./raw/M1.parquet"
+        assert payload.clean_input is not None
+        assert payload.clean_input.data == "./clean/M1.parquet"
+        assert payload.tower_shading_input is not None
+        assert payload.tower_shading_input.data == "./tower-shading/M1.parquet"
+        assert payload.cleaning_heights == [140.0]
+        assert payload.analysis_window.min == datetime(2020, 1, 1)
+        # Stage series loaded at the boundary, clipped to the window
+        # (the 2021-06-01 row is dropped), sensors preserved.
+        assert payload.raw_series is not None
+        assert payload.clean_series is not None
+        assert payload.tower_shading_series is not None
+        for series in (payload.raw_series, payload.clean_series, payload.tower_shading_series):
+            assert series is not None
+            assert len(series.df) == 3
+            assert series.df["timestamp"].max() == datetime(2020, 12, 31)
+            assert series.sensors[0].column_name == "WS_140m_avg [m/s]"
+
+    @patch("cleanmast.application.usecases.generate_report.ReportBuilder")
+    def test_missing_stage_parquet_raises(self, mock_builder_cls, tmp_path):
+        """A referenced stage parquet that does not exist fails loudly at load."""
+        self._create_parquet(tmp_path)
+        # Drop the clean stage — the config references it.
+        (tmp_path / "clean" / "M1.parquet").unlink()
+        config_path = self._create_config(tmp_path)
+
+        mock_builder = MagicMock()
+        mock_builder.build.return_value = {"typ": Path("report.typ")}
+        mock_builder_cls.return_value = mock_builder
+
+        with pytest.raises(FileNotFoundError, match="Cleaning stage parquet not found"):
+            generate_report(str(config_path), repo=FileTimeSeriesRepository())

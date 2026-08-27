@@ -99,8 +99,10 @@ class TestSerializeEquation:
         assert serialize_equation(block) == "$E = mc^2$"
 
     def test_serialize_equation_display(self) -> None:
+        # Display math is a block element: trailing blank line so a following
+        # heading or figure starts on its own line.
         block = TypstEquation(latex="E = mc^2", display=True)
-        assert serialize_equation(block) == "$ E = mc^2 $"
+        assert serialize_equation(block) == "$ E = mc^2 $\n\n"
 
 
 class TestSerializeCodeBlock:

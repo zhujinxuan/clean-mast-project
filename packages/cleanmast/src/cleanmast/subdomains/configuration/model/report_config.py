@@ -25,15 +25,24 @@ SubsectionType = Literal[
     "temporal",
     "air_density",
     "representative_year_calibration",
+    # 数据清洗与插补 (section 2.3) — cleaning pipeline reporting (2.3.2–2.3.7;
+    # 2.3.1 is emitted by a different capability / later wave).
+    "cleaning_overview",
+    "cleaning_rules",
+    "tower_shading",
+    "imputation_same_tower",
+    "imputation_cross_mast",
+    "imputation_meso",
     "iec_standards",
     "fifty_year_method1",
     "fifty_year_method2",
     "fifty_year_method3",
     "fifty_year_summary",
     # Container-node type: groups capability children under one heading
-    # (e.g. 2.4 测风年, 2.5 代表年). Emitted by recommend_report.py, handled
-    # by _process_flat_timeseries_node in generate_report.py. Not a
-    # renderable capability — intentionally absent from section dispatch maps.
+    # (e.g. 2.3 数据清洗与插补, 2.4 测风年, 2.5 代表年). Emitted by
+    # recommend_report.py, handled by _process_flat_timeseries_node in
+    # generate_report.py. Not a renderable capability — intentionally absent
+    # from section dispatch maps.
     "timeseries",
     "fifty_year_max_wind",
 ]
@@ -167,6 +176,17 @@ class MastRef(BaseModel):
         temporal_heights: Heights with WindSpeed avg sensors (no height-band filter),
             used by the temporal subsection. Optional; must be non-empty when the
             temporal subsection is generated.
+        cleaning_heights: WindSpeed avg sensor heights, band-when-available
+            (120–160m when any exist, else all WS avg heights), used by ALL
+            cleaning subsections (2.3.2–2.3.7). Populated only for the
+            cleaning dataset; empty elsewhere.
+        raw_input: Raw (pre-clean) time series source from process-clean.toml
+            input. Populated only for the cleaning dataset.
+        clean_input: Cleaned time series source from process-clean.toml
+            output. Populated only for the cleaning dataset.
+        tower_shading_input: Tower-shading-corrected time series source from
+            tower-shading.toml output. Populated only for the cleaning
+            dataset; None when the mast has no tower-shading entry.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -180,6 +200,10 @@ class MastRef(BaseModel):
     representative_year_heights: list[float] = Field(default_factory=list)
     wind_rose_heights: list[float] = Field(default_factory=list)
     temporal_heights: list[float] = Field(default_factory=list)
+    cleaning_heights: list[float] = Field(default_factory=list)
+    raw_input: TimeSeriesSource | None = None
+    clean_input: TimeSeriesSource | None = None
+    tower_shading_input: TimeSeriesSource | None = None
     extreme_wind_10min_heights: list[float]
     extreme_wind_3s_heights: list[float]
     extreme_wind_gust_factors: list[ExtremeWindGustFactor]

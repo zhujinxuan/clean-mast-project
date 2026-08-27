@@ -11,16 +11,16 @@ import vl_convert as vlc
 from typing_extensions import override
 from typst_ir import TypstParagraph
 
+from cleanmast.subdomains.reporting.model.sectors import (
+    SECTOR_NAMES,
+    find_sector,
+)
 from cleanmast.subdomains.reporting.protocols.report_atom import ReportAtom
 from cleanmast.subdomains.reporting.subdomains.representative_year.model.report_meta import (
     RepYearSectorAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.representative_year.model.schemas import (
     RepYearSectorSchema,
-)
-from cleanmast.subdomains.reporting.subdomains.representative_year.model.sectors import (
-    SECTOR_NAMES,
-    find_sector,
 )
 
 

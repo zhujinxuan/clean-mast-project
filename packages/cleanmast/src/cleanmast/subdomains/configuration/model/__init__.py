@@ -17,6 +17,17 @@ from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
     WtTimeSeriesMast,
 )
+from cleanmast.subdomains.configuration.model.clean_config import (
+    AvailabilityCriteria,
+    CleanRule,
+    CleanRulesFile,
+    HeightFilter,
+    IcingCriteria,
+    LayerDifferenceCriteria,
+    ProcessCleanConfiguration,
+    ProcessCleanMast,
+    RangeCriteria,
+)
 from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
 from cleanmast.subdomains.configuration.model.reconstruct_meso import (
     MesoSource,
@@ -40,9 +51,16 @@ from cleanmast.subdomains.configuration.model.representative_year_config import 
     RepresentativeYearMast,
     RepresentativeYearMesoModel,
 )
+from cleanmast.subdomains.configuration.model.tower_shading_config import (
+    TowerShadingConfiguration,
+    TowerShadingMast,
+)
 
 __all__ = [
     "AnalysisWindow",
+    "AvailabilityCriteria",
+    "CleanRule",
+    "CleanRulesFile",
     "DatasetConfig",
     "DiscoveredConfig",
     "ExtremeWindGustFactor",
@@ -51,11 +69,17 @@ __all__ = [
     "FillHeightsRepYearConfiguration",
     "FlatReportConfig",
     "FlatSubsectionConfig",
+    "HeightFilter",
     "HeightReference",
+    "IcingCriteria",
+    "LayerDifferenceCriteria",
     "MastFillConfig",
     "MastRef",
     "MesoRef",
     "MesoSource",
+    "ProcessCleanConfiguration",
+    "ProcessCleanMast",
+    "RangeCriteria",
     "ReconstructMesoConfiguration",
     "ReconstructMesoMast",
     "ReconstructMesoModels",
@@ -64,6 +88,8 @@ __all__ = [
     "RepresentativeYearMast",
     "RepresentativeYearMesoModel",
     "SubsectionType",
+    "TowerShadingConfiguration",
+    "TowerShadingMast",
     "WindDirectionHeightConfig",
     "WindSpeedHeightConfig",
     "WtTimeSeriesConfiguration",

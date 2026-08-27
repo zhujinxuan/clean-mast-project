@@ -64,6 +64,17 @@ _FIFTY_YEAR_ANALYSIS_SUBSECTION_TYPES: list[SubsectionType] = [
     "fifty_year_summary",
 ]
 
+# Section 2.3 数据清洗与插补 — (index, SubsectionType, title) triples.
+# 2.3.1 is authored elsewhere; 2.3.2–2.3.7 form the cleaning capability.
+_CLEANING_SUBSECTIONS: list[tuple[str, SubsectionType, str]] = [
+    ("2.3.2", "cleaning_overview", "数据清洗与插补总体概况"),
+    ("2.3.3", "cleaning_rules", "缺测与不合理数据处理"),
+    ("2.3.4", "tower_shading", "塔影效应处理"),
+    ("2.3.5", "imputation_same_tower", "同塔插补"),
+    ("2.3.6", "imputation_cross_mast", "异塔插补"),
+    ("2.3.7", "imputation_meso", "中尺度插补"),
+]
+
 
 def _discover_turbulence_heights(sensors: list[SensorColumn]) -> list[float]:
     """Heights with both WS avg and WS sd sensors within turbine range (120–160m)."""
@@ -125,6 +136,22 @@ def _discover_temporal_heights(sensors: list[SensorColumn]) -> list[float]:
     Returns band heights when any exist, else all WS avg heights: a
     band-only rule would yield an empty list on short masts, and
     WindTemporalSection hard-fails on an empty temporal_heights list.
+    """
+    ws_avg = {
+        s.height
+        for s in sensors
+        if s.sensor_type == "WindSpeed" and s.stat_type == "avg"
+    }
+    band = sorted(h for h in ws_avg if 120.0 <= h <= 160.0)
+    return band if band else sorted(ws_avg)
+
+
+def _discover_cleaning_heights(sensors: list[SensorColumn]) -> list[float]:
+    """WindSpeed avg sensor heights within 120–160m, band-when-available.
+
+    Heights source for ALL cleaning subsections (2.3.2–2.3.7). Mirrors
+    _discover_temporal_heights: band heights when any exist, else all WS
+    avg heights, so short masts still get a non-empty cleaning height set.
     """
     ws_avg = {
         s.height
@@ -303,10 +330,14 @@ def _build_subsections(
     repyear_dataset: DatasetConfig | None,
     calibration_dataset: DatasetConfig | None,
     original_meso_dataset: DatasetConfig | None,
+    cleaning_dataset: DatasetConfig | None = None,
 ) -> list[FlatSubsectionConfig]:
     """Build flat subsections with hardcoded indices.
 
     Index scheme:
+      2.3 = cleaning (timeseries) — 数据清洗与插补; children 2.3.2–2.3.7
+        use the cleaning dataset (2.3.1 belongs to a different capability
+        and is intentionally left as a tree-builder placeholder).
       2.4 = meso (timeseries)
         2.4.4 vertical_profile and 2.4.7 turbulence use the original-heights
         dataset when available (fill-heights interpolation corrupts shear
@@ -318,6 +349,21 @@ def _build_subsections(
       2.6 = fifty_year_max_wind
     """
     subsections: list[FlatSubsectionConfig] = []
+
+    if cleaning_dataset:
+        subsections.append(FlatSubsectionConfig(
+            index="2.3",
+            type="timeseries",
+            title="数据清洗与插补",
+            datasets=[cleaning_dataset.name],
+        ))
+        for index, subtype, title in _CLEANING_SUBSECTIONS:
+            subsections.append(FlatSubsectionConfig(
+                index=index,
+                type=subtype,
+                title=title,
+                datasets=[cleaning_dataset.name],
+            ))
 
     if filled_meso_dataset:
         subsections.append(FlatSubsectionConfig(
@@ -423,10 +469,83 @@ def _build_meso_filled_heights_dataset(
     )
 
 
-def _build_meso_original_heights_dataset(
-    project_config: ProjectConfig,
-    rep_year_masts: Sequence[RepresentativeYearMast],
+def _load_original_mast_ref(
+    mast_name: str,
+    data_path: str,
+    project_path: Path,
     repo: TimeSeriesRepository,
+) -> tuple[MastRef, list[SensorColumn]]:
+    """Load one reconstruct-meso parquet and build its MastRef.
+
+    Discovers every per-subsection height list from the ORIGINAL sensors
+    (real avg+sd pairs in 120–160m, not interpolated columns from
+    fill-heights). Returns the sensors alongside so callers can run
+    additional discovery rules (e.g. cleaning_heights) without a reload.
+    """
+    parquet_path = project_path / data_path
+    if not parquet_path.exists():
+        raise FileNotFoundError(
+            f"Original reconstruct-meso parquet not found for mast "
+            f"{mast_name}: {parquet_path}"
+        )
+
+    source = TimeSeriesSource(data=data_path, sensors=None)
+    time_series_data = repo.load(source, str(project_path))
+
+    try:
+        air_density = calculate_air_density(time_series_data)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"Cannot calculate air density for mast {mast_name}: {e}. "
+            f"Using fallback {STANDARD_AIR_DENSITY}"
+        )
+        air_density = STANDARD_AIR_DENSITY
+
+    sensors = time_series_data.sensors
+    ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(sensors)
+
+    mast_ref = MastRef(
+        name=mast_name,
+        air_density=round(air_density, 3),
+        input=TimeSeriesSource(data=data_path),
+        turbulence_heights=_discover_turbulence_heights(sensors),
+        wind_frequency_heights=_discover_hub_band_heights(sensors),
+        weibull_heights=_discover_hub_band_heights(sensors),
+        representative_year_heights=_discover_hub_band_heights(sensors),
+        wind_rose_heights=_discover_wind_rose_heights(sensors),
+        temporal_heights=_discover_temporal_heights(sensors),
+        extreme_wind_10min_heights=ew_10min,
+        extreme_wind_3s_heights=ew_3s,
+        extreme_wind_gust_factors=ew_gust,
+    )
+    return mast_ref, sensors
+
+
+def _build_original_mast_refs(
+    project_config: ProjectConfig,
+    repo: TimeSeriesRepository,
+) -> list[tuple[MastRef, list[SensorColumn]]] | None:
+    """Load (MastRef, sensors) for every reconstruct-meso mast.
+
+    Returns None when reconstruct-meso.toml is absent; empty list when the
+    config exists but declares no masts. Pairs are shared by the
+    original-heights and cleaning dataset builders so each parquet loads
+    exactly once per recommend run.
+    """
+    recon_meso_dc = project_config.discover_reconstruct_meso_config()
+    if recon_meso_dc is None:
+        return None
+    project_path = project_config.project_dir
+    return [
+        _load_original_mast_ref(mast.name, mast.output.data, project_path, repo)
+        for mast in recon_meso_dc.config.masts
+    ]
+
+
+def _build_meso_original_heights_dataset(
+    original_pairs: list[tuple[MastRef, list[SensorColumn]]] | None,
+    rep_year_masts: Sequence[RepresentativeYearMast],
 ) -> DatasetConfig | None:
     """Build dataset from original reconstruct-meso output (pre-fill-heights).
 
@@ -434,76 +553,106 @@ def _build_meso_original_heights_dataset(
     Discovers turbulence_heights from original sensors (real avg+sd pairs
     in 120–160m, not interpolated columns from fill-heights).
     """
-    recon_meso_dc = project_config.discover_reconstruct_meso_config()
-    if recon_meso_dc is None:
+    if not original_pairs:
         return None
-    project_path = project_config.project_dir
-    masts = recon_meso_dc.config.masts
-    mast_refs: list[MastRef] = []
-
-    for mast in masts:
-        data_path = mast.output.data
-        parquet_path = project_path / data_path
-
-        if not parquet_path.exists():
-            raise FileNotFoundError(
-                f"Original reconstruct-meso parquet not found for mast "
-                f"{mast.name}: {parquet_path}"
-            )
-
-        source = TimeSeriesSource(data=data_path, sensors=None)
-        time_series_data = repo.load(source, str(project_path))
-
-        try:
-            air_density = calculate_air_density(time_series_data)
-        except Exception as e:
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                f"Cannot calculate air density for mast {mast.name}: {e}. "
-                f"Using fallback {STANDARD_AIR_DENSITY}"
-            )
-            air_density = STANDARD_AIR_DENSITY
-
-        turbulence_heights = _discover_turbulence_heights(
-            time_series_data.sensors
-        )
-        hub_band_heights = _discover_hub_band_heights(
-            time_series_data.sensors
-        )
-        temporal_heights = _discover_temporal_heights(
-            time_series_data.sensors
-        )
-        wind_rose_heights = _discover_wind_rose_heights(
-            time_series_data.sensors
-        )
-        ew_10min, ew_3s, ew_gust = _discover_extreme_wind_heights(
-            time_series_data.sensors
-        )
-
-        mast_refs.append(MastRef(
-            name=mast.name,
-            air_density=round(air_density, 3),
-            input=TimeSeriesSource(data=data_path),
-            turbulence_heights=turbulence_heights,
-            wind_frequency_heights=hub_band_heights,
-            weibull_heights=hub_band_heights,
-            representative_year_heights=hub_band_heights,
-            wind_rose_heights=wind_rose_heights,
-            temporal_heights=temporal_heights,
-            extreme_wind_10min_heights=ew_10min,
-            extreme_wind_3s_heights=ew_3s,
-            extreme_wind_gust_factors=ew_gust,
-        ))
-
-    if not mast_refs:
-        return None
-
+    mast_refs = [mast_ref for mast_ref, _ in original_pairs]
     mast_names = [m.name for m in mast_refs]
     return DatasetConfig(
         name="reconstruct_meso_original_heights",
         masts=mast_refs,
         analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
     )
+
+
+def _build_cleaning_dataset(
+    project_config: ProjectConfig,
+    original_pairs: list[tuple[MastRef, list[SensorColumn]]] | None,
+    rep_year_masts: Sequence[RepresentativeYearMast],
+) -> DatasetConfig | None:
+    """Build the cleaning dataset wiring the full cleaning pipeline per mast.
+
+    Per mast: ``input`` = reconstruct-meso parquet (final pipeline stage),
+    ``raw_input``/``clean_input`` from process-clean.toml input/output,
+    ``tower_shading_input`` from tower-shading.toml output, and
+    ``cleaning_heights`` discovered from the reconstruct-meso sensors.
+    Mesos are wired from representative-year.toml restricted to the
+    cleaning masts (mirroring _build_repyear_dataset) so 2.3.7 中尺度插补
+    receives the meso source via RepresentativeYearCalibrationPayload.
+
+    Returns None (2.3.x subsections silently skipped, mirroring the other
+    optional datasets) when the reconstruct-meso config, process-clean.toml,
+    or tower-shading.toml is missing, or when no mast appears in both the
+    reconstruct-meso and process-clean configs. Masts without a
+    tower-shading entry keep ``tower_shading_input=None``.
+    """
+    if not original_pairs:
+        return None
+    process_clean_dc = project_config.discover_process_clean_config()
+    tower_shading_dc = project_config.discover_tower_shading_config()
+    if process_clean_dc is None or tower_shading_dc is None:
+        return None
+
+    clean_by_name = {m.name: m for m in process_clean_dc.config.masts}
+    shading_by_name = {m.name: m for m in tower_shading_dc.config.masts}
+
+    mast_refs: list[MastRef] = []
+    for mast_ref, sensors in original_pairs:
+        clean_mast = clean_by_name.get(mast_ref.name)
+        if clean_mast is None:
+            continue
+        shading_mast = shading_by_name.get(mast_ref.name)
+        mast_refs.append(mast_ref.model_copy(update={
+            "raw_input": clean_mast.input,
+            "clean_input": clean_mast.output,
+            "tower_shading_input": shading_mast.output if shading_mast else None,
+            "cleaning_heights": _discover_cleaning_heights(sensors),
+        }))
+
+    if not mast_refs:
+        return None
+    mast_names_set = {m.name for m in mast_refs}
+    meso_refs = _build_meso_refs(project_config, mast_names_set)
+
+    mast_names = [m.name for m in mast_refs]
+    return DatasetConfig(
+        name="cleaning_pipeline",
+        masts=mast_refs,
+        mesos=meso_refs or None,
+        analysis_windows=_windows_for_mast_names(rep_year_masts, mast_names),
+    )
+
+
+def _build_meso_refs(
+    project_config: ProjectConfig,
+    mast_names: Collection[str],
+) -> list[MesoRef]:
+    """MesoRefs for ``mast_names`` from representative-year.toml.
+
+    Mirrors the wiring in _build_repyear_dataset: each mast's
+    ``meso_model.meso_name`` maps it to a meso source; only mesos with at
+    least one target mast are returned. Returns [] when the representative
+    year config is absent (recommend_report requires it, so this is
+    defensive for direct callers).
+    """
+    rep_year_dc = project_config.discover_representative_year_config()
+    if rep_year_dc is None:
+        return []
+    meso_name_to_masts: dict[str, list[str]] = {}
+    for mast in rep_year_dc.config.masts:
+        if mast.name not in mast_names:
+            continue
+        meso_name_to_masts.setdefault(
+            mast.meso_model.meso_name, []
+        ).append(mast.name)
+    return [
+        MesoRef(
+            input=meso.input,
+            target_masts=meso_name_to_masts[meso.name],
+            meso_name=meso.name,
+        )
+        for meso in rep_year_dc.config.mesos
+        if meso.name in meso_name_to_masts
+    ]
 
 
 def _build_repyear_dataset(
@@ -592,6 +741,9 @@ def recommend_report(
     - Parquet files must exist in the referenced subdirectories
     - fill-heights-reconstruct-meso.toml is optional; if absent, only the
       代表年 subsection is generated
+    - process-clean.toml and tower-shading.toml are optional; when the
+      reconstruct-meso config or either clean config is absent, the
+      cleaning subsections (2.3.x) are silently skipped
 
     Args:
         project_config: ProjectConfig for the project directory.
@@ -616,7 +768,9 @@ def recommend_report(
 
     filled_meso_dataset = _build_meso_filled_heights_dataset(project_config, rep_year_masts, repo)
     repyear_dataset = _build_repyear_dataset(project_config, rep_year_masts, repo)
-    original_meso_dataset = _build_meso_original_heights_dataset(project_config, rep_year_masts, repo)
+    original_pairs = _build_original_mast_refs(project_config, repo)
+    original_meso_dataset = _build_meso_original_heights_dataset(original_pairs, rep_year_masts)
+    cleaning_dataset = _build_cleaning_dataset(project_config, original_pairs, rep_year_masts)
     calibration_dataset = _build_calibration_dataset(filled_meso_dataset, repyear_dataset, rep_year_masts)
 
     if not filled_meso_dataset and not repyear_dataset:
@@ -632,12 +786,15 @@ def recommend_report(
         datasets.append(repyear_dataset)
     if original_meso_dataset:
         datasets.append(original_meso_dataset)
+    if cleaning_dataset:
+        datasets.append(cleaning_dataset)
     if calibration_dataset:
         datasets.append(calibration_dataset)
 
     subsections = _build_subsections(
         filled_meso_dataset, repyear_dataset, calibration_dataset,
         original_meso_dataset=original_meso_dataset,
+        cleaning_dataset=cleaning_dataset,
     )
     report_config = FlatReportConfig(
         datasets=datasets,

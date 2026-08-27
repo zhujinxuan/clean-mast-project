@@ -18,6 +18,7 @@ layers =
 # render/subsection_renderer.py; these edges are the sanctioned exception.
 ignore_imports =
     cleanmast.subdomains.reporting.subdomains.air_density.section -> cleanmast.subdomains.reporting.render.subsection_renderer
+    cleanmast.subdomains.reporting.subdomains.cleaning.section -> cleanmast.subdomains.reporting.render.subsection_renderer
     cleanmast.subdomains.reporting.subdomains.extreme_wind.section -> cleanmast.subdomains.reporting.render.subsection_renderer
     cleanmast.subdomains.reporting.subdomains.representative_year.section -> cleanmast.subdomains.reporting.render.subsection_renderer
     cleanmast.subdomains.reporting.subdomains.turbulence.section -> cleanmast.subdomains.reporting.render.subsection_renderer
@@ -53,6 +54,9 @@ ignore_imports =
     cleanmast.subdomains.reporting.model.section_node -> cleanmast.subdomains.configuration.model.report_config
     cleanmast.subdomains.reporting.assemble.section_assembler -> cleanmast.subdomains.configuration.model.report_config
     cleanmast.subdomains.reporting.assemble.tree_builder -> cleanmast.subdomains.configuration.model.report_config
+    # Sanctioned edge: 2.3.3 documents the Julia process-clean pipeline,
+    # whose rules/config are owned by the configuration subdomain.
+    cleanmast.subdomains.reporting.subdomains.cleaning.rules_io -> cleanmast.subdomains.configuration
 
 [importlinter:contract:reporting-no-cross-capability]
 name = Reporting capabilities cannot import each other

@@ -99,7 +99,9 @@ def serialize_figure(block: TypstFigure) -> str:
 
 def serialize_equation(block: TypstEquation) -> str:
     if block.display:
-        return f"$ {block.latex} $"
+        # Display math is a block element: terminate so a following heading
+        # or figure starts on its own line (typst headings require line start).
+        return f"$ {block.latex} $\n\n"
     return f"${block.latex}$"
 
 

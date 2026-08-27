@@ -17,6 +17,11 @@ from cleanmast.shared.timeseries.fill_height_rep_year_config import (
 from cleanmast.shared.timeseries.wt_timeseries_config import (
     WtTimeSeriesConfiguration,
 )
+from cleanmast.subdomains.configuration.model.clean_config import (
+    CleanRule,
+    CleanRulesFile,
+    ProcessCleanConfiguration,
+)
 from cleanmast.subdomains.configuration.model.discovered_config import DiscoveredConfig
 from cleanmast.subdomains.configuration.model.reconstruct_meso import (
     ReconstructMesoConfiguration,
@@ -25,7 +30,36 @@ from cleanmast.subdomains.configuration.model.report_config import FlatReportCon
 from cleanmast.subdomains.configuration.model.representative_year_config import (
     RepresentativeYearConfiguration,
 )
+from cleanmast.subdomains.configuration.model.tower_shading_config import (
+    TowerShadingConfiguration,
+)
 from cleanmast.subdomains.configuration.services.config_io import load_config, save_config
+
+
+def load_clean_rules(
+    rules_config: "str | list[CleanRule]",
+    project_dir: Path,
+) -> list[CleanRule]:
+    """Resolve a mast's ``rules`` config into parsed rules (Julia ``load_rules``).
+
+    Args:
+        rules_config: Either a path to a rules preset file (relative paths
+            resolve against ``project_dir``, mirroring Julia ``load_rules``)
+            or an inline list of already-parsed rules.
+        project_dir: Project directory used to resolve relative rule-file paths.
+
+    Returns:
+        The parsed rule list.
+
+    Raises:
+        FileNotFoundError: If a rule-file path does not exist under the project.
+    """
+    if isinstance(rules_config, str):
+        path = Path(rules_config)
+        if not path.is_absolute():
+            path = project_dir / path
+        return load_config(CleanRulesFile, path).rules
+    return rules_config
 
 
 # ===========================================================================
@@ -71,6 +105,8 @@ class ProjectConfig:
         FillHeightsMesoConfiguration: "fill-heights-reconstruct-meso.toml",
         FillHeightsRepYearConfiguration: "fill-heights-representative-year.toml",
         FlatReportConfig: "rep-ts-report.toml",
+        ProcessCleanConfiguration: "process-clean.toml",
+        TowerShadingConfiguration: "tower-shading.toml",
     }
 
     _FILL_MODELS_SUBDIR: ClassVar[str] = "fill-models"
@@ -83,7 +119,33 @@ class ProjectConfig:
         self._fill_heights_meso_config: DiscoveredConfig[FillHeightsMesoConfiguration] | None = None
         self._fill_heights_rep_year_config: DiscoveredConfig[FillHeightsRepYearConfiguration] | None = None
         self._report_config: DiscoveredConfig[FlatReportConfig] | None = None
+        self._process_clean_config: DiscoveredConfig[ProcessCleanConfiguration] | None = None
+        self._tower_shading_config: DiscoveredConfig[TowerShadingConfiguration] | None = None
         self._fill_height_models: dict[str, dict[str, DiscoveredConfig[FillHeightFitResult]]] | None = None
+
+    def discover_process_clean_config(self) -> DiscoveredConfig[ProcessCleanConfiguration] | None:
+        """Discover and cache ``process-clean.toml``."""
+        if self._process_clean_config is not None:
+            return self._process_clean_config
+        filename = self._FILENAMES[ProcessCleanConfiguration]
+        path = self.project_dir / filename
+        if not path.exists():
+            return None
+        config = load_config(ProcessCleanConfiguration, path)
+        self._process_clean_config = DiscoveredConfig(config=config, filename=filename)
+        return self._process_clean_config
+
+    def discover_tower_shading_config(self) -> DiscoveredConfig[TowerShadingConfiguration] | None:
+        """Discover and cache ``tower-shading.toml``."""
+        if self._tower_shading_config is not None:
+            return self._tower_shading_config
+        filename = self._FILENAMES[TowerShadingConfiguration]
+        path = self.project_dir / filename
+        if not path.exists():
+            return None
+        config = load_config(TowerShadingConfiguration, path)
+        self._tower_shading_config = DiscoveredConfig(config=config, filename=filename)
+        return self._tower_shading_config
 
     def discover_reconstruct_meso_config(self) -> DiscoveredConfig[ReconstructMesoConfiguration] | None:
         """Discover and cache ``reconstruct-meso.toml``."""

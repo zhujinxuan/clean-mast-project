@@ -24,6 +24,7 @@ from cleanmast.subdomains.configuration.model.report_config import (
 from cleanmast.subdomains.reporting.api import ReportGenerationService
 from cleanmast.subdomains.reporting.assemble.tree_builder import build_section_tree
 from cleanmast.subdomains.reporting.model.analysis_input import (
+    CleaningAnalysisPayload,
     RepresentativeYearCalibrationPayload,
     SingleMastAnalysisInput,
 )
@@ -178,6 +179,37 @@ def load_datasets(
         for aw in ds.analysis_windows:
             for mast_name in aw.target_masts:
                 mast_analysis_windows[mast_name] = aw.time_range
+        # Attach cleaning payloads (stage sources + rep-year window) for
+        # cleaning-dataset masts — raw_input is set only for those (see
+        # recommend_report._build_cleaning_dataset). Stage parquets load
+        # here, at the I/O boundary; sections receive them pre-clipped.
+        for i, mast_ref in enumerate(ds.masts or []):
+            if mast_ref.raw_input is None:
+                continue
+            window = mast_analysis_windows[mast_ref.name]
+            mast_data[i] = replace(
+                mast_data[i],
+                cleaning_payload=CleaningAnalysisPayload(
+                    raw_input=mast_ref.raw_input,
+                    clean_input=mast_ref.clean_input,
+                    tower_shading_input=mast_ref.tower_shading_input,
+                    cleaning_heights=mast_ref.cleaning_heights,
+                    analysis_window=window,
+                    raw_series=_load_cleaning_stage_series(
+                        mast_ref.raw_input, window, base_dir,
+                        mast_ref.name, repo,
+                    ),
+                    clean_series=_load_cleaning_stage_series(
+                        mast_ref.clean_input, window, base_dir,
+                        mast_ref.name, repo,
+                    ),
+                    tower_shading_series=_load_cleaning_stage_series(
+                        mast_ref.tower_shading_input, window, base_dir,
+                        mast_ref.name, repo,
+                    ),
+                ),
+            )
+
         # Attach calibration payloads from meso references
         if ds.mesos:
             meso_data: dict[str, TimeSeriesData] = {}
@@ -211,6 +243,37 @@ def load_datasets(
             analysis_windows=mast_analysis_windows,
         )
     return loaded
+
+
+def _load_cleaning_stage_series(
+    source: TimeSeriesSource | None,
+    window: TimeRange,
+    base_dir: Path,
+    mast_name: str,
+    repo: TimeSeriesRepository,
+) -> TimeSeriesData | None:
+    """Load one cleaning-pipeline stage parquet, clipped to the analysis window.
+
+    Resolves the path exactly like the mast's main input (base_dir-relative,
+    FileNotFoundError when missing). Unlike ``_clip_input_to_window`` an
+    empty clip does NOT raise: a stage may legitimately have no data inside
+    the rep-year window — that coverage gap is the subject of section 2.3,
+    not an error. Returns None when the mast has no stage source.
+    """
+    if source is None:
+        return None
+    resolved = base_dir / source.data
+    if not resolved.exists():
+        raise FileNotFoundError(
+            f"Cleaning stage parquet not found for mast '{mast_name}': {resolved}"
+        )
+    data = repo.load(TimeSeriesSource(data=str(resolved)), ".")
+    start = window.min.replace(tzinfo=None)
+    end = window.max.replace(tzinfo=None)
+    clipped = data.df.filter(
+        (pl.col("timestamp") >= start) & (pl.col("timestamp") <= end)
+    )
+    return replace(data, df=clipped)
 
 
 def _clip_input_to_window(
@@ -303,6 +366,12 @@ def _generate_from_flat_config(
         "weibull": service.generate_weibull_section,
         "turbulence": service.generate_turbulence_section,
         "temporal": service.generate_temporal_section,
+        "cleaning_overview": service.generate_cleaning_overview_section,
+        "cleaning_rules": service.generate_cleaning_rules_section,
+        "tower_shading": service.generate_tower_shading_section,
+        "imputation_same_tower": service.generate_imputation_same_tower_section,
+        "imputation_cross_mast": service.generate_imputation_cross_mast_section,
+        "imputation_meso": service.generate_imputation_meso_section,
         "fifty_year_max_wind": service.generate_fifty_year_max_wind_section,
     }
 

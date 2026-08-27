@@ -1,4 +1,8 @@
-"""Domain constants and helpers for 16-direction wind-sector mapping."""
+"""Shared 16-direction wind-sector mapping helpers.
+
+Used across reporting capabilities (representative_year, cleaning). Sector
+semantics: 16 sectors clockwise from N, each 22.5° wide, 1-indexed.
+"""
 
 from __future__ import annotations
 

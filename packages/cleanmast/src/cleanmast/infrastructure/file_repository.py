@@ -34,6 +34,21 @@ from cleanmast.shared.timeseries.time_series_source import (
 # ---------------------------------------------------------------------------
 
 
+def _read_parquet_tolerant(data_path: Path) -> pl.DataFrame:
+    """Read parquet, tolerating Julia-written UNKNOWN logical annotations.
+
+    Parquet2.jl writes all-null columns as Int64 physical with an UNKNOWN
+    logical annotation, which polars rejects ("File out of specification").
+    Fall back to pyarrow (maps them to null-typed columns) for that case only.
+    """
+    try:
+        return pl.read_parquet(data_path)
+    except pl.exceptions.ComputeError as e:
+        if "out of specification" not in str(e):
+            raise
+        return pl.from_arrow(pq.read_table(data_path))
+
+
 def _detect_format(path: Path) -> Literal["csv", "parquet"]:
     """Detect file format from extension (case-insensitive)."""
     suffix = path.suffix.lower()
@@ -186,7 +201,7 @@ def load_timeseries_parquet(
             f"Original error: {e}"
         ) from e
 
-    df = pl.read_parquet(data_path)
+    df = _read_parquet_tolerant(data_path)
 
     if "timestamp" in df.columns:
         if df["timestamp"].dtype != pl.Datetime:
@@ -280,13 +295,20 @@ class FileTimeSeriesRepository:
                 f"Original error: {e}"
             ) from e
 
-        df = pl.read_parquet(data_path)
+        df = _read_parquet_tolerant(data_path)
+
+        # Julia parquets encode missing floats as NaN; the domain model uses
+        # null (dataframely rejects NaN). Normalize at the IO boundary.
+        df = df.with_columns(pl.col(pl.Float64).fill_nan(None))
 
         if "timestamp" in df.columns:
             if df["timestamp"].dtype != pl.Datetime:
                 df = df.with_columns(
                     pl.col("timestamp").str.to_datetime().alias("timestamp")
                 )
+            # Canonicalize to datetime[μs]: Julia parquet timestamps are [ms]
+            # and polars refuses joins across time units.
+            df = df.with_columns(pl.col("timestamp").dt.cast_time_unit("us"))
 
         mast_name = data_path.stem
         df = validate_timeseries(df, sensors, mast_name)
@@ -335,6 +357,9 @@ class FileTimeSeriesRepository:
                 df = df.with_columns(
                     pl.col("timestamp").str.to_datetime().alias("timestamp")
                 )
+            # Canonicalize to datetime[μs]: Julia parquet timestamps are [ms]
+            # and polars refuses joins across time units.
+            df = df.with_columns(pl.col("timestamp").dt.cast_time_unit("us"))
 
         mast_name = data_path.stem
         df = validate_timeseries(df, sensors, mast_name)

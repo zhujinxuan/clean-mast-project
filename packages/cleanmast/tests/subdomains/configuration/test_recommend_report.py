@@ -19,6 +19,7 @@ from cleanmast.subdomains.configuration import (
 from cleanmast.subdomains.configuration.services.recommend_report import (
     _build_analysis_windows,
     _build_dataset_for_timeseries,
+    _discover_cleaning_heights,
     _discover_temporal_heights,
     _discover_wind_rose_heights,
     recommend_report,
@@ -821,3 +822,186 @@ class TestOriginalHeightsDataset:
         by_index = {s.index: s for s in config.subsections}
         assert by_index["2.4.4"].datasets == ["reconstruct_meso_filled_heights"]
         assert by_index["2.4.7"].datasets == ["reconstruct_meso_filled_heights"]
+
+
+class TestDiscoverCleaningHeights:
+    """_discover_cleaning_heights band-when-available rule."""
+
+    def test_band_preferred(self):
+        sensors = [
+            _sensor_col("WindSpeed", 80.0),
+            _sensor_col("WindSpeed", 125.0),
+            _sensor_col("WindSpeed", 160.0),
+            _sensor_col("WindDirection", 120.0),
+            _sensor_col("WindSpeed", 200.0),
+        ]
+        assert _discover_cleaning_heights(sensors) == [125.0, 160.0]
+
+    def test_falls_back_to_all_ws_avg_heights(self):
+        sensors = [
+            _sensor_col("WindSpeed", 40.0),
+            _sensor_col("WindSpeed", 80.0),
+            _sensor_col("WindDirection", 80.0),
+        ]
+        assert _discover_cleaning_heights(sensors) == [40.0, 80.0]
+
+    def test_empty(self):
+        assert _discover_cleaning_heights([]) == []
+
+
+class TestCleaningDataset:
+    """2.3 cleaning dataset + subsections wiring."""
+
+    def _create_process_clean_toml(self, tmp_path: Path) -> None:
+        import tomli_w
+        config = {
+            "masts": [
+                {
+                    "name": "M1",
+                    "input": {"data": "./raw/M1.parquet"},
+                    "output": {"data": "./clean/M1.parquet"},
+                    "rules": "formats/clean/default.toml",
+                },
+            ],
+        }
+        with open(tmp_path / "process-clean.toml", "wb") as f:
+            tomli_w.dump(config, f)
+
+    def _create_tower_shading_toml(self, tmp_path: Path) -> None:
+        import tomli_w
+        config = {
+            "masts": [
+                {
+                    "name": "M1",
+                    "input": {"data": "./clean/M1.parquet"},
+                    "output": {"data": "./tower-shading/M1.parquet"},
+                },
+            ],
+        }
+        with open(tmp_path / "tower-shading.toml", "wb") as f:
+            tomli_w.dump(config, f)
+
+    def _create_base_project(self, tmp_path: Path) -> None:
+        """Fill-heights + representative-year + reconstruct-meso fixtures."""
+        import tomli_w
+        for filename, data_dir in [
+            ("fill-heights-reconstruct-meso.toml", "reconstruct-meso-fill-heights"),
+            ("fill-heights-representative-year.toml", "representative-year-fill-heights"),
+        ]:
+            with open(tmp_path / filename, "wb") as f:
+                tomli_w.dump({"masts": [_valid_mast("M1", data_dir)]}, f)
+            parquet_path = tmp_path / data_dir / "M1.parquet"
+            parquet_path.parent.mkdir(parents=True, exist_ok=True)
+            parquet_path.write_bytes(b"")
+        recon = {"masts": [_valid_reconstruct_meso_mast("M1", "reconstruct-meso")],
+                 "mesos": [{"name": "ERA5", "input": {"data": "raw/ERA5.csv"}}]}
+        with open(tmp_path / "reconstruct-meso.toml", "wb") as f:
+            tomli_w.dump(recon, f)
+        parquet_path = tmp_path / "reconstruct-meso" / "M1.parquet"
+        parquet_path.parent.mkdir(parents=True, exist_ok=True)
+        parquet_path.write_bytes(b"")
+        # representative-year.toml with TR_A covering M1
+        rep = {
+            "masts": [{
+                "name": "M1",
+                "input": {"data": "/dev/null"},
+                "output": {"data": "/dev/null"},
+                "time_range": {"min": TR_A.min, "max": TR_A.max},
+                "meso_model": {
+                    "method": "16-sector", "meso_name": "ERA5",
+                    "model_file": "model.jld2",
+                },
+            }],
+            "mesos": [{"name": "ERA5", "input": {"data": "raw/ERA5.csv"}}],
+        }
+        with open(tmp_path / "representative-year.toml", "wb") as f:
+            tomli_w.dump(rep, f)
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    def test_clean_configs_absent_no_23_subsections(self, mock_calc, tmp_path):
+        """Without process-clean.toml the output matches the pre-2.3 shape."""
+        self._create_base_project(tmp_path)
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc, repo=fake_repo)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        assert not [s for s in config.subsections if s.index.startswith("2.3")]
+        assert "cleaning_pipeline" not in [ds.name for ds in config.datasets]
+        assert len(config.datasets) == 4  # filled + repyear + original + calibration
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    def test_cleaning_dataset_and_subsections_built(self, mock_calc, tmp_path):
+        self._create_base_project(tmp_path)
+        self._create_process_clean_toml(tmp_path)
+        self._create_tower_shading_toml(tmp_path)
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc, repo=fake_repo)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        by_index = {s.index: s for s in config.subsections}
+        assert by_index["2.3"].type == "timeseries"
+        assert by_index["2.3"].title == "数据清洗与插补"
+        expected = {
+            "2.3.2": ("cleaning_overview", "数据清洗与插补总体概况"),
+            "2.3.3": ("cleaning_rules", "缺测与不合理数据处理"),
+            "2.3.4": ("tower_shading", "塔影效应处理"),
+            "2.3.5": ("imputation_same_tower", "同塔插补"),
+            "2.3.6": ("imputation_cross_mast", "异塔插补"),
+            "2.3.7": ("imputation_meso", "中尺度插补"),
+        }
+        for index, (subtype, title) in expected.items():
+            assert by_index[index].type == subtype, index
+            assert by_index[index].title == title, index
+            assert by_index[index].datasets == ["cleaning_pipeline"], index
+        assert "2.3.1" not in by_index  # out of scope — tree-builder placeholder
+
+        cleaning = next(
+            ds for ds in config.datasets if ds.name == "cleaning_pipeline"
+        )
+        mast = cleaning.masts[0] if cleaning.masts else None
+        assert mast is not None
+        assert mast.name == "M1"
+        assert mast.raw_input is not None and mast.raw_input.data == "./raw/M1.parquet"
+        assert mast.clean_input is not None and mast.clean_input.data == "./clean/M1.parquet"
+        assert mast.tower_shading_input is not None
+        assert mast.tower_shading_input.data == "./tower-shading/M1.parquet"
+        assert mast.input.data == "reconstruct-meso/M1.parquet"
+        # rep-year analysis window wired
+        assert cleaning.analysis_windows[0].target_masts == ["M1"]
+        assert cleaning.analysis_windows[0].time_range == TR_A
+        # mesos wired from representative-year.toml restricted to cleaning
+        # masts — load_datasets turns them into calibration payloads (2.3.7)
+        assert cleaning.mesos is not None
+        assert len(cleaning.mesos) == 1
+        assert cleaning.mesos[0].meso_name == "ERA5"
+        assert cleaning.mesos[0].target_masts == ["M1"]
+
+    @patch(
+        "cleanmast.subdomains.configuration.services.recommend_report.calculate_air_density",
+        return_value=1.225,
+    )
+    def test_tower_shading_missing_stages_left_none(self, mock_calc, tmp_path):
+        """No tower-shading.toml at all → no cleaning dataset (both configs required)."""
+        self._create_base_project(tmp_path)
+        self._create_process_clean_toml(tmp_path)
+
+        pc = ProjectConfig(tmp_path)
+        dc = recommend_report(pc, repo=fake_repo)
+        dc.write_to(tmp_path)
+        with open(tmp_path / dc.filename, "rb") as f:
+            config = FlatReportConfig.model_validate(tomli.load(f))
+
+        assert not [s for s in config.subsections if s.index.startswith("2.3")]
+        assert "cleaning_pipeline" not in [ds.name for ds in config.datasets]

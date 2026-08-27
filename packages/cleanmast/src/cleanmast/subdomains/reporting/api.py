@@ -17,6 +17,14 @@ from cleanmast.subdomains.reporting.model.extreme_wind_gust_factor import (
 )
 from cleanmast.subdomains.reporting.protocols.section import Section
 from cleanmast.subdomains.reporting.subdomains.air_density import AirDensitySection
+from cleanmast.subdomains.reporting.subdomains.cleaning import (
+    CleaningOverviewSection,
+    CleaningRulesSection,
+    ImputationCrossMastSection,
+    ImputationMesoSection,
+    ImputationSameTowerSection,
+    TowerShadingSection,
+)
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.section import (
     ExtremeWindSection,
 )
@@ -121,6 +129,48 @@ class ReportGenerationService:
         ExtremeWindSection.from_inputs.
         """
         return ExtremeWindSection.from_inputs(items)
+
+    def generate_cleaning_overview_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to CleaningOverviewSection (2.3.2)."""
+        return CleaningOverviewSection.from_inputs(items)
+
+    def generate_cleaning_rules_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to CleaningRulesSection (2.3.3).
+
+        Rules and violation stats are read from the service's project
+        directory (process-clean.toml + process-stats/).
+        """
+        return CleaningRulesSection.from_inputs(
+            items, project_dir=self.project_dir
+        )
+
+    def generate_tower_shading_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to TowerShadingSection (2.3.4)."""
+        return TowerShadingSection.from_inputs(items)
+
+    def generate_imputation_same_tower_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to ImputationSameTowerSection (2.3.5)."""
+        return ImputationSameTowerSection.from_inputs(items)
+
+    def generate_imputation_cross_mast_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to ImputationCrossMastSection (2.3.6)."""
+        return ImputationCrossMastSection.from_inputs(items)
+
+    def generate_imputation_meso_section(
+        self, items: list[SingleMastAnalysisInput],
+    ) -> Section:
+        """Dispatch to ImputationMesoSection (2.3.7)."""
+        return ImputationMesoSection.from_inputs(items)
 
 
 # ── internal helpers ──────────────────────────────────────────────────────
