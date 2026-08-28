@@ -17,7 +17,7 @@ from cleanmast.subdomains.reporting.subdomains.weibull.model.schemas import (
 from cleanmast.subdomains.reporting.subdomains.weibull.model.weibull_atom import (
     WeibullSubgridAtom,
 )
-from typst_ir import TypstParagraph, TypstTable
+from typst_ir import TypstFigure, TypstParagraph, TypstTable
 
 
 @pytest.fixture
@@ -117,15 +117,11 @@ class TestWeibullSubgridAtom:
         assert image_path.exists()
         assert image_path.stat().st_size > 0
 
-    def test_render_summary(
-        self, weibull_subgrid_atom: WeibullSubgridAtom
-    ) -> None:
+    def test_render_summary_empty(self, weibull_subgrid_atom: WeibullSubgridAtom) -> None:
+        """Per-mast summary removed — intro sentence lives at section level."""
         summary = weibull_subgrid_atom.renderSummary()
 
-        assert isinstance(summary, list)
-        assert len(summary) > 0
-        assert isinstance(summary[0], TypstParagraph)
-        assert any("\u4e00" <= char <= "\u9fff" for char in summary[0].text)
+        assert summary == []
 
     def test_content_hash_consistency(
         self, weibull_subgrid_atom: WeibullSubgridAtom
@@ -247,3 +243,76 @@ class TestWeibullSectionGuard:
         section = WeibullSection.from_inputs([item])
         assert section is not None
         assert len(section.atoms) >= 1
+
+
+class TestWeibullSectionRender:
+    """Tests for WeibullSection.render_ir intro sentence and content."""
+
+    def test_render_ir_opens_with_single_intro_sentence(self, tmp_path: Path) -> None:
+        from cleanmast.shared.timeseries import SensorColumn, TimeSeriesData
+        from cleanmast.subdomains.reporting.model.analysis_input import (
+            SingleMastAnalysisInput,
+        )
+        from cleanmast.subdomains.reporting.model.analysis_parameters import (
+            AnalysisParameters,
+        )
+        from cleanmast.subdomains.reporting.subdomains.weibull.section import (
+            WeibullSection,
+        )
+
+        sensors = [
+            SensorColumn(
+                column_name="WindSpeed_130m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=130.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+            SensorColumn(
+                column_name="WindSpeed_150m_avg [m/s]",
+                sensor_type="WindSpeed",
+                sensor_direction="",
+                height=150.0,
+                stat_type="avg",
+                unit="m/s",
+            ),
+        ]
+        ts_data = TimeSeriesData(
+            df=pl.DataFrame(
+                {
+                    "WindSpeed_130m_avg [m/s]": [5.0, 6.0, 7.0, 8.0, 9.0, 5.5, 6.5, 7.5, 8.5, 6.0, 7.0],
+                    "WindSpeed_150m_avg [m/s]": [5.5, 6.5, 7.5, 8.5, 9.5, 6.0, 7.0, 8.0, 9.0, 6.5, 7.5],
+                }
+            ),
+            sensors=sensors,
+        )
+        item = SingleMastAnalysisInput(
+            time_series=ts_data,
+            parameters=AnalysisParameters(
+                air_density=1.225,
+                extreme_wind_10min_heights=[],
+                extreme_wind_3s_heights=[],
+                extreme_wind_gust_factors=[],
+                weibull_heights=[130.0, 150.0],
+            ),
+            mast_name="M01",
+        )
+
+        section = WeibullSection.from_inputs([item])
+        typst_section = section.render_ir(tmp_path)
+
+        paragraphs = [b for b in typst_section.body if isinstance(b, TypstParagraph)]
+        assert len(paragraphs) == 1
+        assert paragraphs[0].text == (
+            "对各测风塔年数据进行分析，得到各高度 Weibull 拟合结果，如下图表所示。"
+        )
+        assert isinstance(typst_section.body[0], TypstParagraph)
+
+        tables = [b for b in typst_section.body if isinstance(b, TypstTable)]
+        assert len(tables) == 1
+        assert "M01" in str(tables[0].caption)
+
+        figures = [b for b in typst_section.body if isinstance(b, TypstFigure)]
+        assert len(figures) == 1
+        assert "M01" in str(figures[0].caption)

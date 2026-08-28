@@ -2,7 +2,7 @@
 
 import math
 from pathlib import Path
-from typing import Self, cast
+from typing import Self
 
 import altair as alt
 import polars as pl
@@ -204,29 +204,8 @@ class WeibullSubgridAtom(ReportAtom[WeibullSchema, WeibullAtomMeta]):
 
     @override
     def renderSummary(self) -> list[TypstParagraph]:
-        """Generate brief Chinese summary of Weibull parameters."""
-        interested = self._get_interested_heights_df()
-
-        if interested.is_empty():
-            return []
-
-        height_strs = [
-            get_height_display_name(
-                row["height"], row["interpolation_marker"] or ""
-            )
-            for row in interested.iter_rows(named=True)
-        ]
-
-        avg_k = cast(float, interested["shape_k"].mean() or 0)
-        avg_c = cast(float, interested["scale_c"].mean() or 0)
-
-        text = (
-            f"{self.meta.mast_name}测风塔在{', '.join(height_strs)}高度的"
-            f"Weibull拟合结果显示，"
-            f"平均形状参数k={avg_k:.2f}，平均尺度参数c={avg_c:.2f}m/s，"
-            f"各高度风速分布符合Weibull分布特征，可用于风资源评估。"
-        )
-        return [TypstParagraph(text=text)]
+        """No per-mast summary — intro sentence is handled at section level."""
+        return []
 
     @override
     def renderImageTypst(self, output_dir: Path, force: bool = False) -> TypstFigure | None:
