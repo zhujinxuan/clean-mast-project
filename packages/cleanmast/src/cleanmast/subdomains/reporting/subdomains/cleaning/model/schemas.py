@@ -26,6 +26,7 @@ class CleaningCoverageSchema(dy.Schema):
 
     mast_name = dy.String(nullable=False)
     height = dy.Float64(nullable=False)
+    sensor_type = dy.String(nullable=True)
     expected_points = dy.Int64(nullable=False, min=0)
     raw_points = dy.Int64(nullable=True, min=0)
     clean_points = dy.Int64(nullable=True, min=0)

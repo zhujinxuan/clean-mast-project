@@ -81,7 +81,7 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
     @property
     @override
     def default_table_caption(self) -> str | None:
-        return "数据清洗与插补各阶段数据点统计表"
+        return "各塔主测风层风速数据清洗与插补各阶段数据点统计表"
 
     @override
     def renderTable(self) -> TypstTable | None:
@@ -102,6 +102,7 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
             rows.append([
                 record["mast_name"],
                 get_height_display_name(float(record["height"])),
+                record["sensor_type"] if record["sensor_type"] else MISSING_CELL,
                 str(expected),
                 _count_cell(raw),
                 _count_cell(clean),
@@ -115,6 +116,7 @@ class CleaningCoverageAtom(ReportAtom[CleaningCoverageSchema, CleaningAtomMeta])
             headers=[
                 "测风塔",
                 "高度(m)",
+                "传感器类型",
                 "应有点数",
                 "原始点数",
                 "清洗后点数",

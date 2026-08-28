@@ -67,6 +67,8 @@ from cleanmast.subdomains.reporting.subdomains.cleaning.model import (
 from cleanmast.subdomains.reporting.subdomains.cleaning.model.constants import (
     format_sensor_label,
     sensor_row_sort_key,
+    translate_sensor_type,
+    translate_stat_type,
 )
 
 
@@ -128,6 +130,7 @@ def build_cleaning_overview_atoms(
                 {
                     "mast_name": [r["mast_name"] for r in rows],
                     "height": [r["height"] for r in rows],
+                    "sensor_type": [r["sensor_type"] for r in rows],
                     "expected_points": [r["expected_points"] for r in rows],
                     "raw_points": [r["raw_points"] for r in rows],
                     "clean_points": [r["clean_points"] for r in rows],
@@ -136,6 +139,7 @@ def build_cleaning_overview_atoms(
                 schema={
                     "mast_name": pl.String,
                     "height": pl.Float64,
+                    "sensor_type": pl.String,
                     "expected_points": pl.Int64,
                     "raw_points": pl.Int64,
                     "clean_points": pl.Int64,
@@ -177,12 +181,37 @@ def _coverage_rows(
             rows.append({
                 "mast_name": item.mast_name,
                 "height": height,
+                "sensor_type": _sensor_type_label(item, clean_stage, height),
                 "expected_points": expected,
                 "raw_points": _stage_valid_points(payload.raw_series, height, window),
                 "clean_points": _stage_valid_points(clean_stage, height, window),
                 "final_points": _stage_valid_points(item.time_series, height, window),
             })
     return rows
+
+
+def _sensor_type_label(
+    item: SingleMastAnalysisInput,
+    clean_stage: TimeSeriesData | None,
+    height: float,
+) -> str | None:
+    """Chinese `{类型}({统计})` label for the WS sensor at ``height``.
+
+    Resolved from SensorColumn metadata — the final stage first (always
+    loaded), then the clean stage, then raw; None when no sensor matches
+    (rendered as an em-dash).
+    """
+    payload = item.cleaning_payload
+    candidates = [item.time_series, clean_stage]
+    if payload is not None:
+        candidates.append(payload.raw_series)
+    for stage in candidates:
+        if stage is None:
+            continue
+        for s in stage.sensors:
+            if s.sensor_type == "WindSpeed" and s.height == height:
+                return f"{translate_sensor_type(s.sensor_type)}({translate_stat_type(s.stat_type)})"
+    return None
 
 
 def _stage_valid_points(

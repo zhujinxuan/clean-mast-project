@@ -31,16 +31,18 @@ WINDOW_END = datetime(2025, 6, 1, 1, 0)
 WINDOW = TimeRange(min=WINDOW_START, max=WINDOW_END)
 TIMESTAMPS = [WINDOW_START + timedelta(minutes=10 * i) for i in range(7)]
 
-# Column layout: idx 2 应有点数, 3 原始点数, 4 清洗后点数, 5 清洗剔除(点),
-# 6 清洗剔除(%), 7 清洗后可用率(%), 8 插补后点数, 9 插补后占比(%).
-IDX_EXPECTED = 2
-IDX_RAW = 3
-IDX_CLEAN = 4
-IDX_REMOVED = 5
-IDX_REMOVED_PCT = 6
-IDX_CLEAN_PCT = 7
-IDX_FINAL = 8
-IDX_FINAL_PCT = 9
+# Column layout: idx 2 传感器类型, 3 应有点数, 4 原始点数, 5 清洗后点数,
+# 6 清洗剔除(点), 7 清洗剔除(%), 8 清洗后可用率(%), 9 插补后点数,
+# 10 插补后占比(%).
+IDX_SENSOR_TYPE = 2
+IDX_EXPECTED = 3
+IDX_RAW = 4
+IDX_CLEAN = 5
+IDX_REMOVED = 6
+IDX_REMOVED_PCT = 7
+IDX_CLEAN_PCT = 8
+IDX_FINAL = 9
+IDX_FINAL_PCT = 10
 
 
 def _sensor(column: str, height: float) -> SensorColumn:
@@ -143,6 +145,7 @@ class TestCoverageTable:
         assert table.headers == [
             "测风塔",
             "高度(m)",
+            "传感器类型",
             "应有点数",
             "原始点数",
             "清洗后点数",
@@ -156,6 +159,7 @@ class TestCoverageTable:
         row = table.data[0]
         assert row[0] == "M1"
         assert row[1] == "140m"
+        assert row[IDX_SENSOR_TYPE] == "风速(均值)"
         assert row[IDX_EXPECTED] == "7"
         assert row[IDX_RAW] == "6"
         assert row[IDX_CLEAN] == "4"
@@ -305,11 +309,24 @@ class TestCoverageTable:
         # mast name repeated per height row.
         assert [r[0] for r in table.data] == ["M1", "M3"]
         assert [r[1] for r in table.data] == ["140m", "120m"]
-        assert all(len(r) == 10 for r in table.data)
+        assert all(len(r) == 11 for r in table.data)
 
     def test_table_caption(self):
         table = _coverage_table([_m1_item()])
-        assert table.caption == "数据清洗与插补各阶段数据点统计表"
+        assert table.caption == "各塔主测风层风速数据清洗与插补各阶段数据点统计表"
+
+    def test_sensor_type_label_falls_back_to_em_dash(self):
+        # No sensor at the requested height in ANY stage → em-dash, not crash.
+        item = _item(
+            "M1",
+            heights=[120.0],
+            raw=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(7)}),
+            clean=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(7)}),
+            shading=None,
+            final=_stage([_sensor("ws_140", 140.0)], {"ws_140": _values(7)}),
+        )
+        row = _coverage_table([item]).data[0]
+        assert row[IDX_SENSOR_TYPE] == "—"
 
 
 class TestSectionRendering:
