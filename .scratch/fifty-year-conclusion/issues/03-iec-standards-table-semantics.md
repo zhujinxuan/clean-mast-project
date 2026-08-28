@@ -14,7 +14,7 @@ IEC 61400-1 caption.
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Scope
 
