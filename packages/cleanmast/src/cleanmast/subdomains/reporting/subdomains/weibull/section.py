@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, Sequence
 
-from typst_ir import TypstHeading, TypstSection
+from typst_ir import TypstHeading, TypstParagraph, TypstSection
 
 from cleanmast.shared.timeseries import TimeSeriesData
 from cleanmast.subdomains.reporting.model.analysis_input import SingleMastAnalysisInput
@@ -38,7 +38,7 @@ class WeibullSection:
     _mast_name: str = ""
 
     atom_configs: ClassVar[list[tuple[type[ReportAtom], bool]]] = [
-        (WeibullSubgridAtom, True),
+        (WeibullSubgridAtom, False),
     ]
 
     @property
@@ -108,9 +108,12 @@ class WeibullSection:
 
     def render_ir(self, images_dir: Path) -> TypstSection:
         """Render section to IR nodes."""
+        intro = TypstParagraph(
+            text="对各测风塔年数据进行分析，得到各高度 Weibull 拟合结果，如下图表所示。"
+        )
         body = render_subsection_content(self._atoms, self.atom_configs, images_dir)
         return TypstSection(
             heading=TypstHeading(text=self.title),
-            body=body,
+            body=[intro, *body],
             subsections=[],
         )
