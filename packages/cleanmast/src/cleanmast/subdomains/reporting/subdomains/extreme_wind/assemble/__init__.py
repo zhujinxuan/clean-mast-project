@@ -6,7 +6,10 @@ Pure functions only — NO IO, no side effects.
 import polars as pl
 
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
+    MastComparison,
     build_iec_class_table,
+    build_site_conclusion_sentences,
+    build_site_determination_table,
     build_summary_comparison,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.iec_atom import (
@@ -28,6 +31,7 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method3_atom i
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
     ExtremeWindAtomMeta,
     IECStandardsAtomMeta,
+    SiteLevelAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import (
     FiftyYearMaxWindComparisonSchema,
@@ -36,6 +40,12 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import
     GumbelParameterSchema,
     IECStandardsSchema,
     IECWindClassSchema,
+    SiteConclusionSchema,
+    SiteDeterminationSchema,
+)
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.site_atom import (
+    SiteConclusionAtom,
+    SiteDeterminationAtom,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.summary_atom import (
     ComparisonExtremeAtom,
@@ -111,6 +121,9 @@ def build_method3_atom(
 ) -> Method3Atom:
     """Build Method3Atom from sustained and extreme DataFrames.
 
+    Both sustained and extreme rows are passed through (mirroring
+    Method 1/Method 2 rendering).
+
     Args:
         mast_name: Name of the mast.
         sustained_df: Sustained wind result DataFrame.
@@ -121,9 +134,42 @@ def build_method3_atom(
     """
     return Method3Atom.create(
         schema=FiftyYearMaxWindResultSchema,
-        df=extreme_df,
+        df=pl.concat([sustained_df, extreme_df]),
         meta=ExtremeWindAtomMeta(mast_name=mast_name),
     )
+
+
+def build_site_conclusion_atoms(
+    mast_comparisons: list[MastComparison],
+) -> list[SiteDeterminationAtom | SiteConclusionAtom]:
+    """Build site-level cross-mast determination + conclusion atoms.
+
+    Args:
+        mast_comparisons: Per-mast (mast_name, sustained comparison,
+            extreme comparison) bundles from build_summary_comparison.
+
+    Returns:
+        List of 2 atoms (determination table, conclusion paragraph),
+        or an empty list when no mast produced comparison rows.
+    """
+    determination = build_site_determination_table(mast_comparisons)
+    sentences = build_site_conclusion_sentences(mast_comparisons)
+    if determination.is_empty() or not sentences:
+        return []
+
+    meta = SiteLevelAtomMeta()
+    return [
+        SiteDeterminationAtom.create(
+            schema=SiteDeterminationSchema,
+            df=determination,
+            meta=meta,
+        ),
+        SiteConclusionAtom.create(
+            schema=SiteConclusionSchema,
+            df=pl.DataFrame({"text": sentences}),
+            meta=meta,
+        ),
+    ]
 
 
 def build_summary_atoms(

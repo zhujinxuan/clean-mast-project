@@ -22,7 +22,10 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import
 IEC_STANDARDS_DATA = pl.DataFrame(
     {
         "iec_class": ["I", "II", "III", "S"],
-        "vref": [10.0, 8.5, 7.5, 0.0],
+        # Vref: 50 年一遇 10-min 持续风速参考值 (IEC 61400-1); the
+        # previous 10/8.5/7.5 values were Va (annual average, 0.2 × Vref).
+        "vref": [50.0, 42.5, 37.5, 0.0],
+        # Ve50: 50 年一遇 3s 极大风速.
         "ve50": [70.0, 59.5, 52.5, 0.0],
     }
 )
@@ -48,8 +51,8 @@ class IECStandardsAtom(ReportAtom[IECStandardsSchema, IECStandardsAtomMeta]):
         for row in self.df.iter_rows(named=True):
             iec_class = cast(str, row["iec_class"])
             if iec_class == "S":
-                vref_str = "-"
-                ve50_str = "-"
+                vref_str = "场址专用"
+                ve50_str = "场址专用"
             else:
                 vref_str = f"{row['vref']:.1f}"
                 ve50_str = f"{row['ve50']:.1f}"
@@ -57,9 +60,9 @@ class IECStandardsAtom(ReportAtom[IECStandardsSchema, IECStandardsAtomMeta]):
 
         return TypstTable(
             headers=[
-                "IEC 等级",
-                "参考风速 Vref (m/s)",
-                "五十年一遇极端风速 Ve50 (m/s)",
+                "风区等级",
+                "Vref 50年一遇持续风速参考值(m/s)",
+                "Ve50 50年一遇极大风速(m/s)",
             ],
             data=rows,
             caption=self.default_table_caption,
@@ -73,6 +76,6 @@ class IECStandardsAtom(ReportAtom[IECStandardsSchema, IECStandardsAtomMeta]):
     def renderSummary(self) -> list[TypstParagraph]:
         return [
             TypstParagraph(
-                text="根据IEC 61400-1标准，不同风况等级对应的参考风速和五十年一遇极端风速如表所示。"
+                text="根据IEC 61400-1标准，不同风况等级对应的50年一遇持续风速参考值Vref和50年一遇极大风速Ve50如表所示。"
             )
         ]

@@ -10,11 +10,16 @@ import numpy as np
 import polars as pl
 import pytest
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
+    EXTREME_RANGE_LIMIT_MS,
     STANDARD_AIR_DENSITY,
+    SUSTAINED_RANGE_LIMIT_MS,
+    MastComparison,
     _classify_wind_class,
     _compute_density_at_height,
     _convert_to_standard,
     build_iec_class_table,
+    build_site_conclusion_sentences,
+    build_site_determination_table,
     build_summary_comparison,
     calculate_gumbel_return_period,
     calculate_method2,
@@ -210,6 +215,230 @@ class TestClassifyWindClass:
 
     def test_class_s(self) -> None:
         assert _classify_wind_class(55.0, 80.0) == "S"
+
+
+# =============================================================================
+# Site-level cross-mast conclusion (2.6.5)
+# =============================================================================
+
+
+def _comp(mast_name: str, values: dict[str, list[tuple[float, float]]]) -> MastComparison:
+    """Build a MastComparison from {kind: [(height, conservative_max)]}."""
+    frames: dict[str, pl.DataFrame] = {}
+    for kind, pairs in values.items():
+        frames[kind] = pl.DataFrame({
+            "height": [h for h, _ in pairs],
+            "conservative_max": [v for _, v in pairs],
+        })
+    return MastComparison(
+        mast_name=mast_name, sustained=frames["sustained"], extreme=frames["extreme"]
+    )
+
+
+class TestRangeLimitConstants:
+    def test_limits(self) -> None:
+        assert SUSTAINED_RANGE_LIMIT_MS == 3.0
+        assert EXTREME_RANGE_LIMIT_MS == 4.2
+        assert EXTREME_RANGE_LIMIT_MS == pytest.approx(3.0 * 1.4)
+
+
+class TestBuildSiteDeterminationTable:
+    def test_cross_mast_max_per_height(self) -> None:
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0), (140.0, 31.0)],
+                "extreme": [(120.0, 42.0), (140.0, 43.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 32.5)],
+                "extreme": [(120.0, 45.5)],
+            }),
+        ]
+        result = build_site_determination_table(comparisons)
+        # Union of heights across masts, one row each
+        assert result["height"].to_list() == [120.0, 140.0]
+        # Cross-mast MAX of the conservative column
+        assert result["cross_mast_max_sustained"].to_list() == [32.5, 31.0]
+        assert result["cross_mast_max_extreme"].to_list() == [45.5, 43.0]
+        assert result["wind_class"].to_list() == ["III", "III"]
+
+    def test_classification_uses_classified_tier_thresholds(self) -> None:
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 40.0)],
+                "extreme": [(120.0, 55.0)],
+            }),
+        ]
+        result = build_site_determination_table(comparisons)
+        assert result["wind_class"].to_list() == ["II"]
+
+    def test_boundary_inclusive_classifies_into_tier(self) -> None:
+        """(37.5, 52.5) sits exactly on the III boundary → III (<= rule)."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 37.5)],
+                "extreme": [(120.0, 52.5)],
+            }),
+        ]
+        result = build_site_determination_table(comparisons)
+        assert result["wind_class"].to_list() == ["III"]
+
+    def test_empty_comparisons_yield_empty_table(self) -> None:
+        assert build_site_determination_table([]).is_empty()
+
+
+class TestBuildSiteConclusionSentences:
+    def test_single_class_path_when_masts_agree(self) -> None:
+        """Ranges within limits → one sentence, worst height class site-wide."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0), (140.0, 31.0)],
+                "extreme": [(120.0, 42.0), (140.0, 43.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 31.0)],
+                "extreme": [(120.0, 43.5)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "低于 37.5 m/s" in sentences[0]
+        assert "低于 52.5 m/s" in sentences[0]
+        assert "IEC III 类及以上等级" in sentences[0]
+        assert "《GB/T 18451.1-2022 风力发电机组 设计要求》" in sentences[0]
+
+    def test_zoned_path_when_classes_differ(self) -> None:
+        """>= 3 m/s sustained range AND differing per-mast classes → zoned."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 40.0)],
+                "extreme": [(120.0, 55.0)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 3  # lead + one per mast
+        assert any("MA 测风塔代表区域机位选择 IEC III 类及以上等级" in s for s in sentences)
+        assert any("MB 测风塔代表区域机位选择 IEC II 类及以上等级" in s for s in sentences)
+        assert not any("本项目可选择" in s for s in sentences)
+
+    def test_agree_despite_large_range_path(self) -> None:
+        """Range over the limit but all masts classify the same → single sentence."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 36.0)],
+                "extreme": [(120.0, 50.0)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "IEC III 类及以上等级" in sentences[0]
+
+    def test_s_class_path(self) -> None:
+        """Any value above the I thresholds → S 类场址专用 wording."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 55.0)],
+                "extreme": [(120.0, 77.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 56.0)],
+                "extreme": [(120.0, 78.0)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "不低于 50.0 m/s" in sentences[0]
+        assert "不低于 70.0 m/s" in sentences[0]
+        assert "S 类" in sentences[0]
+        assert "低于" not in sentences[0].split("不低于")[0]  # no 低于 before the S part
+
+    def test_zoned_path_with_s_class_mast(self) -> None:
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 55.0)],
+                "extreme": [(120.0, 77.0)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert any("MA 测风塔代表区域机位选择 IEC III 类及以上等级" in s for s in sentences)
+        assert any("MB 测风塔代表区域" in s and "IEC S 类" in s for s in sentences)
+
+    def test_boundary_range_exactly_at_limit_is_disagreement(self) -> None:
+        """Range == 3.0 (not <) already counts as 相差大."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 33.0)],
+                "extreme": [(120.0, 43.0)],
+            }),
+        ]
+        # Both masts classify III → large range but agreeing classes.
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "IEC III 类及以上等级" in sentences[0]
+
+    def test_extreme_range_over_limit_is_disagreement(self) -> None:
+        """Sustained within limit but extreme range >= 4.2 → 相差大."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            _comp("MB", {
+                "sustained": [(120.0, 31.0)],
+                "extreme": [(120.0, 46.2)],
+            }),
+        ]
+        # Both masts classify III → agree-despite-large-range sentence.
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "IEC III 类及以上等级" in sentences[0]
+
+    def test_site_class_is_most_severe_height(self) -> None:
+        """One height III, another II → site class II (most severe)."""
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0), (140.0, 40.0)],
+                "extreme": [(120.0, 42.0), (140.0, 55.0)],
+            }),
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert "IEC II 类及以上等级" in sentences[0]
+
+    def test_empty_comparisons_yield_no_sentences(self) -> None:
+        assert build_site_conclusion_sentences([]) == []
+
+    def test_masts_with_empty_comparison_frames_are_skipped(self) -> None:
+        empty = MastComparison(
+            mast_name="MB",
+            sustained=pl.DataFrame({"height": [], "conservative_max": []}),
+            extreme=pl.DataFrame({"height": [], "conservative_max": []}),
+        )
+        comparisons = [
+            _comp("MA", {
+                "sustained": [(120.0, 30.0)],
+                "extreme": [(120.0, 42.0)],
+            }),
+            empty,
+        ]
+        sentences = build_site_conclusion_sentences(comparisons)
+        assert len(sentences) == 1
+        assert "IEC III 类及以上等级" in sentences[0]
 
 
 # =============================================================================

@@ -97,10 +97,11 @@ class Method3Atom(ReportAtom[FiftyYearMaxWindResultSchema, ExtremeWindAtomMeta])
                 f"{height_display}:观测最大值{observed_max:.2f}m/s,"
                 f"50年重现期风速{v50:.2f}m/s(标准密度{v50_std:.2f}m/s)"
             )
-
         text = (
             f"{self.meta.mast_name}测风塔五十年一遇最大风速估算(方法三:极端风速模型法)。"
             f"基于观测期内各高度最大风速的1.25倍估算50年重现期风速。"
-            f"各高度结果如下：{'；'.join(height_parts)}。"
         )
+        if height_parts:
+            text += f"各高度结果如下：{'；'.join(height_parts)}。"
+
         return [TypstParagraph(text=text)]

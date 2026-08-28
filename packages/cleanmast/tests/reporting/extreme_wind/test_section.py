@@ -316,3 +316,108 @@ class TestEmptyHeightsGuard:
         )
         with pytest.raises(ValueError, match="extreme_wind_10min_heights"):
             ExtremeWindSection.from_inputs([item])
+
+
+def _scaled_item(
+    mast_name: str,
+    scale: float,
+    heights: list[float],
+    seed: int = 42,
+) -> SingleMastAnalysisInput:
+    """Build an input whose wind speeds are ``scale`` × a seeded base field."""
+    sensors = [_make_sensor(height=h) for h in heights]
+    base = _make_timeseries(sensors, n_hours=2000, seed=seed)
+    wind_cols = [s.column_name for s in sensors]
+    scaled_df = base.df.with_columns(
+        [(pl.col(c) * scale).clip(0.0, 60.0) for c in wind_cols]
+    )
+    params = AnalysisParameters(
+        air_density=1.225,
+        extreme_wind_10min_heights=heights,
+        extreme_wind_3s_heights=[],
+        extreme_wind_gust_factors=[],
+    )
+    return SingleMastAnalysisInput(
+        time_series=TimeSeriesData(df=scaled_df, sensors=sensors),
+        parameters=params,
+        mast_name=mast_name,
+    )
+
+
+class TestSiteConclusion:
+    """Cross-mast determination table + conclusion at the end of 2.6.5."""
+
+    HEIGHTS = [120.0, 140.0]
+
+    def test_two_similar_masts_get_single_conclusion(self, tmp_path: Path) -> None:
+        items = [
+            _make_input(
+                [_make_sensor(height=h) for h in self.HEIGHTS],
+                extreme_wind_10min_heights=self.HEIGHTS,
+                n_hours=2000,
+            ),
+            _make_input(
+                [_make_sensor(height=h) for h in self.HEIGHTS],
+                extreme_wind_10min_heights=self.HEIGHTS,
+                n_hours=2000,
+                mast_name="TestMastB",
+            ),
+        ]
+        section = ExtremeWindSection.from_inputs(items)
+
+        assert len(section.site_atoms) == 2
+        sentences = section.site_atoms[1].df["text"].to_list()
+        assert len(sentences) == 1
+        assert "《GB/T 18451.1-2022 风力发电机组 设计要求》" in sentences[0]
+        assert "IEC" in sentences[0]
+
+    def test_differing_masts_get_zoned_conclusion(self, tmp_path: Path) -> None:
+        items = [
+            _scaled_item("MAlpha", 1.0, self.HEIGHTS),
+            _scaled_item("MBeta", 1.5, self.HEIGHTS),
+        ]
+        section = ExtremeWindSection.from_inputs(items)
+
+        sentences = section.site_atoms[1].df["text"].to_list()
+        # Sustained conservative differs by >= 3 m/s → 相差大; classes
+        # differ → zoned sentences naming each mast's representative area.
+        assert len(sentences) >= 3
+        assert any("MAlpha 测风塔代表区域机位" in s for s in sentences)
+        assert any("MBeta 测风塔代表区域机位" in s for s in sentences)
+        assert not any("本项目可选择" in s for s in sentences)
+
+    def test_summary_subsection_ends_with_table_then_conclusion(
+        self, tmp_path: Path
+    ) -> None:
+        items = [
+            _make_input(
+                [_make_sensor(height=h) for h in self.HEIGHTS],
+                extreme_wind_10min_heights=self.HEIGHTS,
+                n_hours=2000,
+            ),
+        ]
+        section = ExtremeWindSection.from_inputs(items)
+        ir = section.render_ir(images_dir=tmp_path)
+
+        summary = next(
+            s for s in ir.subsections if s.heading.text == "五十年一遇风速总结"
+        )
+        assert len(summary.body) >= 2
+        last, second_last = summary.body[-1], summary.body[-2]
+        assert type(second_last).__name__ == "TypstTable"
+        assert second_last.caption == "场址五十年一遇风速判定"
+        assert type(last).__name__ == "TypstParagraph"
+        assert "《GB/T 18451.1-2022 风力发电机组 设计要求》" in last.text
+
+    def test_method3_atom_contains_sustained_and_extreme_rows(self) -> None:
+        """Method 3 tables carry 持续风速 rows alongside 极端风速 rows."""
+        item = _make_input(
+            [_make_sensor(height=h) for h in self.HEIGHTS],
+            extreme_wind_10min_heights=self.HEIGHTS,
+            n_hours=2000,
+        )
+        section = ExtremeWindSection.from_inputs([item])
+        assert section.method3_atoms
+        for atom in section.method3_atoms:
+            types = set(atom.df["wind_speed_type"].unique().to_list())
+            assert types == {"sustained", "extreme"}

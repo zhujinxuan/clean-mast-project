@@ -82,6 +82,24 @@ class IECWindClassSchema(dy.Schema):
     conservative_extreme = dy.Float64(nullable=True)
 
 
+class SiteDeterminationSchema(dy.Schema):
+    """场址级跨塔判定表。
+
+    高度 | 跨塔最大保守持续风速 | 跨塔最大保守极大风速 | 判定等级
+    """
+
+    height = dy.Float64(nullable=False)
+    cross_mast_max_sustained = dy.Float64(nullable=False)
+    cross_mast_max_extreme = dy.Float64(nullable=False)
+    wind_class = dy.String(nullable=False)
+
+
+class SiteConclusionSchema(dy.Schema):
+    """场址级结论句表 — text 一行一句。"""
+
+    text = dy.String(nullable=False)
+
+
 class IECStandardsSchema(dy.Schema):
     """Schema for IEC wind class standards.
 
@@ -100,4 +118,6 @@ __all__ = [
     "FiftyYearMaxWindComparisonSchema",
     "IECWindClassSchema",
     "IECStandardsSchema",
+    "SiteDeterminationSchema",
+    "SiteConclusionSchema",
 ]

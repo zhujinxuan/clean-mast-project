@@ -21,15 +21,18 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
     build_method1_atom,
     build_method2_atoms,
     build_method3_atom,
+    build_site_conclusion_atoms,
     build_summary_atoms,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import (
     GumbelParamRow,
+    MastComparison,
     Method1Row,
     Method2WindRow,
     Method3Result,
     _compute_density_at_height,
     _convert_to_standard,
+    build_summary_comparison,
     calculate_method2,
     calculate_method3,
     compute_method2_extreme_fallback,
@@ -50,11 +53,45 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method2_atom i
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method3_atom import (
     Method3Atom,
 )
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.site_atom import (
+    SiteConclusionAtom,
+    SiteDeterminationAtom,
+)
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.summary_atom import (
     ComparisonExtremeAtom,
     ComparisonSustainedAtom,
     IECWindClassAtom,
 )
+
+
+def _combined_method_frames(
+    method2_wind_df: "pl.DataFrame | None",
+    method3_sustained_df: "pl.DataFrame | None",
+    method3_extreme_df: "pl.DataFrame | None",
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Apply the empty-DataFrame fallbacks and combine method 3 frames.
+
+    Returns:
+        (method2_frame, method3_frame) for build_summary_comparison.
+    """
+    m2_data = method2_wind_df if method2_wind_df is not None else pl.DataFrame()
+    s_df = method3_sustained_df if method3_sustained_df is not None else pl.DataFrame()
+    e_df = method3_extreme_df if method3_extreme_df is not None else pl.DataFrame()
+    return m2_data, pl.concat([s_df, e_df])
+
+
+def _mast_comparison(
+    mast_name: str,
+    method1_df: pl.DataFrame,
+    m2_data: pl.DataFrame,
+    m3_data: pl.DataFrame,
+) -> MastComparison:
+    """Per-mast (sustained, extreme) comparison bundle for the cross-mast pass."""
+    return MastComparison(
+        mast_name=mast_name,
+        sustained=build_summary_comparison(method1_df, m2_data, m3_data, "sustained"),
+        extreme=build_summary_comparison(method1_df, m2_data, m3_data, "extreme"),
+    )
 
 
 @dataclass(frozen=True)
@@ -70,6 +107,7 @@ class ExtremeWindSection:
     method3_atoms: list[ReportAtom] = field(default_factory=list)
     summary_atoms: list[ReportAtom] = field(default_factory=list)
     iec_atoms: list[ReportAtom] = field(default_factory=list)
+    site_atoms: list[ReportAtom] = field(default_factory=list)
     title: str = "五十年一遇最大风速"
 
     iec_atom_configs: ClassVar[list[tuple[type[ReportAtom], bool]]] = [
@@ -92,6 +130,15 @@ class ExtremeWindSection:
         (ComparisonExtremeAtom, True),
         (IECWindClassAtom, False),
     ]
+    # Site-level atoms render at the END of the summary subsection;
+    # determination table first, then the conclusion paragraph (the
+    # renderer emits summaries before tables, hence the split configs).
+    site_table_atom_configs: ClassVar[list[tuple[type[ReportAtom], bool]]] = [
+        (SiteDeterminationAtom, False),
+    ]
+    site_conclusion_atom_configs: ClassVar[list[tuple[type[ReportAtom], bool]]] = [
+        (SiteConclusionAtom, True),
+    ]
 
     @property
     def atoms(self) -> Sequence[ReportAtom]:
@@ -101,6 +148,7 @@ class ExtremeWindSection:
         result.extend(self.method2_atoms)
         result.extend(self.method3_atoms)
         result.extend(self.summary_atoms)
+        result.extend(self.site_atoms)
         return result
 
     @classmethod
@@ -130,6 +178,7 @@ class ExtremeWindSection:
         m2_atoms: list[ReportAtom] = []
         m3_atoms: list[ReportAtom] = []
         summary_atoms: list[ReportAtom] = []
+        site_atoms: list[ReportAtom] = []
 
         if method1_df is not None:
             m1_atoms.append(build_method1_atom(mast_name, method1_df))
@@ -145,15 +194,17 @@ class ExtremeWindSection:
             )
 
         if method1_df is not None:
-            m2_data = method2_wind_df if method2_wind_df is not None else pl.DataFrame()
-            s_df = method3_sustained_df if method3_sustained_df is not None else pl.DataFrame()
-            e_df = method3_extreme_df if method3_extreme_df is not None else pl.DataFrame()
-            m3_data = pl.concat([s_df, e_df])
+            m2_data, m3_data = _combined_method_frames(
+                method2_wind_df, method3_sustained_df, method3_extreme_df
+            )
             summary_atoms = list(
                 build_summary_atoms(
                     mast_name, method1_df, m2_data, m3_data
                 )
             )
+            site_atoms = list(build_site_conclusion_atoms([
+                _mast_comparison(mast_name, method1_df, m2_data, m3_data)
+            ]))
 
         iec_atoms = [build_iec_standards_atom()]
 
@@ -163,6 +214,7 @@ class ExtremeWindSection:
             method3_atoms=m3_atoms,
             summary_atoms=summary_atoms,
             iec_atoms=iec_atoms,
+            site_atoms=site_atoms,
         )
 
     def render_ir(self, images_dir: Path) -> TypstSection:
@@ -225,10 +277,17 @@ class ExtremeWindSection:
                 subsections=[],
             ))
 
-        # Summary subsection
-        if self.summary_atoms:
+        # Summary subsection (+ site-level cross-mast determination table
+        # and conclusion sentences appended at the end)
+        if self.summary_atoms or self.site_atoms:
             body = render_subsection_content(
                 self.summary_atoms, self.summary_atom_configs, images_dir
+            )
+            body += render_subsection_content(
+                self.site_atoms, self.site_table_atom_configs, images_dir
+            )
+            body += render_subsection_content(
+                self.site_atoms, self.site_conclusion_atom_configs, images_dir
             )
             result.append(TypstSection(
                 heading=TypstHeading(text="五十年一遇风速总结"),
@@ -262,6 +321,7 @@ class ExtremeWindSection:
         all_m2_atoms: list[ReportAtom] = []
         all_m3_atoms: list[ReportAtom] = []
         all_summary_atoms: list[ReportAtom] = []
+        mast_comparisons: list[MastComparison] = []
 
         # ── Pre-validation: every mast MUST have extreme_wind_10min_heights ──
         for item in items:
@@ -531,11 +591,29 @@ class ExtremeWindSection:
                 all_m3_atoms.extend(section.method3_atoms)
             all_summary_atoms.extend(section.summary_atoms)
 
+            # ── Cross-mast pass input: per-mast comparison results ──
+            if not method1_df.is_empty():
+                m2_data, m3_data = _combined_method_frames(
+                    m2_wind_df if not m2_wind_df.is_empty() else None,
+                    m3_sustained_df if not m3_sustained_df.is_empty() else None,
+                    m3_extreme_df if not m3_extreme_df.is_empty() else None,
+                )
+                mast_comparisons.append(
+                    _mast_comparison(mast_name, method1_df, m2_data, m3_data)
+                )
+
+        # ── Site-level cross-mast conclusion (determination table +
+        #    conclusion sentences at the end of 2.6.5) ──
+        site_atoms: list[ReportAtom] = list(
+            build_site_conclusion_atoms(mast_comparisons)
+        )
+
         return cls(
             method1_atoms=all_m1_atoms,
             method2_atoms=all_m2_atoms,
             method3_atoms=all_m3_atoms,
             summary_atoms=all_summary_atoms,
             iec_atoms=all_iec_atoms,
+            site_atoms=site_atoms,
         )
 

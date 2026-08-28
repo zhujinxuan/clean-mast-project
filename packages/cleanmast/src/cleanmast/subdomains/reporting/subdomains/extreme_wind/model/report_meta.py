@@ -17,3 +17,10 @@ class IECStandardsAtomMeta:
     mast_name: str = "_no_mast"
 
 
+@dataclass(frozen=True)
+class SiteLevelAtomMeta:
+    """Metadata for site-level (cross-mast, no single mast) report atoms."""
+
+    mast_name: str = "_no_mast"
+
+

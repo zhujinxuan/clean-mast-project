@@ -8,7 +8,9 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.assemble import (
     build_iec_standards_atom,
     build_method1_atom,
     build_method3_atom,
+    build_site_conclusion_atoms,
 )
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.compute import MastComparison
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.iec_atom import (
     IEC_STANDARDS_DATA,
     IECStandardsAtom,
@@ -28,6 +30,7 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.method3_atom i
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.report_meta import (
     ExtremeWindAtomMeta,
     IECStandardsAtomMeta,
+    SiteLevelAtomMeta,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import (
     FiftyYearMaxWindComparisonSchema,
@@ -36,6 +39,11 @@ from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.schemas import
     GumbelParameterSchema,
     IECStandardsSchema,
     IECWindClassSchema,
+    SiteConclusionSchema,
+)
+from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.site_atom import (
+    SiteConclusionAtom,
+    SiteDeterminationAtom,
 )
 from cleanmast.subdomains.reporting.subdomains.extreme_wind.model.summary_atom import (
     ComparisonSustainedAtom,
@@ -256,6 +264,47 @@ class TestMethod3Atom:
         assert len(paragraphs) == 1
         assert "TestMast" in paragraphs[0].text
 
+    def test_render_summary_lists_sustained_heights(self) -> None:
+        df = pl.DataFrame({
+            "height": [100.0, 100.0],
+            "interpolation_marker": [None, None],
+            "wind_speed_type": ["sustained", "extreme"],
+            "method": ["method3", "method3"],
+            "max_wind_speed": [25.0, 35.0],
+            "standard_density_wind_speed": [26.0, 36.0],
+            "observed_max": [20.0, 28.0],
+        })
+        atom = Method3Atom.create(
+            schema=FiftyYearMaxWindResultSchema,
+            df=df,
+            meta=ExtremeWindAtomMeta(mast_name="TestMast"),
+        )
+        text = atom.renderSummary()[0].text
+        assert "各高度结果如下：" in text
+        assert "100m:观测最大值20.00m/s" in text
+        assert "：。" not in text
+
+    def test_render_summary_never_emits_empty_list_sentence(self) -> None:
+        """Extreme-only rows (no sustained) must not produce '各高度结果如下：。'."""
+        df = pl.DataFrame({
+            "height": [100.0],
+            "interpolation_marker": [None],
+            "wind_speed_type": ["extreme"],
+            "method": ["method3"],
+            "max_wind_speed": [35.0],
+            "standard_density_wind_speed": [36.0],
+            "observed_max": [28.0],
+        })
+        atom = Method3Atom.create(
+            schema=FiftyYearMaxWindResultSchema,
+            df=df,
+            meta=ExtremeWindAtomMeta(mast_name="TestMast"),
+        )
+        text = atom.renderSummary()[0].text
+        assert "各高度结果如下" not in text
+        assert "：。" not in text
+        assert text.endswith("。")
+
 
 # =============================================================================
 # IEC Standards Atom
@@ -271,8 +320,30 @@ class TestIECStandardsAtom:
         )
         table = atom.renderTable()
         assert table is not None
-        assert "IEC 等级" in table.headers
-        assert len(table.data) == 4
+        assert table.headers == [
+            "风区等级",
+            "Vref 50年一遇持续风速参考值(m/s)",
+            "Ve50 50年一遇极大风速(m/s)",
+        ]
+        # Vref = 50-yr sustained reference (not Va 10/8.5/7.5),
+        # Ve50 = 50-yr extreme gust — aligned with _classify_wind_class.
+        assert table.data == [
+            ["I", "50.0", "70.0"],
+            ["II", "42.5", "59.5"],
+            ["III", "37.5", "52.5"],
+            ["S", "场址专用", "场址专用"],
+        ]
+        assert table.caption == "IEC 标准风况等级（IEC 61400-1）"
+
+    def test_summary_mentions_vref_and_ve50(self) -> None:
+        atom = IECStandardsAtom.create(
+            schema=IECStandardsSchema,
+            df=IEC_STANDARDS_DATA,
+            meta=IECStandardsAtomMeta(),
+        )
+        paragraphs = atom.renderSummary()
+        assert "Vref" in paragraphs[0].text
+        assert "Ve50" in paragraphs[0].text
 
 
 # =============================================================================
@@ -320,6 +391,70 @@ class TestSummaryAtoms:
 
 
 # =============================================================================
+# Site-level atoms (cross-mast conclusion)
+# =============================================================================
+
+
+class TestSiteAtoms:
+    def _comparison(self) -> list[MastComparison]:
+        def frame(pairs: list[tuple[float, float]]) -> pl.DataFrame:
+            return pl.DataFrame({
+                "height": [h for h, _ in pairs],
+                "conservative_max": [v for _, v in pairs],
+            })
+
+        return [
+            MastComparison(
+                mast_name="MA",
+                sustained=frame([(120.0, 30.0)]),
+                extreme=frame([(120.0, 42.0)]),
+            ),
+            MastComparison(
+                mast_name="MB",
+                sustained=frame([(120.0, 31.0)]),
+                extreme=frame([(120.0, 43.5)]),
+            ),
+        ]
+
+    def test_build_site_conclusion_atoms(self) -> None:
+        atoms = build_site_conclusion_atoms(self._comparison())
+        assert len(atoms) == 2
+        assert isinstance(atoms[0], SiteDeterminationAtom)
+        assert isinstance(atoms[1], SiteConclusionAtom)
+
+    def test_build_site_conclusion_atoms_empty_input(self) -> None:
+        assert build_site_conclusion_atoms([]) == []
+
+    def test_determination_table_render(self) -> None:
+        atoms = build_site_conclusion_atoms(self._comparison())
+        table = atoms[0].renderTable()
+        assert table is not None
+        assert table.headers == [
+            "高度(m)",
+            "跨塔最大保守持续(m/s)",
+            "跨塔最大保守极大(m/s)",
+            "判定等级",
+        ]
+        assert table.data == [["120.0", "31.00", "43.50", "III类"]]
+        assert table.caption == "场址五十年一遇风速判定"
+
+    def test_determination_atom_has_no_summary(self) -> None:
+        atoms = build_site_conclusion_atoms(self._comparison())
+        assert atoms[0].renderSummary() == []
+
+    def test_conclusion_atom_renders_sentence_rows(self) -> None:
+        df = pl.DataFrame({"text": ["第一句。", "第二句。"]})
+        atom = SiteConclusionAtom.create(
+            schema=SiteConclusionSchema,
+            df=df,
+            meta=SiteLevelAtomMeta(),
+        )
+        assert atom.renderTable() is None
+        paragraphs = atom.renderSummary()
+        assert [p.text for p in paragraphs] == ["第一句。", "第二句。"]
+
+
+# =============================================================================
 # Assembly
 # =============================================================================
 
@@ -364,7 +499,9 @@ class TestAssembly:
         })
         atom = build_method3_atom("TestMast", sus, ext)
         assert isinstance(atom, Method3Atom)
-        assert len(atom.df) == 1
+        # Sustained rows must flow through alongside extreme rows.
+        assert len(atom.df) == 2
+        assert set(atom.df["wind_speed_type"].to_list()) == {"sustained", "extreme"}
 
 
 # =============================================================================

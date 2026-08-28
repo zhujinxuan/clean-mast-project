@@ -5,7 +5,7 @@ All algorithms, constants, and formulas preserved exactly.
 """
 
 import math
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 import numpy as np
 import polars as pl
@@ -18,6 +18,22 @@ KELVIN_OFFSET = 273.15
 GRAVITY = 9.81
 STD_TEMP_SEA_LEVEL = 288.15
 LAPSE_RATE = 0.0065
+
+# ── Cross-mast "相差不大" range limits (engineering heuristics, NOT
+#    standard values): if every height's cross-mast conservative range
+#    stays within these limits the masts are treated as one site ──
+SUSTAINED_RANGE_LIMIT_MS = 3.0
+EXTREME_RANGE_LIMIT_MS = 4.2  # = 3.0 × 1.4 nominal gust factor
+
+# ── IEC 61400-1 wind-class thresholds: (sustained Vref, extreme Ve50) ──
+_IEC_CLASS_THRESHOLDS: dict[str, tuple[float, float]] = {
+    "III": (37.5, 52.5),
+    "II": (42.5, 59.5),
+    "I": (50.0, 70.0),
+}
+
+# Higher = more severe (S outranks I > II > III)
+_CLASS_SEVERITY: dict[str, int] = {"III": 0, "II": 1, "I": 2, "S": 3}
 
 
 # ── TypedDicts for accumulator row shapes ──
@@ -128,6 +144,30 @@ class IECClassRow(TypedDict):
     extreme_threshold: float
     conservative_sustained: float | None
     conservative_extreme: float | None
+
+
+class SiteDeterminationRow(TypedDict):
+    """Row shape for the site-level cross-mast determination table —
+    mirrors :class:`SiteDeterminationSchema`.
+    """
+
+    height: float
+    cross_mast_max_sustained: float
+    cross_mast_max_extreme: float
+    wind_class: str
+
+
+class MastComparison(TypedDict):
+    """Per-mast comparison bundle for the cross-mast site conclusion.
+
+    ``sustained``/``extreme`` are :func:`build_summary_comparison` frames
+    (``height`` + ``conservative_max`` columns) for one mast.
+    """
+
+    mast_name: str
+    sustained: pl.DataFrame
+    extreme: pl.DataFrame
+
 
 # ---- Method 2: 五日最大法 ----
 
@@ -408,15 +448,170 @@ def _extract_values(
 
 
 def _classify_wind_class(sustained: float, extreme: float) -> str:
-    """Classify IEC wind class based on conservative sustained and extreme."""
-    if sustained <= 37.5 and extreme <= 52.5:
-        return "III"
-    elif sustained <= 42.5 and extreme <= 59.5:
-        return "II"
-    elif sustained <= 50.0 and extreme <= 70.0:
-        return "I"
-    else:
-        return "S"
+    """Classify IEC wind class based on conservative sustained and extreme.
+
+    Boundary rule: ``<=`` threshold belongs to the (lenient) class itself,
+    e.g. (37.5, 52.5) classifies as III; anything above the I thresholds
+    classifies as S.
+    """
+    for wind_class, (sus_limit, ext_limit) in _IEC_CLASS_THRESHOLDS.items():
+        if sustained <= sus_limit and extreme <= ext_limit:
+            return wind_class
+    return "S"
+
+
+# ---- Site-level cross-mast conclusion (2.6.5) ----
+
+def build_site_determination_table(
+    mast_comparisons: list[MastComparison],
+) -> pl.DataFrame:
+    """Build the site-level cross-mast determination table.
+
+    One row per height of interest (union across masts), taking the
+    cross-mast MAX of the per-mast conservative values and classifying
+    with :func:`_classify_wind_class`. Mirrors :class:`SiteDeterminationSchema`.
+    """
+    sustained_by_height = _conservative_by_height(mast_comparisons, "sustained")
+    extreme_by_height = _conservative_by_height(mast_comparisons, "extreme")
+
+    rows: list[SiteDeterminationRow] = []
+    for height in sorted(set(sustained_by_height) | set(extreme_by_height)):
+        max_sustained = max(sustained_by_height.get(height, [0.0]))
+        max_extreme = max(extreme_by_height.get(height, [0.0]))
+        rows.append({
+            "height": height,
+            "cross_mast_max_sustained": max_sustained,
+            "cross_mast_max_extreme": max_extreme,
+            "wind_class": _classify_wind_class(max_sustained, max_extreme),
+        })
+
+    return pl.DataFrame(rows)
+
+
+def build_site_conclusion_sentences(
+    mast_comparisons: list[MastComparison],
+) -> list[str]:
+    """Build the site-level cross-mast conclusion sentences.
+
+    Rule (approved 2026-08-28):
+
+    - 相差不大 — every height's cross-mast conservative range is below
+      ``SUSTAINED_RANGE_LIMIT_MS`` (sustained) AND ``EXTREME_RANGE_LIMIT_MS``
+      (extreme) → one sentence for the most severe height class site-wide.
+    - 相差大 — per-mast class = most severe across that mast's heights;
+      all masts agree → the same single sentence; classes differ → one
+      zoned sentence per mast.
+    - Any value above the I thresholds → S 类场址专用 wording.
+    """
+    valid = [c for c in mast_comparisons if not c["sustained"].is_empty()]
+    if not valid:
+        return []
+
+    if _masts_agree(valid):
+        determination = build_site_determination_table(valid)
+        site_class = _most_severe_class(determination["wind_class"].to_list())
+        return [_class_conclusion_sentence(site_class)]
+
+    mast_classes = [(c["mast_name"], _mast_wind_class(c)) for c in valid]
+    if len({wind_class for _, wind_class in mast_classes}) == 1:
+        return [_class_conclusion_sentence(mast_classes[0][1])]
+
+    sentences = [
+        "各测风塔五十年一遇风速相差较大，"
+        "根据《GB/T 18451.1-2022 风力发电机组 设计要求》，"
+        "按测风塔代表区域分别判定。"
+    ]
+    for mast_name, wind_class in mast_classes:
+        if wind_class == "S":
+            sentences.append(
+                f"{mast_name} 测风塔代表区域机位超出 IEC I 类标准风况，"
+                "应按 IEC S 类场址专用风况选择风力发电机。"
+            )
+        else:
+            sentences.append(
+                f"{mast_name} 测风塔代表区域机位选择 "
+                f"IEC {wind_class} 类及以上等级的风力发电机。"
+            )
+    return sentences
+
+
+def _class_conclusion_sentence(wind_class: str) -> str:
+    """Single-class conclusion sentence citing GB/T 18451.1-2022."""
+    if wind_class == "S":
+        return (
+            "测风数据在标准空气密度条件下，50 年一遇最大持续风速不低于 "
+            "50.0 m/s 或 50 年一遇极大风速不低于 70.0 m/s，超出 IEC I 类标准风况。"
+            "根据《GB/T 18451.1-2022 风力发电机组 设计要求》，"
+            "本项目属于 IEC S 类场址，应选择满足场址专用风况要求的风力发电机。"
+        )
+    sustained_threshold, extreme_threshold = _IEC_CLASS_THRESHOLDS[wind_class]
+    return (
+        "测风数据在标准空气密度条件下，"
+        f"50 年一遇最大持续风速低于 {sustained_threshold:.1f} m/s，"
+        f"50 年一遇极大风速低于 {extreme_threshold:.1f} m/s。"
+        "根据《GB/T 18451.1-2022 风力发电机组 设计要求》，"
+        f"本项目可选择 IEC {wind_class} 类及以上等级的风力发电机。"
+    )
+
+
+def _conservative_by_height(
+    mast_comparisons: list[MastComparison],
+    wind_speed_type: Literal["sustained", "extreme"],
+) -> dict[float, list[float]]:
+    """Per-height conservative values across masts (masts lacking the
+    height simply don't contribute)."""
+    values: dict[float, list[float]] = {}
+    for comparison in mast_comparisons:
+        frame = comparison[wind_speed_type]
+        if frame.is_empty():
+            continue
+        for row in frame.iter_rows(named=True):
+            values.setdefault(float(row["height"]), []).append(
+                float(row["conservative_max"])
+            )
+    return values
+
+
+def _masts_agree(mast_comparisons: list[MastComparison]) -> bool:
+    """True when every height's cross-mast conservative range is within
+    the 相差不大 limits (strictly below)."""
+    sustained_by_height = _conservative_by_height(mast_comparisons, "sustained")
+    extreme_by_height = _conservative_by_height(mast_comparisons, "extreme")
+
+    for height in set(sustained_by_height) | set(extreme_by_height):
+        sustained_values = sustained_by_height.get(height, [])
+        extreme_values = extreme_by_height.get(height, [])
+        if sustained_values and (
+            max(sustained_values) - min(sustained_values)
+            >= SUSTAINED_RANGE_LIMIT_MS
+        ):
+            return False
+        if extreme_values and (
+            max(extreme_values) - min(extreme_values)
+            >= EXTREME_RANGE_LIMIT_MS
+        ):
+            return False
+    return True
+
+
+def _mast_wind_class(comparison: MastComparison) -> str:
+    """Most severe wind class across one mast's heights."""
+    extreme_lookup: dict[float, float] = {}
+    if not comparison["extreme"].is_empty():
+        for row in comparison["extreme"].iter_rows(named=True):
+            extreme_lookup[float(row["height"])] = float(row["conservative_max"])
+
+    classes: list[str] = []
+    for row in comparison["sustained"].iter_rows(named=True):
+        height = float(row["height"])
+        extreme = extreme_lookup.get(height, 0.0)
+        classes.append(_classify_wind_class(float(row["conservative_max"]), extreme))
+    return _most_severe_class(classes)
+
+
+def _most_severe_class(classes: list[str]) -> str:
+    """Most severe class (S > I > II > III)."""
+    return max(classes, key=lambda wind_class: _CLASS_SEVERITY[wind_class])
 
 
 def compute_method2_extreme_fallback(
