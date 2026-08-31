@@ -2,7 +2,7 @@
 
 **Type:** research
 
-**Status:** claimed
+**Status:** resolved
 
 **Blocked by:** None
 
@@ -25,3 +25,7 @@ Match recommendations to our charted protocol (ticket 01): monthly contiguous bl
 - [ ] Concrete recommendations mapped to our protocol items; where literature contradicts a charted decision, say so explicitly
 - [ ] Answer gist appended under `## Answer` here; Status → resolved; map.md Decisions-so-far updated
 - [ ] N/A — research ticket, no code (verify_baseline not applicable)
+
+## Answer
+
+Findings at `research/mcp-benchmarking.md` (28 sources, incl. Rogers et al. 2005; Weekes & Tomlin 2014; Basse et al. 2021 WES; Jonietz Alvarez et al. 2024 WES; Sheridan et al. 2025 WES; Carta et al. 2013; IEC 61400-1 §11.3.4 / MEASNET / FGW). Gist: the charted protocol is evidence-aligned — contiguous blocking is the validated treatment for autocorrelated series and month-scale blocks match the seasonal dependence that dominates MCP error; whole-series evaluation for ≥1 complete year is the benchmarking convention (IEC/MEASNET/FGW 12-month norm); WS-RMSE + bias-secondary matches the literature's dual value-by-value/distribution evaluation with mean bias dominating energy error (~6× variance error); "no dominant MCP method" is the most replicated result, justifying benchmark-over-hardcode, with VR/OLS-residuals beating plain OLS only on distribution/energy metrics and VR able to amplify seasonal bias. No hard contradictions; two flagged tensions: (a) the ≥90% availability gate is stricter than gap-impact evidence warrants (FGW accepts 80%; 180-day gaps shift long-term mean <0.04 m/s) — conservative, MEASNET-aligned, keep but document an 80% acceptance option; (b) the 16-sector ≥5-point fallback is far more permissive than the ≥20-points-per-30°-bin literature precedent and sector fits degrade on short records — rely on the benchmark's 1-vs-16-sector contrast or raise the floor.

@@ -17,6 +17,7 @@ Decision-complete design for migrating wind-data reconstruction from Julia (`Cle
 ## Decisions so far
 
 - [01 — Charting decisions](issues/01-charting-decisions.md) — naming (method/fit/predict/fill), fill-heights unified into the contract, monthly blocked bootstrap, ε-group RMSE sort (ε=0.05), vertical 2×2 method families (WS/WD × interp/extrap), train-on-demand + fit cache, benchmark recommends but run-config strategy per reconstruction set decides, production fits always retrain on full data.
+- [02 — Research: MCP benchmarking practice](issues/02-research-mcp-benchmarking.md) — charted protocol evidence-aligned (contiguous monthly blocks, 12-month/90% whole-series norm, WS-RMSE+bias-secondary, no dominant MCP method); two flagged tensions: ≥90% availability gate stricter than gap-impact evidence (FGW 80% option), 16-sector ≥5-point fallback vs literature ≥20-per-bin precedent.
 
 ## Not yet specified
 
