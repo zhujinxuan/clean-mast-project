@@ -23,3 +23,7 @@ Decide:
 - [ ] Interpolation method set + fit granularity recorded under `## Answer`
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 research (ticket 03, `research/shear-validation.md`) answers most of this ticket: log-linear as default + two-point power-law as the one competitor; per-interval parameters confirmed; exam = middle-layer spot-check only, not full bootstrap. Remaining to decide: wraparound spec for WD circular interpolation, and coexistence with extrapolation at the boundary layer.

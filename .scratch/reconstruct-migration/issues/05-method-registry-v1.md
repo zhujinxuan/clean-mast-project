@@ -31,3 +31,7 @@ Context: memory `core://agent/4`; 2026-08-28 proposal was registry via structura
 - [ ] Method id scheme documented in CONTEXT.md
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 research (ticket 02, `research/mcp-benchmarking.md`): literature precedent is ≥20 points per sector bin — Julia's ≥5-point fallback is below it. Weigh when defining `ols-16sector`'s fallback rule.

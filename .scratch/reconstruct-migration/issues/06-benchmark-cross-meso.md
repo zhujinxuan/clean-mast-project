@@ -26,3 +26,8 @@ Context: memory `core://agent/4` (O(n²) sources, Julia priority score, merge se
 - [ ] Interactions with tickets 09 (screen) and 11 (reference height) consistent
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 research (ticket 02, `research/mcp-benchmarking.md`): the charted ≥90% availability gate is stricter than gap-impact evidence requires — FGW 80% is a documented option. Decide whether the gate is config (default 90%, 80% option) rather than fixed.
+- 2026-08-31 research (ticket 03, `research/shear-validation.md`): Quick-2025 cautions on RMSE-based selection — read the flagged tension before locking the ε-group sort's primary metric.

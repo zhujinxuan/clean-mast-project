@@ -28,3 +28,7 @@ Context: ticket 01 decisions 4–6; research ticket 03 may trim the matrix.
 - [ ] Winner granularity decided
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 research (ticket 03, `research/shear-validation.md`) sharpens this ticket: WS matrix trimmed 20→16 (drop the day scale; keep all 4 layer schemes); **law-family (power-law vs log-law) is a missing candidate dimension** to add; WD candidates = {global, per-sector} × {1h, month, whole-series} circular veer offsets, metric = wrapped-MAE; hold-out-layer exam is MEASNET-sanctioned "vertical cross-prediction". Tension flagged: log-law evidence vs MEASNET power-law mandate.
