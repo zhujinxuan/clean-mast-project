@@ -18,6 +18,7 @@ Decision-complete design for migrating wind-data reconstruction from Julia (`Cle
 
 - [01 — Charting decisions](issues/01-charting-decisions.md) — naming (method/fit/predict/fill), fill-heights unified into the contract, monthly blocked bootstrap, ε-group RMSE sort (ε=0.05), vertical 2×2 method families (WS/WD × interp/extrap), train-on-demand + fit cache, benchmark recommends but run-config strategy per reconstruction set decides, production fits always retrain on full data.
 - [02 — Research: MCP benchmarking practice](issues/02-research-mcp-benchmarking.md) — charted protocol evidence-aligned (contiguous monthly blocks, 12-month/90% whole-series norm, WS-RMSE+bias-secondary, no dominant MCP method); two flagged tensions: ≥90% availability gate stricter than gap-impact evidence (FGW 80% option), 16-sector ≥5-point fallback vs literature ≥20-per-bin precedent.
+- [03 — Research: vertical shear validation practice](issues/03-research-shear-validation.md) — hold-out-layer exam is MEASNET-sanctioned "vertical cross-prediction"; WS matrix trimmed 20→16 (drop day scale, keep all 4 layer schemes); law-family (power vs log) flagged as a missing method dimension; WD = {global, per-sector} × {1h, month, whole-series} circular offsets with wrapped-MAE; interpolation = log-linear default + two-point power-law competitor, per-interval params, spot-check only.
 
 ## Not yet specified
 
