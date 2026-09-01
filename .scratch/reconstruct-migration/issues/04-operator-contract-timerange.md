@@ -44,3 +44,7 @@ Decided 2026-08-31 (grilling round, user-confirmed). Facts from scout: `TimeRang
 7. **Two reference modes**: identity reference (default; the only mode `recommend` emits) and explicit-artifact mode (direct fit TOML path + column mapping for ad-hoc cross-pair transfer via just-override; flagged `fit-transferred`; never benchmark-recommended).
 
 **Known drift this contract resolves**: fill-heights' write-only fit artifacts and parameter-embedding configs (spec-vs-code contradiction in `configuration/spec.md`) are replaced by identity reference + train-on-demand.
+
+## Comments
+
+- 2026-08-31 (sequencing refinement, user): reconstruction migrates before data clean, so flag columns phase in — the writer API (`append_flag`) creates `{sensor}_flags` on demand; reconstruction phases append their own flags onto empty history until the clean migration starts minting origin/`clean` flags. Untouched points carry empty flags (value present = observed, NaN = missing — inferable). Origin flags are never retro-prepended (append-only); grammar readers must tolerate a missing origin on pre-clean-migration outputs. Flag join syntax: `{flag1}:{flag2}`, no leading colon — the single writer API owns the empty-start case.

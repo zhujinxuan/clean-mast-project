@@ -31,7 +31,7 @@ Decision-complete design for migrating wind-data reconstruction from Julia (`Cle
 
 ## Out of scope
 
-- Data cleaning — cleaning *logic* exists upstream, unchanged. Exception (ticket 04): the clean-stage output schema gains the append-only `{sensor}_flags` columns; the writer change is additive, no cleaning rules change.
+- Data cleaning — cleaning *logic* exists upstream, unchanged. End state (ticket 04): the clean-stage writer mints the `{sensor}_flags` columns. Because reconstruction migrates first, flags phase in: reconstruction creates/appends them on demand, and the clean migration later takes over minting origin/`clean` flags (no retro-prepend; readers tolerate missing origins on older outputs).
 - Report rendering / reporting-side statistics migration.
 - Julia-side changes — `CleanMastProject/` is frozen.
 - Non-reconstruction subdomains.
