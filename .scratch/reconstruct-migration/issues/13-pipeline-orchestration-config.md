@@ -26,4 +26,6 @@ Decide:
 
 ## Comments
 
+- 2026-09-01 (user decision, pre-answers Q3): the recommend → run UX is three-phase. Recommend seeds `benchmark-horizontal.toml` + `benchmark-vertical.toml`; the two benchmark commands write their artifacts and seed the run-phase strategy config; run consumes config as-is. Two benchmark commands, not one (rationale in ticket 06 comments, 2026-09-01).
+
 - 2026-08-31 (ticket 04): config schema consequences — per-mast working window per phase (not per-pair); reconstruct-meso window is explicit and independent of report/wt-timeseries windows; `recommend` proposes the meso window length (default policy to decide here: latest N years? anchored on observation?), user overrides via just-override. Config carries strategy identity, with the two reference modes (identity / explicit-artifact + column mapping).

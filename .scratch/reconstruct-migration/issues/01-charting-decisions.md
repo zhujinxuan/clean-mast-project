@@ -27,6 +27,11 @@ Decided 2026-08-31, user-confirmed:
 
 Veto procedure: comment on this ticket and reopen (Status: ready-for-human) if any decision needs revisiting.
 
+## Amendments
+
+- 2026-09-01 (user): **decision 3 amended** — the feasibility screen is not computed inside recommend. It runs inside the `benchmark-horizontal` / `benchmark-vertical` commands (benchmark became its own phase, two commands + two configs; recommend stays metadata-only). Screen fillable spans are recorded in the benchmark artifact. See ticket 06 comments.
+- 2026-09-01 (user): **decision 4 amended** — the two-tier protocol is removed. No whole-series RMSE path for ≥1yr & ≥90% availability. **Blocked subsampling (monthly contiguous blocks) is the single golden standard for all records**, any availability. Rationale: one protocol to implement, validate, and read; subsampling is never wrong where whole-series would have been allowed.
+
 ## Acceptance
 
 - [x] Decisions recorded above; map.md Decisions-so-far points here

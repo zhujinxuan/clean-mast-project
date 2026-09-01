@@ -50,10 +50,10 @@ The explicitly chosen reconstruct-meso output window — a deliberately sized su
 One configured reconstruction job: source, target, method, timerange, heights. The unit of run-phase strategy; config carries an explicit strategy per set.
 
 **Feasibility screen**:
-The recommend-stage computation of which (method × source × target) pairs can reconstruct anything, recorded as fillable spans + counts. Infeasible pairs are skipped downstream.
+The benchmark-stage computation of which (method × source × target) pairs can reconstruct anything, recorded as fillable spans + counts in the benchmark artifact. Infeasible pairs are skipped downstream; fill reads the persisted spans at run time.
 
 **Benchmark**:
-The selection procedure ranking (source × method) candidates: whole-series WS RMSE for adequate records (≥1 year, ≥90% availability on heights of interest), monthly blocked bootstrap otherwise. The winner seeds the recommended strategy; it is not the mandate.
+The selection procedure ranking (source × method) candidates: monthly blocked bootstrap (contiguous blocks, exam = one month per fold) — the single protocol for all records, regardless of length or availability. The winner seeds the recommended strategy; it is not the mandate. Runs as its own phase: `benchmark-horizontal` and `benchmark-vertical` commands, each with its own config, seeded by recommend.
 
 **Provenance flags**:
 An append-only categorical column `{sensor}_flags` per reconstructed sensor. Grammar: origin flag first (`observed`|`missing`, never removed), then phase flags appended in fixed pipeline order (`clean` < `single` < `cross` < `meso` < `rep-year`), colon-joined, no leading colon. Created on demand by the single append-only writer API. Until the data-clean migration lands, a transitional `mint-flags` command (recommend → config → run) mints them into clean parquets in place — raw is never edited; raw-unavailable degrades to `observed`/`missing`. Readers tolerate missing origins on older outputs.
