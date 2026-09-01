@@ -9,7 +9,7 @@ A meteorological measurement tower; the primary observation unit. A mast *entity
 _Avoid_: tower (ambiguous with turbine tower), station
 
 **Sensor**:
-A named measurement channel on a mast, with metadata (height, type, statistic). Never pattern-match raw column strings.
+A named measurement channel on a mast, with metadata (height, type, statistic). Never pattern-match raw column strings. On tower masts, wind-speed and wind-direction sensors are typically mounted at *different* heights to avoid mutual interference — never assume a WS height implies a WD sensor at the same height.
 _Avoid_: column, channel (bare)
 
 **Experiment**:
@@ -18,8 +18,14 @@ A full CleanMast run from preprocessed mast/meso data to report.
 ### Reconstruction
 
 **Method**:
-A named reconstruction algorithm identified by id in config, benchmark records, and fit artifacts (e.g. `ols-16sector`). Refers to the algorithm only, never a trained object.
+A named reconstruction algorithm identified by id in config, benchmark records, and fit artifacts (e.g. `horizontal.ws.ols-16sector`). Refers to the algorithm only, never a trained object. Ids follow the grammar `<scope>.<variable>.<algorithm>[.<variant>...]` with closed per-segment vocabularies; candidate-matrix dimensions (law family, layer scheme, time scale) are id segments, while per-method tuning knobs stay params. Ids are add-only — never renamed or removed.
 _Avoid_: model (reserved for Pydantic config IR)
+
+**Horizontal**:
+The method scope for series→series reconstruction across locations: cross-mast and meso→mast share it (same algorithms; the source kind is a property of the reconstruction set, not the id). MEASNET's "horizontal cross-prediction between different masts".
+
+**Vertical**:
+The method scope for reconstruction across heights within one mast — interpolation between measured layers, extrapolation above the top layer. MEASNET's "vertical cross-prediction between different measurement heights".
 
 **Fit**:
 A trained artifact produced by fitting a method to a source×target pair over a timerange; persisted as TOML. Follows the `FillHeightFitResult` precedent. Config references it by identity (method + refs + training overlap); an explicit-artifact mode (direct path + column mapping) exists for ad-hoc transfers.
