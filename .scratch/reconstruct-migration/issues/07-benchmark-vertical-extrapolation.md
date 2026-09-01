@@ -2,7 +2,7 @@
 
 **Type:** grilling
 
-**Status:** ready-for-human
+**Status:** claimed
 
 **Blocked by:** None
 
