@@ -50,7 +50,7 @@ The recommend-stage computation of which (method × source × target) pairs can 
 The selection procedure ranking (source × method) candidates: whole-series WS RMSE for adequate records (≥1 year, ≥90% availability on heights of interest), monthly blocked bootstrap otherwise. The winner seeds the recommended strategy; it is not the mandate.
 
 **Provenance flags**:
-An append-only categorical column `{sensor}_flags` per reconstructed sensor, minted at the clean stage. Grammar: origin flag first (`observed`|`missing`, never removed), then phase flags appended in fixed pipeline order (`clean` < `single` < `cross` < `meso` < `rep-year`), colon-joined. Writers expose append only.
+An append-only categorical column `{sensor}_flags` per reconstructed sensor. Grammar: origin flag first (`observed`|`missing`, never removed), then phase flags appended in fixed pipeline order (`clean` < `single` < `cross` < `meso` < `rep-year`), colon-joined, no leading colon. Created on demand by the single append-only writer API; until the data-clean migration lands, reconstruction phases mint the column and origin flags stay absent — readers tolerate that on older outputs.
 
 **Provenance manifest**:
 A per-run TOML beside the output parquet: per sensor, filled spans → method, source, fit key, override flags. The audit layer for human overrides of benchmark recommendations.
