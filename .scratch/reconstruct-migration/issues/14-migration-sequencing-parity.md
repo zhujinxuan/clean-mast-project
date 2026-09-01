@@ -24,3 +24,7 @@ Decide:
 - [ ] Sequencing + parity strategy recorded under `## Answer`
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 (ticket 04): sequencing constraint — the transitional `mint-flags` command (mints `{sensor}_flags` into clean parquets in place; raw untouched; degrades to `observed`/`missing` when raw unavailable) ships **before** reconstruct-single implementation, and is **deleted** when the data-clean migration lands (clean writer then mints natively). Its command/config/Justfile entries carry `transitional` markers.
