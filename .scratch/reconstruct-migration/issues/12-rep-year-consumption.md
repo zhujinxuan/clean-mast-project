@@ -25,3 +25,7 @@ Decide:
 - [ ] Consistent with ticket 05 registry outcome
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 (ticket 04): rep-year window selection policy is settled — coverage-driven: align all masts to the best common window when every mast has ≥90% clean-data availability there, else per-mast best-coverage; just-override for exceptions; the window must lie within the reconstructed extent (run-time validation, not a selection driver). Rep-year window is independent of report/wt-timeseries windows.

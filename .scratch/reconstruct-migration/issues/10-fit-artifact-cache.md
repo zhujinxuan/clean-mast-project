@@ -25,3 +25,7 @@ Context: `FillHeightFitResult` TOML precedent in packages/cleanmast; memory `cor
 - [ ] Artifact schema + cache lifecycle recorded under `## Answer`
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 (ticket 04): today's `fill-models/` tree is write-only (`discover_fill_height_models` has zero consumers) and execute embeds copied parameters — the new cache replaces this wholesale. The design must include the **explicit-artifact reference mode** (direct fit TOML path + column mapping, for ad-hoc cross-pair transfers) alongside identity lookup; explicit mode is flagged `fit-transferred` and never emitted by recommend. Cache key's timerange element = training overlap only.

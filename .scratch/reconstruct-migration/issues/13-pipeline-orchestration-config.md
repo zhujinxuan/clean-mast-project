@@ -23,3 +23,7 @@ Decide:
 - [ ] Config schema + orchestration design recorded under `## Answer`
 - [ ] Map Decisions-so-far updated
 - [ ] N/A — decision ticket, no code (verify_baseline not applicable)
+
+## Comments
+
+- 2026-08-31 (ticket 04): config schema consequences — per-mast working window per phase (not per-pair); reconstruct-meso window is explicit and independent of report/wt-timeseries windows; `recommend` proposes the meso window length (default policy to decide here: latest N years? anchored on observation?), user overrides via just-override. Config carries strategy identity, with the two reference modes (identity / explicit-artifact + column mapping).
