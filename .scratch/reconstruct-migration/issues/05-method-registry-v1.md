@@ -46,5 +46,7 @@ Veto procedure: comment on this ticket and reopen (Status: ready-for-human) if a
 
 ## Comments
 
+- 2026-09-01 (ticket 07 grilling, user decision): **vocabulary rename** — the id grammar segment `variable` is renamed **sensor type** (`<scope>.<sensor-type>.<algorithm>[.<variant>...]`), binding the id to the existing Sensor glossary term (`CONTEXT.md`). No method id changes: the segment values were and remain `ws`/`wd`.
+
 - 2026-08-31 research (ticket 02, `research/mcp-benchmarking.md`): literature precedent is ≥20 points per sector bin — Julia's ≥5-point fallback is below it. Weigh when defining `ols-16sector`'s fallback rule.
 - 2026-09-01 grilling round 1 (partial): **log-law (loglinear) excluded from v1** — not in Chinese 规范 (GB/T 18710 et al. prescribe the power-law kernel for vertical shear; consistent with MEASNET §9.4's power-law mandate). Backlog candidate, revisit if 规范 or project requirements change. Q1/Q2/Q4 still open.

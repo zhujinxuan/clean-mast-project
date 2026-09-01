@@ -18,6 +18,10 @@ Decide:
 4. **Consumption**: how reconstruct reads the screen to skip pairs; behavior when config strategy overrides to a pair the screen rejected (warn? hard fail? allow with flag?).
 5. **Back-reconstruction interaction**: a pair feasible only for a sub-range (the 2022–2023 vs 2025 case) — spans must express this; timerange from ticket 04.
 
+## Comments
+
+- 2026-09-01 (ticket 07, resolved): vertical exam-feasibility inputs for the screen — extrapolation exam requires ≥3 WS layers (hold out top, ≥2 below to fit shear); interpolation exam requires a qualifying middle layer inside `interpolation_exam_range` with brackets after hold-out; tall-mast "extrapolation not needed" is a derived exam-plan state the screen must express. Plus research R2's height-ratio guard (z_pred/z_obs ≲ 2, Kelly E-0121) for extrapolation targets.
+
 ## Acceptance
 
 - [ ] Screen definition recorded under `## Answer`
