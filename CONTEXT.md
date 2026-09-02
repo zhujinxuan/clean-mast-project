@@ -34,7 +34,7 @@ The method scope for reconstruction across heights within one mast — interpola
 The split of vertical method families by target position relative to the observed layers: **extrapolate** (no observed layer above the target) and **interpolate** (observed layers bracket the target). Routing is per timestamp, by availability: the top measured layer itself is always extrapolation territory. Winner granularity is per (mast × sensor type × mode).
 
 **Fit**:
-A trained artifact produced by fitting a method to a source×target pair over a timerange; persisted as TOML. Follows the `FillHeightFitResult` precedent. Config references it by identity (method + refs + training overlap); an explicit-artifact mode (direct path + column mapping) exists for ad-hoc transfers.
+A trained artifact produced by fitting a method to a source×target pair over a timerange; persisted as TOML. Follows the `FillHeightFitResult` precedent. Config references it by identity (method + refs + training overlap); an explicit-artifact mode (direct path + column mapping) exists for ad-hoc transfers. A method is **fit-free** when predict re-derives everything from observed data at predict time (e.g. per-timestamp two-point interpolation) — no artifact is trained, persisted, or cached for it.
 _Avoid_: model, trained model
 
 **Fit transfer**:

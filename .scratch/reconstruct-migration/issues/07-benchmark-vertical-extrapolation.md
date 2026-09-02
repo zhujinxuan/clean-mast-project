@@ -50,3 +50,5 @@ Routings: interpolation method-set detail (WD wraparound spec, per-interval arti
 ## Comments
 
 - 2026-08-31 research (ticket 03, `research/shear-validation.md`) sharpens this ticket: WS matrix trimmed 20→16 (drop the day scale; keep all 4 layer schemes); **law-family (power-law vs log-law) is a missing candidate dimension** to add; WD candidates = {global, per-sector} × {1h, month, whole-series} circular veer offsets, metric = wrapped-MAE; hold-out-layer exam is MEASNET-sanctioned "vertical cross-prediction". Tension flagged: log-law evidence vs MEASNET power-law mandate.
+
+- 2026-09-01 (ticket 08, resolved): **interpolation decisions amended** — the "2 WS-interpolate laws / 1 WD-interpolate" cut becomes two 4-scale families: `vertical.ws.interpolate.powerlaw.brackets.<10min|1h|month|series>` and `vertical.wd.interpolate.linear.brackets.<10min|1h|month|series>` (loglinear voided as a candidate). Default seeds renamed: `…powerlaw.brackets.10min` / `…linear.brackets.10min`. The WD interpolation exam upgrades from diagnostic-only to a real selection. Extrapolation decisions unchanged.

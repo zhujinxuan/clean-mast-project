@@ -28,4 +28,6 @@ Context: `FillHeightFitResult` TOML precedent in packages/cleanmast; memory `cor
 
 ## Comments
 
+- 2026-09-01 (ticket 08, resolved): fit-free methods exist — `…interpolate.*.brackets.10min` trains nothing, so the cache handles only training methods; the provenance manifest's fit-key applies only where a fit exists; strategy config carries the method id alone for fit-free methods. Interpolation training fits (`1h`/`month`/`series`) carry per (adjacent interval × time bucket) $\bar\alpha$ / veer-offset tables — one fit per (mast × sensor type × method), intervals as rows. Principle: a method is fit-free iff predict re-derives everything from observed data at predict time.
+
 - 2026-08-31 (ticket 04): today's `fill-models/` tree is write-only (`discover_fill_height_models` has zero consumers) and execute embeds copied parameters — the new cache replaces this wholesale. The design must include the **explicit-artifact reference mode** (direct fit TOML path + column mapping, for ad-hoc cross-pair transfers) alongside identity lookup; explicit mode is flagged `fit-transferred` and never emitted by recommend. Cache key's timerange element = training overlap only.

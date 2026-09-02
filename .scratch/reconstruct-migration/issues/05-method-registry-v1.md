@@ -50,3 +50,5 @@ Veto procedure: comment on this ticket and reopen (Status: ready-for-human) if a
 
 - 2026-08-31 research (ticket 02, `research/mcp-benchmarking.md`): literature precedent is ≥20 points per sector bin — Julia's ≥5-point fallback is below it. Weigh when defining `ols-16sector`'s fallback rule.
 - 2026-09-01 grilling round 1 (partial): **log-law (loglinear) excluded from v1** — not in Chinese 规范 (GB/T 18710 et al. prescribe the power-law kernel for vertical shear; consistent with MEASNET §9.4's power-law mandate). Backlog candidate, revisit if 规范 or project requirements change. Q1/Q2/Q4 still open.
+
+- 2026-09-01 (ticket 08, resolved): **interpolation registry amended** — `vertical.ws.interpolate.<law>` is replaced by the blend family `vertical.ws.interpolate.powerlaw.<layer-scheme>.<scale>` (v1 scheme `brackets`, scales `{10min, 1h, month, series}`; `loglinear` never lands); `vertical.wd.interpolate.circular` is replaced by `vertical.wd.interpolate.linear.<layer-scheme>.<scale>` (`brackets` × 4 scales). Interpolation gains the explicit layer-scheme segment, mirroring the extrapolate id structure; future schemes (e.g. `dist-weighted`) enter additively.
