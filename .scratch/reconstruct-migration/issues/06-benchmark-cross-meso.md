@@ -32,6 +32,15 @@ Decided 2026-09-01, user-confirmed (grilling round run jointly with ticket 11):
 6. **Benchmark artifact.** One TOML per benchmark run: screen table (fillable spans + counts per pair), per-candidate fold metrics (RMSE + bias per fold, per variable), winner summary. Fold fits are discarded (ticket 01 §10). Surfaced as a file in the project output, read directly by the user when reviewing the seeded run config. Not a report section — reporting is out of scope.
 7. **Meso↔mast temporal alignment.** Training aligns on the coarser meso hourly grid: mast 10-min aggregated to hourly (WS arithmetic mean, WD vector mean). Predict/fill runs at mast 10-min via up-front linear interpolation of the meso series, then apply the fit (commutes for the linear/piecewise-linear v1 methods). 16-sector assignment uses the meso (source) WD — at predict time only the source direction exists; preserves Julia parity. The 行标 mast-direction variant is ticket 12's additive method.
 
+## Amendments
+
+- 2026-09-02 (user, surfaced during ticket 12 grilling via the a/b/c disjoint-era mast scenario): **decision 4 amended — single winner → rank-ordered fill-span cover.** Winner selection per (mast × sensor type × phase candidate pool): walk the ε-group ranking; rank 1 is selected; a further candidate joins the winner set iff its persisted fillable spans (ticket 09 screen table) contain at least one timestamp not covered by the union of already-selected winners' spans. Equivalently: a single winner per target sensor holds only when no other candidate can win on any timestamp. On timestamps several winners can fill, the higher-ranked winner fills (rank order is the precedence rule). Consequences:
+  - **Fallback-chain rejection is subsumed, not contradicted** — two meso datasets' fillable spans for one target coincide (reanalysis has no gaps), so a second meso adds zero new timestamps and never joins the winner set. The cover rule yields the no-chain outcome as a consequence, not a special case.
+  - Cross-mast siblings with disjoint eras (the a/b/c scenario) both win; recommend seeds one reconstruction set per winner. Non-winner sets remain addable by user override when benchmark-backed (all pre-rank survivors carry fold metrics).
+  - Ticket 11 consequence: full-height training runs **once per winner** (was "once for the winner").
+  - Ticket 13 consumes: how the seeded strategy config expresses a multi-winner set.
+  - The winner set is computed per sensor type with that type's ranking and fillable spans (screen rows are already per sensor type).
+
 ## Acceptance
 
 - [x] Full protocol recorded under `## Answer`, implementable without further decisions

@@ -21,7 +21,7 @@ A full CleanMast run from preprocessed mast/meso data to report.
 ### Reconstruction
 
 **Method**:
-A named reconstruction algorithm identified by id in config, benchmark records, and fit artifacts (e.g. `horizontal.ws.ols-16sector`). Refers to the algorithm only, never a trained object. Ids follow the grammar `<scope>.<sensor-type>.<algorithm>[.<variant>...]` with closed per-segment vocabularies; candidate-matrix dimensions (law family, layer scheme, time scale) are id segments, while per-method tuning knobs stay params. Ids are add-only — never renamed or removed.
+A named reconstruction algorithm identified by id in config, benchmark records, and fit artifacts (e.g. `horizontal.ws.ols-16sector`). Refers to the algorithm only, never a trained object. Ids follow the grammar `<scope>.<sensor-type>.<algorithm>[.<variant>...]` with closed per-segment vocabularies; candidate-matrix dimensions (law family, layer scheme, time scale) are id segments, while per-method tuning knobs stay params. Scope ∈ {`horizontal`, `vertical`, `repyear`}. Ids are add-only — never renamed or removed.
 _Avoid_: model (reserved for Pydantic config IR)
 
 **Horizontal**:
@@ -29,6 +29,9 @@ The method scope for series→series reconstruction across locations: cross-mast
 
 **Vertical**:
 The method scope for reconstruction across heights within one mast — interpolation between measured layers, extrapolation above the top layer. MEASNET's "vertical cross-prediction between different measurement heights".
+
+**Repyear**:
+The method scope for representative-year calibration: shifting a meso-reconstructed series to the long-term climatological level by an additive per-sector correction (delta × slope), anchored at the complete-years climatology mean of the meso source. A `repyear.*` fit either consumes a horizontal fit's parameters by identity or trains its own; the output window is exactly one year — the 代表年 hourly dataset of Chinese 规范 (GB/T 18710). The only skip path is the need-check (training-overlap meso mean within 2% of climatology), flagged `rep-year-skipped`.
 
 **Mode**:
 The split of vertical method families by target position relative to the observed layers: **extrapolate** (no observed layer above the target) and **interpolate** (observed layers bracket the target). Routing is per timestamp, by availability: the top measured layer itself is always extrapolation territory. Winner granularity is per (mast × sensor type × mode).
@@ -59,13 +62,13 @@ One configured reconstruction job: source, target, method, timerange, heights. T
 The benchmark-stage computation of which (source × target × sensor type) pairs can reconstruct anything — method-independent data geometry (overlap spans, fillable spans, fold derivation), never a skill metric. Recorded per pair in the benchmark artifact with a verdict: `benchmarkable`, `forced` (the benchmark config's `forced_pairs` list overrides the gate; zero-overlap pairs can never be forced), `unbenchmarkable(reason)`, or `no-fill-value`. Above-top vertical targets beyond the height-ratio guard are `unfillable-by-vertical`. Fill reads the persisted fillable spans at run time; every filled pair is benchmark-backed — no fill without benchmark evidence.
 
 **Benchmark**:
-The selection procedure ranking (source × method) candidates: monthly blocked bootstrap (contiguous blocks, exam = one month per fold) — the single protocol for all records, regardless of length or availability. The winner seeds the recommended strategy; it is not the mandate. Runs as its own phase: `benchmark-horizontal` and `benchmark-vertical` commands, each with its own config, seeded by recommend.
+The selection procedure ranking (source × method) candidates: monthly blocked bootstrap (contiguous blocks, exam = one month per fold) — the single protocol for all records, regardless of length or availability. The **winner set** seeds the recommended strategy — a rank-ordered cover over the candidates' persisted fillable spans: rank 1 wins; a further candidate joins iff its fillable spans add at least one timestamp no already-selected winner can fill (a single winner holds only when no rival can win on any timestamp); rank order is the fill precedence on overlapping spans. The set is a recommendation, not the mandate. Runs as its own phase: `benchmark-horizontal` and `benchmark-vertical` commands, each with its own config, seeded by recommend.
 
 **Exam**:
 The hold-out validation inside a benchmark. Horizontal exams withhold a time block (the monthly fold); vertical exams withhold a measurement layer — the top layer for extrapolation, a middle layer for interpolation (MEASNET's vertical cross-prediction). **Train/predict consistency**: an exam replays the production fit/predict geometry exactly — same method, fit rule, layer scheme, and weighting — with the held-out layer or block as the target; no exam-specific fitting paths. A per-mast exam plan (which modes run) is derived from configured target heights vs the observed layer inventory; where no exam can crown a winner, the family default is seeded instead.
 
 **Provenance flags**:
-An append-only categorical column `{sensor}_flags` per reconstructed sensor. Grammar: origin flag first (`observed`|`missing`, never removed), then phase flags appended in fixed pipeline order (`clean` < `single` < `cross` < `meso` < `rep-year`), colon-joined, no leading colon. Created on demand by the single append-only writer API. Until the data-clean migration lands, a transitional `mint-flags` command (recommend → config → run) mints them into clean parquets in place — raw is never edited; raw-unavailable degrades to `observed`/`missing`. Readers tolerate missing origins on older outputs.
+An append-only categorical column `{sensor}_flags` per reconstructed sensor. Grammar: origin flag first (`observed`|`missing`, never removed), then phase flags appended in fixed pipeline order (`clean` < `single` < `cross` < `meso` < `rep-year`), colon-joined, no leading colon. `:` is strictly the phase separator; a phase token may carry an outcome suffix inside the token when the phase ran but changed nothing — `rep-year-skipped` (need-check below threshold) occupies the rep-year position, appended to exactly the cells that would have received `rep-year`. Created on demand by the single append-only writer API. Until the data-clean migration lands, a transitional `mint-flags` command (recommend → config → run) mints them into clean parquets in place — raw is never edited; raw-unavailable degrades to `observed`/`missing`. Readers tolerate missing origins on older outputs.
 
 **Provenance manifest**:
 A per-run TOML beside the output parquet: per sensor, filled spans → method, source, fit key, override flags. The audit layer for human overrides of benchmark recommendations.
