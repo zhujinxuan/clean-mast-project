@@ -30,9 +30,10 @@ Decision-complete design for migrating wind-data reconstruction from Julia (`Cle
 
 - [09 — Feasibility screen](issues/09-feasibility-screen.md) — geometry-only screen, one row per (source × target × sensor type), verdicts `benchmarkable` / `forced` / `unbenchmarkable(reason)` / `no-fill-value`; pairability = ≥5 folds at `min_fold_coverage` 0.5, `min_overlap_months` default 0 (recommend seeds 5 when all target masts >8-month spans); `min_availability` gate killed to an informational column; **no fill without benchmark evidence** — `forced_pairs` in the benchmark config overrides the gate (zero overlap excepted; forced runs keep 5 folds, drop fold coverage, marked `forced`); vertical height-ratio guard `max_extrapolation_height_ratio` seeded 2.0, configurable, marks targets `unfillable-by-vertical`; engine in dataprocessing, `--screen-only` preview mode; ticket 04 amended (screen-override shrinks to method-level).
 
+- [10 — Fit artifact and cache](issues/10-fit-artifact-cache.md) — one `FitArtifact` envelope (method / qualified refs / training overlap / verbatim params / created_by / cleanmast_version) + method-dispatched `FitPayload` section; refs are qualified `(mast, sensor)` pairs — target mast is a ref component, never a key element; granularity: horizontal per (method × source × target sensor), vertical per (mast × sensor type × method) with interval rows in payload; cache key = (method, source ref, target ref, training overlap, params-only config hash) computed at run time from the strategy config; identity-derived `fits/<scope>/…` tree, overwrite-on-retrain, replaces `fill-models/`; invalidation explicit (`fits clear` / `--retrain`) — the key never watches data; cache consulted at run phase only (benchmark artifact is metrics-only, fit-free methods uncached); 16-sector sparse sectors fall back to the overall fit, per-sector evidence in payload.
+
 ## Not yet specified
 
-- Parallelism/performance design of final fitting and full-series prediction at scale (depends on contract + cache shape).
 - GuessMast / multi-mast synthesis interaction with the new fits.
 - Speed-weighted WD metric (ws or ws³ weights) — deferred from ticket 07 (training complexity); backlog candidate if unweighted proves noisy.
 

@@ -18,6 +18,8 @@ Decide:
 4. **Fill-heights at two points**: same selected vertical fit reused after meso and after rep-year (missing-only) — how config expresses the two invocation points.
 5. **train-meso config model**: the one missing config IR piece (memory `core://agent/4`) — is it subsumed by reconstruction-set config + fit cache, or still needed?
 
+- 2026-09-02 (ticket 10, resolved): **Q5 is pre-answered — the train-meso config IR is subsumed.** The fit cache is keyed by (method, refs, training overlap, params-only hash) computed from the run-phase strategy config, whose params block is materialized by recommend as required fields. There is no separate train phase, no train command, and nothing left for a standalone train-meso config model to carry: strategy config (method id + params + refs) + cache cover training entirely.
+
 ## Acceptance
 
 - [ ] Config schema + orchestration design recorded under `## Answer`
