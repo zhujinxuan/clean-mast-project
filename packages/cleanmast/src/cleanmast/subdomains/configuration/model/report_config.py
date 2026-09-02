@@ -173,9 +173,10 @@ class MastRef(BaseModel):
             used by the wind_rose subsection. Discovered band-when-available:
             paired heights in 120–160m when any exist, else all paired
             heights; must be non-empty when the subsection is generated.
-        temporal_heights: Heights with WindSpeed avg sensors (no height-band filter),
-            used by the temporal subsection. Optional; must be non-empty when the
-            temporal subsection is generated.
+        temporal_heights: Heights with WindSpeed avg sensors, discovered
+            band-when-available (120–160m when any exist, else all WS avg
+            heights), used by the temporal subsection. Optional; must be
+            non-empty when the temporal subsection is generated.
         cleaning_heights: WindSpeed avg sensor heights, band-when-available
             (120–160m when any exist, else all WS avg heights), used by ALL
             cleaning subsections (2.3.2–2.3.7). Populated only for the

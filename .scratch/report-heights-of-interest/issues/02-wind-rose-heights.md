@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately (shared files with 01/03, see spec.md)
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Scope
 
