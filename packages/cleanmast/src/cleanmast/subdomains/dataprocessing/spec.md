@@ -17,6 +17,12 @@ calculation, WT timeseries generation. All computation; no I/O of any kind.
   `__init__.py` under `services/` exports all public symbols. This context
   has no `api.py` — the `services/__init__.py` pattern is the sanctioned
   exception to parent rule 7.
+- **Train/predict consistency (reconstruction exams).** An exam replays the
+  production fit/predict geometry exactly: same method, fit rule, layer
+  scheme, and weighting, with the held-out layer (vertical) or time block
+  (horizontal) as the target. Exam-specific fitting paths are forbidden —
+  if production cannot reproduce the exam's configuration, the exam's
+  evidence does not transfer.
 
 ## Anti-patterns
 - Importing `cleanmast.subdomains.configuration` (enforced:
