@@ -63,3 +63,9 @@ share the same frame and need no change.
   document fully specifies root cause, fix locus, and verification values;
   the only open micro-decision (fill grid = observed months, not hardcoded
   1..12) resolved above.
+- 2026-09-09: Fixed in worktree branch `fix/wind-rose-zero-fill`, commit
+  `e3969ceb` (zero-fill in `compute.py::_process_sensor_data` + regression
+  test `test_wind_rose_zero_fill.py`; two stale length assertions in
+  `test_wind_rose_calculator.py` updated to the grid contract). Baseline
+  green (ty/ruff/pytest/dvc-verify/lint-imports/ast-grep). Merged to
+  `developing`. Status: resolved.
