@@ -46,7 +46,10 @@ def _process_sensor_data(
 
     Returns:
         Polars DataFrame with columns: month, month_name, sector, sector_name,
-        height, interpolation_marker, frequency, wind_power_density, total_power
+        height, interpolation_marker, frequency, wind_power_density, total_power.
+        One row per (observed month × sector): combos without samples are
+        zero-filled (count=0, frequency=0.0); months absent from the data are
+        not fabricated.
     """
     # Filter out null wind direction values
     valid_df = df.filter(pl.col(wd_col).is_not_null())
@@ -68,7 +71,25 @@ def _process_sensor_data(
     month_counts = df_with_sector_month.group_by("month").agg(
         pl.len().alias("month_total")
     )
-    month_sector_stats = month_sector_stats.join(month_counts, on="month")
+    # Zero-fill the (observed month × sector) grid: a month×sector combo with
+    # no samples is a true zero, not missing data. Without these rows,
+    # downstream per-sector monthly means divide by "months present" instead
+    # of "months with data", inflating seasonally-absent sectors past 100% in
+    # total. Months absent from this sensor's data are NOT fabricated — a
+    # missing month is missing data, not zero frequency.
+    sector_grid = pl.DataFrame({"sector": range(SECTOR_COUNT)})
+    month_sector_stats = (
+        month_counts.select("month")
+        .join(sector_grid, how="cross")
+        .join(month_sector_stats, on=["month", "sector"], how="left")
+        .join(month_counts, on="month")
+        .with_columns(
+            pl.col("count").fill_null(0),
+            pl.col("wind_power_density").fill_null(0.0),
+            pl.col("total_power").fill_null(0.0),
+        )
+        .sort(["month", "sector"])
+    )
 
     # Build the result DataFrame directly from Polars operations
     result = month_sector_stats.with_columns([

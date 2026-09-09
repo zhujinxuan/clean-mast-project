@@ -275,7 +275,8 @@ class TestWindRoseCalculator:
 
         result = calculate_wind_rose(time_series, air_density=1.225, heights=[100.0])
 
-        assert len(result) == 2
+        # Full zero-filled grid: one observed month × all sectors
+        assert len(result) == SECTOR_COUNT
 
         frequencies = result["frequency"].to_list()
         assert pytest.approx(sum(frequencies), rel=0.001) == 1.0
@@ -404,6 +405,6 @@ class TestWindRoseCalculator:
 
         result = calculate_wind_rose(input_data, air_density=1.225, heights=[100.0])
 
-        assert len(result) == 4
+        assert len(result) == SECTOR_COUNT
         for value in result["energy_frequency"].to_list():
             assert value == 0.0
